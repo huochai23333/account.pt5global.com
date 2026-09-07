@@ -29,7 +29,9 @@ test.describe("operator reimbursements", () => {
     await dialog.getByRole("button", { name: "保存记录" }).click();
 
     await expect(page.getByText("记录已保存。")).toBeVisible();
-    const reimbursementCard = page.locator("article").filter({ hasText: content });
+    const reimbursementCard = page
+      .locator("article")
+      .filter({ hasText: content });
     await expect(reimbursementCard).toBeVisible();
     const unreimbursedBadge = reimbursementCard
       .locator('[data-slot="status-badge"]')
@@ -39,11 +41,14 @@ test.describe("operator reimbursements", () => {
     await expect(unreimbursedBadge).toHaveAttribute("data-tone", "warning");
     await expect(reimbursementCard.getByText("¥88.66")).toBeVisible();
 
-    await page.getByRole("button", { name: "报销本月" }).click();
+    await page.getByRole("button", { name: "确认报销", exact: true }).click();
 
-    await expect(
-      page.getByText(/本月 \d+ 条未报销记录已标记为已报销。/),
-    ).toBeVisible();
+    await page
+      .getByRole("dialog", { name: "确认报销" })
+      .getByRole("button", { name: "确认报销", exact: true })
+      .click();
+
+    await expect(page.getByText(/已将 \d+ 条记录标记为已报销。/)).toBeVisible();
     const reimbursedBadge = reimbursementCard
       .locator('[data-slot="status-badge"]')
       .filter({ hasText: "已报销" })

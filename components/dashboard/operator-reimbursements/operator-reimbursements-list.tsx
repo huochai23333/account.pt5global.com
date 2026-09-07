@@ -25,6 +25,7 @@ import {
 
 type OperatorReimbursementsListSectionProps = {
   copy: {
+    operator: string;
     amount: string;
     delete: string;
     emptyDescription: string;
@@ -37,6 +38,8 @@ type OperatorReimbursementsListSectionProps = {
     statusOptions: Record<OperatorReimbursementStatus, string>;
     updatedAt: string;
   };
+  currentUserId: string;
+  ownView: boolean;
   locale: string;
   onDelete: (reimbursement: OperatorReimbursementRow) => void;
   pendingAction: { id: string; type: "delete" } | null;
@@ -45,6 +48,8 @@ type OperatorReimbursementsListSectionProps = {
 
 export function OperatorReimbursementsListSection({
   copy,
+  currentUserId,
+  ownView,
   locale,
   onDelete,
   pendingAction,
@@ -66,6 +71,8 @@ export function OperatorReimbursementsListSection({
             {reimbursements.map((reimbursement, index) => (
               <MotionListItem index={index} key={reimbursement.id}>
                 <OperatorReimbursementCard
+                  currentUserId={currentUserId}
+                  ownView={ownView}
                   copy={copy}
                   locale={locale}
                   onDelete={onDelete}
@@ -83,12 +90,16 @@ export function OperatorReimbursementsListSection({
 
 function OperatorReimbursementCard({
   copy,
+  currentUserId,
+  ownView,
   locale,
   onDelete,
   pendingAction,
   reimbursement,
 }: {
   copy: OperatorReimbursementsListSectionProps["copy"];
+  currentUserId: string;
+  ownView: boolean;
   locale: string;
   onDelete: (reimbursement: OperatorReimbursementRow) => void;
   pendingAction: OperatorReimbursementsListSectionProps["pendingAction"];
@@ -96,8 +107,11 @@ function OperatorReimbursementCard({
 }) {
   const deletePending =
     pendingAction?.id === reimbursement.id && pendingAction.type === "delete";
-  // 已报销记录作为结算凭证保留在列表中，只允许删除尚未报销的草稿记录。
-  const canDelete = reimbursement.status === "unreimbursed";
+  // 查阅同事时不提供写入入口；本人也只能删除未报销的记录。
+  const canDelete =
+    ownView &&
+    reimbursement.operator_user_id === currentUserId &&
+    reimbursement.status === "unreimbursed";
 
   return (
     <RecordCard surface="inset">
@@ -129,7 +143,10 @@ function OperatorReimbursementCard({
             {formatOperatorReimbursementAmount(reimbursement.amount, locale)}
           </p>
 
-          <MetaGrid className="mt-4 xl:grid-cols-5">
+          <MetaGrid className="mt-4 xl:grid-cols-3">
+            <MetaItem label={copy.operator}>
+              {reimbursement.operator_name}
+            </MetaItem>
             <MetaItem label={copy.spentAt}>
               <CalendarDays className="size-4" />
               {formatOperatorReimbursementDate(reimbursement.spent_at, locale)}

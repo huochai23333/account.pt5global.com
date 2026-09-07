@@ -726,22 +726,26 @@
     "header": {
       "title": "Reimbursements",
       "create": "Add Record",
-      "reimburseCurrent": "Reimburse This Month",
-      "currentPeriodLabel": "This month: "
+      "currentPeriodLabel": "Current period: ",
+      "reimburse": "Confirm reimbursement"
     },
     "filters": {
       "searchPlaceholder": "Search content, amount, or date",
       "periodLabel": "Period",
       "statusLabel": "Status",
       "allPeriods": "All Periods",
-      "allStatuses": "All Statuses"
+      "allStatuses": "All Statuses",
+      "ownerLabel": "Operator",
+      "mine": "My records",
+      "allOperators": "All operators"
     },
     "summary": {
       "currentPeriod": "This Month",
-      "currentUnreimbursed": "This Month Unreimbursed",
-      "currentReimbursed": "This Month Reimbursed",
-      "totalUnreimbursed": "All Unreimbursed",
-      "count": "{count} records"
+      "currentUnreimbursed": "Unreimbursed this period",
+      "currentReimbursed": "Reimbursed this period",
+      "totalUnreimbursed": "Total unreimbursed",
+      "count": "{count} records",
+      "scope": "Expense summary: {name}"
     },
     "status": {
       "unreimbursed": "Unreimbursed",
@@ -757,7 +761,8 @@
       "updatedAt": "Updated",
       "delete": "Delete",
       "emptyTitle": "No reimbursement records yet",
-      "emptyDescription": "After adding reimbursements, they will appear here by period."
+      "emptyDescription": "After adding reimbursements, they will appear here by period.",
+      "operator": "Operator"
     },
     "dialog": {
       "createTitle": "Add Record",
@@ -773,8 +778,8 @@
       "createSuccess": "Record saved.",
       "deleteSuccess": "Record deleted.",
       "deleteConfirm": "Delete “{content}”?",
-      "reimburseSuccess": "{count} unreimbursed records for this month were marked as reimbursed.",
-      "reimburseEmpty": "There are no unreimbursed records this month.",
+      "reimburseSuccess": "{count} records marked as reimbursed.",
+      "reimburseEmpty": "No outstanding records in this period.",
       "missingContent": "Enter the reimbursement content.",
       "missingAmount": "Enter the reimbursement amount.",
       "invalidAmount": "Amount must be greater than 0.",
@@ -782,10 +787,21 @@
       "notFoundError": "This reimbursement record no longer exists.",
       "deleteLockedError": "Reimbursed records cannot be deleted.",
       "permissionError": "This account cannot manage reimbursement records.",
-      "unknownError": "Reimbursement record could not be saved. Please try again later."
+      "unknownError": "Reimbursement record could not be saved. Please try again later.",
+      "savedRefreshError": "Saved. The list could not be refreshed. Please reload."
     },
     "noPermissionTitle": "This account cannot view reimbursements",
-    "noPermissionDescription": "Reimbursements are available only to operators."
+    "noPermissionDescription": "Reimbursements are available only to operators.",
+    "confirm": {
+      "title": "Confirm reimbursement",
+      "description": "Choose one of your outstanding periods. All your unreimbursed records in that period will be marked as reimbursed.",
+      "period": "Outstanding period",
+      "submit": "Confirm reimbursement",
+      "count": "{count} unreimbursed records"
+    },
+    "loading": "Loading reimbursements…",
+    "loadError": "Reimbursements could not be loaded. Please reload.",
+    "retry": "Reload"
   },
   "CustomerInventory": {
     "header": {

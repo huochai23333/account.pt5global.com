@@ -726,22 +726,26 @@
     "header": {
       "title": "报销记录",
       "create": "新增报销",
-      "reimburseCurrent": "报销本月",
-      "currentPeriodLabel": "本月范围："
+      "currentPeriodLabel": "本期范围：",
+      "reimburse": "确认报销"
     },
     "filters": {
       "searchPlaceholder": "搜索报销内容、金额或日期",
       "periodLabel": "报销周期",
       "statusLabel": "报销状态",
       "allPeriods": "全部周期",
-      "allStatuses": "全部状态"
+      "allStatuses": "全部状态",
+      "ownerLabel": "运营",
+      "mine": "我的记录",
+      "allOperators": "全部运营"
     },
     "summary": {
       "currentPeriod": "本月范围",
-      "currentUnreimbursed": "本月未报销",
-      "currentReimbursed": "本月已报销",
-      "totalUnreimbursed": "全部未报销",
-      "count": "{count} 条记录"
+      "currentUnreimbursed": "本期未报销",
+      "currentReimbursed": "本期已报销",
+      "totalUnreimbursed": "累计未报销",
+      "count": "{count} 条记录",
+      "scope": "{name}的费用汇总"
     },
     "status": {
       "unreimbursed": "未报销",
@@ -757,7 +761,8 @@
       "updatedAt": "更新时间",
       "delete": "删除",
       "emptyTitle": "暂无报销记录",
-      "emptyDescription": "新增报销后，会在这里按周期展示。"
+      "emptyDescription": "新增报销后，会在这里按周期展示。",
+      "operator": "所属运营"
     },
     "dialog": {
       "createTitle": "新增报销",
@@ -773,8 +778,8 @@
       "createSuccess": "记录已保存。",
       "deleteSuccess": "记录已删除。",
       "deleteConfirm": "确定删除“{content}”吗？",
-      "reimburseSuccess": "本月 {count} 条未报销记录已标记为已报销。",
-      "reimburseEmpty": "本月没有未报销记录。",
+      "reimburseSuccess": "已将 {count} 条记录标记为已报销。",
+      "reimburseEmpty": "所选周期没有待报销记录。",
       "missingContent": "请填写报销内容。",
       "missingAmount": "请填写报销金额。",
       "invalidAmount": "报销金额需要大于 0。",
@@ -782,10 +787,21 @@
       "notFoundError": "这条报销记录已经不存在。",
       "deleteLockedError": "已报销的记录不能删除。",
       "permissionError": "当前账号不能维护报销记录。",
-      "unknownError": "报销记录暂时没有保存成功，请稍后再试。"
+      "unknownError": "报销记录暂时没有保存成功，请稍后再试。",
+      "savedRefreshError": "操作已完成，列表暂时未能刷新，请点击重新加载。"
     },
     "noPermissionTitle": "当前账号不能查看报销记录",
-    "noPermissionDescription": "报销记录只开放给运营账号。"
+    "noPermissionDescription": "报销记录只开放给运营账号。",
+    "confirm": {
+      "title": "确认报销",
+      "description": "选择自己的待报销周期。确认后，该周期全部未报销记录将标记为已报销。",
+      "period": "待报销周期",
+      "submit": "确认报销",
+      "count": "共 {count} 条待报销记录"
+    },
+    "loading": "正在读取报销记录…",
+    "loadError": "报销记录暂时无法读取，请重新加载。",
+    "retry": "重新加载"
   },
   "CustomerInventory": {
     "header": {

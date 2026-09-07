@@ -1,353 +1,122 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-
-import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
-
-import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  createOperatorReimbursement,
-  deleteOperatorReimbursement,
+  defaultOperatorReimbursementFilters,
   getOperatorReimbursementsPageData,
-  reimburseCurrentOperatorPeriod,
-  sortOperatorReimbursements,
-  type OperatorReimbursementPeriod,
+  type OperatorReimbursementFilters,
   type OperatorReimbursementsPageData,
-  type OperatorReimbursementRow,
-  type OperatorReimbursementStatus,
 } from "@/lib/operator-reimbursements";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
-import { normalizeSearchText } from "@/lib/value-normalizers";
-
-import type { FeedbackTone } from "../dashboard-shared-ui";
 import { useWorkspaceSyncEffect } from "../workspace-session-provider";
 import {
-  createEmptyOperatorReimbursementForm,
-  getOperatorReimbursementPeriodValue,
-  isOperatorReimbursementInPeriod,
-  toOperatorReimbursementErrorMessage,
-  toOperatorReimbursementInput,
-  type OperatorReimbursementFormState,
-} from "./operator-reimbursements-display";
+  useOperatorReimbursementForm,
+  type ReimbursementCopy,
+  type ReimbursementFeedback,
+} from "./use-operator-reimbursement-form";
+import { useOperatorReimbursementActions } from "./use-operator-reimbursement-actions";
 
-type Feedback = { tone: FeedbackTone; message: string } | null;
-type PendingAction = { id: string; type: "delete" } | null;
-
-type OperatorReimbursementsViewModelCopy = {
-  createSuccess: string;
-  deleteConfirm: (content: string) => string;
-  deleteSuccess: string;
-  deleteLockedError: string;
-  invalidAmount: string;
-  invalidDate: string;
-  missingAmount: string;
-  missingContent: string;
-  notFoundError: string;
-  permissionError: string;
-  reimburseEmpty: string;
-  reimburseSuccess: (count: number) => string;
-  unknownError: string;
-};
-
-type UseOperatorReimbursementsViewModelOptions = {
-  copy: OperatorReimbursementsViewModelCopy;
-  initialData: OperatorReimbursementsPageData;
-};
-
+/** 页面状态只调度查询、筛选和子 hook；输入表单与写入过程分别维护。 */
 export function useOperatorReimbursementsViewModel({
   copy,
   initialData,
-}: UseOperatorReimbursementsViewModelOptions) {
-  const confirm = useDashboardConfirm();
-  const confirmT = useTranslations("DashboardFramework.confirm");
-  const supabase = getBrowserSupabaseClient();
-  const [reimbursements, setReimbursements] = useState(
-    initialData.reimbursements,
-  );
-  const [currentPeriod, setCurrentPeriod] = useState(initialData.currentPeriod);
-  const [hasPermission, setHasPermission] = useState(initialData.hasPermission);
-  const [pageFeedback, setPageFeedback] = useState<Feedback>(null);
-  const [dialogFeedback, setDialogFeedback] = useState<Feedback>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [formState, setFormState] = useState<OperatorReimbursementFormState>(
-    () => createEmptyOperatorReimbursementForm(),
-  );
-  const [periodFilter, setPeriodFilter] = useState("all");
-  const [statusFilter, setStatusFilter] =
-    useState<OperatorReimbursementStatus | "all">("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [submitPending, setSubmitPending] = useState(false);
-  const [reimbursePending, setReimbursePending] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-
-  const applyPageData = useCallback((pageData: OperatorReimbursementsPageData) => {
-    // 服务端返回的周期和记录是可信状态；刷新时统一覆盖本地列表，避免批量报销后出现旧状态。
-    setCurrentPeriod(pageData.currentPeriod);
-    setHasPermission(pageData.hasPermission);
-    setReimbursements(sortOperatorReimbursements(pageData.reimbursements));
+}: {
+  copy: ReimbursementCopy;
+  initialData: OperatorReimbursementsPageData;
+}) {
+  const [data, setData] = useState(initialData);
+  const [filters, setFilters] = useState(defaultOperatorReimbursementFilters);
+  const [loadedFilters, setLoadedFilters] = useState(filters);
+  const [loading, setLoading] = useState(false);
+  const [queryFailed, setQueryFailed] = useState(false);
+  const [feedback, setFeedback] = useState<ReimbursementFeedback>(null);
+  const request = useRef(0);
+  const mounted = useRef(true);
+  const latestFilters = useRef(filters);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      request.current += 1;
+    };
   }, []);
-
-  const refreshOperatorReimbursements = useCallback(
-    async ({ isMounted }: { isMounted: () => boolean }) => {
-      if (!supabase) {
-        return;
-      }
-
-      try {
-        const pageData = await getOperatorReimbursementsPageData(supabase);
-
-        if (!isMounted()) {
-          return;
-        }
-
-        applyPageData(pageData);
-      } catch (error) {
-        if (!isMounted()) {
-          return;
-        }
-
-        setPageFeedback({
-          tone: "error",
-          message: toOperatorReimbursementErrorMessage(error, copy),
-        });
-      }
-    },
-    [applyPageData, copy, supabase],
-  );
-
-  useWorkspaceSyncEffect(refreshOperatorReimbursements);
-
-  const periodOptions = useMemo(() => {
-    // 页面筛选只从已有记录提取周期，不额外生成空周期，减少用户需要排查的空列表。
-    const periodByStart = new Map<string, OperatorReimbursementPeriod>();
-
-    reimbursements.forEach((row) => {
-      periodByStart.set(row.reimbursement_period_start, {
-        end: row.reimbursement_period_end,
-        start: row.reimbursement_period_start,
-      });
-    });
-
-    return Array.from(periodByStart.values()).sort((left, right) =>
-      right.start.localeCompare(left.start),
-    );
-  }, [reimbursements]);
-
-  const filteredReimbursements = useMemo(() => {
-    const normalizedQuery = normalizeSearchText(searchQuery);
-
-    return reimbursements.filter((reimbursement) => {
-      const periodMatches =
-        periodFilter === "all" ||
-        getOperatorReimbursementPeriodValue(reimbursement) === periodFilter;
-      const statusMatches =
-        statusFilter === "all" || reimbursement.status === statusFilter;
-      const searchText = normalizeSearchText(
-        [
-          reimbursement.content,
-          reimbursement.amount.toFixed(2),
-          reimbursement.spent_at,
-          reimbursement.reimbursement_period_start,
-          reimbursement.reimbursement_period_end,
-        ].join(" "),
-      );
-      const searchMatches =
-        !normalizedQuery || searchText.includes(normalizedQuery);
-
-      return periodMatches && statusMatches && searchMatches;
-    });
-  }, [periodFilter, reimbursements, searchQuery, statusFilter]);
-
-  const currentUnreimbursedCount = useMemo(
-    () =>
-      reimbursements.filter(
-        (row) =>
-          row.status === "unreimbursed" &&
-          isOperatorReimbursementInPeriod(row, currentPeriod),
-      ).length,
-    [currentPeriod, reimbursements],
-  );
-
-  const resetFilters = useCallback(() => {
-    setPeriodFilter("all");
-    setSearchQuery("");
-    setStatusFilter("all");
-  }, []);
-
-  const openCreateDialog = useCallback(() => {
-    setFormState(createEmptyOperatorReimbursementForm());
-    setDialogFeedback(null);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogOpenChange = useCallback((open: boolean) => {
-    setDialogOpen(open);
-
-    if (!open) {
-      setDialogFeedback(null);
-    }
-  }, []);
-
-  const updateFormField = useCallback(
-    <Key extends keyof OperatorReimbursementFormState>(
-      field: Key,
-      value: OperatorReimbursementFormState[Key],
-    ) => {
-      setFormState((current) => ({
-        ...current,
-        [field]: value,
-      }));
-    },
-    [],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (!supabase || submitPending) {
-      return;
-    }
-
-    let input;
-
+  const refresh = useCallback(async () => {
+    const supabase = getBrowserSupabaseClient();
+    if (!supabase) return false;
+    const id = ++request.current;
+    setLoading(true);
     try {
-      input = toOperatorReimbursementInput(formState, copy);
-    } catch (error) {
-      setDialogFeedback({
-        tone: "error",
-        message: toOperatorReimbursementErrorMessage(error, copy),
-      });
-      return;
-    }
-
-    setSubmitPending(true);
-    setDialogFeedback(null);
-
-    try {
-      const savedReimbursement = await createOperatorReimbursement(
-        supabase,
-        input,
-      );
-
-      markBrowserCloudSyncActivity();
-      setReimbursements((current) =>
-        sortOperatorReimbursements([savedReimbursement, ...current]),
-      );
-      setPageFeedback({ tone: "success", message: copy.createSuccess });
-      setDialogOpen(false);
-      setFormState(createEmptyOperatorReimbursementForm());
-    } catch (error) {
-      setDialogFeedback({
-        tone: "error",
-        message: toOperatorReimbursementErrorMessage(error, copy),
-      });
-    } finally {
-      setSubmitPending(false);
-    }
-  }, [copy, formState, submitPending, supabase]);
-
-  const handleDelete = useCallback(
-    async (reimbursement: OperatorReimbursementRow) => {
-      if (!supabase || pendingAction) {
-        return;
-      }
-
+      const result = await getOperatorReimbursementsPageData(supabase, filters);
+      // 连续切换运营或搜索时，只接收最后一次查询，避免把甲的金额显示在乙的名字下面。
       if (
-        !(await confirm({
-          description: copy.deleteConfirm(reimbursement.content),
-          title: confirmT("title"),
-          tone: "danger",
-        }))
-      ) {
-        return;
-      }
-
-      setPendingAction({ id: reimbursement.id, type: "delete" });
-      setPageFeedback(null);
-
-      try {
-        await deleteOperatorReimbursement(supabase, reimbursement.id);
-
-        markBrowserCloudSyncActivity();
-        setReimbursements((current) =>
-          current.filter((item) => item.id !== reimbursement.id),
-        );
-        setPageFeedback({ tone: "success", message: copy.deleteSuccess });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toOperatorReimbursementErrorMessage(error, copy),
-        });
-      } finally {
-        setPendingAction(null);
-      }
-    },
-    [confirm, confirmT, copy, pendingAction, supabase],
-  );
-
-  const handleReimburseCurrent = useCallback(async () => {
-    if (!supabase || reimbursePending || currentUnreimbursedCount === 0) {
-      return;
-    }
-
-    setReimbursePending(true);
-    setPageFeedback(null);
-
-    try {
-      const result = await reimburseCurrentOperatorPeriod(supabase);
-      const pageData = await getOperatorReimbursementsPageData(supabase);
-
-      // 批量报销完成后立即重新读取列表，让所有记录的状态和报销时间都来自数据库。
-      markBrowserCloudSyncActivity();
-      applyPageData(pageData);
-      setPageFeedback({
-        tone: "success",
-        message:
-          result.updatedCount > 0
-            ? copy.reimburseSuccess(result.updatedCount)
-            : copy.reimburseEmpty,
-      });
-    } catch (error) {
-      setPageFeedback({
-        tone: "error",
-        message: toOperatorReimbursementErrorMessage(error, copy),
-      });
+        !mounted.current ||
+        id !== request.current ||
+        latestFilters.current !== filters
+      )
+        // 新查询已接管刷新，丢弃旧结果不属于保存失败。
+        return true;
+      setData(result);
+      setLoadedFilters(filters);
+      setQueryFailed(false);
+      return true;
+    } catch {
+      if (mounted.current && id === request.current) setQueryFailed(true);
+      return false;
     } finally {
-      setReimbursePending(false);
+      if (mounted.current && id === request.current) setLoading(false);
     }
-  }, [
-    applyPageData,
+  }, [filters]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+  const sync = useCallback(async () => {
+    await refresh();
+  }, [refresh]);
+  useWorkspaceSyncEffect(sync);
+  const changeFilter = <Key extends keyof OperatorReimbursementFilters>(
+    key: Key,
+    value: OperatorReimbursementFilters[Key],
+  ) => {
+    const next = {
+      ...filters,
+      [key]: value,
+      page: key === "page" ? Number(value) : 1,
+    };
+    latestFilters.current = next;
+    setFilters(next);
+  };
+  const resetFilters = () => {
+    latestFilters.current = defaultOperatorReimbursementFilters;
+    setFilters(defaultOperatorReimbursementFilters);
+  };
+  const onSaved = async (message: string) => {
+    const refreshed = await refresh();
+    setFeedback({
+      tone: refreshed ? "success" : "info",
+      message: refreshed ? message : copy.savedRefreshError,
+    });
+  };
+  const form = useOperatorReimbursementForm(copy, onSaved);
+  const actions = useOperatorReimbursementActions(
+    data,
     copy,
-    currentUnreimbursedCount,
-    reimbursePending,
-    supabase,
-  ]);
-
+    onSaved,
+    setFeedback,
+  );
+  // 全部运营属于查阅视图。只有“我的记录”和选择本人时显示写入入口。
+  const ownView =
+    filters.owner === "mine" || filters.owner === data.currentUserId;
   return {
-    currentPeriod,
-    currentUnreimbursedCount,
-    dialogFeedback,
-    dialogOpen,
-    filteredReimbursements,
-    formState,
-    hasPermission,
-    handleDelete,
-    handleDialogOpenChange,
-    handleReimburseCurrent,
-    handleSubmit,
-    pageFeedback,
-    pendingAction,
-    periodFilter,
-    periodOptions,
-    reimbursePending,
-    reimbursements,
+    data,
+    filters,
+    changeFilter,
     resetFilters,
-    searchQuery,
-    setPeriodFilter,
-    setSearchQuery,
-    setStatusFilter,
-    statusFilter,
-    submitPending,
-    openCreateDialog,
-    updateFormField,
+    refresh,
+    queryFailed,
+    feedback,
+    form,
+    actions,
+    ownView,
+    loading: loading || loadedFilters !== filters,
   };
 }

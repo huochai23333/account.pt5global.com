@@ -16,6 +16,9 @@ import { formatOperatorReimbursementPeriod } from "./operator-reimbursements-dis
 
 type OperatorReimbursementsFilterSectionProps = {
   copy: {
+    ownerLabel: string;
+    mine: string;
+    allOperators: string;
     allPeriods: string;
     allStatuses: string;
     periodLabel: string;
@@ -23,6 +26,9 @@ type OperatorReimbursementsFilterSectionProps = {
     statusLabel: string;
     statusOptions: Record<OperatorReimbursementStatus, string>;
   };
+  owner: string;
+  operators: { id: string; name: string }[];
+  onOwnerChange: (value: string) => void;
   locale: string;
   onPeriodFilterChange: (value: string) => void;
   onReset: () => void;
@@ -36,6 +42,9 @@ type OperatorReimbursementsFilterSectionProps = {
 
 export function OperatorReimbursementsFilterSection({
   copy,
+  owner,
+  operators,
+  onOwnerChange,
   locale,
   onPeriodFilterChange,
   onReset,
@@ -48,12 +57,15 @@ export function OperatorReimbursementsFilterSection({
 }: OperatorReimbursementsFilterSectionProps) {
   return (
     <DashboardResourceFilterSection
-      activeFilterCount={[
-        Boolean(searchQuery),
-        periodFilter !== "all",
-        statusFilter !== "all",
-      ].filter(Boolean).length}
-      gridClassName="sm:grid-cols-2"
+      activeFilterCount={
+        [
+          owner !== "mine",
+          Boolean(searchQuery),
+          periodFilter !== "all",
+          statusFilter !== "all",
+        ].filter(Boolean).length
+      }
+      gridClassName="sm:grid-cols-2 xl:grid-cols-3"
       onReset={onReset}
       primary={
         <DashboardSearchInput
@@ -64,9 +76,26 @@ export function OperatorReimbursementsFilterSection({
         />
       }
       resetDisabled={
-        !searchQuery && periodFilter === "all" && statusFilter === "all"
+        owner === "mine" &&
+        !searchQuery &&
+        periodFilter === "all" &&
+        statusFilter === "all"
       }
     >
+      <DashboardFilterField label={copy.ownerLabel}>
+        <Select
+          value={owner}
+          onValueChange={onOwnerChange}
+          options={[
+            { value: "mine", label: copy.mine },
+            { value: "all", label: copy.allOperators },
+            ...operators.map((operator) => ({
+              value: operator.id,
+              label: operator.name,
+            })),
+          ]}
+        />
+      </DashboardFilterField>
       <DashboardFilterField label={copy.periodLabel}>
         <Select
           onValueChange={onPeriodFilterChange}

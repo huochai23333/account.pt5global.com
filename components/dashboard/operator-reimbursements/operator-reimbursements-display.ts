@@ -1,7 +1,6 @@
 import type {
   OperatorReimbursementFormInput,
   OperatorReimbursementPeriod,
-  OperatorReimbursementRow,
 } from "@/lib/operator-reimbursements";
 
 export type OperatorReimbursementFormState = {
@@ -63,43 +62,6 @@ export function toOperatorReimbursementInput(
   };
 }
 
-export function getOperatorReimbursementSummaries(
-  rows: readonly OperatorReimbursementRow[],
-  currentPeriod: OperatorReimbursementPeriod,
-) {
-  const currentRows = rows.filter((row) =>
-    isOperatorReimbursementInPeriod(row, currentPeriod),
-  );
-
-  return {
-    currentReimbursed: sumOperatorReimbursements(
-      currentRows.filter((row) => row.status === "reimbursed"),
-    ),
-    currentUnreimbursed: sumOperatorReimbursements(
-      currentRows.filter((row) => row.status === "unreimbursed"),
-    ),
-    totalUnreimbursed: sumOperatorReimbursements(
-      rows.filter((row) => row.status === "unreimbursed"),
-    ),
-  };
-}
-
-export function isOperatorReimbursementInPeriod(
-  row: OperatorReimbursementRow,
-  period: OperatorReimbursementPeriod,
-) {
-  return (
-    row.reimbursement_period_start === period.start &&
-    row.reimbursement_period_end === period.end
-  );
-}
-
-export function getOperatorReimbursementPeriodValue(
-  row: OperatorReimbursementRow,
-) {
-  return row.reimbursement_period_start;
-}
-
 export function formatOperatorReimbursementAmount(
   amount: number,
   locale: string,
@@ -128,17 +90,27 @@ export function formatOperatorReimbursementPeriod(
   period: OperatorReimbursementPeriod,
   locale: string,
 ) {
-  return `${formatOperatorReimbursementDate(
-    period.start,
-    locale,
-  )} - ${formatOperatorReimbursementDate(period.end, locale)}`;
+  // 周期同时包含两个完整日期，用紧凑数字格式避免移动端截断或只剩“日”字换行。
+  const formatter = new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Shanghai",
+  });
+  const format = (value: string) =>
+    formatter.format(new Date(`${value}T00:00:00+08:00`));
+  return `${format(period.start)} - ${format(period.end)}`;
 }
 
 export function toOperatorReimbursementErrorMessage(
   error: unknown,
   copy: OperatorReimbursementErrorCopy,
 ) {
-  const message = error instanceof Error ? error.message.trim() : "";
+  // Supabase 返回普通错误对象，不一定是 Error 实例；只把已知业务文案交给用户。
+  const message =
+    error && typeof error === "object" && "message" in error
+      ? String(error.message).trim()
+      : "";
   const normalizedMessage = message.toLowerCase();
 
   if (
@@ -170,26 +142,7 @@ export function toOperatorReimbursementErrorMessage(
     return copy.permissionError;
   }
 
-  if (
-    message.length > 0 &&
-    !looksLikeTechnicalOperatorReimbursementError(normalizedMessage)
-  ) {
-    return message;
-  }
-
   return copy.unknownError;
-}
-
-function sumOperatorReimbursements(
-  rows: readonly OperatorReimbursementRow[],
-): OperatorReimbursementSummary {
-  return rows.reduce<OperatorReimbursementSummary>(
-    (summary, row) => ({
-      amount: summary.amount + row.amount,
-      count: summary.count + 1,
-    }),
-    { amount: 0, count: 0 },
-  );
 }
 
 function isDateInputValue(value: string) {
@@ -211,20 +164,4 @@ function getTodayDateInputValue() {
     partMap.get("month") ?? "",
     partMap.get("day") ?? "",
   ].join("-");
-}
-
-function looksLikeTechnicalOperatorReimbursementError(message: string) {
-  return (
-    message.includes("failed to fetch") ||
-    message.includes("fetch failed") ||
-    message.includes("timed out") ||
-    message.includes("timeout") ||
-    message.includes("jwt") ||
-    message.includes("relation") ||
-    message.includes("column") ||
-    message.includes("violates") ||
-    message.includes("supabase") ||
-    /\bhttp\s+\d{3}\b/.test(message) ||
-    /\bstatus code\b/.test(message)
-  );
 }

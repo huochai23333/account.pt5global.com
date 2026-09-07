@@ -179,7 +179,7 @@ export async function renderWorkspaceOperatorReimbursementsPage({
 
   return (
     <ScopedIntlProvider
-      namespaces={["OperatorReimbursements", "DashboardShared"]}
+      namespaces={["OperatorReimbursements", "DashboardShared", "DashboardPagination"]}
     >
       <OperatorReimbursementsClient initialData={initialData} />
     </ScopedIntlProvider>

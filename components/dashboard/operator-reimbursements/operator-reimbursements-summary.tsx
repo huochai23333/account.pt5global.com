@@ -3,15 +3,9 @@
 import { BadgeCheck, ReceiptText, WalletCards } from "lucide-react";
 
 import { MetricCard, MetricGrid } from "@/components/ui/data-display";
-import type {
-  OperatorReimbursementPeriod,
-  OperatorReimbursementRow,
-} from "@/lib/operator-reimbursements";
+import type { OperatorReimbursementsPageData } from "@/lib/operator-reimbursements";
 
-import {
-  formatOperatorReimbursementAmount,
-  getOperatorReimbursementSummaries,
-} from "./operator-reimbursements-display";
+import { formatOperatorReimbursementAmount } from "./operator-reimbursements-display";
 
 type OperatorReimbursementsSummarySectionProps = {
   copy: {
@@ -21,58 +15,55 @@ type OperatorReimbursementsSummarySectionProps = {
     currentUnreimbursed: string;
     totalUnreimbursed: string;
   };
-  currentPeriod: OperatorReimbursementPeriod;
+  summaries: OperatorReimbursementsPageData["summaries"];
+  scopeLabel: string;
   locale: string;
-  reimbursements: OperatorReimbursementRow[];
 };
 
 export function OperatorReimbursementsSummarySection({
   copy,
-  currentPeriod,
+  summaries,
+  scopeLabel,
   locale,
-  reimbursements,
 }: OperatorReimbursementsSummarySectionProps) {
-  // 汇总使用完整列表，而不是筛选后的列表，这样顶部数字始终反映当前真实待报销金额。
-  const summaries = getOperatorReimbursementSummaries(
-    reimbursements,
-    currentPeriod,
-  );
-
   return (
-    <MetricGrid layout="summary-strip">
-      <MetricCard
-        description={copy.count(summaries.currentUnreimbursed.count)}
-        icon={<WalletCards className="size-4" />}
-        label={copy.currentUnreimbursed}
-        presentation="compact"
-        tone="warning"
-        value={formatOperatorReimbursementAmount(
-          summaries.currentUnreimbursed.amount,
-          locale,
-        )}
-      />
-      <MetricCard
-        description={copy.count(summaries.currentReimbursed.count)}
-        icon={<BadgeCheck className="size-4" />}
-        label={copy.currentReimbursed}
-        presentation="compact"
-        tone="success"
-        value={formatOperatorReimbursementAmount(
-          summaries.currentReimbursed.amount,
-          locale,
-        )}
-      />
-      <MetricCard
-        description={copy.count(summaries.totalUnreimbursed.count)}
-        icon={<ReceiptText className="size-4" />}
-        label={copy.totalUnreimbursed}
-        presentation="compact"
-        tone="info"
-        value={formatOperatorReimbursementAmount(
-          summaries.totalUnreimbursed.amount,
-          locale,
-        )}
-      />
-    </MetricGrid>
+    <section aria-label={scopeLabel} className="min-w-0 space-y-3">
+      <p className="break-words text-sm text-content-muted">{scopeLabel}</p>
+      <MetricGrid layout="summary-strip">
+        <MetricCard
+          description={copy.count(summaries.currentUnreimbursed.count)}
+          icon={<WalletCards className="size-4" />}
+          label={copy.currentUnreimbursed}
+          presentation="compact"
+          tone="warning"
+          value={formatOperatorReimbursementAmount(
+            summaries.currentUnreimbursed.amount,
+            locale,
+          )}
+        />
+        <MetricCard
+          description={copy.count(summaries.currentReimbursed.count)}
+          icon={<BadgeCheck className="size-4" />}
+          label={copy.currentReimbursed}
+          presentation="compact"
+          tone="success"
+          value={formatOperatorReimbursementAmount(
+            summaries.currentReimbursed.amount,
+            locale,
+          )}
+        />
+        <MetricCard
+          description={copy.count(summaries.totalUnreimbursed.count)}
+          icon={<ReceiptText className="size-4" />}
+          label={copy.totalUnreimbursed}
+          presentation="compact"
+          tone="info"
+          value={formatOperatorReimbursementAmount(
+            summaries.totalUnreimbursed.amount,
+            locale,
+          )}
+        />
+      </MetricGrid>
+    </section>
   );
 }

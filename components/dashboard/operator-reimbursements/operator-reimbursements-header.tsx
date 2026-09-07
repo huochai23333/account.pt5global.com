@@ -12,51 +12,58 @@ type OperatorReimbursementsHeaderSectionProps = {
   copy: {
     create: string;
     currentPeriodLabel: string;
-    reimburseCurrent: string;
+    reimburse: string;
     title: string;
   };
   currentPeriod: OperatorReimbursementPeriod;
-  currentUnreimbursedCount: number;
+  unreimbursedCount: number;
+  ownView: boolean;
+  loading: boolean;
   locale: string;
   onCreate: () => void;
-  onReimburseCurrent: () => void;
+  onReimburse: () => void;
   reimbursePending: boolean;
 };
 
 export function OperatorReimbursementsHeaderSection({
   copy,
   currentPeriod,
-  currentUnreimbursedCount,
+  unreimbursedCount,
+  ownView,
+  loading,
   locale,
   onCreate,
-  onReimburseCurrent,
+  onReimburse,
   reimbursePending,
 }: OperatorReimbursementsHeaderSectionProps) {
-  // 没有本月未报销记录时按钮保持不可点，避免用户误以为页面没有反应。
-  const reimburseDisabled = reimbursePending || currentUnreimbursedCount === 0;
+  // 按本人全部可报销周期决定入口是否可用，历史遗漏也可以进入弹窗。
+  const reimburseDisabled =
+    loading || reimbursePending || unreimbursedCount === 0;
 
   return (
     <DashboardSectionHeader
       actions={
-        <>
-          <Button size="default" onClick={onCreate} variant="outline">
-            <Plus className="size-4" />
-            {copy.create}
-          </Button>
-          <Button
-            variant="primary"
-            size="default"
-            disabled={reimburseDisabled}
-            onClick={onReimburseCurrent}
-          >
-            {reimbursePending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="size-4" />
-            )}
-            {copy.reimburseCurrent}
-          </Button>
-        </>
+        ownView ? (
+          <>
+            <Button size="default" onClick={onCreate} variant="outline">
+              <Plus className="size-4" />
+              {copy.create}
+            </Button>
+            <Button
+              variant="primary"
+              size="default"
+              disabled={reimburseDisabled}
+              onClick={onReimburse}
+            >
+              {reimbursePending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+              {copy.reimburse}
+            </Button>
+          </>
+        ) : null
       }
       meta={
         <p className="max-w-full break-words text-sm leading-7 text-content-muted [overflow-wrap:anywhere] min-[1360px]:text-right">

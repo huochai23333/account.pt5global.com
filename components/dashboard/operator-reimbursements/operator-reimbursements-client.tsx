@@ -1,185 +1,84 @@
 "use client";
 
 import { useMemo } from "react";
-
 import { useTranslations } from "next-intl";
-
 import { useLocale } from "@/components/i18n/locale-provider";
-import type {
-  OperatorReimbursementStatus,
-  OperatorReimbursementsPageData,
-} from "@/lib/operator-reimbursements";
-
-import {
-  DashboardAccessState,
-  DashboardPageShell,
-} from "../dashboard-page-shell";
+import type { OperatorReimbursementsPageData } from "@/lib/operator-reimbursements";
+import { DashboardPageShell } from "../dashboard-page-shell";
 import { OperatorReimbursementFormDialog } from "./operator-reimbursement-form-dialog";
+import { OperatorReimbursementConfirmDialog } from "./operator-reimbursement-confirm-dialog";
 import {
   OperatorReimbursementsFilterSection,
   OperatorReimbursementsHeaderSection,
-  OperatorReimbursementsListSection,
-  OperatorReimbursementsSummarySection,
 } from "./operator-reimbursements-sections";
+import { OperatorReimbursementsResults } from "./operator-reimbursements-results";
+import { createOperatorReimbursementsCopy } from "./operator-reimbursements-copy";
 import { useOperatorReimbursementsViewModel } from "./use-operator-reimbursements-view-model";
 
-type OperatorReimbursementsClientProps = {
-  initialData: OperatorReimbursementsPageData;
-};
-
+/** Client 只组装页面与弹窗，查询、写入、输入状态和文案映射各有独立模块。 */
 export function OperatorReimbursementsClient({
   initialData,
-}: OperatorReimbursementsClientProps) {
+}: {
+  initialData: OperatorReimbursementsPageData;
+}) {
   const t = useTranslations("OperatorReimbursements");
   const { locale } = useLocale();
-  // 所有页面文案先集中成 copy 对象，子组件只消费普通字符串，避免组件里散落翻译键。
   const copy = useMemo(() => createOperatorReimbursementsCopy(t), [t]);
-  const viewModel = useOperatorReimbursementsViewModel({
+  const vm = useOperatorReimbursementsViewModel({
     copy: copy.feedback,
     initialData,
   });
-
-  if (!viewModel.hasPermission) {
-    return (
-      <DashboardPageShell className="gap-6">
-        <DashboardAccessState
-          description={copy.noPermissionDescription}
-          kind="permission"
-          title={copy.noPermissionTitle}
-        />
-      </DashboardPageShell>
-    );
-  }
-
   return (
     <>
       <DashboardPageShell
-        feedback={viewModel.pageFeedback}
+        feedback={vm.feedback}
         header={
           <OperatorReimbursementsHeaderSection
             copy={copy.header}
-            currentPeriod={viewModel.currentPeriod}
-            currentUnreimbursedCount={viewModel.currentUnreimbursedCount}
+            currentPeriod={vm.data.currentPeriod}
+            unreimbursedCount={vm.data.ownPendingPeriods.length}
             locale={locale}
-            onCreate={viewModel.openCreateDialog}
-            onReimburseCurrent={viewModel.handleReimburseCurrent}
-            reimbursePending={viewModel.reimbursePending}
+            ownView={vm.ownView}
+            loading={vm.loading || vm.queryFailed}
+            onCreate={vm.form.openCreate}
+            onReimburse={vm.actions.openReimburse}
+            reimbursePending={vm.actions.pending}
           />
         }
       >
         <OperatorReimbursementsFilterSection
           copy={copy.filters}
           locale={locale}
-          onPeriodFilterChange={viewModel.setPeriodFilter}
-          onReset={viewModel.resetFilters}
-          onSearchQueryChange={viewModel.setSearchQuery}
-          onStatusFilterChange={viewModel.setStatusFilter}
-          periodFilter={viewModel.periodFilter}
-          periodOptions={viewModel.periodOptions}
-          searchQuery={viewModel.searchQuery}
-          statusFilter={viewModel.statusFilter}
+          owner={vm.filters.owner}
+          operators={vm.data.operators}
+          onOwnerChange={(value) => vm.changeFilter("owner", value)}
+          onPeriodFilterChange={(value) => vm.changeFilter("period", value)}
+          onReset={vm.resetFilters}
+          onSearchQueryChange={(value) => vm.changeFilter("search", value)}
+          onStatusFilterChange={(value) => vm.changeFilter("status", value)}
+          periodFilter={vm.filters.period}
+          periodOptions={vm.data.periodOptions}
+          searchQuery={vm.filters.search}
+          statusFilter={vm.filters.status}
         />
-        <OperatorReimbursementsSummarySection
-          copy={copy.summary}
-          currentPeriod={viewModel.currentPeriod}
-          locale={locale}
-          reimbursements={viewModel.reimbursements}
-        />
-        <OperatorReimbursementsListSection
-          copy={copy.list}
-          locale={locale}
-          onDelete={viewModel.handleDelete}
-          pendingAction={viewModel.pendingAction}
-          reimbursements={viewModel.filteredReimbursements}
-        />
+        <OperatorReimbursementsResults vm={vm} copy={copy} locale={locale} />
       </DashboardPageShell>
-
       <OperatorReimbursementFormDialog
         copy={copy.dialog}
-        feedback={viewModel.dialogFeedback}
-        formState={viewModel.formState}
-        onOpenChange={viewModel.handleDialogOpenChange}
-        onSubmit={() => void viewModel.handleSubmit()}
-        onUpdateField={viewModel.updateFormField}
-        open={viewModel.dialogOpen}
-        pending={viewModel.submitPending}
+        feedback={vm.form.feedback}
+        formState={vm.form.form}
+        onOpenChange={vm.form.changeOpen}
+        onSubmit={() => void vm.form.submit()}
+        onUpdateField={vm.form.updateField}
+        open={vm.form.open}
+        pending={vm.form.pending}
+      />
+      <OperatorReimbursementConfirmDialog
+        actions={vm.actions}
+        periods={vm.data.ownPendingPeriods}
+        copy={copy.confirm}
+        locale={locale}
       />
     </>
   );
-}
-
-type TranslationValues = Record<string, string | number>;
-type Translator = (key: string, values?: TranslationValues) => string;
-
-function createOperatorReimbursementsCopy(t: Translator) {
-  const statusOptions: Record<OperatorReimbursementStatus, string> = {
-    reimbursed: t("status.reimbursed"),
-    unreimbursed: t("status.unreimbursed"),
-  };
-
-  return {
-    dialog: {
-      amountLabel: t("dialog.amountLabel"),
-      cancel: t("dialog.cancel"),
-      contentLabel: t("dialog.contentLabel"),
-      contentPlaceholder: t("dialog.contentPlaceholder"),
-      createDescription: t("dialog.createDescription"),
-      createSubmit: t("dialog.createSubmit"),
-      createTitle: t("dialog.createTitle"),
-      spentAtLabel: t("dialog.spentAtLabel"),
-    },
-    feedback: {
-      createSuccess: t("feedback.createSuccess"),
-      deleteConfirm: (content: string) =>
-        t("feedback.deleteConfirm", { content }),
-      deleteLockedError: t("feedback.deleteLockedError"),
-      deleteSuccess: t("feedback.deleteSuccess"),
-      invalidAmount: t("feedback.invalidAmount"),
-      invalidDate: t("feedback.invalidDate"),
-      missingAmount: t("feedback.missingAmount"),
-      missingContent: t("feedback.missingContent"),
-      notFoundError: t("feedback.notFoundError"),
-      permissionError: t("feedback.permissionError"),
-      reimburseEmpty: t("feedback.reimburseEmpty"),
-      reimburseSuccess: (count: number) =>
-        t("feedback.reimburseSuccess", { count }),
-      unknownError: t("feedback.unknownError"),
-    },
-    filters: {
-      allPeriods: t("filters.allPeriods"),
-      allStatuses: t("filters.allStatuses"),
-      periodLabel: t("filters.periodLabel"),
-      searchPlaceholder: t("filters.searchPlaceholder"),
-      statusLabel: t("filters.statusLabel"),
-      statusOptions,
-    },
-    header: {
-      create: t("header.create"),
-      currentPeriodLabel: t("header.currentPeriodLabel"),
-      reimburseCurrent: t("header.reimburseCurrent"),
-      title: t("header.title"),
-    },
-    list: {
-      amount: t("list.amount"),
-      delete: t("list.delete"),
-      emptyDescription: t("list.emptyDescription"),
-      emptyTitle: t("list.emptyTitle"),
-      period: t("list.period"),
-      recordsTitle: t("list.recordsTitle"),
-      reimbursedAt: t("list.reimbursedAt"),
-      spentAt: t("list.spentAt"),
-      status: t("list.status"),
-      statusOptions,
-      updatedAt: t("list.updatedAt"),
-    },
-    noPermissionDescription: t("noPermissionDescription"),
-    noPermissionTitle: t("noPermissionTitle"),
-    summary: {
-      count: (count: number) => t("summary.count", { count }),
-      currentPeriod: t("summary.currentPeriod"),
-      currentReimbursed: t("summary.currentReimbursed"),
-      currentUnreimbursed: t("summary.currentUnreimbursed"),
-      totalUnreimbursed: t("summary.totalUnreimbursed"),
-    },
-  };
 }
