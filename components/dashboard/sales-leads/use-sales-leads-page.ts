@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
@@ -33,32 +33,40 @@ export function useSalesLeadsPage(initialData: SalesLeadPageData) {
   const [action, setAction] = useState<LeadAction | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestVersion = useRef(0);
 
   const refresh = useCallback(async (nextBoard = board, nextOffset = 0) => {
     const supabase = getBrowserSupabaseClient();
     if (!supabase) return;
+    // 翻页是明确的新读取操作，取消尚未开始的首屏/搜索延迟刷新，防止随后被第一页覆盖。
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    const version = ++requestVersion.current;
     setPending("refresh");
     setError(null);
     try {
-      setData(
-        await fetchSalesLeadPage(supabase, {
+      const nextData = await fetchSalesLeadPage(supabase, {
           board: nextBoard,
           canManage: initialData.canManage,
           search,
           assigneeUserId,
           offset: nextOffset,
-        }),
-      );
+        });
+      // 较早的慢请求可以完成，但不得覆盖用户最后一次筛选或分页的结果。
+      if (version === requestVersion.current) setData(nextData);
     } catch (nextError) {
-      setError(getLeadErrorCode(nextError));
+      if (version === requestVersion.current) setError(getLeadErrorCode(nextError));
     } finally {
-      setPending(null);
+      if (version === requestVersion.current) setPending(null);
     }
   }, [assigneeUserId, board, initialData.canManage, search]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => void refresh(board, 0), 300);
-    return () => window.clearTimeout(timeout);
+    refreshTimer.current = setTimeout(() => void refresh(board, 0), 300);
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      requestVersion.current += 1;
+    };
   }, [board, search, assigneeUserId, refresh]);
 
   const openDetail = useCallback(async (lead: SalesLead) => {

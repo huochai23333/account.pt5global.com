@@ -12,6 +12,7 @@ export type SalesLead = {
   priority: "A" | "B" | "C";
   contact_today: boolean;
   target_customer: string | null;
+  customer_profile: string | null;
   public_pricing: string | null;
   recommended_approach: string | null;
   contact_talking_points: string | null;

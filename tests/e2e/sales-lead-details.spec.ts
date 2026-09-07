@@ -8,6 +8,7 @@ const publicFields = {
   country: "国家或地区", region_timezone: "所在地区与时区", email: "邮箱", phone: "电话",
   whatsapp: "WhatsApp", website_url: "网站", public_contact: "公开联系方式", community_url: "社群入口",
   target_customer: "目标客户", public_pricing: "公开收费与门槛", recommended_approach: "建议联系方法",
+  customer_profile: "客户画像",
   contact_talking_points: "联系话术", source_url: "资料来源", source_notes: "注意事项",
 } as const;
 
@@ -40,6 +41,8 @@ test.describe("sales lead complete details", () => {
     test(`${role} sees every public field from the actual local response`, async ({ page }) => {
       await loginAs(page, role);
       await page.goto(`/${role === "administrator" ? "admin" : role}/wholesale/leads`);
+      // 此用例继续专门验证完整卡片，列表和展开资料在双视图用例中验收。
+      await page.getByRole("button", { name: "卡片", exact: true }).click();
       const detail = await openFirstDetail(page);
       const dialog = page.getByRole("dialog");
       await expect(dialog.getByRole("heading", { name: detail.lead.name, exact: true })).toBeVisible();

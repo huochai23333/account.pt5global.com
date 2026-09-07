@@ -4112,6 +4112,7 @@
     }
   },
   "SalesLeads": {
+    "view": {"label":"展示方式","list":"列表","card":"卡片","expand":"展开资料","collapse":"收起资料"},
     "rules": {"title":"认领与跟进规则","firstContact":{"title":"3 天内首次联系","description":"认领后 3 天内没有记录首次联系，线索会自动退回大厅。"},"followUp":{"title":"每 7 天持续跟进","description":"首次联系后，连续 7 天没有新的联系记录，线索会自动退回大厅。"},"claimPeriod":{"title":"每次认领最多 30 天","description":"认领满 30 天仍未标记已使用，即使持续联系，也会自动退回大厅。"},"shared":"管理员和业务员遵循相同规则。重新认领后开始新的周期，负责人可查看此前联系记录；认领数量不限。"},
     "header": {"badge":"客户线索","title":"线索大厅","description":"认领潜在客户、记录每次联系，并在有效期内持续推进。"},
     "boards": {"hall":"线索大厅","mine":"我的线索","used":"我已使用","allClaimed":"全部认领"},
@@ -4119,7 +4120,7 @@
     "status": {"hall":"大厅","claimed":"已认领","used":"已使用"},
     "actions": {"claimForMe":"认领给自己","claim":"认领线索","details":"查看详情","addContact":"记录联系","return":"退回大厅","markUsed":"标记已使用","assign":"安排业务员","reopen":"重新开放","syncNow":"立即同步","cancel":"取消"},
     "filters": {"searchLabel":"搜索线索","searchPlaceholder":"搜索名称、国家、邮箱或电话","assignee":"筛选业务员","allSalespeople":"全部业务员"},
-    "fields": {"country":"国家或地区","email":"邮箱","phone":"电话","whatsapp":"WhatsApp","website":"网站","publicContact":"公开联系方式","recommendedApproach":"建议联系方法","timeRemaining":"剩余联系时间","assignee":"当前负责人","nextFollowUp":"下次跟进","sourceDate":"线索日期","channel":"联系方法","outcome":"联系结果","contactNote":"联系备注","sourceId":"线索编号","category":"类型","regionTimezone":"所在地区与时区","priority":"联系优先级","contactToday":"今日联系建议","community":"社群入口","targetCustomer":"目标客户","publicPricing":"公开收费与门槛","talkingPoints":"联系话术","sourceUrl":"资料来源","sourceNotes":"注意事项","status":"当前状态","claimedAt":"认领时间","firstContact":"首次联系","lastContact":"最近联系","expiresAt":"本次联系截止","hardDeadline":"认领周期截止","usedAt":"使用时间","usedSummary":"使用结果"},
+    "fields": {"country":"国家或地区","email":"邮箱","phone":"电话","whatsapp":"WhatsApp","website":"网站","publicContact":"公开联系方式","recommendedApproach":"建议联系方法","timeRemaining":"剩余联系时间","assignee":"当前负责人","nextFollowUp":"下次跟进","sourceDate":"线索日期","channel":"联系方法","outcome":"联系结果","contactNote":"联系备注","sourceId":"线索编号","category":"类型","regionTimezone":"所在地区与时区","priority":"联系优先级","contactToday":"今日联系建议","community":"社群入口","customerProfile":"客户画像","targetCustomer":"目标客户","publicPricing":"公开收费与门槛","talkingPoints":"联系话术","sourceUrl":"资料来源","sourceNotes":"注意事项","status":"当前状态","claimedAt":"认领时间","firstContact":"首次联系","lastContact":"最近联系","expiresAt":"本次联系截止","hardDeadline":"认领周期截止","usedAt":"使用时间","usedSummary":"使用结果"},
     "countdown": {"expired":"已到期","daysHours":"{days} 天 {hours} 小时","hoursMinutes":"{hours} 小时 {minutes} 分钟"},
     "detail": {"description":"查看完整公开资料和跟进记录。","contactHistory":"联系记录","assignmentHistory":"认领记录","recordedBy":"记录人：{name}","noContacts":"还没有联系记录。","noAssignments":"还没有认领记录。","notProvided":"未提供","basicInfo":"基本资料","publicContacts":"公开联系方式","cooperation":"合作建议","sourceInfo":"来源与提醒","progress":"跟进进度","recommendedToday":"建议今天联系","normalSchedule":"按计划联系"},
     "channels": {"phone":"电话","email":"邮件","whatsapp":"WhatsApp","social":"社交平台","video":"视频通话","other":"其他方式"},
@@ -4133,8 +4134,8 @@
       "reopen": {"title":"重新开放线索","description":"线索会回到大厅，等待业务员重新认领。","reasonLabel":"重新开放原因","notePlaceholder":"说明为什么需要重新开放","submit":"确认重新开放"}
     },
     "states": {"emptyTitle":"当前没有符合条件的线索","emptyDescription":"可以更换分类或搜索条件后再查看。","noPermissionTitle":"无法查看线索","noPermissionDescription":"线索大厅只向管理员和业务员开放。"},
-    "list": {"title":"线索列表"},
-    "sync": {"lastSuccess":"最近同步成功","recentRuns":"最近同步记录","failed":"上一次同步没有完成，系统会自动重试。"},
+    "list": {"title":"线索","name":"线索名称与类型","location":"国家与地区","priorityStatus":"优先级与状态","contacts":"联系方式","followUp":"负责人及跟进时间","actions":"操作"},
+    "sync": {"missingSource":"{dates} 的来源资料尚未补齐，其他完整资料会继续同步。","lastSuccess":"最近同步成功","recentRuns":"最近同步记录","failed":"上一次同步没有完成，系统会自动重试。"},
     "pagination": {"previous":"上一页","next":"下一页"},
     "errors": {"unknown":"操作没有完成，请稍后重试。","sales_lead_already_claimed":"这条线索刚刚已被其他业务员认领。","sales_lead_not_active":"这条线索已过期或不再由当前账号处理。","sales_lead_contact_not_owned":"只能为自己当前认领的线索记录联系。","sales_lead_return_not_owned":"只能退回自己当前认领的线索。","sales_lead_use_not_owned":"只能确认自己当前认领的线索。","sales_lead_follow_up_must_be_future":"下次跟进时间必须晚于当前时间。","sales_lead_reason_required":"请填写至少两个字的说明。","sales_lead_used_locked":"已使用的线索需要先由管理员重新开放。","sales_lead_assignee_invalid":"请选择仍在职的业务员。","sales_lead_read_not_allowed":"当前账号不能查看这条线索。"}
   },

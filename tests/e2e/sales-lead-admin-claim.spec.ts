@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { loginAs, setTestLocale } from "./helpers/auth";
 
 async function openLead(page: Page, name: string) {
-  await page.getByTestId("sales-lead-list").locator("article").filter({ has: page.getByRole("heading", { name, exact: true }) })
+  await page.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').filter({ has: page.getByRole("heading", { name, exact: true }) })
     .getByRole("button", { name: "查看详情" }).click();
 }
 
@@ -49,7 +49,7 @@ test.describe("lead rules and administrator claims", () => {
   test("administrator claims for self, records contact, returns, reclaims and uses the lead", async ({ page }) => {
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/leads");
-    const card = page.getByTestId("sales-lead-list").locator("article").first();
+    const card = page.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').first();
     const name = (await card.getByRole("heading").innerText()).trim();
     const claimId = (await card.getByRole("button", { name: "认领给自己" }).getAttribute("data-testid"))!;
     await page.getByTestId(claimId).click();
@@ -88,7 +88,7 @@ test.describe("lead rules and administrator claims", () => {
     await loginAs(sales, "salesman");
     await admin.goto("/admin/wholesale/leads");
     await sales.goto("/salesman/wholesale/leads");
-    const card = admin.getByTestId("sales-lead-list").locator("article").first();
+    const card = admin.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').first();
     const name = (await card.getByRole("heading").innerText()).trim();
     const id = (await card.getByRole("button", { name: "认领给自己" }).getAttribute("data-testid"))!;
     await expect(sales.getByTestId(id)).toBeVisible();

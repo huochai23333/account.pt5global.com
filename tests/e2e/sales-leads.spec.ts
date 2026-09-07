@@ -24,7 +24,7 @@ test.describe.serial("sales lead hall", () => {
     const claimTestId = await firstPage.locator('[data-testid^="claim-lead-"]').first().getAttribute("data-testid");
     expect(claimTestId).toBeTruthy();
     const leadId = claimTestId!.replace("claim-lead-", "");
-    const leadCard = firstPage.locator("article").filter({ has: firstPage.locator(`[data-testid="${claimTestId}"]`) });
+    const leadCard = firstPage.locator('[data-testid^="sales-lead-row-"]').filter({ has: firstPage.locator(`[data-testid="${claimTestId}"]`) });
     const leadName = (await leadCard.getByRole("heading").innerText()).trim();
 
     // 直接触发两个已渲染按钮，避免页面的列表进入动画让 Playwright 自动等待错开两次请求。
@@ -80,8 +80,8 @@ test.describe.serial("sales lead hall", () => {
     await page.goto("/admin/wholesale/leads");
     await expect(page.getByRole("button", { name: "立即同步" })).toBeVisible();
     await page.getByRole("button", { name: "我已使用" }).click();
-    await expect(page.locator("article").getByText("已使用", { exact: true }).first()).toBeVisible();
-    const usedCard = page.locator("article").first();
+    await expect(page.locator('[data-testid^="sales-lead-row-"]').getByText("已使用", { exact: true }).first()).toBeVisible();
+    const usedCard = page.locator('[data-testid^="sales-lead-row-"]').first();
     const usedLeadName = (await usedCard.getByRole("heading").innerText()).trim();
     await usedCard.getByRole("button", { name: "查看详情" }).click();
     await page.getByRole("button", { name: "重新开放" }).click();
@@ -120,7 +120,7 @@ test.describe.serial("sales lead hall", () => {
 });
 
 async function openLead(page: Page, leadName: string) {
-  const card = page.locator("article").filter({ has: page.getByRole("heading", { name: leadName }) });
+  const card = page.locator('[data-testid^="sales-lead-row-"]').filter({ has: page.getByRole("heading", { name: leadName }) });
   await card.getByRole("button", { name: "查看详情" }).click();
 }
 
