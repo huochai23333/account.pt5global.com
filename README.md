@@ -135,6 +135,7 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 - `NEXT_PUBLIC_SITE_URL` 用于邮箱确认等服务端回跳地址，线上必须填写包含 `https://` 的完整站点根地址，并与 Supabase Auth 的 Site URL 保持一致；未配置或格式无效时自动使用默认线上域名，避免确认邮件和退出登录入口返回 500。
 - `SUPABASE_SERVICE_ROLE_KEY` 只允许服务端脚本或受控管理任务使用，不能暴露到前端。
 - `EMAILCONNECT_BASE_URL`、`EMAILCONNECT_INSTALLATION_ID` 和 `EMAILCONNECT_SIGNING_SECRET` 只供 Next.js 服务端调用独立 EmailConnect；签名密钥不能写入 `NEXT_PUBLIC_*` 或交给浏览器。EmailConnect 反向验证人员状态时调用 `/api/integrations/emailconnect/verify-users`。
+- 人员反向验证失败时，运行日志只记录失败的查询阶段和 Supabase 诊断字段，不记录人员 UUID、邮箱或任何密钥。
 - `EXCHANGE_RATE_API_KEY` 只配置为 Supabase Edge Function secret。
 - `LOGISTICS_SOURCE_ARCHIVE_API_URL` 和 `LOGISTICS_SOURCE_ARCHIVE_API_TOKEN` 只配置为 Supabase Edge Function secrets，用于把店小秘必要物流字段归档到主系统，不暴露到浏览器端；同步只调用来源项目的受控接口。
 - `USER_MEDIA_IMAGE_REVIEW_PROVIDER` 和真实内容安全供应商密钥只配置为 Supabase Function secrets，默认 provider 为 `disabled`。

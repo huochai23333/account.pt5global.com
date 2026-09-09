@@ -15,8 +15,22 @@ export async function verifyEmailConnectUsers(externalUserIds: string[]) {
     supabase.from("user_roles_data").select("user_id,role_id").in("user_id", userIds),
     supabase.from("user_roles").select("id,role"),
   ]);
-  for (const result of [profilesResult, roleLinksResult, rolesResult]) {
-    if (result.error) throw new Error("人员状态暂时无法确认。", { cause: result.error });
+  const queryResults = [
+    ["profiles", profilesResult],
+    ["role-links", roleLinksResult],
+    ["roles", rolesResult],
+  ] as const;
+  for (const [query, result] of queryResults) {
+    if (!result.error) continue;
+    // 生产日志只记录查询阶段和 Supabase 返回的诊断字段，不写入人员 UUID、邮箱或服务密钥。
+    console.error("EmailConnect 人员查询失败", {
+      query,
+      code: result.error.code,
+      message: result.error.message,
+      details: result.error.details,
+      hint: result.error.hint,
+    });
+    throw new Error("人员状态暂时无法确认。", { cause: result.error });
   }
   const rolesById = new Map(
     (rolesResult.data ?? []).map((row) => [row.id, row.role as AppRole]),
