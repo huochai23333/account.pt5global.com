@@ -20,6 +20,7 @@ import { getReviewStatusTone } from "@/components/dashboard/dashboard-shared-ui"
 import { Button } from "@/components/ui/button";
 
 import { DashboardAccountCenterSection } from "./dashboard-account-center-section";
+import { EmailReminderEntryCard } from "./email-reminder-entry-card";
 import type { DashboardMyCopy } from "./dashboard-shared-my-copy";
 import { DashboardAccountSwitcherSection } from "./dashboard-account-switcher-section";
 import {
@@ -31,6 +32,7 @@ import type { DashboardSharedMyState } from "./use-dashboard-shared-my-state";
 
 type DashboardSharedMySectionsProps = {
   copy: DashboardMyCopy;
+  emailReminderHref?: string | null;
   state: Pick<
     DashboardSharedMyState,
     | "account"
@@ -67,6 +69,7 @@ const SECTION_ITEMS = [
 
 export function DashboardSharedMySections({
   copy,
+  emailReminderHref,
   state,
 }: DashboardSharedMySectionsProps) {
   const { account, accountSwitcher, assetDialog, page, profileDialog, ui } =
@@ -97,6 +100,8 @@ export function DashboardSharedMySections({
       <SectionNavigation copy={copy} />
 
       <PersonalCenterSection account={account} copy={copy} />
+
+      {emailReminderHref ? <EmailReminderEntryCard href={emailReminderHref} /> : null}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <ProfileInfoSection

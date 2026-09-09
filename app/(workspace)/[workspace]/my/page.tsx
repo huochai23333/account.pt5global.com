@@ -15,7 +15,8 @@ export default async function WorkspaceMyPage({
 }: WorkspaceMyPageProps) {
   const { workspace } = await params;
 
-  if (!getWorkspaceConfigByRouteSegment(workspace)) {
+  const workspaceConfig = getWorkspaceConfigByRouteSegment(workspace);
+  if (!workspaceConfig) {
     notFound();
   }
 
@@ -28,9 +29,12 @@ export default async function WorkspaceMyPage({
 
   return (
     <ScopedIntlProvider
-      namespaces={["DashboardMy", "DashboardMyState", "DashboardShared"]}
+      namespaces={["DashboardMy", "DashboardMyState", "DashboardShared", "EmailReminders"]}
     >
-      <DashboardSharedMyClient initialData={bundle} />
+      <DashboardSharedMyClient
+        emailReminderHref={workspaceConfig.authRole === "client" ? null : "/email-reminders"}
+        initialData={bundle}
+      />
     </ScopedIntlProvider>
   );
 }

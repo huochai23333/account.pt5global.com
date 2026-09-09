@@ -15,6 +15,8 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        // 本地回归复用已经安装的稳定版 Chrome，避免浏览器包版本锁影响页面验收。
+        channel: "chrome",
       },
     },
   ],
