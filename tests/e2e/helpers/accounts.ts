@@ -94,6 +94,11 @@ export function getPeerSalesmanRegressionAccount(): RegressionAccount | null {
   return getSpecialLocalAccount("local.peer-salesman@", "salesman");
 }
 
+export function getPeerOperatorRegressionAccount(): RegressionAccount | null {
+  // 第二个运营只存在于本地 Docker，用于需要隔离本人批量写入的报销回归。
+  return getSpecialLocalAccount("local.peer-operator@", "operator");
+}
+
 function getSpecialLocalAccount(
   emailPrefix: string,
   role: RegressionRole,

@@ -20,6 +20,7 @@ import { EmptyState } from "../dashboard-shared-ui";
 import {
   formatOperatorReimbursementAmount,
   formatOperatorReimbursementDate,
+  formatOperatorReimbursementDateTime,
   formatOperatorReimbursementPeriod,
 } from "./operator-reimbursements-display";
 
@@ -165,14 +166,14 @@ function OperatorReimbursementCard({
               {copy.statusOptions[reimbursement.status]}
             </MetaItem>
             <MetaItem label={copy.reimbursedAt}>
-              {formatOperatorReimbursementDate(
+              {formatOperatorReimbursementDateTime(
                 reimbursement.reimbursed_at,
                 locale,
               )}
             </MetaItem>
             <MetaItem label={copy.updatedAt}>
-              {formatOperatorReimbursementDate(
-                reimbursement.updated_at.slice(0, 10),
+              {formatOperatorReimbursementDateTime(
+                reimbursement.updated_at,
                 locale,
               )}
             </MetaItem>

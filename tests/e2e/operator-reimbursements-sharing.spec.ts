@@ -1,45 +1,12 @@
-import { execFileSync } from "node:child_process";
 import { expect, test, type Page } from "@playwright/test";
 import { loginAs, loginWithAccount } from "./helpers/auth";
 import { getRegressionAccount } from "./helpers/accounts";
+import { runLocalSupabaseSql as sql } from "./helpers/local-supabase";
 import { chooseSelectOption } from "./helpers/select-control";
 
 const ownerId = "33333333-3333-4333-8333-333333333333";
 const peerId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const marker = `协作报销回归-${Date.now()}`;
-
-/** 仅向这个本地 Docker 写入测试记录，命令参数与 SQL 输入分开，不经过 shell 拼接。 */
-function sql(statement: string) {
-  if (
-    !/^http:\/\/(127\.0\.0\.1|localhost):54321\/?$/.test(
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    )
-  ) {
-    throw new Error(
-      "This test requires the local Docker Supabase on port 54321.",
-    );
-  }
-  return execFileSync(
-    "docker",
-    [
-      "exec",
-      "-i",
-      "supabase_db_pt5-dropshipping",
-      "psql",
-      "-U",
-      "postgres",
-      "-d",
-      "postgres",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-At",
-    ],
-    {
-      input: statement,
-      encoding: "utf8",
-    },
-  ).trim();
-}
 
 async function waitForRecords(page: Page) {
   await expect(page.getByText("正在读取报销记录…")).toHaveCount(0);
@@ -55,7 +22,142 @@ test.describe("operator reimbursement sharing and historical periods", () => {
       select '${ownerId}', '2024-07-25', '${marker} 历史费用 ' || n, 1 from generate_series(1,205) n;
       insert into public.operator_reimbursements(operator_user_id,spent_at,content,amount) values
       ('${peerId}','2024-07-25','${marker} 同事费用',99),
-      ('${ownerId}','2024-08-25','${marker} 其他周期',7);`);
+      ('${ownerId}','2024-08-25','${marker} 其他周期',7),
+      ('${ownerId}','2024-09-02','${marker} 竞态删除',8),
+      ('${peerId}','2024-09-01','${marker} 上海时间边界',1);
+
+      -- 测试需要同时固定报销时间和更新时间。临时关闭触发器后直接写入完整时间戳，
+      -- 才能稳定覆盖 UTC 前一天 16:30 对应上海次日 00:30 的跨日边界。
+      set session_replication_role = replica;
+      update public.operator_reimbursements
+      set status = 'reimbursed',
+          reimbursed_at = '2026-09-08T16:30:00Z',
+          reimbursed_by_user_id = '${peerId}',
+          updated_at = '2026-09-08T16:30:00Z'
+      where content = '${marker} 上海时间边界';
+      set session_replication_role = origin;`);
+  });
+
+  test("search waits 300ms and sends only the final query", async ({ page }) => {
+    await loginAs(page, "operator");
+    await page.goto("/operator/reimbursements");
+    await waitForRecords(page);
+
+    let requestCount = 0;
+    await page.route(
+      "**/rest/v1/rpc/get_operator_reimbursements_page",
+      async (route) => {
+        const payload = route.request().postDataJSON() as {
+          p_search?: string | null;
+        };
+        // 页面挂载或工作区同步可能并行读取空搜索；这里只统计由关键词触发的 RPC。
+        if (payload.p_search) requestCount += 1;
+        await route.continue();
+      },
+    );
+
+    // 快速连续替换三个输入值；最后一次输入后的 100ms 仍小于 300ms，期间不应查询。
+    const searchbox = page.getByRole("searchbox");
+    await searchbox.fill("de");
+    await searchbox.fill("debou");
+    await searchbox.fill("debounce");
+    await page.waitForTimeout(100);
+    expect(requestCount).toBe(0);
+    await expect.poll(() => requestCount, { timeout: 1_500 }).toBe(1);
+    await waitForRecords(page);
+  });
+
+  test("a delayed delete refreshes the latest operator scope", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    const deleteGate = createGate();
+    const firstPeerQueryGate = createGate();
+    const deleteStarted = createSignal();
+    const firstPeerQueryStarted = createSignal();
+    const secondPeerQueryStarted = createSignal();
+    let peerQueryCount = 0;
+
+    await loginAs(page, "operator");
+    await page.goto("/operator/reimbursements");
+    await page.getByRole("searchbox").fill(marker);
+    await waitForRecords(page);
+
+    await page.route("**/rest/v1/operator_reimbursements*", async (route) => {
+      if (route.request().method() !== "DELETE") {
+        await route.continue();
+        return;
+      }
+      deleteStarted.resolve();
+      await deleteGate.promise;
+      await route.continue();
+    });
+    await page.route(
+      "**/rest/v1/rpc/get_operator_reimbursements_page",
+      async (route) => {
+        const payload = route.request().postDataJSON() as {
+          p_owner?: string | null;
+        };
+        if (payload.p_owner !== peerId) {
+          await route.continue();
+          return;
+        }
+        peerQueryCount += 1;
+        if (peerQueryCount === 1) {
+          firstPeerQueryStarted.resolve();
+          await firstPeerQueryGate.promise;
+        } else {
+          secondPeerQueryStarted.resolve();
+        }
+        await route.continue();
+      },
+    );
+
+    const row = page.locator("article").filter({
+      hasText: `${marker} 竞态删除`,
+    });
+    await row.getByRole("button", { name: "删除", exact: true }).click();
+    await page
+      .getByRole("dialog", { name: "请确认这项操作", exact: true })
+      .getByRole("button", { name: "确认操作", exact: true })
+      .click();
+    await deleteStarted.promise;
+
+    await chooseSelectOption(
+      page.getByRole("combobox", { name: "运营", exact: true }),
+      { value: peerId },
+    );
+    await firstPeerQueryStarted.promise;
+
+    // 删除完成后必须再次读取当前已选中的同事范围，不能回到删除开始时的“我的记录”。
+    deleteGate.resolve();
+    await secondPeerQueryStarted.promise;
+    firstPeerQueryGate.resolve();
+    await waitForRecords(page);
+    await expect(
+      page.getByText(`${marker} 同事费用`, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "本地协作运营的费用汇总" }),
+    ).toBeVisible();
+  });
+
+  test("timestamps use the Shanghai cross-day boundary", async ({ page }) => {
+    await loginWithAccount(page, {
+      ...getRegressionAccount("operator"),
+      email: "local.peer-operator@bs.test",
+    });
+    await page.goto("/operator/reimbursements");
+    await page.getByRole("searchbox").fill(`${marker} 上海时间边界`);
+    await waitForRecords(page);
+
+    const row = page.locator("article").filter({
+      hasText: `${marker} 上海时间边界`,
+    });
+    // 同一时刻分别出现在“报销时间”和“更新时间”，两处都应跨到上海次日。
+    await expect(
+      row.getByText("2026年9月9日 00:30", { exact: true }),
+    ).toHaveCount(2);
   });
   test.afterAll(() => {
     sql(
@@ -261,4 +363,18 @@ async function expectNoOverflow(page: Page) {
         .map((button) => button.textContent),
     );
   expect(overflow).toEqual([]);
+}
+
+/** 创建一个由测试主动放行的异步闸门，用来稳定排列并发请求的先后顺序。 */
+function createGate() {
+  let resolve: () => void = () => undefined;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+/** 创建只等待事件发生、不参与阻塞的信号，避免依赖不稳定的固定等待时间。 */
+function createSignal() {
+  return createGate();
 }

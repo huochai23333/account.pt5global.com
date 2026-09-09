@@ -76,14 +76,33 @@ export function formatOperatorReimbursementDate(
   value: string | null,
   locale: string,
 ) {
-  if (!value) {
-    return "-";
-  }
+  if (!value || !isDateInputValue(value)) return "-";
+
+  // date 字段没有时刻含义，固定按上海零点解析可以避免浏览器所在时区改变业务日期。
+  const date = new Date(`${value}T00:00:00+08:00`);
+  if (Number.isNaN(date.getTime())) return "-";
 
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeZone: "Asia/Shanghai",
-  }).format(new Date(`${value.slice(0, 10)}T00:00:00+08:00`));
+  }).format(date);
+}
+
+export function formatOperatorReimbursementDateTime(
+  value: string | null,
+  locale: string,
+) {
+  if (!value) return "-";
+
+  // timestamptz 必须保留完整时刻再转上海时间；截取前十位会误用 UTC 日期。
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Shanghai",
+  }).format(date);
 }
 
 export function formatOperatorReimbursementPeriod(
@@ -146,7 +165,20 @@ export function toOperatorReimbursementErrorMessage(
 }
 
 function isDateInputValue(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  // Date 会把 2 月 30 日自动顺延到 3 月；回读年月日才能确认它是真实日历日期。
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 function getTodayDateInputValue() {
