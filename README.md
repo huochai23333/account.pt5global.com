@@ -538,6 +538,9 @@ PT5-dropshipping-web/
 
 ## 部署与上传
 
+正式入口为 `https://account.pt5global.com`。Hostinger 的 `public_html/.htaccess` 使用 `PT5 CANONICAL HOST` 规则块，将本站 www 别名在进入 Node.js 前以 308 跳转到正式入口，保留路径、查询参数和请求方法；路径从原始 `THE_REQUEST` 提取，避免中文编码被提前解码。
+重新部署会重新生成 `.htaccess`。部署前备份，部署后保留平台新生成的应用路径、启动参数及访问保护，检查并按需恢复该规则块。通过正式入口、www 编码路径、静态资源、登录后页面和独立实例数量检查后，才算部署验收完成；不能整份覆盖为旧部署配置。
+
 部署建议：
 
 - Framework：`Next.js`
