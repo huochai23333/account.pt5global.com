@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export type DesktopBusinessGroupLabel = "旅游业务" | "批发业务";
+export type DesktopBusinessGroupLabel = "批发业务";
 
 /** 返回桌面左侧栏中的业务分组按钮，避免误选到移动端菜单里的同名文字。 */
 export function getDesktopBusinessGroupButton(
@@ -46,8 +46,7 @@ export async function setDesktopBusinessGroupExpanded(
   return button;
 }
 
-/** 把管理员共享测试账号恢复为系统最初的稳定状态：只展开旅游业务。 */
+/** 把管理员共享测试账号恢复为当前稳定状态：展开唯一启用的批发业务。 */
 export async function restoreDefaultAdminBusinessGroups(page: Page) {
-  await setDesktopBusinessGroupExpanded(page, "旅游业务", true);
-  await setDesktopBusinessGroupExpanded(page, "批发业务", false);
+  await setDesktopBusinessGroupExpanded(page, "批发业务", true);
 }

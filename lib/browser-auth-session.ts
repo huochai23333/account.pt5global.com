@@ -7,6 +7,7 @@ export function signOutCurrentBrowserSession(
   supabase: SupabaseClient | null,
   destination = "/login",
 ) {
+  // verified-auth-signout: 页面不宣称退出接口成功；先清理本地会话，再由服务端退出路由清理 Cookie。
   void supabase?.auth.signOut({ scope: "local" }).catch(() => undefined);
   clearSupabaseBrowserSession();
 
@@ -16,6 +17,7 @@ export function signOutCurrentBrowserSession(
 }
 
 export async function clearCurrentBrowserSession(supabase: SupabaseClient | null) {
+  // verified-auth-signout: 登录前清场只以本地存储和 Cookie 清理为完成条件，不显示成功提示。
   await supabase?.auth.signOut({ scope: "local" }).catch(() => undefined);
   clearSupabaseBrowserSession();
 }

@@ -10,20 +10,24 @@ test("客户列表使用低强调分隔线并在移动端切换为卡片", async
   await loginAs(page, "administrator");
 
   await page.setViewportSize({ height: 900, width: 1440 });
-  await page.goto("/admin/tourism/customers");
+  // 使用当前启用且确实渲染桌面表格/移动卡片的批发客户列表。
+  await page.goto("/admin/wholesale/customers");
   await expectWorkspaceShell(page);
   await expectNotForbiddenPage(page);
 
   const tableRows = page.locator("table tbody tr");
   await expect(tableRows.nth(1)).toBeVisible();
-  const dividerColors = await readDividerColors(tableRows.nth(1));
+  // 批发共享表格把分隔线画在单元格底部，读取行本身只会得到全局默认边框色。
+  const dividerColors = await readDividerColors(
+    tableRows.nth(1).locator("td").first(),
+  );
 
   // 分隔线必须跟随低强调边界令牌，不能再次借用高权重的图表品牌色。
   expect(dividerColors.actual).toBe(dividerColors.subtle);
   expect(dividerColors.actual).not.toBe(dividerColors.chart);
 
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/admin/tourism/customers");
+  await page.goto("/admin/wholesale/customers");
   await expect(page.locator("table:visible")).toHaveCount(0);
   await expect(
     page
@@ -41,10 +45,10 @@ async function readDividerColors(row: Locator) {
     probe.style.color = "var(--chart-1)";
     document.body.append(probe);
 
-    const rowStyle = window.getComputedStyle(element);
+    const cellStyle = window.getComputedStyle(element);
     const probeStyle = window.getComputedStyle(probe);
     const colors = {
-      actual: rowStyle.borderTopColor,
+      actual: cellStyle.borderBottomColor,
       chart: probeStyle.color,
       subtle: probeStyle.borderTopColor,
     };

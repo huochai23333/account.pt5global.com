@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
+import {
+  removeStorageObjectsVerified,
+  requireRegisteredStorageRows,
+  requireStorageUploadReceipt,
+} from "./storage-operation-receipts";
 import { getFileExtension, sanitizeStorageFileName } from "./value-normalizers";
 
 export const WHOLESALE_ORDER_LIST_BUCKET = "wholesale-order-lists";
@@ -103,7 +108,7 @@ export async function uploadWholesaleOrderListFiles(
         uploadedByUserId: options.uploadedByUserId,
       });
       const mimeType = MIME_TYPE_BY_EXTENSION[extension];
-      const { error } = await withRequestTimeout(
+      const { data: uploadReceipt, error } = await withRequestTimeout(
         supabase.storage
           .from(WHOLESALE_ORDER_LIST_BUCKET)
           .upload(storagePath, file, {
@@ -119,6 +124,11 @@ export async function uploadWholesaleOrderListFiles(
       if (error) {
         throw error;
       }
+      requireStorageUploadReceipt(
+        uploadReceipt,
+        storagePath,
+        "Order List 没有确认上传成功，请稍后重试。",
+      );
 
       uploadedPaths.push(storagePath);
       metadataRows.push({
@@ -140,13 +150,25 @@ export async function uploadWholesaleOrderListFiles(
       throw error;
     }
 
-    return (data ?? []) as WholesaleOrderListAttachment[];
+    return requireRegisteredStorageRows<WholesaleOrderListAttachment>(data, {
+      errorMessage: "Order List 没有全部登记成功，请稍后重试。",
+      expectedParentId: options.orderId,
+      expectedPaths: uploadedPaths,
+      parentField: "order_id",
+      pathField: "storage_path",
+    });
   } catch (error) {
     // 元数据登记失败时移除本次已经上传的对象，避免 bucket 中留下无人可见的孤立文件。
     if (uploadedPaths.length > 0) {
-      await supabase.storage
-        .from(WHOLESALE_ORDER_LIST_BUCKET)
-        .remove(uploadedPaths);
+      await removeStorageObjectsVerified(
+        supabase,
+        WHOLESALE_ORDER_LIST_BUCKET,
+        uploadedPaths,
+        {
+          confirmationMessage: "失败文件没有全部清理，请联系管理员核对。",
+          timeoutMessage: "失败文件清理超时，请联系管理员核对。",
+        },
+      );
     }
 
     throw error;
@@ -157,15 +179,15 @@ export async function deleteWholesaleOrderListAttachment(
   supabase: SupabaseClient,
   attachment: WholesaleOrderListAttachment,
 ) {
-  const { error: storageError } = await withRequestTimeout(
-    supabase.storage
-      .from(attachment.bucket_name || WHOLESALE_ORDER_LIST_BUCKET)
-      .remove([attachment.storage_path]),
+  await removeStorageObjectsVerified(
+    supabase,
+    attachment.bucket_name || WHOLESALE_ORDER_LIST_BUCKET,
+    [attachment.storage_path],
+    {
+      confirmationMessage: "附件文件没有确认删除，请刷新后重试。",
+      timeoutMessage: "附件删除超时，请稍后重试。",
+    },
   );
-
-  if (storageError) {
-    throw storageError;
-  }
 
   const { data: deletedRows, error: metadataError } = await withRequestTimeout(
     supabase

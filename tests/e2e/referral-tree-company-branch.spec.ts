@@ -3,18 +3,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { loginAs } from "./helpers/auth";
 
 test.describe("referral tree company branch", () => {
-  test("administrator can see company branch in tourism and wholesale referral trees", async ({
+  test("administrator can see company branch in the wholesale referral tree", async ({
     page,
   }) => {
     await loginAs(page, "administrator");
-
-    await page.goto("/admin/tourism/referrals");
-    await expect(
-      page.getByRole("heading", { name: "推荐树", exact: true }).first(),
-    ).toBeVisible();
-    await expect(page.getByText("公司", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("主分支", { exact: true }).first()).toBeVisible();
-    await expectPageWidthToFit(page);
 
     await page.goto("/admin/wholesale/referrals");
     await expect(
@@ -29,10 +21,6 @@ test.describe("referral tree company branch", () => {
   test("administrator can use referral trees on mobile width", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loginAs(page, "administrator");
-
-    await page.goto("/admin/tourism/referrals");
-    await expect(page.getByText("公司", { exact: true }).first()).toBeVisible();
-    await expectPageWidthToFit(page);
 
     await page.goto("/admin/wholesale/referrals");
     await expect(page.getByText("公司", { exact: true }).first()).toBeVisible();

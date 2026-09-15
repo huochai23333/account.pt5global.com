@@ -143,7 +143,6 @@ for (const viewport of viewports) {
         ["/admin/home", "admin-home"],
         ["/admin/accounts", "admin-accounts"],
         ["/admin/company-expenses", "company-expenses"],
-        ["/admin/tourism/commission", "tourism-commission"],
         ["/admin/wholesale/orders", "wholesale-orders"],
         ["/admin/wholesale/commission", "wholesale-commission"],
       ] as const;
@@ -236,27 +235,6 @@ for (const viewport of viewports) {
       await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
 
-      await page.goto("/admin/tourism/vip");
-      const adjustButton = page
-        .locator("button:not([disabled])")
-        .filter({ hasText: "调整时间", visible: true })
-        .first();
-      await expect(adjustButton).toBeVisible();
-      await adjustButton.click();
-      const vipDialog = page.getByRole("dialog", { name: "调整VIP时间" });
-      const vipDateTime = vipDialog.getByLabel("新的有效期");
-      await openDateControl(vipDateTime, /打开日期和时间选择/);
-      await expectAnchoredPopupInsideViewport(page);
-      // 日期时间面板会在矮视口内滚动；截图定位到时间区，确保小时、分钟和完成操作也有视觉基线。
-      await page
-        .locator('[data-slot="date-picker-popup"]')
-        .evaluate((element) => {
-          element.scrollTop = element.scrollHeight;
-        });
-      await capture(page, `${viewport.name}-datetime-picker.png`);
-      await page.keyboard.press("Escape");
-      await page.keyboard.press("Escape");
-
       await signOut(page);
       await loginAs(page, "operator");
       await page.goto("/operator/reimbursements");
@@ -299,7 +277,6 @@ test("tablet breakpoint keeps representative pages inside the viewport", async (
   for (const route of [
     "/admin/accounts",
     "/admin/company-expenses",
-    "/admin/tourism/commission",
     "/admin/wholesale/orders",
     "/admin/wholesale/commission",
   ] as const) {
@@ -318,20 +295,6 @@ test("tablet breakpoint keeps representative pages inside the viewport", async (
   await expectAnchoredPopupInsideViewport(page);
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
-
-  await page.goto("/admin/tourism/vip");
-  const adjustButton = page
-    .locator("button:not([disabled])")
-    .filter({ hasText: "调整时间", visible: true })
-    .first();
-  await expect(adjustButton).toBeVisible();
-  await adjustButton.click();
-  const vipDialog = page.getByRole("dialog", { name: "调整VIP时间" });
-  await openDateControl(
-    vipDialog.getByLabel("新的有效期"),
-    /打开日期和时间选择/,
-  );
-  await expectAnchoredPopupInsideViewport(page);
 });
 
 test("首页在自动布局与桌面布局分界处保持稳定构图", async ({ page }) => {

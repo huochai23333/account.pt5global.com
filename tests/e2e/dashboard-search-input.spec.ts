@@ -12,18 +12,19 @@ const targetViewports = [
   { height: 844, width: 390 },
 ] as const;
 
-test("客户搜索框在桌面、平板和移动端都为图标保留文字间距", async ({
+test("线索搜索框在桌面、平板和移动端都为图标保留文字间距", async ({
   page,
 }) => {
   await loginAs(page, "administrator");
 
   for (const viewport of targetViewports) {
     await page.setViewportSize(viewport);
-    await page.goto("/admin/tourism/customers");
+    // 线索大厅直接使用共享 DashboardSearchInput，能真正核对图标与文字间距。
+    await page.goto("/admin/wholesale/leads");
     await expectWorkspaceShell(page);
     await expectNotForbiddenPage(page);
 
-    const searchInput = page.getByRole("searchbox", { name: "搜索客户" });
+    const searchInput = page.getByRole("searchbox", { name: "搜索线索" });
     await expect(searchInput).toBeVisible();
     await expectSearchIconClearance(searchInput);
 

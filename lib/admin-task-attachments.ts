@@ -7,6 +7,10 @@ import type {
 } from "./admin-tasks-types";
 import { withRequestTimeout } from "./request-timeout";
 import {
+  requireRegisteredStorageRows,
+  requireStorageUploadReceipt,
+} from "./storage-operation-receipts";
+import {
   buildTaskAttachmentStoragePath,
   removeTaskStorageObjects,
   TASK_ATTACHMENT_MAX_FILES,
@@ -77,7 +81,7 @@ export async function uploadAdminTaskAttachments(
         parentId: options.taskId,
       });
 
-      const { error } = await withRequestTimeout(
+      const { data: uploadReceipt, error } = await withRequestTimeout(
         supabase.storage.from(TASK_ATTACHMENT_BUCKET).upload(storagePath, file, {
           contentType: file.type || undefined,
           upsert: false,
@@ -91,6 +95,11 @@ export async function uploadAdminTaskAttachments(
       if (error) {
         throw error;
       }
+      requireStorageUploadReceipt(
+        uploadReceipt,
+        storagePath,
+        "任务附件没有确认上传成功，请稍后重试。",
+      );
 
       uploadedObjects.push({
         bucket_name: TASK_ATTACHMENT_BUCKET,
@@ -122,13 +131,28 @@ export async function uploadAdminTaskAttachments(
       throw error;
     }
 
-    if (!data || data.length !== metadataRows.length) {
-      throw new Error("任务附件没有全部登记成功，请稍后重试。");
-    }
+    const registeredRows = requireRegisteredStorageRows<TaskAttachmentRecord>(
+      data,
+      {
+        errorMessage: "任务附件没有全部登记成功，请稍后重试。",
+        expectedParentId: options.taskId,
+        expectedPaths: uploadedObjects.map(
+          (item) => item.task_attachment_storage_path,
+        ),
+        parentField: "task_id",
+        pathField: "task_attachment_storage_path",
+      },
+    );
 
-    return data
+    const normalizedRows = registeredRows
       .map((item) => normalizeTaskAttachment(item))
       .filter((item): item is AdminTaskAttachment => item !== null);
+
+    if (normalizedRows.length !== registeredRows.length) {
+      throw new Error("任务附件返回的信息不完整，请刷新后核对。");
+    }
+
+    return normalizedRows;
   } catch (error) {
     await removeStoredTaskAttachments(
       supabase,

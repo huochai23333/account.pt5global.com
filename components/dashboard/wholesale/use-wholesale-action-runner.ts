@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { runVerifiedActionWithRefresh } from "@/lib/verified-action-outcome";
 
 import { toWholesaleActionErrorMessage } from "./wholesale-action-utils";
 
 export type WholesaleActionFeedback = {
-  tone: "error" | "success";
+  tone: "error" | "info" | "success";
   message: string;
 } | null;
 
@@ -59,10 +60,21 @@ export function useWholesaleActionRunner() {
       setFeedback(null);
 
       try {
-        await action();
+        // 写入回执已经证明资料保存成功。局部重读若失败，只影响页面显示，
+        // 不能把已完成的写入改报为失败，否则用户再次提交会产生重复业务结果。
+        const outcome = await runVerifiedActionWithRefresh(
+          action,
+          options?.afterSuccess,
+        );
+        if (outcome === "refreshing") {
+          setFeedback({
+            tone: "info",
+            message: "资料已经保存，页面内容正在刷新，请稍后核对。",
+          });
+          router.refresh();
+          return true;
+        }
 
-        // 局部刷新也属于保存过程。只有新数据已经回到页面后，按钮和弹窗才能恢复。
-        await options?.afterSuccess?.();
         setFeedback({ tone: "success", message: successMessage });
 
         if ((options?.refreshMode ?? "router") === "router") {

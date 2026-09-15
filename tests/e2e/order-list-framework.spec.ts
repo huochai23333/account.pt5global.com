@@ -8,7 +8,6 @@ import {
 import { fillDateControl } from "./helpers/date-control";
 
 const ORDER_PAGES = [
-  "/admin/tourism/orders",
   "/admin/wholesale/orders",
   "/admin/wholesale/order-claims",
   "/admin/wholesale/logistics",
@@ -22,8 +21,8 @@ const DATE_PRESET_LABELS = [
   "自定义",
 ] as const;
 
-test.describe("四类订单列表统一框架", () => {
-  test("四类页面使用同一日期工具条和列表数量底栏", async ({ page }) => {
+test.describe("三类批发订单列表统一框架", () => {
+  test("三类页面使用同一日期工具条和列表数量底栏", async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
@@ -68,28 +67,15 @@ test.describe("四类订单列表统一框架", () => {
     await page.setViewportSize({ height: 844, width: 390 });
     await expectNoDocumentHorizontalOverflow(page);
     await expectAbove(desktopProgress, loadMore);
-
-    // 普通订单保留页码分页，但使用同一个数量底栏。
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/admin/tourism/orders");
-    const pageProgress = getOrderListProgress(page);
-    const previous = page.getByRole("button", { name: "上一页" });
-    await expect(pageProgress).toBeVisible();
-    await expect(previous).toBeVisible();
-    await expectLeftOf(pageProgress, previous);
-
-    await page.setViewportSize({ height: 844, width: 390 });
-    await expectNoDocumentHorizontalOverflow(page);
-    await expectAbove(pageProgress, previous);
   });
 
   test("日期快捷范围可恢复默认值并识别自定义范围", async ({ page }) => {
     await loginAs(page, "administrator");
-    await page.goto("/admin/tourism/orders");
+    await page.goto("/admin/wholesale/orders");
 
     const dateToolbar = page.getByRole("group", { name: "日期快捷范围" });
     const reset = page.getByRole("button", { name: "恢复默认范围" });
-    const startDate = page.locator("#admin-order-date-from");
+    const startDate = page.getByLabel("下单日期从");
 
     await dateToolbar.getByRole("button", { name: "本月" }).click();
     await expect(

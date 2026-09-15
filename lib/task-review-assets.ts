@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
 import {
+  requireRegisteredStorageRows,
+  requireStorageUploadReceipt,
+} from "./storage-operation-receipts";
+import {
   buildTaskAttachmentStoragePath,
   removeTaskStorageObjects,
   TASK_ATTACHMENT_MAX_FILES,
@@ -78,7 +82,7 @@ export async function uploadTaskReviewSubmissionAssets(
         parentId: options.submissionId,
       });
 
-      const { error } = await withRequestTimeout(
+      const { data: uploadReceipt, error } = await withRequestTimeout(
         supabase.storage.from(TASK_REVIEW_BUCKET).upload(storagePath, file, {
           contentType: file.type || undefined,
           upsert: false,
@@ -92,6 +96,11 @@ export async function uploadTaskReviewSubmissionAssets(
       if (error) {
         throw error;
       }
+      requireStorageUploadReceipt(
+        uploadReceipt,
+        storagePath,
+        "审核附件没有确认上传成功，请稍后重试。",
+      );
 
       uploadedObjects.push({
         bucket_name: TASK_REVIEW_BUCKET,
@@ -121,11 +130,23 @@ export async function uploadTaskReviewSubmissionAssets(
       throw error;
     }
 
-    if (!data || data.length !== metadataRows.length) {
-      throw new Error("审核附件没有全部登记成功，请稍后重试。");
+    const registeredRows = requireRegisteredStorageRows<TaskReviewSubmissionAssetRecord>(
+      data,
+      {
+        errorMessage: "审核附件没有全部登记成功，请稍后重试。",
+        expectedParentId: options.submissionId,
+        expectedPaths: uploadedObjects.map(
+          (item) => item.task_attachment_storage_path ?? "",
+        ),
+        parentField: "submission_id",
+        pathField: "task_attachment_storage_path",
+      },
+    );
+    const normalizedRows = normalizeTaskReviewSubmissionAssetRecords(registeredRows);
+    if (normalizedRows.length !== registeredRows.length) {
+      throw new Error("审核附件返回的信息不完整，请刷新后核对。");
     }
-
-    return normalizeTaskReviewSubmissionAssetRecords(data);
+    return normalizedRows;
   } catch (error) {
     await removeStoredTaskReviewSubmissionAssets(supabase, uploadedObjects);
     throw error;

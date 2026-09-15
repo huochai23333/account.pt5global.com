@@ -29,7 +29,10 @@ export function ForgotPasswordForm({
   return (
     <div className="space-y-6">
       {reset.notice ? (
-        <FeedbackNotice density="compact" tone="success">
+        <FeedbackNotice
+          density="compact"
+          tone={reset.mode === "sent" ? "info" : "success"}
+        >
           {reset.notice}
         </FeedbackNotice>
       ) : null}

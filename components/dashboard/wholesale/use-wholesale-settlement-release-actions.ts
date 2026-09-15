@@ -4,7 +4,11 @@ import { useCallback } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { requireMutationId, requireMutationRecord } from "@/lib/mutation-receipts";
-import { parseOperationRequestReceipt, waitForOperationTerminal } from "@/lib/operation-runs";
+import {
+  parseOperationRequestReceipt,
+  requireSucceededOperationRun,
+  waitForOperationTerminal,
+} from "@/lib/operation-runs";
 
 import {
   optionalString,
@@ -97,6 +101,13 @@ export function useWholesaleSettlementReleaseActions() {
             if (repairResult.kind === "confirming") {
               throw new Error("这天的汇率正在自动补齐，结果仍在确认中，请稍后再保存。");
             }
+            const completedRepair = requireSucceededOperationRun(
+              repairResult.run,
+              "settlement_exchange_rate_repair_incomplete",
+            );
+            if (!hasVerifiedExchangeRateDate(completedRepair.resultProof)) {
+              throw new Error("settlement_exchange_rate_repair_incomplete");
+            }
             result = await saveSettlementAllocations(supabase, submission);
           }
 
@@ -169,4 +180,15 @@ function saveSettlementAllocations(
 function isMissingSettlementRate(error: unknown) {
   return typeof error === "object" && error !== null && "message" in error &&
     String(error.message).includes("wholesale_order_settlement_rate_missing");
+}
+
+/**
+ * 汇率任务的成功状态还必须带回至少一个已核对日期，避免空 proof 或无关任务状态
+ * 让当前收款继续写入。具体订单分配 RPC 随后仍会再次校验精确币种和日期。
+ */
+function hasVerifiedExchangeRateDate(proof: Record<string, unknown>) {
+  return Array.isArray(proof.verifiedDates)
+    && proof.verifiedDates.some(
+      (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value),
+    );
 }

@@ -107,6 +107,10 @@ export function toWholesaleActionErrorMessage(error: unknown) {
     return "这个结汇日期没有对应汇率，请先到汇率设置中补充。";
   }
 
+  if (normalized.includes("settlement_exchange_rate_repair_incomplete")) {
+    return "这天的汇率还没有全部补齐，系统会继续处理，请稍后再保存。";
+  }
+
   if (normalized.includes("wholesale_order_creation_request_conflict")) {
     return "这笔订单已经保存，请刷新订单列表后查看。";
   }

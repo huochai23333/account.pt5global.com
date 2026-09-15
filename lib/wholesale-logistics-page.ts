@@ -201,7 +201,7 @@ export async function getWholesaleReferralWaybillCounts(
 export async function requestWholesaleLogisticsRefresh(
   supabase: SupabaseClient,
 ) {
-  const { error } = await supabase.functions.invoke("wholesale-logistics-sync", {
+  const { data, error } = await supabase.functions.invoke("wholesale-logistics-sync", {
     body: { trigger: "page" },
   });
 
@@ -210,6 +210,21 @@ export async function requestWholesaleLogisticsRefresh(
       cause: error,
     });
   }
+
+  const receipt = readRecord(data);
+  if (
+    !receipt
+    || typeof receipt.operationId !== "string"
+    || (receipt.operationStatus !== "succeeded"
+      && receipt.operationStatus !== "skipped")
+  ) {
+    throw new Error("最新物流数据仍在确认中，请稍后到系统运行页查看。");
+  }
+
+  return {
+    operationId: receipt.operationId,
+    status: receipt.operationStatus,
+  };
 }
 
 function readCursor(value: unknown): WholesaleLogisticsCursor | null {

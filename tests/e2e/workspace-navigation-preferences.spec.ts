@@ -23,9 +23,8 @@ test.describe("workspace navigation preferences", () => {
     try {
       await loginAs(page, "administrator");
 
-      // 第一台“设备”只展开批发业务，并等待云端确认保存。
-      await setDesktopBusinessGroupExpanded(page, "旅游业务", false);
-      await setDesktopBusinessGroupExpanded(page, "批发业务", true);
+      // 第一台“设备”收起当前唯一启用的批发业务，并等待数据库确认保存。
+      await setDesktopBusinessGroupExpanded(page, "批发业务", false);
 
       // 新建浏览器上下文不会继承 Cookie 或 localStorage，能证明状态来自账号云端偏好。
       secondContext = await browser.newContext();
@@ -33,30 +32,20 @@ test.describe("workspace navigation preferences", () => {
       await loginAs(secondPage, "administrator");
 
       await expect(
-        getDesktopBusinessGroupButton(secondPage, "旅游业务"),
-      ).toHaveAttribute("aria-expanded", "false");
-      await expect(
         getDesktopBusinessGroupButton(secondPage, "批发业务"),
-      ).toHaveAttribute("aria-expanded", "true");
+      ).toHaveAttribute("aria-expanded", "false");
 
-      // 两组都展开与全部收起都必须是可持久化的完整组合。
-      await setDesktopBusinessGroupExpanded(secondPage, "旅游业务", true);
+      // 再展开并刷新，证明两个方向都会形成账号级持久化结果。
+      await setDesktopBusinessGroupExpanded(secondPage, "批发业务", true);
       await secondPage.reload();
       await expectWorkspaceShell(secondPage);
       await expect(
-        getDesktopBusinessGroupButton(secondPage, "旅游业务"),
-      ).toHaveAttribute("aria-expanded", "true");
-      await expect(
         getDesktopBusinessGroupButton(secondPage, "批发业务"),
       ).toHaveAttribute("aria-expanded", "true");
 
-      await setDesktopBusinessGroupExpanded(secondPage, "旅游业务", false);
       await setDesktopBusinessGroupExpanded(secondPage, "批发业务", false);
       await secondPage.reload();
       await expectWorkspaceShell(secondPage);
-      await expect(
-        getDesktopBusinessGroupButton(secondPage, "旅游业务"),
-      ).toHaveAttribute("aria-expanded", "false");
       await expect(
         getDesktopBusinessGroupButton(secondPage, "批发业务"),
       ).toHaveAttribute("aria-expanded", "false");
@@ -69,11 +58,11 @@ test.describe("workspace navigation preferences", () => {
         .getByRole("button", { exact: true, name: "首页" })
         .click();
       await expect(
-        mobileHeader.getByText("旅游业务", { exact: true }),
-      ).toBeVisible();
-      await expect(
         mobileHeader.getByText("批发业务", { exact: true }),
       ).toBeVisible();
+      await expect(
+        mobileHeader.getByText("旅游业务", { exact: true }),
+      ).toHaveCount(0);
       await expectNoDocumentHorizontalOverflow(secondPage);
     } finally {
       // 管理员账号被多个回归文件共用，成功或失败都尽量恢复稳定默认状态。

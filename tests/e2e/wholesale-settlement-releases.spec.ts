@@ -11,8 +11,18 @@ import {
   expectSelectValue,
   getSelectValue,
 } from "./helpers/select-control";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 test.describe("wholesale settlement releases", () => {
+  const createdReleaseNotes = new Set<string>();
+
+  test.afterEach(async () => {
+    // 结汇会真实生成收款、分配和订单结算记录。每次用例结束后只按本次唯一备注
+    // 删除对应记录，避免前一次运行改变后一次“最早订单优先”的业务结果。
+    await cleanupSettlementReleaseFixtures([...createdReleaseNotes]);
+    createdReleaseNotes.clear();
+  });
+
   test("一笔收款可部分分配到多笔订单并整组调整", async ({
     browser,
   }, testInfo) => {
@@ -22,12 +32,13 @@ test.describe("wholesale settlement releases", () => {
     const temporaryCustomerName = `待确认客户 ${uniqueSuffix}`;
     const temporaryAllocationNote = `手填客户后分配 ${uniqueSuffix}`;
     const cancelledCustomerName = `取消收款 ${uniqueSuffix}`;
+    const cancelledNote = `取消验证 ${uniqueSuffix}`;
+    createdReleaseNotes.add(allocationNote);
+    createdReleaseNotes.add(temporaryAllocationNote);
+    createdReleaseNotes.add(cancelledNote);
     const receivedDate = getShanghaiDateInputValue();
     const currentMonth = receivedDate.slice(0, 7).replace("-", "");
     const firstOrderNumber = `WH-LOCAL-${currentMonth}-001`;
-    // 业务员只能看到本人协作范围内的订单；当前种子数据中 071 与 001
-    // 下单时间相同，系统再按订单号稳定排序，因此第二段建议金额应落到 071。
-    const secondOrderNumber = `WH-LOCAL-${currentMonth}-071`;
 
     const financePage = await browser.newPage();
     await financePage.setViewportSize({ height: 900, width: 1440 });
@@ -61,7 +72,7 @@ test.describe("wholesale settlement releases", () => {
       amount: "88.66",
       customerName: cancelledCustomerName,
       currency: "USD",
-      note: `取消验证 ${uniqueSuffix}`,
+      note: cancelledNote,
       receivedDate,
     });
     await financePage.getByLabel("搜索收款").fill(cancelledCustomerName);
@@ -102,12 +113,42 @@ test.describe("wholesale settlement releases", () => {
       allocationDialog,
       firstOrderNumber,
     );
+    // 第一次打开已经按最早订单优先生成完整建议：先填满第一笔，再分到第二笔。
+    await expect(firstOrderInput).toHaveValue("1800.00");
+    await expect
+      .poll(async () => {
+        const values = await allocationDialog
+          .locator('input[type="number"]')
+          .evaluateAll((inputs) =>
+            inputs.map((input) => (input as HTMLInputElement).value),
+          );
+        return values.filter((value) => value === "1200.00").length;
+      })
+      .toBe(1);
+    const secondSuggestion = await allocationDialog
+      .locator('input[type="number"]')
+      .evaluateAll((inputs) =>
+        inputs
+          .map((input) => ({
+            // 控件名称由 Field 的 <label for> 提供，不一定直接写在 aria-label 属性上。
+            label:
+              (input as HTMLInputElement).labels?.[0]?.textContent?.trim() ??
+              input.getAttribute("aria-label") ??
+              "",
+            value: (input as HTMLInputElement).value,
+          }))
+          .find((input) => input.value === "1200.00"),
+      );
+    const secondOrderNumber = secondSuggestion?.label.match(
+      /^订单 (.+) 的分配金额$/,
+    )?.[1];
+    if (!secondOrderNumber) {
+      throw new Error("没有找到承接第二段建议金额的订单。");
+    }
     const secondOrderInput = getAllocationInput(
       allocationDialog,
       secondOrderNumber,
     );
-    // 第一次打开已经按最早订单优先生成完整建议：先填满第一笔，再分到第二笔。
-    await expect(firstOrderInput).toHaveValue("1800.00");
     await expect(secondOrderInput).toHaveValue("1200.00");
 
     await firstOrderInput.fill("1000");
@@ -329,4 +370,64 @@ async function expectTouchTargets(scope: Locator) {
   );
 
   expect(tooSmallTargets).toEqual([]);
+}
+
+async function cleanupSettlementReleaseFixtures(notes: string[]) {
+  if (notes.length === 0) {
+    return;
+  }
+
+  const admin = getLocalSupabaseAdminClient();
+
+  if (!admin) {
+    throw new Error("结汇回归只能在提供本地 Supabase 管理连接时运行。");
+  }
+
+  const { data: releases, error: releaseQueryError } = await admin
+    .from("wholesale_settlement_releases")
+    .select("id")
+    .in("note", notes);
+
+  if (releaseQueryError) {
+    throw releaseQueryError;
+  }
+
+  const releaseIds = (releases ?? []).map((release) => release.id);
+
+  if (releaseIds.length === 0) {
+    return;
+  }
+
+  // 先记住本次分配生成的订单结算 ID。删除收款会级联删除分配明细，
+  // 随后删除这些结算记录，由数据库触发器重新计算订单的结算状态。
+  const { data: settlements, error: settlementQueryError } = await admin
+    .from("wholesale_order_settlements")
+    .select("id")
+    .in("source_settlement_release_id", releaseIds);
+
+  if (settlementQueryError) {
+    throw settlementQueryError;
+  }
+
+  const { error: releaseDeleteError } = await admin
+    .from("wholesale_settlement_releases")
+    .delete()
+    .in("id", releaseIds);
+
+  if (releaseDeleteError) {
+    throw releaseDeleteError;
+  }
+
+  const settlementIds = (settlements ?? []).map((settlement) => settlement.id);
+
+  if (settlementIds.length > 0) {
+    const { error: settlementDeleteError } = await admin
+      .from("wholesale_order_settlements")
+      .delete()
+      .in("id", settlementIds);
+
+    if (settlementDeleteError) {
+      throw settlementDeleteError;
+    }
+  }
 }

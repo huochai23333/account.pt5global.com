@@ -179,7 +179,17 @@ test.describe("店小秘物流永久档案", () => {
     test(`${role} 不显示物流入口`, async ({ page }) => {
       await loginAs(page, role);
       await page.goto(path);
-      await expectForbiddenPage(page);
+
+      // 经理和推广当前没有启用业务，路由守卫会先把账号带回业务停用说明；
+      // 客户和运营仍有可用工作区，因此访问物流页面时应进入权限提示页。
+      if (role === "manager" || role === "promoter") {
+        await expect(page).toHaveURL(/\/business-unavailable(?:[?#].*)?$/);
+        await expect(
+          page.getByRole("heading", { name: "当前没有可使用的业务" }),
+        ).toBeVisible();
+      } else {
+        await expectForbiddenPage(page);
+      }
     });
   }
 });

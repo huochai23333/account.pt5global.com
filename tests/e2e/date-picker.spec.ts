@@ -11,7 +11,6 @@ import {
   fillDateControl,
   openDateControl,
 } from "./helpers/date-control";
-import { chooseSelectOption } from "./helpers/select-control";
 
 test.describe("全站日期选择控件", () => {
   test("日期和月份支持键盘输入、错误恢复与日历点选", async ({ page }) => {
@@ -80,43 +79,6 @@ test.describe("全站日期选择控件", () => {
     await expect(fromInput).not.toHaveAttribute("data-value", "");
   });
 
-  test("日期时间在完成前保留草稿并支持小时分钟选择", async ({ page }) => {
-    await loginAs(page, "administrator");
-    await page.goto("/admin/tourism/vip");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-
-    const adjustButton = page
-      .locator("button:not([disabled])")
-      .filter({ hasText: "调整时间", visible: true })
-      .first();
-    await expect(adjustButton).toBeVisible();
-    await adjustButton.click();
-
-    const dialog = page.getByRole("dialog", { name: "调整VIP时间" });
-    const input = dialog.getByLabel("新的有效期");
-    await fillDateControl(input, "2026/08/01 14:30");
-    await expectDateControlValue(input, "2026-08-01T14:30");
-
-    await openDateControl(input, /打开日期和时间选择/);
-    const popup = page.locator('[data-slot="date-picker-popup"]');
-    await popup.locator('[data-day="2026-08-02"] button').click();
-    await chooseSelectOption(popup.getByLabel("小时"), { value: "15" });
-    await chooseSelectOption(popup.getByLabel("分钟"), { value: "45" });
-    await popup.getByRole("button", { name: "完成" }).click();
-    await expectDateControlValue(input, "2026-08-02T15:45");
-    await expect(input).toHaveValue("2026/08/02 15:45");
-
-    // 日期时间只有“完成”才写入业务值；Escape 会丢弃本次日历草稿。
-    await openDateControl(input, /打开日期和时间选择/);
-    await popup.locator('[data-day="2026-08-03"] button').click();
-    await page.keyboard.press("Escape");
-    await expectDateControlValue(input, "2026-08-02T15:45");
-    await expect(dialog).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
-  });
-
   test("英文界面接受地区顺序并保持 ISO 业务值", async ({ page }) => {
     await loginAs(page, "administrator");
     await setTestLocale(page, "en");
@@ -139,21 +101,5 @@ test.describe("全站日期选择控件", () => {
     await expectDateControlValue(dateInput, "2024-02-29");
     await expect(monthInput).toHaveValue("02/2024");
     await expect(dateInput).toHaveValue("02/29/2024");
-
-    await page.keyboard.press("Escape");
-    await page.goto("/admin/tourism/vip");
-    const adjustButton = page
-      .locator("button:not([disabled])")
-      .filter({ hasText: "Adjust Time", visible: true })
-      .first();
-    await expect(adjustButton).toBeVisible();
-    await adjustButton.click();
-    const vipDialog = page.getByRole("dialog", { name: "Adjust VIP Time" });
-    const dateTimeInput = vipDialog.getByRole("textbox", {
-      name: /New Validity/,
-    });
-    await fillDateControl(dateTimeInput, "02/29/2024 09:05");
-    await expectDateControlValue(dateTimeInput, "2024-02-29T09:05");
-    await expect(dateTimeInput).toHaveValue("02/29/2024 09:05");
   });
 });

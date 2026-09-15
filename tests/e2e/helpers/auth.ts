@@ -31,6 +31,19 @@ export async function loginWithAccount(
   await page.locator('input[name="password"]').fill(account.password);
   await page.locator('form button[type="submit"]').click();
 
+  // 经理、推广和招聘目前没有任何已启用业务。登录成功的权威页面是停用说明，
+  // 不能为了让旧测试进入空工作台而把这三个角色误判成登录失败。
+  if (["manager", "promoter", "recruiter"].includes(account.role)) {
+    await expect(page).toHaveURL(/\/business-unavailable(?:[?#].*)?$/, {
+      timeout: 30_000,
+    });
+    await expect(
+      page.getByRole("heading", { name: "当前没有可使用的业务" }),
+    ).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toHaveCount(0);
+    return;
+  }
+
   await expect(page).toHaveURL(
     new RegExp(`${escapeRegExp(account.workspacePath)}/home(?:[?#].*)?$`),
     { timeout: 30_000 },

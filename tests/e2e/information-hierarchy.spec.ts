@@ -81,10 +81,10 @@ test.describe("全站信息层级与内容减负", () => {
       "/admin/wholesale/orders",
       "/admin/company-expenses",
       "/admin/feedback",
-      "/admin/tourism/records",
-      "/admin/tourism/tasks",
-      "/admin/tourism/customers",
-      "/admin/tourism/people",
+      "/admin/announcements",
+      "/admin/accounts",
+      "/admin/wholesale/customers",
+      "/admin/wholesale/leads",
     ]) {
       await page.goto(route);
       await expectWorkspaceShell(page);
@@ -114,41 +114,6 @@ test.describe("全站信息层级与内容减负", () => {
     await expect(
       page.getByRole("heading", { name: "最近调整", exact: true }),
     ).toBeVisible();
-  });
-
-  test("标签页命名后不生成空标题并保留紧凑操作栏", async ({ page }) => {
-    await page.setViewportSize({ height: 844, width: 390 });
-    await page.goto("/admin/tourism/tasks");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-
-    await page.getByRole("button", { name: /任务审核/ }).click();
-    const reviewRegion = page.getByRole("region", { name: "任务审核" });
-    await expect(reviewRegion).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "任务审核", exact: true }),
-    ).toHaveCount(0);
-    await expect(reviewRegion.getByRole("button", { name: "刷新审核" })).toBeVisible();
-
-    await page.getByRole("button", { name: /任务媒体库/ }).click();
-    const mediaRegion = page.getByRole("region", { name: "任务媒体库" });
-    const mediaToolbar = mediaRegion.locator(
-      '[data-slot="dashboard-list-toolbar"]',
-    );
-    const refreshButton = mediaToolbar.getByRole("button", {
-      name: "刷新媒体库",
-    });
-
-    await expect(mediaRegion).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "任务媒体库", exact: true }),
-    ).toHaveCount(0);
-    await expect(mediaToolbar).toBeVisible();
-    await expect(refreshButton).toBeVisible();
-    const refreshButtonHeight = (await refreshButton.boundingBox())?.height ?? 0;
-    // 浏览器在不同像素比下可能把 CSS 的 44px 返回为 43.999...，取整后再检查真实触控尺寸。
-    expect(Math.round(refreshButtonHeight)).toBeGreaterThanOrEqual(44);
-    await expectNoHorizontalOverflow(page);
   });
 
   test("物流摘要按主状态、更新时间和币种运费分层展示", async ({ page }) => {
@@ -190,6 +155,15 @@ test.describe("全站信息层级与内容减负", () => {
 
     await page.setViewportSize({ height: 900, width: 1280 });
     await page.goto("/admin/wholesale/orders");
+    // 页面外壳先于订单查询完成显示；必须等真实列表和摘要卡都进入当前视图后再测布局。
+    await expect(
+      page.locator('[data-testid^="wholesale-order-row-"]').first(),
+    ).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-slot="metric-card"][data-presentation="compact"]:visible',
+      ),
+    ).toHaveCount(4);
     await expectCompactMetricContentFits(page);
     await expectNoHorizontalOverflow(page);
 
@@ -203,9 +177,9 @@ test.describe("全站信息层级与内容减负", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("旅游订单和公司费用采用相同的紧凑工作页头", async ({ page }) => {
+  test("批发订单和公司费用采用相同的紧凑工作页头", async ({ page }) => {
     for (const route of [
-      "/admin/tourism/orders",
+      "/admin/wholesale/orders",
       "/admin/company-expenses",
     ]) {
       await page.goto(route);

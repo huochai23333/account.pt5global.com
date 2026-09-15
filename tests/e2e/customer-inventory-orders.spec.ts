@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { chooseSelectOption } from "./helpers/select-control";
 import {
-  expectForbiddenPage,
   expectNotForbiddenPage,
   expectWorkspaceShell,
   loginAs,
@@ -349,7 +348,10 @@ test.describe("库存订单与专属信贷", () => {
     const managerPage = await managerContext.newPage();
     await loginAs(managerPage, "manager");
     await managerPage.goto("/manager/wholesale/inventory-orders");
-    await expectForbiddenPage(managerPage);
+    await expect(managerPage).toHaveURL(/\/business-unavailable(?:[?#].*)?$/);
+    await expect(
+      managerPage.getByRole("heading", { name: "当前没有可使用的业务" }),
+    ).toBeVisible();
     await managerContext.close();
   });
 

@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth-session-client";
 import type { Locale } from "@/lib/locale";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { requireAuthUserReceipt } from "@/lib/auth-operation-receipts";
 import { getCurrentWorkspaceBusinessAccess } from "@/lib/workspace-business-access";
 import { getSignedInWorkspaceDestination } from "@/lib/workspace-business-availability";
 
@@ -263,6 +264,11 @@ export function useRegisterWizard(
       if (signUpError) {
         throw signUpError;
       }
+
+      requireAuthUserReceipt(data, {
+        errorMessage: "registration_receipt_invalid",
+        expectedEmail: state.email,
+      });
 
       if (isRegisteredEmailSignupResult(data)) {
         setError(t("userExists"));

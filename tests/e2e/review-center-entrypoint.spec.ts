@@ -19,8 +19,8 @@ test.describe("global review center entrypoint", () => {
       name: "审核中心",
       exact: true,
     });
-    const tourismGroupButton = sidebar.getByRole("button", {
-      name: "旅游业务",
+    const wholesaleGroupButton = sidebar.getByRole("button", {
+      name: "批发业务",
       exact: true,
     });
 
@@ -36,8 +36,8 @@ test.describe("global review center entrypoint", () => {
       "审核中心",
     ]);
 
-    await setDesktopBusinessGroupExpanded(page, "旅游业务", false);
-    await expect(tourismGroupButton).toHaveAttribute("aria-expanded", "false");
+    await setDesktopBusinessGroupExpanded(page, "批发业务", false);
+    await expect(wholesaleGroupButton).toHaveAttribute("aria-expanded", "false");
     await expect(reviewLink).toBeVisible();
 
     // 页面总宽度不能超过浏览器可视宽度，否则侧栏或新版系统名称会造成横向滚动。
@@ -64,20 +64,20 @@ test.describe("global review center entrypoint", () => {
       name: "审核中心",
       exact: true,
     });
-    const tourismGroupLabel = mobileNavigation.getByText("旅游业务", {
+    const wholesaleGroupLabel = mobileNavigation.getByText("批发业务", {
       exact: true,
     });
 
     await expect(reviewLink).toHaveAttribute("href", "/admin/reviews");
     await expect(reviewLink).toBeVisible();
-    await expect(tourismGroupLabel).toBeVisible();
+    await expect(wholesaleGroupLabel).toBeVisible();
 
     // 移动菜单按纵向排列，通过位置断言确保审核中心仍位于业务分组标题之前。
     const reviewBox = await reviewLink.boundingBox();
-    const tourismBox = await tourismGroupLabel.boundingBox();
+    const wholesaleBox = await wholesaleGroupLabel.boundingBox();
     expect(reviewBox).not.toBeNull();
-    expect(tourismBox).not.toBeNull();
-    expect(reviewBox!.y).toBeLessThan(tourismBox!.y);
+    expect(wholesaleBox).not.toBeNull();
+    expect(reviewBox!.y).toBeLessThan(wholesaleBox!.y);
 
     await reviewLink.click();
     await expect(page).toHaveURL(/\/admin\/reviews(?:[?#].*)?$/);

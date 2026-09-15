@@ -29,7 +29,7 @@ export function LoginForm({
       onSubmit={login.handleSubmit}
     >
       {registered ? (
-        <FeedbackNotice density="compact" tone="success">
+        <FeedbackNotice density="compact" tone="info">
           {t("registeredNotice")}
         </FeedbackNotice>
       ) : null}

@@ -31,7 +31,8 @@ test.describe("设计系统治理守卫", () => {
     );
     await page.keyboard.press("Escape");
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/admin/tourism/orders");
+    // 当前仅开放批发业务，桌面筛选高度必须从真实可用的订单入口验证。
+    await page.goto("/admin/wholesale/orders");
     await expect(page.getByRole("heading", { name: "筛选订单" })).toHaveCount(0);
     const desktopFilterControls = page.locator(
       '[data-slot="dashboard-search-input"] [data-slot="input"]:visible, [data-density="filter"] :is([data-slot="input"], [data-slot="select"]):visible',
@@ -64,7 +65,8 @@ test.describe("设计系统治理守卫", () => {
 
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ height: 900, width });
-      await page.goto("/admin/tourism/orders");
+      // 本地销售线索种子稳定超过一页，可从现行业务入口验证真正渲染出的页码按钮。
+      await page.goto("/admin/wholesale/leads");
 
       const previous = page.getByRole("button", { name: "上一页" });
       const next = page.getByRole("button", { name: "下一页" });

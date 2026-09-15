@@ -8,6 +8,7 @@ import type {
   DashboardSharedCopy,
   DashboardSharedMyStateCopy,
 } from "./dashboard-shared-my-state-copy";
+import { requireAuthRequestAccepted } from "@/lib/auth-operation-receipts";
 import { toErrorMessage, type FeedbackTone } from "../dashboard-shared-ui";
 
 const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
@@ -79,16 +80,17 @@ export function useDashboardPasswordReset({
 
     try {
       // Supabase only confirms the reset request was accepted; the mailbox result is checked with the mail provider.
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });
 
       if (error) {
         throw error;
       }
+      requireAuthRequestAccepted(data, "password_reset_request_invalid");
 
       setCooldownRemaining(PASSWORD_RESET_COOLDOWN_SECONDS);
-      setPageNotice({ tone: "success", message: copy.resetSent });
+      setPageNotice({ tone: "info", message: copy.resetSent });
     } catch (error) {
       setPageNotice({ tone: "error", message: toErrorMessage(error, sharedCopy) });
     } finally {

@@ -10,7 +10,7 @@ test.describe("forgot password page", () => {
     await setTestLocale(page, "zh");
   });
 
-  test("shows pending, success, and cooldown states without sending a real email", async ({
+  test("shows pending, accepted, and cooldown states without sending a real email", async ({
     page,
   }) => {
     let releaseRequest: (() => void) | undefined;
@@ -49,12 +49,13 @@ test.describe("forgot password page", () => {
       releaseRequest?.();
     }
 
-    const successNotice = page.locator(
-      '[data-slot="feedback-notice"][data-tone="success"]',
+    const acceptedNotice = page.locator(
+      '[data-slot="feedback-notice"][data-tone="info"]',
     );
-    await expect(successNotice).toHaveRole("status");
-    await expect(successNotice).toHaveAttribute("aria-live", "polite");
-    await expect(successNotice).toContainText("重置密码邮件已开始发送");
+    // Auth 服务只确认发信请求已接受，页面使用提示色，不能伪装成邮件已经投递成功。
+    await expect(acceptedNotice).toHaveRole("status");
+    await expect(acceptedNotice).toHaveAttribute("aria-live", "polite");
+    await expect(acceptedNotice).toContainText("重置密码邮件已开始发送");
     await expect(
       page.getByRole("button", { name: /秒后可重新发送/ }),
     ).toBeDisabled();

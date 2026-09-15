@@ -10,12 +10,18 @@ import {
 
 const INTERNAL_RATE_VIEWERS = [
   { role: "administrator", workspace: "/admin" },
-  { role: "manager", workspace: "/manager" },
   { role: "operator", workspace: "/operator" },
-  { role: "recruiter", workspace: "/recruiter" },
   { role: "salesman", workspace: "/salesman" },
-  { role: "promoter", workspace: "/promoter" },
   { role: "finance", workspace: "/finance" },
+] as const satisfies readonly {
+  role: RegressionRole;
+  workspace: string;
+}[];
+
+const NO_BUSINESS_RATE_VIEWERS = [
+  { role: "manager", workspace: "/manager" },
+  { role: "promoter", workspace: "/promoter" },
+  { role: "recruiter", workspace: "/recruiter" },
 ] as const satisfies readonly {
   role: RegressionRole;
   workspace: string;
@@ -68,10 +74,10 @@ test.describe("汇率展示权限", () => {
     });
   }
 
-  test("招聘账号在移动端只查看汇率并能使用完整导航", async ({ page }) => {
+  test("财务账号在移动端只查看汇率并能使用完整导航", async ({ page }) => {
     await page.setViewportSize({ height: 844, width: 390 });
-    await loginAs(page, "recruiter");
-    await page.goto("/recruiter/settings");
+    await loginAs(page, "finance");
+    await page.goto("/finance/settings");
 
     const mobileHeader = page.locator("header").first();
     await mobileHeader
@@ -87,6 +93,23 @@ test.describe("汇率展示权限", () => {
     await expectManagementActionsHidden(page);
     await expectNoHorizontalOverflow(page);
   });
+
+  for (const viewer of NO_BUSINESS_RATE_VIEWERS) {
+    test(`${viewer.role} 没有启用业务时不能绕过说明页查看汇率`, async ({ page }) => {
+      await loginAs(page, viewer.role);
+
+      // 全局汇率页也必须服从当前业务访问表；知道地址不能绕过“暂无可用业务”的终态。
+      await page.goto(`${viewer.workspace}/settings`);
+      await expect(page).toHaveURL(/\/business-unavailable(?:[?#].*)?$/);
+      await expect(
+        page.getByRole("heading", { name: "当前没有可使用的业务" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { exact: true, name: "最新汇率" }),
+      ).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+    });
+  }
 
   test("客户没有汇率入口且不能打开独立汇率页面", async ({ page }) => {
     await loginAs(page, "client");

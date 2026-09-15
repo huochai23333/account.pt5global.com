@@ -43,7 +43,7 @@ test.describe("operator reimbursement sharing and historical periods", () => {
     await page.goto("/operator/reimbursements");
     await waitForRecords(page);
 
-    let requestCount = 0;
+    const requestedSearches: string[] = [];
     await page.route(
       "**/rest/v1/rpc/get_operator_reimbursements_page",
       async (route) => {
@@ -51,19 +51,31 @@ test.describe("operator reimbursement sharing and historical periods", () => {
           p_search?: string | null;
         };
         // 页面挂载或工作区同步可能并行读取空搜索；这里只统计由关键词触发的 RPC。
-        if (payload.p_search) requestCount += 1;
+        if (payload.p_search) requestedSearches.push(payload.p_search);
         await route.continue();
       },
     );
 
-    // 快速连续替换三个输入值；最后一次输入后的 100ms 仍小于 300ms，期间不应查询。
+    // 三次 input 事件在同一个浏览器任务中连续发生，避免慢机器上多次 Playwright 往返本身超过 300ms。
+    // 使用原生 value setter 让 React 收到每一次真实输入事件，最终只允许查询最后一个值。
     const searchbox = page.getByRole("searchbox");
-    await searchbox.fill("de");
-    await searchbox.fill("debou");
-    await searchbox.fill("debounce");
+    await searchbox.evaluate((element) => {
+      const input = element as HTMLInputElement;
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+
+      for (const value of ["de", "debou", "debounce"]) {
+        valueSetter?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
     await page.waitForTimeout(100);
-    expect(requestCount).toBe(0);
-    await expect.poll(() => requestCount, { timeout: 1_500 }).toBe(1);
+    expect(requestedSearches).toEqual([]);
+    await expect
+      .poll(() => requestedSearches, { timeout: 1_500 })
+      .toEqual(["debounce"]);
     await waitForRecords(page);
   });
 
@@ -300,6 +312,10 @@ test.describe("operator reimbursement sharing and historical periods", () => {
       }
       await expectNoOverflow(page);
       await page.screenshot({
+        // Playwright 默认会临时隐藏输入光标。页面里仍有延迟挂载的选择框时，
+        // 这项临时样式可能刚好撞上 React 接管节点并产生无关的水合告警。
+        // 保留真实光标不会影响这里的布局证据，也不会修改页面正在接管的样式。
+        caret: "initial",
         path: testInfo.outputPath(`records-${width}.png`),
       });
       await page.getByRole("button", { name: "确认报销", exact: true }).click();
@@ -315,6 +331,8 @@ test.describe("operator reimbursement sharing and historical periods", () => {
       );
       await expectNoOverflow(page);
       await page.screenshot({
+        // 与列表截图保持相同策略，避免截图工具本身改动表单节点样式。
+        caret: "initial",
         path: testInfo.outputPath(`confirm-${width}.png`),
       });
       expect(pageErrors).toEqual([]);

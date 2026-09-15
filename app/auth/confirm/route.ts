@@ -5,6 +5,7 @@ import {
   createPasswordRecoveryProof,
   PASSWORD_RECOVERY_PROOF_COOKIE,
 } from "@/lib/password-recovery-session";
+import { requireAuthUserReceipt } from "@/lib/auth-operation-receipts";
 import { getRequestPublicOrigin } from "@/lib/public-site-origin";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
@@ -42,6 +43,16 @@ export async function GET(request: NextRequest) {
         ? INVALID_RECOVERY_REDIRECT_PATH
         : DEFAULT_REDIRECT_PATH;
 
+    return NextResponse.redirect(new URL(errorPath, publicOrigin));
+  }
+
+  try {
+    requireAuthUserReceipt(data, { errorMessage: "auth_confirmation_invalid" });
+  } catch {
+    const errorPath =
+      type === PASSWORD_RECOVERY_TYPE
+        ? INVALID_RECOVERY_REDIRECT_PATH
+        : DEFAULT_REDIRECT_PATH;
     return NextResponse.redirect(new URL(errorPath, publicOrigin));
   }
 

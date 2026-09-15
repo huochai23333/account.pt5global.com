@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { withRequestTimeout } from "./request-timeout";
+import { removeStorageObjectsVerified } from "./storage-operation-receipts";
 import { exceedsUploadFileSizeLimit } from "./upload-file-size-limits";
 import {
   getFileExtension,
@@ -174,17 +174,10 @@ export async function removeTaskStorageObjects(
       continue;
     }
 
-    const { error } = await withRequestTimeout(
-      supabase.storage.from(bucketName).remove(storagePaths),
-      {
-        timeoutMs: 60_000,
-        message: options.timeoutMessage,
-      },
-    );
-
-    if (error) {
-      throw error;
-    }
+    await removeStorageObjectsVerified(supabase, bucketName, storagePaths, {
+      confirmationMessage: "附件没有确认删除，请刷新后核对。",
+      timeoutMessage: options.timeoutMessage,
+    });
   }
 }
 

@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { getAuthSession } from "@/lib/auth-session-client";
+import {
+  requireAuthRequestAccepted,
+  requireAuthUserReceipt,
+  requireSignedOutSessionReceipt,
+} from "@/lib/auth-operation-receipts";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { useSupabaseAuthSync } from "@/lib/use-supabase-auth-sync";
 
@@ -138,11 +143,12 @@ export function useForgotPasswordViewModel({
         : undefined;
 
     try {
-      const { error: resetError } = await client.auth.resetPasswordForEmail(
+      const { data, error: resetError } = await client.auth.resetPasswordForEmail(
         normalizedEmail,
         { redirectTo },
       );
       if (resetError) throw resetError;
+      requireAuthRequestAccepted(data, "password_reset_request_invalid");
 
       setMode("sent");
       setCooldownRemaining(30);
@@ -185,11 +191,22 @@ export function useForgotPasswordViewModel({
     }
 
     try {
-      const { error: updateError } = await client.auth.updateUser({ password });
+      const { data: updateData, error: updateError } =
+        await client.auth.updateUser({ password });
       if (updateError) throw updateError;
+      requireAuthUserReceipt(updateData, {
+        errorMessage: "password_update_receipt_invalid",
+      });
 
       const { error: signOutError } = await client.auth.signOut();
       if (signOutError) throw signOutError;
+      const { data: sessionData, error: sessionError } =
+        await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      requireSignedOutSessionReceipt(
+        sessionData,
+        "password_sign_out_receipt_invalid",
+      );
 
       startTransition(() => router.replace("/login?passwordReset=1"));
     } catch (updateError) {

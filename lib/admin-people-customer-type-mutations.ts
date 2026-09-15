@@ -35,6 +35,8 @@ export async function updateAdminCustomerTypeMark(
 
   const payload = normalizeAdminCustomerTypePayload(input);
 
+  // 这个旧 RPC 返回 void，因此不能把“没有报错”当成完成。
+  // verified-rpc: 调用后必须重新读取目标人员，并逐项核对用户编号和客户标记。
   const { error } = await withRequestTimeout(
     supabase.rpc("admin_set_customer_type_mark", {
       _customer_type: payload.customerType,
@@ -54,8 +56,12 @@ export async function updateAdminCustomerTypeMark(
     payload.customerUserId,
   );
 
-  if (!updatedPerson) {
+  if (!updatedPerson || updatedPerson.user_id !== payload.customerUserId) {
     throw new AdminPeopleMutationError("notFound");
+  }
+
+  if (updatedPerson.customer_type !== payload.customerType) {
+    throw new AdminPeopleMutationError("unknown");
   }
 
   return updatedPerson;

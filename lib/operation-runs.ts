@@ -93,6 +93,30 @@ export async function waitForOperationTerminal(
   };
 }
 
+/**
+ * “已经到终态”不等于成功：partial_failed、failed、needs_attention 和 skipped
+ * 都必须保留各自业务含义。调用方只有拿到完成时间、0 个失败项，并确认成功数量
+ * 与预期数量一致时，才能继续依赖这次后台结果执行下一项写操作。
+ */
+export function requireSucceededOperationRun(
+  run: OperationRun,
+  errorMessage = "后台处理没有确认全部完成。",
+) {
+  if (
+    run.status !== "succeeded"
+    || !run.completedAt
+    || run.failedCount !== 0
+    || (
+      run.expectedCount !== null
+      && run.succeededCount !== run.expectedCount
+    )
+  ) {
+    throw new Error(errorMessage);
+  }
+
+  return run;
+}
+
 function parseOperationRun(value: unknown): OperationRun {
   if (!isRecord(value)) throw new Error("operation_run_invalid");
 

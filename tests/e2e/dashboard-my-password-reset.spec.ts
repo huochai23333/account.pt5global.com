@@ -37,6 +37,9 @@ test.describe("dashboard account password reset", () => {
     await expect(
       page.getByText("重置密码邮件已开始发送", { exact: false }),
     ).toBeVisible();
+    await expect(
+      page.locator('[data-slot="feedback-notice"][data-tone="info"]'),
+    ).toContainText("重置密码邮件已开始发送");
     const cooldownButton = page.getByRole("button", {
       name: /秒后可再次发送/,
     });

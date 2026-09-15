@@ -30,13 +30,6 @@ const workspaceEntries: readonly WorkspaceEntry[] = [
       "/admin/feedback",
       "/admin/reviews",
       "/admin/settings",
-      "/admin/tourism/orders",
-      "/admin/tourism/customers",
-      "/admin/tourism/people",
-      "/admin/tourism/vip",
-      "/admin/tourism/referrals",
-      "/admin/tourism/commission",
-      "/admin/tourism/records",
       "/admin/wholesale/orders",
       "/admin/wholesale/settlement-releases",
       "/admin/wholesale/logistics",
@@ -61,19 +54,6 @@ const workspaceEntries: readonly WorkspaceEntry[] = [
       "/salesman/wholesale/incentives",
     ],
     role: "salesman",
-  },
-  {
-    paths: [
-      "/promoter/tourism/orders",
-      "/promoter/tourism/tasks",
-      "/promoter/tourism/commission",
-      "/promoter/tourism/customers",
-    ],
-    role: "promoter",
-  },
-  {
-    paths: ["/client/tourism/orders", "/client/tourism/referrals"],
-    role: "client",
   },
   {
     paths: [
@@ -146,10 +126,7 @@ test.describe("workspace entrypoint regression", () => {
     await restoreDefaultAdminBusinessGroups(page);
   });
 
-  for (const entry of [
-    { role: "salesman" as const },
-    { role: "promoter" as const },
-  ]) {
+  for (const entry of [{ role: "salesman" as const }]) {
     test(`${entry.role} home copies the single invite code`, async ({
       page,
     }) => {
@@ -284,23 +261,10 @@ test.describe("workspace entrypoint regression", () => {
     await expectNoDocumentHorizontalOverflow(page);
   });
 
-  test("admin business customer pages are separate from people pages", async ({
+  test("admin wholesale customer page is separate from people management", async ({
     page,
   }) => {
     await loginAs(page, "administrator");
-
-    await page.goto("/admin/tourism/customers");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-    await expect(page.getByRole("heading", { name: "旅游客户管理" })).toBeVisible();
-    await expect(page.getByText("地推账户")).toHaveCount(0);
-
-    await page.goto("/admin/tourism/people");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-    await expect(page.getByRole("heading", { name: "旅游人员管理" })).toBeVisible();
-    await expect(page.getByText("旅游客户")).toHaveCount(0);
-    await expect(page.getByText("地推账户").first()).toBeVisible();
 
     await page.goto("/admin/wholesale/customers");
     await expectWorkspaceShell(page);
@@ -378,44 +342,6 @@ test.describe("workspace entrypoint regression", () => {
     await expectNoDocumentHorizontalOverflow(page);
   });
 
-  test("tourism order list can filter by ordered date range", async ({
-    page,
-  }) => {
-    await loginAs(page, "administrator");
-    await page.goto("/admin/tourism/orders");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-
-    const createdFromInput = page.getByLabel("下单日期从");
-    const createdToInput = page.getByLabel("下单日期到");
-    const clearFiltersButton = page.getByRole("button", {
-      name: /清空筛选|恢复默认范围/,
-    });
-    const defaultRange = getLast30DaysDateRange();
-
-    await expect(createdFromInput).toBeVisible();
-    await expect(createdToInput).toBeVisible();
-    await expectDateControlValue(createdFromInput, defaultRange.from);
-    await expectDateControlValue(createdToInput, defaultRange.to);
-    await page.waitForTimeout(1000);
-
-    await fillDateControl(createdFromInput, "2099-01-01");
-    await fillDateControl(createdToInput, "2099-01-31");
-
-    await expectDateControlValue(createdFromInput, "2099-01-01");
-    await expectDateControlValue(createdToInput, "2099-01-31");
-    await expect(page.getByText("没有匹配结果")).toBeVisible();
-    await expect(clearFiltersButton).toBeEnabled();
-
-    await clearFiltersButton.click();
-
-    await expectDateControlValue(createdFromInput, defaultRange.from);
-    await expectDateControlValue(createdToInput, defaultRange.to);
-
-    await fillDateControl(createdFromInput, "");
-    await expectDateControlValue(createdFromInput, defaultRange.from);
-    await expect(createdFromInput).toHaveAttribute("aria-invalid", "true");
-  });
 });
 
 function visibleExactText(page: Page, text: string) {

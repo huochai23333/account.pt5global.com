@@ -47,7 +47,8 @@ test.describe("全工作台共享结构", () => {
     for (const path of [
       "/admin/announcements",
       "/admin/accounts",
-      "/admin/tourism/people",
+      // 旅游业务已经停用，不能把停用说明页的“不溢出”冒充工作台页面通过。
+      "/admin/wholesale/customers",
       "/admin/wholesale/orders",
     ]) {
       await page.goto(path);
