@@ -85,6 +85,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // verified-write: 写入后会按本批唯一订单号重新查询，并逐条核对实际落库结果。
     const { error } = await supabase.from("wholesale_1688_orders").upsert(
       payload.rows.map((row) => ({
         ...row,
@@ -100,9 +101,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const expectedOrderNumbers = [
+      ...new Set(payload.rows.map((row) => row.external_order_number)),
+    ];
+    const { data: verifiedOrders, error: verificationError } = await supabase
+      .from("wholesale_1688_orders")
+      .select("external_order_number")
+      .in("external_order_number", expectedOrderNumbers);
+    if (verificationError || verifiedOrders?.length !== expectedOrderNumbers.length) {
+      return NextResponse.json(
+        { error: "部分采购订单没有确认保存，请稍后重试。" },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json({
       message: "采购订单已接收。",
-      receivedCount: payload.rows.length,
+      receivedCount: verifiedOrders.length,
+      batchId: batch.id,
     });
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {

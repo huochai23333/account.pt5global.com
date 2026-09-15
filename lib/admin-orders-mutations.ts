@@ -56,7 +56,7 @@ async function runDeleteAdminOrder(
     throw new Error("Order number is required.");
   }
 
-  const { error } = await withRequestTimeout(
+  const { data, error } = await withRequestTimeout(
     supabase.rpc("delete_order", {
       p_order_number: normalizedOrderNumber,
       p_force: force,
@@ -65,6 +65,10 @@ async function runDeleteAdminOrder(
 
   if (error) {
     throw error;
+  }
+
+  if (typeof data !== "string" || !data.trim()) {
+    throw new Error("Order deletion did not return the deleted order id.");
   }
 }
 

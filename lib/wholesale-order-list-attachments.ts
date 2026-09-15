@@ -167,15 +167,20 @@ export async function deleteWholesaleOrderListAttachment(
     throw storageError;
   }
 
-  const { error: metadataError } = await withRequestTimeout(
+  const { data: deletedRows, error: metadataError } = await withRequestTimeout(
     supabase
       .from("wholesale_order_list_attachments")
       .delete()
-      .eq("id", attachment.id),
+      .eq("id", attachment.id)
+      .select("id")
+      .maybeSingle<{ id: string }>(),
   );
 
   if (metadataError) {
     throw metadataError;
+  }
+  if (!deletedRows || deletedRows.id !== attachment.id) {
+    throw new Error("附件记录没有删除成功，请刷新后重试。");
   }
 }
 

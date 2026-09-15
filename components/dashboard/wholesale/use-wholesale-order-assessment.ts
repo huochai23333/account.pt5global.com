@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { readAssistantEventStream } from "@/lib/ai-assistant/assistant-event-stream";
 
 export type WholesaleOrderAssessmentFilters = {
   customerId: string;
@@ -34,7 +35,7 @@ export function useWholesaleOrderAssessment(
 
     try {
       const response = await fetch("/api/wholesale/order-assessment", {
-        body: JSON.stringify({ filters }),
+        body: JSON.stringify({ filters, requestId: crypto.randomUUID() }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -45,12 +46,8 @@ export function useWholesaleOrderAssessment(
         throw new Error(await readAssessmentErrorMessage(response));
       }
 
-      if (!response.body) {
-        setRawAssessment((await response.text()).trim());
-        return;
-      }
-
-      await readAssessmentStream(response.body, (chunk) => {
+      if (!response.body) throw new Error("assessment_failed");
+      await readAssistantEventStream(response.body, (chunk) => {
         setRawAssessment((current) => `${current}${chunk}`);
       });
     } catch (error) {
@@ -72,7 +69,6 @@ export function useWholesaleOrderAssessment(
     pending,
   };
 }
-
 async function readAssessmentErrorMessage(response: Response) {
   try {
     const body = (await response.json()) as { message?: unknown };
@@ -107,32 +103,4 @@ function sanitizeWholesaleAssessmentText(value: string) {
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-}
-
-async function readAssessmentStream(
-  body: ReadableStream<Uint8Array>,
-  onChunk: (chunk: string) => void,
-) {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      onChunk(decoder.decode(value, { stream: true }));
-    }
-
-    const remaining = decoder.decode();
-
-    if (remaining) {
-      onChunk(remaining);
-    }
-  } finally {
-    reader.releaseLock();
-  }
 }

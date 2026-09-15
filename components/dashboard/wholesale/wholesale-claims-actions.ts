@@ -30,6 +30,7 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
         .single();
       if (batchError || !batch) throw batchError ?? new Error("batch failed");
 
+      // verified-write: 下方会按全部唯一采购单号重新查询，确认每条记录已经存在。
       const { error } = await supabase.from("wholesale_1688_orders").upsert(
         rows.map((row) => ({
           ...row,
@@ -38,6 +39,18 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
         { ignoreDuplicates: true, onConflict: "external_order_number" },
       );
       if (error) throw error;
+
+      const expectedOrderNumbers = [
+        ...new Set(rows.map((row) => row.external_order_number)),
+      ];
+      const { data: verifiedRows, error: verificationError } = await supabase
+        .from("wholesale_1688_orders")
+        .select("external_order_number")
+        .in("external_order_number", expectedOrderNumbers);
+      if (verificationError) throw verificationError;
+      if (verifiedRows?.length !== expectedOrderNumbers.length) {
+        throw new Error("部分 1688 采购订单没有确认保存。");
+      }
     });
 
   const create1688ClaimGroup = (
@@ -57,7 +70,7 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
         if (!supabase) throw new Error("client unavailable");
 
         // 两侧编号一次性交给数据库，数据库会在同一事务中校验并建立认领组。
-        const { error } = await supabase.rpc(
+        const { data, error } = await supabase.rpc(
           "create_wholesale_1688_claim_group",
           {
           p_purchase_order_ids: purchaseOrderIds,
@@ -66,6 +79,17 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
           },
         );
         if (error) throw error;
+        if (typeof data !== "string" || !data.trim()) {
+          throw new Error("认领没有返回可核对的结果。");
+        }
+
+        await verifyClaimGroup(
+          supabase,
+          data,
+          customerId,
+          purchaseOrderIds,
+          wholesaleOrderIds,
+        );
       },
     );
 
@@ -79,6 +103,7 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
+      // verified-rpc: 旧 RPC 返回 void；下方会重新读取组和两侧全部成员核对。
       const { error } = await supabase.rpc(
         "update_wholesale_1688_claim_group",
         {
@@ -89,6 +114,13 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
         },
       );
       if (error) throw error;
+      await verifyClaimGroup(
+        supabase,
+        claimGroupId,
+        customerId,
+        purchaseOrderIds,
+        wholesaleOrderIds,
+      );
     });
 
   const cancel1688ClaimGroup = (claimGroupId: string) =>
@@ -96,11 +128,19 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
+      // verified-rpc: 取消后按组编号确认记录已经不存在。
       const { error } = await supabase.rpc(
         "cancel_wholesale_1688_claim_group",
         { p_claim_group_id: claimGroupId },
       );
       if (error) throw error;
+      const { data: remaining, error: verificationError } = await supabase
+        .from("wholesale_1688_claim_groups")
+        .select("id")
+        .eq("id", claimGroupId)
+        .maybeSingle<{ id: string }>();
+      if (verificationError) throw verificationError;
+      if (remaining) throw new Error("认领关系没有撤销成功。");
     });
 
   const delete1688Order = (purchaseOrderId: string) =>
@@ -108,10 +148,21 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
+      // verified-rpc: 移出后读取采购订单的删除时间，不能只依赖 RPC 无报错。
       const { error } = await supabase.rpc("delete_wholesale_1688_order", {
         p_1688_order_id: purchaseOrderId,
       });
       if (error) throw error;
+      const { data: deletedOrder, error: verificationError } = await supabase
+        .from("wholesale_1688_orders")
+        .select("id, deleted_at")
+        .eq("id", purchaseOrderId)
+        .maybeSingle<{ id: string; deleted_at: string | null }>();
+      if (verificationError) throw verificationError;
+      // 已删除记录可能被 RLS 直接隐藏；查不到记录或能看到明确删除时间都属于完成凭证。
+      if (deletedOrder && !deletedOrder.deleted_at) {
+        throw new Error("采购订单没有移出成功。");
+      }
     });
 
   return {
@@ -121,4 +172,52 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
     import1688Rows,
     update1688ClaimGroup,
   };
+}
+
+/**
+ * 认领组由一条主记录和两张关系表组成，三处都与请求完全一致才算完成。
+ * 这样可拦住“主表更新成功、部分关系没有保存”一类虚假成功。
+ */
+async function verifyClaimGroup(
+  supabase: NonNullable<ReturnType<typeof getBrowserSupabaseClient>>,
+  claimGroupId: string,
+  customerId: string,
+  purchaseOrderIds: string[],
+  wholesaleOrderIds: string[],
+) {
+  const [groupResult, purchaseResult, orderResult] = await Promise.all([
+    supabase
+      .from("wholesale_1688_claim_groups")
+      .select("id, customer_id")
+      .eq("id", claimGroupId)
+      .maybeSingle<{ id: string; customer_id: string }>(),
+    supabase
+      .from("wholesale_1688_claim_group_purchases")
+      .select("purchase_order_id")
+      .eq("claim_group_id", claimGroupId),
+    supabase
+      .from("wholesale_1688_claim_group_orders")
+      .select("wholesale_order_id")
+      .eq("claim_group_id", claimGroupId),
+  ]);
+
+  const verificationError = groupResult.error ?? purchaseResult.error ?? orderResult.error;
+  if (verificationError) throw verificationError;
+
+  const actualPurchaseIds = (purchaseResult.data ?? [])
+    .map((row) => row.purchase_order_id)
+    .sort();
+  const actualOrderIds = (orderResult.data ?? [])
+    .map((row) => row.wholesale_order_id)
+    .sort();
+  const expectedPurchaseIds = [...new Set(purchaseOrderIds)].sort();
+  const expectedOrderIds = [...new Set(wholesaleOrderIds)].sort();
+
+  if (
+    groupResult.data?.customer_id !== customerId
+    || JSON.stringify(actualPurchaseIds) !== JSON.stringify(expectedPurchaseIds)
+    || JSON.stringify(actualOrderIds) !== JSON.stringify(expectedOrderIds)
+  ) {
+    throw new Error("认领关系没有完整保存，请刷新后重试。");
+  }
 }

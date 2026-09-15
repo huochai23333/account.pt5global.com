@@ -15,6 +15,8 @@ type DeepSeekStreamChunk = {
 
 type CreateDeepSeekAssistantStreamOptions = {
   messages: ChatCompletionMessageParam[];
+  onCompleted?: (contentLength: number) => Promise<void>;
+  onFailed?: (code: string) => Promise<void>;
   onSettled?: () => void;
   signal: AbortSignal;
   userId: string;
@@ -35,6 +37,8 @@ const MAX_ASSISTANT_TOKENS = 700;
 
 export async function createDeepSeekAssistantTextStream({
   messages,
+  onCompleted,
+  onFailed,
   onSettled,
   signal,
   userId,
@@ -72,12 +76,18 @@ export async function createDeepSeekAssistantTextStream({
     throw new AiAssistantServiceError("providerError");
   }
 
-  return createTextStreamFromDeepSeekSse(response.body, onSettled);
+  return createEventStreamFromDeepSeekSse(
+    response.body,
+    { onCompleted, onFailed, onSettled },
+  );
 }
 
-function createTextStreamFromDeepSeekSse(
+function createEventStreamFromDeepSeekSse(
   body: ReadableStream<Uint8Array>,
-  onSettled?: () => void,
+  callbacks: Pick<
+    CreateDeepSeekAssistantStreamOptions,
+    "onCompleted" | "onFailed" | "onSettled"
+  >,
 ) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
@@ -90,12 +100,20 @@ function createTextStreamFromDeepSeekSse(
     }
 
     settled = true;
-    onSettled?.();
+    callbacks.onSettled?.();
   };
+
+  const enqueueEvent = (
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    event: Record<string, unknown>,
+  ) => controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       let buffer = "";
+      let contentLength = 0;
+      let hasMeaningfulContent = false;
+      let completedByProvider = false;
 
       try {
         while (true) {
@@ -106,18 +124,44 @@ function createTextStreamFromDeepSeekSse(
           }
 
           buffer += decoder.decode(value, { stream: true });
-          buffer = flushSseEvents(buffer, (text) => {
-            controller.enqueue(encoder.encode(text));
+          buffer = flushSseEvents(buffer, (event) => {
+            if (event.type === "completed") {
+              completedByProvider = true;
+              return;
+            }
+            contentLength += event.text.length;
+            hasMeaningfulContent ||= event.text.trim().length > 0;
+            enqueueEvent(controller, event);
           });
         }
 
         buffer += decoder.decode();
-        flushSseEvents(`${buffer}\n\n`, (text) => {
-          controller.enqueue(encoder.encode(text));
+        flushSseEvents(`${buffer}\n\n`, (event) => {
+          if (event.type === "completed") {
+            completedByProvider = true;
+            return;
+          }
+          contentLength += event.text.length;
+          hasMeaningfulContent ||= event.text.trim().length > 0;
+          enqueueEvent(controller, event);
         });
+
+        if (!completedByProvider || !hasMeaningfulContent) {
+          throw new Error(completedByProvider ? "provider_empty_content" : "provider_stream_incomplete");
+        }
+
+        await callbacks.onCompleted?.(contentLength);
+        enqueueEvent(controller, { type: "completed", contentLength });
         controller.close();
       } catch (error) {
-        controller.error(error);
+        const code = error instanceof Error ? error.message : "provider_stream_error";
+        try {
+          await callbacks.onFailed?.(code);
+          enqueueEvent(controller, { type: "error", code });
+          controller.close();
+        } catch {
+          controller.error(new Error("operation_result_not_saved"));
+        }
       } finally {
         reader.releaseLock();
         settle();
@@ -130,7 +174,11 @@ function createTextStreamFromDeepSeekSse(
   });
 }
 
-function flushSseEvents(buffer: string, onText: (text: string) => void) {
+type AssistantStreamEvent =
+  | { type: "completed" }
+  | { type: "delta"; text: string };
+
+function flushSseEvents(buffer: string, onEvent: (event: AssistantStreamEvent) => void) {
   const events = buffer.split(/\r?\n\r?\n/);
   const remaining = events.pop() ?? "";
 
@@ -142,14 +190,19 @@ function flushSseEvents(buffer: string, onText: (text: string) => void) {
       .map((line) => line.slice(5).trim());
 
     for (const data of dataLines) {
-      if (!data || data === "[DONE]") {
+      if (!data) {
+        continue;
+      }
+
+      if (data === "[DONE]") {
+        onEvent({ type: "completed" });
         continue;
       }
 
       const text = extractDeltaContent(data);
 
       if (text) {
-        onText(text);
+        onEvent({ type: "delta", text });
       }
     }
   }
@@ -164,7 +217,7 @@ function extractDeltaContent(data: string) {
 
     return typeof content === "string" ? content : "";
   } catch {
-    return "";
+    throw new Error("provider_stream_invalid_json");
   }
 }
 

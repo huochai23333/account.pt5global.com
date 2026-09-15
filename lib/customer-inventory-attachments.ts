@@ -152,13 +152,21 @@ export async function deleteCustomerInventoryAttachment(
 
   if (objectError) throw objectError;
 
-  const { error: metadataError } = await withRequestTimeout(
+  const { data: deletedAttachment, error: metadataError } = await withRequestTimeout(
     supabase.rpc("delete_customer_inventory_order_list_attachment", {
       p_attachment_id: attachment.id,
     }),
   );
 
   if (metadataError) throw metadataError;
+  if (
+    typeof deletedAttachment !== "object"
+    || deletedAttachment === null
+    || !("id" in deletedAttachment)
+    || deletedAttachment.id !== attachment.id
+  ) {
+    throw new Error("附件记录没有删除成功，请刷新后重试。");
+  }
 }
 
 export async function createCustomerInventoryAttachmentDownloadUrl(

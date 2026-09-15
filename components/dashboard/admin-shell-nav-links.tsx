@@ -11,6 +11,7 @@ import {
   ContactRound,
   GitBranchPlus,
   Home,
+  HeartPulse,
   LoaderCircle,
   Megaphone,
   MessageSquareWarning,
@@ -53,6 +54,7 @@ export const ADMIN_NAV_ICONS: Record<WorkspaceNavSegment, LucideIcon> = {
   referrals: GitBranchPlus,
   reviews: ShieldCheck,
   settings: ArrowLeftRight,
+  "system-health": HeartPulse,
   "settlement-releases": BadgeDollarSign,
   tasks: ClipboardList,
   team: UsersRound,
@@ -107,7 +109,12 @@ export function DesktopAdminNavLink({
       ) : (
         <Icon className="size-[18px] shrink-0" />
       )}
-      <span className="min-w-0 truncate font-medium">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+      {item.badgeCount ? (
+        <span className="min-w-5 rounded-full bg-status-danger px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+          {item.badgeCount > 99 ? "99+" : item.badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -157,7 +164,12 @@ export function MobileAdminNavLink({
       ) : (
         <Icon className="size-4 shrink-0" />
       )}
-      <span className="min-w-0 truncate font-medium">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+      {item.badgeCount ? (
+        <span className="min-w-5 rounded-full bg-status-danger px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+          {item.badgeCount > 99 ? "99+" : item.badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }

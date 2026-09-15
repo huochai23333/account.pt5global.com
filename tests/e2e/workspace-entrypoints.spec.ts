@@ -220,9 +220,10 @@ test.describe("workspace entrypoint regression", () => {
     await expectDateControlValue(orderedToInput, defaultRange.to);
 
     await page.route("**/api/wholesale/order-assessment", async (route) => {
+      const text = "**订单概况**\n* 当前范围共 2 笔订单。\n* 状态分布正常。";
       await route.fulfill({
-        body: "**订单概况**\n* 当前范围共 2 笔订单。\n* 状态分布正常。",
-        contentType: "text/plain; charset=utf-8",
+        body: `${JSON.stringify({ type: "delta", text })}\n${JSON.stringify({ type: "completed", contentLength: text.length })}\n`,
+        contentType: "application/x-ndjson; charset=utf-8",
       });
     });
 

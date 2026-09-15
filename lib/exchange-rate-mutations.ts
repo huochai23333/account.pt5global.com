@@ -29,6 +29,7 @@ export async function setExchangeRateAutoSyncEnabled(
       .maybeSingle<ExchangeRateSyncSettingsRow>(),
   );
   if (error) throw error;
+  if (!data || data.is_enabled !== enabled) throw new Error("自动获取设置没有保存成功。");
   return data;
 }
 
@@ -58,6 +59,9 @@ export async function addExchangeRateSyncPair(
       .maybeSingle<ExchangeRateSyncPairRow>(),
   );
   if (error) throw error;
+  if (!data || data.base_currency !== normalizedBaseCurrency) {
+    throw new Error("自动获取币种没有保存成功。");
+  }
   return data;
 }
 
@@ -65,10 +69,11 @@ export async function removeExchangeRateSyncPair(
   supabase: SupabaseClient,
   pairId: string,
 ) {
-  const { error } = await withRequestTimeout(
-    supabase.from("exchange_rate_sync_pairs").delete().eq("id", pairId),
+  const { data, error } = await withRequestTimeout(
+    supabase.from("exchange_rate_sync_pairs").delete().eq("id", pairId).select("id").maybeSingle<{ id: string }>(),
   );
   if (error) throw error;
+  if (!data) throw new Error("没有找到需要移除的自动获取币种。");
 }
 
 export async function triggerManualExchangeRateFetch(
@@ -91,7 +96,10 @@ export async function triggerManualExchangeRateFetch(
   );
   if (error) throw await toExchangeRateFunctionError(error);
 
-  const payload = data as Partial<ManualExchangeRateFetchResult> | null;
+  const payload = data as (Partial<ManualExchangeRateFetchResult> & { operationId?: unknown; operationStatus?: unknown }) | null;
+  if (typeof payload?.operationId !== "string" || payload.operationStatus !== "succeeded") {
+    throw new Error("汇率结果仍未确认，请稍后到系统运行页查看。");
+  }
   return {
     results: Array.isArray(payload?.results) ? payload.results : [],
     successCount:
@@ -132,7 +140,12 @@ export async function triggerHistoricalExchangeRateFetch(
   );
   if (error) throw await toExchangeRateFunctionError(error);
 
-  const payload = data as Partial<HistoricalExchangeRateFetchResult> | null;
+  const payload = data as (Partial<HistoricalExchangeRateFetchResult> & { operationId?: unknown; operationStatus?: unknown }) | null;
+  const hasVerifiedTerminalOrRetry = payload?.operationStatus === "succeeded"
+    || (payload?.operationStatus === "queued" && Number(payload?.failedCount) > 0);
+  if (typeof payload?.operationId !== "string" || !hasVerifiedTerminalOrRetry) {
+    throw new Error("历史汇率结果仍未确认，请稍后到系统运行页查看。");
+  }
   const results = Array.isArray(payload?.results) ? payload.results : [];
 
   return {
@@ -190,10 +203,11 @@ export async function deleteExchangeRate(
   supabase: SupabaseClient,
   rateId: string,
 ) {
-  const { error } = await withRequestTimeout(
-    supabase.from("exchange_rate").delete().eq("id", rateId),
+  const { data, error } = await withRequestTimeout(
+    supabase.from("exchange_rate").delete().eq("id", rateId).select("id").maybeSingle<{ id: string }>(),
   );
   if (error) throw error;
+  if (!data) throw new Error("没有找到需要删除的汇率记录。");
 }
 
 function toExchangeRatePayload(input: ExchangeRateFormInput) {

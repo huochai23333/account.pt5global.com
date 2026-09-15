@@ -27,22 +27,21 @@ test.describe.serial("sales lead hall", () => {
     const leadCard = firstPage.locator('[data-testid^="sales-lead-row-"]').filter({ has: firstPage.locator(`[data-testid="${claimTestId}"]`) });
     const leadName = (await leadCard.getByRole("heading").innerText()).trim();
 
-    // 直接触发两个已渲染按钮，避免页面的列表进入动画让 Playwright 自动等待错开两次请求。
-    await Promise.all([
-      firstPage.getByTestId(claimTestId!).evaluate((button: HTMLElement) => button.click()),
-      peerPage.getByTestId(claimTestId!).evaluate((button: HTMLElement) => button.click()),
-    ]);
-    await Promise.all([
-      firstPage.getByRole("button", { name: "我的线索" }).click(),
-      peerPage.getByRole("button", { name: "我的线索" }).click(),
-    ]);
-    await expect.poll(async () =>
-      Number(await firstPage.getByRole("heading", { name: leadName }).isVisible().catch(() => false)) +
-      Number(await peerPage.getByRole("heading", { name: leadName }).isVisible().catch(() => false)),
-    ).toBe(1);
+    // 第一位业务员必须先看到权威的“我的线索”结果，第二位业务员再提交其已经打开的旧页面。
+    // 这样既覆盖竞争失败，也避免测试自己留下未等待的写请求，在线索退回后产生迟到认领。
+    await firstPage.getByTestId(claimTestId!).click();
+    await expect(firstPage.getByRole("heading", { name: leadName })).toBeVisible();
+    const rejectedClaimResponse = peerPage.waitForResponse((response) =>
+      response.url().includes("/rest/v1/rpc/claim_sales_lead"),
+    );
+    await peerPage.getByTestId(claimTestId!).click();
+    expect((await rejectedClaimResponse).ok()).toBe(false);
+    await expect(
+      peerPage.getByText("这条线索刚刚已被其他业务员认领。"),
+    ).toBeVisible();
 
-    const winnerPage = await firstPage.getByRole("heading", { name: leadName }).isVisible() ? firstPage : peerPage;
-    const nextOwnerPage = winnerPage === firstPage ? peerPage : firstPage;
+    const winnerPage = firstPage;
+    const nextOwnerPage = peerPage;
     await winnerPage.getByRole("button", { name: "我的线索" }).click();
     await expect(winnerPage.getByRole("heading", { name: leadName })).toBeVisible();
     await openLead(winnerPage, leadName);
@@ -56,6 +55,8 @@ test.describe.serial("sales lead hall", () => {
     await winnerPage.getByTestId("submit-lead-return").click();
 
     await nextOwnerPage.reload();
+    // 页面会记住上次查看的分类；重新认领前必须明确回到大厅，不能依赖刷新后的默认状态。
+    await nextOwnerPage.getByRole("button", { name: "线索大厅" }).click();
     await nextOwnerPage.getByLabel("搜索线索").fill(leadName);
     await nextOwnerPage.getByTestId(`claim-lead-${leadId}`).click();
     await nextOwnerPage.getByRole("button", { name: "我的线索" }).click();

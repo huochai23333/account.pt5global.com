@@ -30,7 +30,7 @@ export function SalesLeadsClient({ initialData }: { initialData: SalesLeadPageDa
   />}>
     <SalesLeadRules />
     <DashboardSegmentedTabs onChange={view.setBoard} options={display.boardOptions} pendingValue={view.pending === "refresh" ? view.board : null} value={view.board} />
-    <SalesLeadsSyncStatus data={view.data} />
+    <SalesLeadsSyncStatus data={view.data} syncNotice={view.syncNotice} />
     <SalesLeadsResultsSection display={display} view={view} />
     <SalesLeadDetailDialog canManage={view.data.canManage} detail={view.action ? null : view.detail} onAction={view.setAction} onOpenChange={(open) => { if (!open) view.setDetail(null); }} />
     <SalesLeadActionDialog action={view.action} errorCode={view.error} leadId={view.detail?.lead.id ?? null} onClose={() => view.setAction(null)} onSubmit={view.submitAction} pending={Boolean(view.detail && view.pending === view.detail.lead.id)} salespeople={view.data.salespeople} />

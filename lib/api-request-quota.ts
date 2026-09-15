@@ -51,12 +51,17 @@ export async function releaseApiRequestQuota(
     return;
   }
 
-  const { error } = await supabase.rpc("release_api_request_quota", {
+  const { data, error } = await supabase.rpc("release_api_request_quota", {
     p_lease_id: leaseId,
   });
 
   if (error) {
     console.error("API quota lease release failed", error);
+    return;
+  }
+
+  if (data !== true) {
+    console.error("API quota lease was not released", { leaseId });
   }
 }
 

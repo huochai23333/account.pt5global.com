@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { waitForOperationTerminal, type OperationStatus } from "@/lib/operation-runs";
 import {
   addSalesLeadContact,
   assignSalesLead,
@@ -33,6 +34,7 @@ export function useSalesLeadsPage(initialData: SalesLeadPageData) {
   const [action, setAction] = useState<LeadAction | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<OperationStatus | "confirming" | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestVersion = useRef(0);
 
@@ -141,8 +143,15 @@ export function useSalesLeadsPage(initialData: SalesLeadPageData) {
     if (!supabase) return;
     setPending("sync");
     setError(null);
+    setSyncNotice(null);
     try {
-      await requestSalesLeadSync(supabase);
+      const receipt = await requestSalesLeadSync(supabase);
+      const result = await waitForOperationTerminal(supabase, receipt.operationId);
+      if (result.kind === "confirming") {
+        setSyncNotice("confirming");
+        return;
+      }
+      setSyncNotice(result.run.status);
       await refresh();
     } catch (nextError) {
       setError(getLeadErrorCode(nextError));
@@ -152,10 +161,10 @@ export function useSalesLeadsPage(initialData: SalesLeadPageData) {
   }, [refresh]);
 
   return useMemo(() => ({
-    action, assigneeUserId, board, data, detail, error, pending, search,
+    action, assigneeUserId, board, data, detail, error, pending, search, syncNotice,
     claim, openDetail, refresh, setAction, setAssigneeUserId, setBoard,
     setDetail, setSearch, submitAction, syncNow,
-  }), [action, assigneeUserId, board, claim, data, detail, error, openDetail, pending, refresh, search, submitAction, syncNow]);
+  }), [action, assigneeUserId, board, claim, data, detail, error, openDetail, pending, refresh, search, submitAction, syncNotice, syncNow]);
 }
 
 function getLeadErrorCode(error: unknown) {

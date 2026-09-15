@@ -121,7 +121,11 @@ export async function uploadTaskReviewSubmissionAssets(
       throw error;
     }
 
-    return normalizeTaskReviewSubmissionAssetRecords(data ?? []);
+    if (!data || data.length !== metadataRows.length) {
+      throw new Error("审核附件没有全部登记成功，请稍后重试。");
+    }
+
+    return normalizeTaskReviewSubmissionAssetRecords(data);
   } catch (error) {
     await removeStoredTaskReviewSubmissionAssets(supabase, uploadedObjects);
     throw error;

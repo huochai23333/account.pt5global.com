@@ -4,6 +4,7 @@ import type {
 } from "@/lib/workspace-config";
 
 export type AdminShellNavLink = {
+  badgeCount?: number;
   groupKey?: WorkspaceBusinessKey;
   groupLabel?: string;
   href: string;

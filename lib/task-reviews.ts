@@ -120,6 +120,7 @@ export async function cancelTaskReviewSubmissionDraft(
   supabase: SupabaseClient,
   submissionId: string,
 ) {
+  // verified-rpc: 取消函数返回 void；随后按草稿编号确认记录已经删除。
   const { error } = await withRequestTimeout(
     supabase.rpc("cancel_task_review_submission", {
       p_submission_id: submissionId,
@@ -129,6 +130,17 @@ export async function cancelTaskReviewSubmissionDraft(
   if (error) {
     throw error;
   }
+
+  const { data: remaining, error: verificationError } = await withRequestTimeout(
+    supabase
+      .from("task_review_submissions")
+      .select("id")
+      .eq("id", submissionId)
+      .maybeSingle<{ id: string }>(),
+  );
+
+  if (verificationError) throw verificationError;
+  if (remaining) throw new Error("审核草稿没有取消成功，请刷新后重试。");
 }
 
 export async function submitTaskReview(

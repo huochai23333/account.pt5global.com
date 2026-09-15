@@ -325,6 +325,7 @@ async function postAssistantCommand(page: Page, message: string) {
         locale: "zh",
         message: command,
         pathname: window.location.pathname,
+        requestId: crypto.randomUUID(),
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",

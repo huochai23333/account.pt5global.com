@@ -25,9 +25,9 @@ test.describe("wholesale settlement releases", () => {
     const receivedDate = getShanghaiDateInputValue();
     const currentMonth = receivedDate.slice(0, 7).replace("-", "");
     const firstOrderNumber = `WH-LOCAL-${currentMonth}-001`;
-    // 业务员只能看到本人协作范围内的订单；在该范围中，094 是 001 之后
-    // 最早的同客户未结清订单，因此第二段建议金额应落到 094。
-    const secondOrderNumber = `WH-LOCAL-${currentMonth}-094`;
+    // 业务员只能看到本人协作范围内的订单；当前种子数据中 071 与 001
+    // 下单时间相同，系统再按订单号稳定排序，因此第二段建议金额应落到 071。
+    const secondOrderNumber = `WH-LOCAL-${currentMonth}-071`;
 
     const financePage = await browser.newPage();
     await financePage.setViewportSize({ height: 900, width: 1440 });

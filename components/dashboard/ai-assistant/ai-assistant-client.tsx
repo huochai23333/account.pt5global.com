@@ -61,6 +61,7 @@ export function AiAssistantClient() {
       resetConfirmCancel: t("resetConfirmCancel"),
       resetConfirmDescription: t("resetConfirmDescription"),
       requestTooLarge: t("requestTooLarge"),
+      resultConfirming: t("resultConfirming"),
       send: t("send"),
       serviceUnavailable: t("serviceUnavailable"),
       settlementRelease: {

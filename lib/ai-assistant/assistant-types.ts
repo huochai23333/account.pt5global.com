@@ -14,6 +14,7 @@ export type AiAssistantChatRequest = {
   locale?: AiAssistantLocale;
   message: string;
   pathname?: string;
+  requestId: string;
 };
 
 export type AiAssistantSettlementReleaseCustomerKind =
@@ -64,6 +65,7 @@ export type AiAssistantSettlementReleaseConfirmResponse = {
 export type AiAssistantChatErrorCode =
   | "invalidInput"
   | "notSignedIn"
+  | "resultConfirming"
   | "requestTooLarge"
   | "tooManyRequests"
   | "serviceUnavailable";

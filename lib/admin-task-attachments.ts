@@ -122,7 +122,11 @@ export async function uploadAdminTaskAttachments(
       throw error;
     }
 
-    return (data ?? [])
+    if (!data || data.length !== metadataRows.length) {
+      throw new Error("任务附件没有全部登记成功，请稍后重试。");
+    }
+
+    return data
       .map((item) => normalizeTaskAttachment(item))
       .filter((item): item is AdminTaskAttachment => item !== null);
   } catch (error) {

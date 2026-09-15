@@ -59,6 +59,7 @@ export type WorkspacePageVariants = WorkspaceBusinessPageVariants & {
   operatorReimbursements?: true;
   reviews?: true;
   settings?: true;
+  systemHealth?: true;
 };
 
 export type WorkspaceRouteConfig = {
@@ -89,6 +90,7 @@ const adminGlobalNavItems = [
   { segment: "company-expenses", labelKey: "companyExpenses" },
   { segment: "feedback", labelKey: "feedback" },
   { segment: "settings", labelKey: "exchangeRates" },
+  { segment: "system-health", labelKey: "systemHealth" },
 ] as const satisfies readonly WorkspaceNavItem[];
 
 const financeGlobalNavItems = [
@@ -123,6 +125,7 @@ function createWorkspaceRouteConfig({
     | "operatorReimbursements"
     | "reviews"
     | "settings"
+    | "systemHealth"
   >;
   initials: string;
   routeSegment: WorkspaceRouteSegment;
@@ -154,6 +157,7 @@ const WORKSPACE_ROUTE_CONFIG_BY_SEGMENT = {
       feedback: true,
       reviews: true,
       settings: true,
+      systemHealth: true,
     },
     initials: "AD",
     routeSegment: "admin",
@@ -251,6 +255,7 @@ const workspaceGlobalNavSegmentSet = new Set<string>([
   "reimbursements",
   "reviews",
   "settings",
+  "system-health",
 ]);
 
 export function isWorkspaceRouteSegment(value: string): value is WorkspaceRouteSegment {

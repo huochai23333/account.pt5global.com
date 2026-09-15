@@ -10,6 +10,7 @@ import { getAdminAnnouncementsPageData } from "@/lib/announcements";
 import { getCompanyExpensesPageData } from "@/lib/company-expenses";
 import { getExchangeRatesWorkspacePageData } from "@/lib/exchange-rates-page";
 import { getOperatorReimbursementsPageData } from "@/lib/operator-reimbursements";
+import { getSystemOperationHealth } from "@/lib/system-operation-health";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { redirectToWorkspaceAccessLimited } from "@/lib/server-auth";
 import { getAdminWorkspaceFeedbackPageData } from "@/lib/workspace-feedback";
@@ -55,6 +56,12 @@ const OperatorReimbursementsClient = dynamic(() =>
 const ExchangeRatesPageClient = dynamic(() =>
   import("@/components/dashboard/exchange-rates/exchange-rates-page-client").then(
     (mod) => mod.ExchangeRatesPageClient,
+  ),
+);
+
+const SystemHealthClient = dynamic(() =>
+  import("@/components/dashboard/system-health/system-health-client").then(
+    (mod) => mod.SystemHealthClient,
   ),
 );
 
@@ -104,6 +111,11 @@ export async function generateWorkspaceSettingsMetadata(): Promise<Metadata> {
   return {
     title: t("title"),
   };
+}
+
+export async function generateWorkspaceSystemHealthMetadata(): Promise<Metadata> {
+  const t = await getTranslations("SystemHealth.metadata");
+  return { title: t("title") };
 }
 
 export async function renderWorkspaceAccountsPage({
@@ -232,6 +244,23 @@ export async function renderWorkspaceSettingsPage({
         homeHref={`${config.basePath}/home`}
         initialData={initialData}
       />
+    </ScopedIntlProvider>
+  );
+}
+
+export async function renderWorkspaceSystemHealthPage({
+  params,
+}: WorkspaceGlobalPageProps) {
+  const config = await getGlobalPageConfig(params);
+  if (!config.pageVariants.systemHealth) {
+    redirectToWorkspaceAccessLimited();
+  }
+
+  const supabase = await getServerSupabaseClient();
+  const initialData = await getSystemOperationHealth(supabase);
+  return (
+    <ScopedIntlProvider namespaces={["SystemHealth"]}>
+      <SystemHealthClient initialData={initialData} />
     </ScopedIntlProvider>
   );
 }

@@ -11,6 +11,7 @@ import type {
   BusinessVipReviewInput,
 } from "./business-vip-management.types";
 import { withRequestTimeout } from "./request-timeout";
+import { requireMutationId } from "./mutation-receipts";
 import { parseEnabledWorkspaceBusinessKey } from "./workspace-business-availability";
 
 // Tourism and wholesale use separate RPCs because their VIP storage models are separate.
@@ -38,7 +39,7 @@ export async function manageWholesaleVipMembership(
 ) {
   const targetId = normalizeRequiredId(input.targetId);
 
-  const { error } = await withRequestTimeout(
+  const { data, error } = await withRequestTimeout(
     supabase.rpc("manage_wholesale_vip_membership", {
       p_action: input.action,
       p_customer_id: targetId,
@@ -47,6 +48,7 @@ export async function manageWholesaleVipMembership(
   );
 
   if (error) throw error;
+  return requireMutationId(data, "VIP 开通结果没有确认，请刷新后重试。");
 }
 
 export async function adjustBusinessVipMembership(

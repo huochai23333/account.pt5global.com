@@ -9,6 +9,7 @@ import { normalizeOptionalString } from "./value-normalizers";
 
 const USER_MEDIA_MUTATION_TIMEOUT_MS = 60_000;
 const USER_MEDIA_MUTATION_TIMEOUT_MESSAGE = "媒体操作超时，请稍后重试。";
+const PENDING_UPLOAD_KEYS = new Map<string, { idempotencyKey: string; createdAt: number }>();
 
 export async function uploadUserMedia(
   supabase: SupabaseClient,
@@ -17,12 +18,17 @@ export async function uploadUserMedia(
   if (options.files.length === 0) return;
 
   const formData = new FormData();
+  const uploadKey = await buildUploadIdempotencyKey(options);
   formData.set("action", "upload");
   formData.set("kind", options.kind);
+  formData.set("idempotencyKey", uploadKey.idempotencyKey);
   for (const file of options.files) {
     formData.append("files", file, file.name);
   }
-  await invokeUserMediaMutation(supabase, formData);
+  const result = await invokeUserMediaMutation(supabase, formData);
+  assertUploadCompleted(result, options.files.length);
+  // 已拿到完整业务回执后释放本地键；以后确实需要再次上传同一文件时会生成新编号。
+  PENDING_UPLOAD_KEYS.delete(uploadKey.cacheKey);
 }
 
 export async function deleteUserMediaAssets(
@@ -30,17 +36,20 @@ export async function deleteUserMediaAssets(
   assets: Array<Pick<UserMediaAssetRow, "bucket_name" | "storage_path" | "id">>,
 ) {
   if (assets.length === 0) return;
-  await invokeUserMediaMutation(supabase, {
+  const assetIds = assets.map((asset) => asset.id).sort();
+  const result = await invokeUserMediaMutation(supabase, {
     action: "delete",
-    assetIds: assets.map((asset) => asset.id),
+    assetIds,
+    idempotencyKey: `delete:${assetIds.join(":")}`,
   });
+  assertDeleteCompleted(result, assetIds.length);
 }
 
 async function invokeUserMediaMutation(
   supabase: SupabaseClient,
-  body: FormData | { action: "delete"; assetIds: string[] },
+  body: FormData | { action: "delete"; assetIds: string[]; idempotencyKey: string },
 ) {
-  const { error } = await withRequestTimeout(
+  const { data, error } = await withRequestTimeout(
     supabase.functions.invoke("user-media-mutate", { body }),
     {
       timeoutMs: USER_MEDIA_MUTATION_TIMEOUT_MS,
@@ -48,6 +57,77 @@ async function invokeUserMediaMutation(
     },
   );
   if (error) throw await toUserMediaMutationError(error);
+  return data;
+}
+
+function assertUploadCompleted(value: unknown, expectedCount: number) {
+  const result = readMutationResult(value);
+  if (
+    result.status !== "succeeded" ||
+    result.uploadStatus !== "succeeded" ||
+    result.uploadedCount !== expectedCount ||
+    !Array.isArray(result.uploadedAssetIds) ||
+    result.uploadedAssetIds.length !== expectedCount
+  ) {
+    throw createIncompleteMutationError(result);
+  }
+}
+
+function assertDeleteCompleted(value: unknown, expectedCount: number) {
+  const result = readMutationResult(value);
+  if (result.status !== "succeeded" || result.deletedCount !== expectedCount) {
+    throw createIncompleteMutationError(result);
+  }
+}
+
+function readMutationResult(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("媒体操作没有返回可确认的结果，请稍后刷新页面查看。");
+  }
+  if (typeof (value as Record<string, unknown>).operationId !== "string") {
+    throw new Error("媒体操作没有返回运行编号，请稍后刷新页面查看。");
+  }
+  return value as Record<string, unknown>;
+}
+
+function createIncompleteMutationError(result: Record<string, unknown>) {
+  if (result.status === "queued" || result.status === "running") {
+    return new Error("操作结果仍在确认中，请稍后刷新页面查看，暂时不要重复提交。");
+  }
+  return new Error(
+    typeof result.message === "string"
+      ? result.message
+      : "媒体操作没有全部完成，请稍后重试或联系管理员。",
+  );
+}
+
+async function buildUploadIdempotencyKey(options: {
+  userId: string;
+  kind: MediaKind;
+  files: File[];
+}) {
+  const fileFingerprints = await Promise.all(options.files.map(async (file) => {
+    const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    const hex = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, "0")
+    ).join("");
+    return `${file.name}:${file.size}:${file.lastModified}:${hex}`;
+  }));
+  const cacheInput = new TextEncoder().encode(
+    `${options.userId}:${options.kind}:${fileFingerprints.sort().join("|")}`,
+  );
+  const cacheDigest = await crypto.subtle.digest("SHA-256", cacheInput);
+  const cacheKey = Array.from(new Uint8Array(cacheDigest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+  const existing = PENDING_UPLOAD_KEYS.get(cacheKey);
+  if (existing && Date.now() - existing.createdAt < 15 * 60_000) {
+    return { cacheKey, idempotencyKey: existing.idempotencyKey };
+  }
+
+  const idempotencyKey = `upload:${crypto.randomUUID()}`;
+  PENDING_UPLOAD_KEYS.set(cacheKey, { createdAt: Date.now(), idempotencyKey });
+  return { cacheKey, idempotencyKey };
 }
 
 async function toUserMediaMutationError(error: unknown) {

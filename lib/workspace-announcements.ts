@@ -54,7 +54,7 @@ export async function markWorkspaceAnnouncementsRead(
 
   await Promise.all(
     uniqueIds.map(async (announcementId) => {
-      const { error } = await withRequestTimeout(
+      const { data, error } = await withRequestTimeout(
         supabase.rpc("mark_announcement_read", {
           _announcement_id: announcementId,
         }),
@@ -62,6 +62,15 @@ export async function markWorkspaceAnnouncementsRead(
 
       if (error) {
         throw error;
+      }
+
+      if (
+        typeof data !== "object"
+        || data === null
+        || !("announcement_id" in data)
+        || data.announcement_id !== announcementId
+      ) {
+        throw new Error("公告阅读状态没有保存成功。");
       }
     }),
   );

@@ -1,4 +1,5 @@
 import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { requireMutationId } from "@/lib/mutation-receipts";
 
 import {
   getWholesaleOrderCreateRpcPayload,
@@ -26,11 +27,12 @@ export function createWholesaleOrderActions(runAction: RunWholesaleAction) {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
-        const { error } = await supabase.rpc(
+        const { data, error } = await supabase.rpc(
           "create_wholesale_order",
           getWholesaleOrderCreateRpcPayload(formData),
         );
         if (error) throw error;
+        requireMutationId(data, "批发订单没有返回保存编号。");
       },
       { ...ORDER_ACTION_OPTIONS, afterSuccess: refreshOrders },
     );
@@ -48,11 +50,14 @@ export function createWholesaleOrderActions(runAction: RunWholesaleAction) {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
-        const { error } = await supabase.rpc("update_wholesale_order", {
+        const { data, error } = await supabase.rpc("update_wholesale_order", {
           p_order_id: orderId,
           ...getWholesaleOrderRpcPayload(formData),
         });
         if (error) throw error;
+        if (requireMutationId(data, "批发订单没有确认更新。") !== orderId) {
+          throw new Error("更新结果与当前订单不一致。");
+        }
       },
       { ...ORDER_ACTION_OPTIONS, afterSuccess: refreshOrders },
     );
@@ -71,7 +76,7 @@ export function createWholesaleOrderActions(runAction: RunWholesaleAction) {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
-        const { error } = await supabase.rpc("add_wholesale_order_settlement", {
+        const { data, error } = await supabase.rpc("add_wholesale_order_settlement", {
           p_order_id: orderId,
           p_settlement_amount: positiveNumber(
             formData.get("settlement_amount"),
@@ -79,6 +84,7 @@ export function createWholesaleOrderActions(runAction: RunWholesaleAction) {
           p_settlement_date: requiredString(formData.get("settlement_date")),
         });
         if (error) throw error;
+        requireMutationId(data, "结汇记录没有返回保存编号。");
       },
       { ...ORDER_ACTION_OPTIONS, afterSuccess: refreshOrders },
     );

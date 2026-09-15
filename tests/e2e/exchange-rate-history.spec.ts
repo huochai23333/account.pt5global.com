@@ -80,6 +80,8 @@ test.describe("汇率按日期补充", () => {
         contentType: "application/json",
         status: 200,
         body: JSON.stringify({
+          operationId: "11111111-1111-4111-8111-111111111111",
+          operationStatus: "queued",
           failedCount: 1,
           insertedCount: 1,
           skippedCount: 1,

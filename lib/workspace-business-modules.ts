@@ -42,7 +42,8 @@ export type WorkspaceGlobalNavSegment =
   | "my"
   | "reimbursements"
   | "reviews"
-  | "settings";
+  | "settings"
+  | "system-health";
 
 export type WorkspaceNavSegment =
   | WorkspaceGlobalNavSegment
@@ -70,6 +71,7 @@ export type WorkspaceNavLabelKey =
   | "vip"
   | "reviews"
   | "settings"
+  | "systemHealth"
   | "incentives"
   | "settlementReleases"
   | "orderClaims"

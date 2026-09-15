@@ -1,9 +1,11 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { SalesLeadPageData } from "@/lib/sales-leads-types";
+import type { OperationStatus } from "@/lib/operation-runs";
+import { cn } from "@/lib/utils";
 import { formatLeadDate } from "./sales-leads-display";
 
 // 只从内部错误中提取固定格式日期；原始异常文本不直接显示给业务人员。
-export function SalesLeadsSyncStatus({ data }: { data: SalesLeadPageData }) {
+export function SalesLeadsSyncStatus({ data, syncNotice }: { data: SalesLeadPageData; syncNotice: OperationStatus | "confirming" | null }) {
   const t = useTranslations("SalesLeads");
   const locale = useLocale();
   if (!data.canManage) return null;
@@ -13,5 +15,6 @@ export function SalesLeadsSyncStatus({ data }: { data: SalesLeadPageData }) {
     <span>{t("sync.lastSuccess")}: {formatLeadDate(data.syncState?.last_successful_at ?? null, locale)}</span>
     <span>{t("sync.recentRuns")}: {data.recentImportRuns.length}</span>
     {error ? <span className="min-w-0 break-words text-status-danger [overflow-wrap:anywhere]">{dates.length ? t("sync.missingSource", { dates: dates.join(", ") }) : t("sync.failed")}</span> : null}
+    {syncNotice ? <span className={cn("min-w-0 break-words font-medium [overflow-wrap:anywhere]", syncNotice === "succeeded" ? "text-status-success" : syncNotice === "queued" || syncNotice === "running" || syncNotice === "confirming" ? "text-brand-hover" : "text-status-danger")}>{t(`sync.result.${syncNotice}`)}</span> : null}
   </div>;
 }

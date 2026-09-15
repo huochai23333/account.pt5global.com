@@ -28,6 +28,7 @@ import {
   type WorkspaceRouteConfig,
 } from "@/lib/workspace-config";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
+import { getSystemOperationHealth } from "@/lib/system-operation-health";
 import { workspaceBusinessAccessIncludes } from "@/lib/workspace-business-access";
 import {
   EMPTY_WORKSPACE_ANNOUNCEMENTS_STATE,
@@ -63,15 +64,22 @@ export async function AdminShell({
     t,
     initialAnnouncementsState,
     initialNavigationPreference,
+    systemAttentionCount,
     locale,
   ] = await Promise.all([
     getTranslations("DashboardShell"),
     getInitialWorkspaceAnnouncementsState(),
     getInitialWorkspaceNavigationPreference(),
+    getInitialSystemAttentionCount(config),
     getLocale(),
   ]);
   const companyText = getCompanyText(normalizeLocale(locale));
-  const workspace = getWorkspaceConfig(config, t, workspaceBusinessAccess);
+  const workspace = getWorkspaceConfig(
+    config,
+    t,
+    workspaceBusinessAccess,
+    systemAttentionCount,
+  );
 
   return (
     <ScopedIntlProvider namespaces={["DashboardShell", "LanguageToggle"]}>
@@ -196,10 +204,22 @@ async function getInitialWorkspaceNavigationPreference() {
   }
 }
 
+async function getInitialSystemAttentionCount(config: WorkspaceRouteConfig) {
+  if (!config.pageVariants.systemHealth) return 0;
+  try {
+    const supabase = await getServerSupabaseClient();
+    return (await getSystemOperationHealth(supabase)).attentionCount;
+  } catch {
+    // 导航计数读取失败不应阻断整个工作台；管理员仍可进入系统运行页重试。
+    return 0;
+  }
+}
+
 function getWorkspaceConfig(
   config: WorkspaceRouteConfig,
   t: Translator,
   workspaceBusinessAccess: readonly WorkspaceBusinessKey[],
+  systemAttentionCount: number,
 ): WorkspaceConfig {
   const roleKey = config.routeSegment;
   const globalNavItems = config.globalNavItems;
@@ -229,6 +249,7 @@ function getWorkspaceConfig(
   return {
     accountLabel: t(`roles.${roleKey}.accountLabel`),
     globalNavItems: globalNavItems.map((item) => ({
+      badgeCount: item.segment === "system-health" ? systemAttentionCount : undefined,
       href: getWorkspaceNavHref(config, item.segment),
       icon: item.segment,
       label: t(`nav.${item.labelKey}`),

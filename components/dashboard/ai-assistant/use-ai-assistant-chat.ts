@@ -7,6 +7,7 @@ import type {
   AiAssistantLocale,
   AiAssistantStructuredResponse,
 } from "@/lib/ai-assistant/assistant-types";
+import { readAssistantEventStream } from "@/lib/ai-assistant/assistant-event-stream";
 
 import type {
   AiAssistantSettlementReleaseCopy,
@@ -21,6 +22,7 @@ export type { AiAssistantUiMessage } from "./ai-assistant-ui-types";
 type AiAssistantChatCopy = {
   greeting: string;
   requestTooLarge: string;
+  resultConfirming: string;
   serviceUnavailable: string;
   settlementRelease: AiAssistantSettlementReleaseCopy;
   tooManyRequests: string;
@@ -105,6 +107,7 @@ export function useAiAssistantChat({
         locale,
         message: trimmedInput,
         pathname,
+        requestId: assistantMessageId,
       };
       const response = await fetch("/api/assistant/chat", {
         body: JSON.stringify(requestBody),
@@ -136,24 +139,7 @@ export function useAiAssistantChat({
         throw new Error("assistant unavailable");
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let hasReply = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
-
-        if (!chunk) {
-          continue;
-        }
-
-        hasReply = true;
+      await readAssistantEventStream(response.body, (chunk) => {
         setMessages((current) =>
           current.map((item) =>
             item.id === assistantMessageId
@@ -164,27 +150,7 @@ export function useAiAssistantChat({
               : item,
           ),
         );
-      }
-
-      const tail = decoder.decode();
-
-      if (tail) {
-        hasReply = true;
-        setMessages((current) =>
-          current.map((item) =>
-            item.id === assistantMessageId
-              ? {
-                  ...item,
-                  content: `${item.content}${tail}`,
-                }
-              : item,
-          ),
-        );
-      }
-
-      if (!hasReply) {
-        throw new Error("assistant unavailable");
-      }
+      });
     } catch (error) {
       setMessages((current) =>
         current.filter((item) => item.id !== assistantMessageId),
@@ -264,6 +230,10 @@ function getAssistantErrorMessage(
 
     if (error.code === "requestTooLarge") {
       return copy.requestTooLarge;
+    }
+
+    if (error.code === "resultConfirming") {
+      return copy.resultConfirming;
     }
   }
 

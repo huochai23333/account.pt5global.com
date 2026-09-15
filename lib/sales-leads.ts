@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentSessionContext } from "./current-session-context";
+import { parseOperationRequestReceipt } from "./operation-runs";
 import type {
   SalesLead,
   SalesLeadBoard,
@@ -156,7 +157,7 @@ export async function reopenSalesLead(
 export async function requestSalesLeadSync(supabase: SupabaseClient) {
   const { data, error } = await supabase.rpc("request_sales_lead_sync");
   if (error) throw error;
-  return data;
+  return parseOperationRequestReceipt(data);
 }
 
 async function runLeadRpc(

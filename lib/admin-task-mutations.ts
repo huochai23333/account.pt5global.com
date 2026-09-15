@@ -84,6 +84,7 @@ export async function updateAdminTaskAssignment(
   supabase: SupabaseClient,
   input: UpdateAdminTaskAssignmentInput,
 ): Promise<AdminTaskMainRow> {
+  // verified-rpc: RPC 返回 void；下方立即重新读取 task_main，确认任务仍存在且版本可用。
   const { error } = await withRequestTimeout(
     supabase.rpc("set_task_target_roles", {
       p_task_id: input.taskId,
@@ -129,12 +130,15 @@ export async function deleteAdminTask(
     },
   );
 
-  const { error } = await withRequestTimeout(
-    supabase.from("task_main").delete().eq("id", task.id),
+  const { data, error } = await withRequestTimeout(
+    supabase.from("task_main").delete().eq("id", task.id).select("id").maybeSingle<{ id: string }>(),
   );
 
   if (error) {
     throw error;
+  }
+  if (!data || data.id !== task.id) {
+    throw new Error("没有找到需要删除的任务。");
   }
 
   const storageCleanupFailed = await runDeletedTaskStorageCleanup();

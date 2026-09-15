@@ -10,15 +10,16 @@ export function createWholesaleBusinessActions(runAction: RunWholesaleAction) {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
-      const { error } = await supabase.from("wholesale_referrals").insert({
+      const { data, error } = await supabase.from("wholesale_referrals").insert({
         referred_customer_id: requiredString(
           formData.get("referred_customer_id"),
         ),
         referrer_customer_id: requiredString(
           formData.get("referrer_customer_id"),
         ),
-      });
+      }).select("id").maybeSingle<{ id: string }>();
       if (error) throw error;
+      if (!data) throw new Error("批发推荐关系没有保存成功。");
     });
 
   const settleCommission = (commissionId: string) =>
@@ -26,11 +27,16 @@ export function createWholesaleBusinessActions(runAction: RunWholesaleAction) {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("wholesale_commissions")
         .update({ settled_at: new Date().toISOString(), status: "settled" })
-        .eq("id", commissionId);
+        .eq("id", commissionId)
+        .select("id,status")
+        .maybeSingle<{ id: string; status: string }>();
       if (error) throw error;
+      if (!data || data.status !== "settled") {
+        throw new Error("没有找到可结算的提成记录。");
+      }
     });
 
   return {

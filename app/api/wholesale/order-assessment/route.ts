@@ -21,6 +21,10 @@ import {
 } from "@/lib/wholesale-order-assessment";
 import { getWholesalePageData } from "@/lib/wholesale";
 import { getCurrentWorkspaceBusinessAccess } from "@/lib/workspace-business-access";
+import {
+  createServerOperationRun,
+  finishServerOperationRun,
+} from "@/lib/server-operation-runs";
 
 export const runtime = "nodejs";
 
@@ -35,11 +39,12 @@ export async function POST(request: Request) {
   }
 
   let filters: ReturnType<typeof normalizeWholesaleOrderAssessmentPayload>;
+  let requestId: string;
 
   try {
-    filters = normalizeWholesaleOrderAssessmentPayload(
-      await readLimitedJsonBody(request, MAX_ASSESSMENT_BODY_BYTES),
-    );
+    const payload = await readLimitedJsonBody(request, MAX_ASSESSMENT_BODY_BYTES);
+    filters = normalizeWholesaleOrderAssessmentPayload(payload);
+    requestId = readRequestId(payload);
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
       return createErrorResponse("提交的筛选内容太多，请减少后再试。", 413);
@@ -81,8 +86,22 @@ export async function POST(request: Request) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ASSESSMENT_TIMEOUT_MS);
+  let operationId: string | null = null;
 
   try {
+    const operation = await createServerOperationRun({
+      idempotencyKey: requestId,
+      operationKey: "ai-order-assessment",
+      requestPayload: { kind: "wholesale-order-assessment" },
+      requestedByUserId: userId,
+    });
+    operationId = operation.operationId;
+    if (operation.isReplay) {
+      clearTimeout(timeout);
+      await releaseQuota();
+      return createErrorResponse("上一次评估结果仍在确认中，请稍后再生成。", 409);
+    }
+
     const data = await getWholesalePageData(supabase, "orders", {
       orderFilters: {
         customerId: filters.customerId === "all" ? "" : filters.customerId,
@@ -114,6 +133,21 @@ export async function POST(request: Request) {
     });
     const stream = await createDeepSeekAssistantTextStream({
       messages,
+      onCompleted: async (contentLength) => {
+        await finishServerOperationRun({
+          operationId: operation.operationId,
+          outcome: "succeeded",
+          proof: { completed: true, contentLength },
+        });
+      },
+      onFailed: async (code) => {
+        await finishServerOperationRun({
+          errorCode: "ai_assessment_stream_failed",
+          errorMessage: code,
+          operationId: operation.operationId,
+          outcome: "failed",
+        });
+      },
       onSettled: () => {
         clearTimeout(timeout);
         void releaseQuota();
@@ -125,12 +159,25 @@ export async function POST(request: Request) {
     return new Response(stream, {
       headers: {
         "Cache-Control": "no-store",
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": "application/x-ndjson; charset=utf-8",
       },
     });
   } catch (error) {
     clearTimeout(timeout);
     await releaseQuota();
+
+    if (operationId) {
+      try {
+        await finishServerOperationRun({
+          errorCode: "ai_assessment_failed",
+          errorMessage: "订单评估没有生成完整结果。",
+          operationId,
+          outcome: "failed",
+        });
+      } catch {
+        // 缺少完成回执时继续返回失败，避免页面误报评估成功。
+      }
+    }
 
     if (error instanceof AiAssistantServiceError) {
       return createErrorResponse("评估暂时没有生成成功，请稍后再试。", 503);
@@ -138,6 +185,17 @@ export async function POST(request: Request) {
 
     return createErrorResponse("评估暂时没有生成成功，请稍后再试。", 503);
   }
+}
+
+function readRequestId(value: unknown) {
+  if (!value || typeof value !== "object" || !("requestId" in value)) {
+    throw new Error("missing request id");
+  }
+  const requestId = String(value.requestId ?? "").trim();
+  if (!/^[a-zA-Z0-9_-]{16,120}$/.test(requestId)) {
+    throw new Error("invalid request id");
+  }
+  return requestId;
 }
 
 function createErrorResponse(

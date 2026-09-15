@@ -56,10 +56,13 @@ export function createWholesaleCustomerActions({
         unique_name: requiredString(formData.get("unique_name")),
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("wholesale_customers")
-        .insert(payload);
+        .insert(payload)
+        .select("id")
+        .maybeSingle<{ id: string }>();
       if (error) throw error;
+      if (!data) throw new Error("批发客户没有保存成功。");
     });
 
   const updateCustomer = (formData: FormData) => {
@@ -99,17 +102,28 @@ export function createWholesaleCustomerActions({
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
-        const { error } = await supabase.rpc(
+        const registeredUserId = requiredString(
+          formData.get("registered_user_id"),
+        );
+        const { data, error } = await supabase.rpc(
           "link_wholesale_customer_registered_user",
           {
             p_customer_id: customerId,
-            p_registered_user_id: requiredString(
-              formData.get("registered_user_id"),
-            ),
+            p_registered_user_id: registeredUserId,
           },
         );
 
         if (error) throw error;
+        if (
+          typeof data !== "object"
+          || data === null
+          || !("id" in data)
+          || data.id !== customerId
+          || !("registered_user_id" in data)
+          || data.registered_user_id !== registeredUserId
+        ) {
+          throw new Error("客户账号关联结果没有确认，请刷新后重试。");
+        }
       },
     );
   };
