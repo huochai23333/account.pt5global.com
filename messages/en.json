@@ -2029,6 +2029,7 @@
     "inviteCopied": "Invite code copied to clipboard.",
     "inviteCopyFailed": "Copy failed. Please try again later.",
     "profileSaved": "Profile saved.",
+    "profileSavedRefreshing": "Your profile is saved. The page is refreshing; please check again shortly.",
     "identitySubmitted": "ID number submitted and now pending review.",
     "passportSubmitted": "Passport number submitted and now pending review.",
     "photosUploaded": "Profile photos uploaded and now pending review.",

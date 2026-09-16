@@ -75,7 +75,13 @@ function assertUploadCompleted(value: unknown, expectedCount: number) {
 
 function assertDeleteCompleted(value: unknown, expectedCount: number) {
   const result = readMutationResult(value);
-  if (result.status !== "succeeded" || result.deletedCount !== expectedCount) {
+  // Edge Function 必须明确返回 Storage 的删除后复查结果；只有数据库数量正确仍不够，
+  // 否则文件留在对象存储时页面会错误显示“已删除”。
+  if (
+    result.status !== "succeeded" ||
+    result.deletedCount !== expectedCount ||
+    result.storageDeletionVerified !== true
+  ) {
     throw createIncompleteMutationError(result);
   }
 }

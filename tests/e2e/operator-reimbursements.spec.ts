@@ -108,6 +108,57 @@ test.describe("operator reimbursements", () => {
     await expectForbiddenPage(page);
   });
 
+  test("HTTP 200 但周期影响 0 行时保留弹窗且不显示成功", async ({ page }) => {
+    const account = getPeerOperatorRegressionAccount();
+    test.skip(!account, "This test requires the local peer operator account.");
+    if (!account) return;
+
+    const content = `自动测试报销空回执 ${Date.now()}`;
+    try {
+      sql(`insert into public.operator_reimbursements(operator_user_id,spent_at,content,amount)
+        values ('${isolatedOperatorId}','${isolatedPeriodStart}','${content}',66.66);`);
+      await loginWithAccount(page, account);
+      await page.goto("/operator/reimbursements");
+      await page.getByRole("button", { name: "确认报销", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: "确认报销", exact: true });
+      await chooseSelectOption(
+        dialog.getByRole("combobox", { name: "待报销周期", exact: true }),
+        { value: isolatedPeriodStart },
+      );
+
+      // 故意让 RPC 返回 HTTP 200 和 0 行；真实数据库记录仍保持未报销。
+      await page.route(
+        "**/rest/v1/rpc/mark_operator_reimbursements_reimbursed",
+        async (route) => {
+          await route.fulfill({
+            body: JSON.stringify({
+              period_end: "2024-07-24",
+              period_start: isolatedPeriodStart,
+              reimbursed_total: 0,
+              updated_count: 0,
+            }),
+            contentType: "application/json",
+            status: 200,
+          });
+        },
+      );
+      await dialog.getByRole("button", { name: "确认报销", exact: true }).click();
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.locator('[data-slot="feedback-notice"][data-tone="error"]'),
+      ).toBeVisible();
+      await expect(
+        page.locator('[data-slot="feedback-notice"][data-tone="success"]'),
+      ).toHaveCount(0);
+      expect(
+        sql(`select status from public.operator_reimbursements where content='${content}';`),
+      ).toBe("unreimbursed");
+    } finally {
+      sql(`delete from public.operator_reimbursements
+        where operator_user_id='${isolatedOperatorId}' and content='${content}';`);
+    }
+  });
+
   test("operator reimbursements page fits mobile width", async ({ page }) => {
     await loginAs(page, "operator");
     await page.setViewportSize({ height: 844, width: 390 });

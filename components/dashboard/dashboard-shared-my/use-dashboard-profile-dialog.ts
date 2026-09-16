@@ -9,6 +9,7 @@ import {
   updateCurrentUserProfile,
 } from "@/lib/profile-change-requests";
 import type { AppRole, UserProfileRow } from "@/lib/user-self-service";
+import { runVerifiedActionWithRefresh } from "@/lib/verified-action-outcome";
 
 import {
   toErrorMessage,
@@ -28,7 +29,10 @@ type UseDashboardProfileDialogOptions = {
   authUser: User | null;
   copy: DashboardSharedMyStateCopy;
   profile: UserProfileRow | null;
-  refreshBundle: (options?: { quiet?: boolean }) => Promise<void>;
+  refreshBundle: (options?: {
+    quiet?: boolean;
+    throwOnError?: boolean;
+  }) => Promise<void>;
   role: AppRole | null;
   setBusyKey: (value: string | null) => void;
   setPageNotice: (notice: ProfileNotice) => void;
@@ -83,12 +87,20 @@ export function useDashboardProfileDialog({
 
     try {
       if (role === "administrator") {
-        await updateCurrentUserProfile(supabase, {
-          city: cityDraft,
-          name: nameDraft,
-          userId: authUser.id,
-        });
-        await refreshBundle({ quiet: true });
+        const outcome = await runVerifiedActionWithRefresh(
+          () =>
+            updateCurrentUserProfile(supabase, {
+              city: cityDraft,
+              name: nameDraft,
+              userId: authUser.id,
+            }).then(() => undefined),
+          () => refreshBundle({ quiet: true, throwOnError: true }),
+        );
+        if (outcome === "refreshing") {
+          setNotice({ tone: "info", message: copy.profileSavedRefreshing });
+          setPageNotice({ tone: "info", message: copy.profileSavedRefreshing });
+          return;
+        }
         setNotice({ tone: "success", message: copy.profileSaved });
         setPageNotice({ tone: "success", message: copy.profileSaved });
         return;

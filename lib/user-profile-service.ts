@@ -3,6 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { AppRole } from "./auth-routing";
 import type { UserProfileRow } from "./user-self-service-types";
 import { withRequestTimeout } from "./request-timeout";
+import { requireProfileWriteReceipt } from "./profile-operation-receipts";
 import { normalizeOptionalString } from "./value-normalizers";
 
 const PROFILE_MUTATION_TIMEOUT_MS = 20_000;
@@ -27,6 +28,10 @@ export async function updateUserProfileCity(
     },
   );
   if (error) throw error;
+  requireProfileWriteReceipt(data, {
+    city: options.city.trim(),
+    userId: options.userId,
+  });
   return data;
 }
 

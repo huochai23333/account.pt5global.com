@@ -18,6 +18,7 @@ export type DashboardSharedMyRefreshOptions = {
   dialogMessage?: string;
   pageMessage?: string;
   quiet?: boolean;
+  throwOnError?: boolean;
 };
 
 // 刷新资料包含请求、登录失效、页面反馈和弹窗反馈四个分支。
@@ -44,7 +45,12 @@ export async function refreshDashboardSharedMyBundle(
     sharedCopy: DashboardSharedCopy;
     supabase: ReturnType<typeof getBrowserSupabaseClient>;
   },
-  { dialogMessage, pageMessage, quiet }: DashboardSharedMyRefreshOptions = {},
+  {
+    dialogMessage,
+    pageMessage,
+    quiet,
+    throwOnError,
+  }: DashboardSharedMyRefreshOptions = {},
 ) {
   if (!supabase) return;
 
@@ -69,6 +75,9 @@ export async function refreshDashboardSharedMyBundle(
     const message = toErrorMessage(error, sharedCopy);
     if (activeDialog) setDialogNotice({ tone: "error", message });
     else setPageError(message);
+    // 已完成写入后的刷新必须把失败继续交给调用方，调用方才能显示“已保存，正在刷新”，
+    // 而不是先吞掉错误、随后又覆盖成绿色成功。
+    if (throwOnError) throw error;
   } finally {
     if (!quiet) setBusyKey(null);
   }

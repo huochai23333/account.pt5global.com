@@ -2029,6 +2029,7 @@
     "inviteCopied": "邀请码已复制到剪贴板。",
     "inviteCopyFailed": "复制失败，请稍后重试。",
     "profileSaved": "个人资料已保存。",
+    "profileSavedRefreshing": "个人资料已保存，页面内容正在刷新，请稍后核对。",
     "identitySubmitted": "身份证号已提交，当前状态为待审核。",
     "passportSubmitted": "护照号码已提交，当前状态为待审核。",
     "photosUploaded": "个人照片已上传，当前状态为待审核。",

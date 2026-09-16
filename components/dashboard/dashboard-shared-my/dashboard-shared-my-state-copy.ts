@@ -35,6 +35,7 @@ export function useDashboardSharedMyStateCopy() {
       inviteCopied: t("inviteCopied"),
       inviteCopyFailed: t("inviteCopyFailed"),
       profileSaved: t("profileSaved"),
+      profileSavedRefreshing: t("profileSavedRefreshing"),
       profileChangeSubmitted: t("profileChangeSubmitted"),
       profileRequired: t("profileRequired"),
       identitySubmitted: t("identitySubmitted"),

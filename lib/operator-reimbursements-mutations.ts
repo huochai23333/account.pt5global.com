@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withRequestTimeout } from "./request-timeout";
-import type {
-  OperatorReimbursementFormInput,
-  OperatorReimbursementBatchResult,
-} from "./operator-reimbursements-types";
+import type { OperatorReimbursementFormInput } from "./operator-reimbursements-types";
+import { requireOperatorReimbursementBatchReceipt } from "./operator-reimbursement-receipts";
 type OperatorReimbursementDatabaseRow = { id: string };
 type OperatorReimbursementBatchDatabaseRow = {
   period_start: string;
@@ -29,7 +27,7 @@ export async function createOperatorReimbursement(
     throw error;
   }
 
-  if (!data) {
+  if (!data || typeof data.id !== "string" || !data.id) {
     throw new Error("Operator reimbursement was not created.");
   }
 
@@ -54,7 +52,7 @@ export async function deleteOperatorReimbursement(
     throw error;
   }
 
-  if (!data) {
+  if (!data || data.id !== reimbursementId) {
     throw new Error("Operator reimbursement was not found.");
   }
 
@@ -77,16 +75,7 @@ export async function reimburseOperatorPeriod(
     throw error;
   }
 
-  if (!data) {
-    throw new Error("Operator reimbursement batch was not returned.");
-  }
-
-  return {
-    periodEnd: data.period_end,
-    periodStart: data.period_start,
-    reimbursedTotal: Number(data.reimbursed_total),
-    updatedCount: Number(data.updated_count),
-  } satisfies OperatorReimbursementBatchResult;
+  return requireOperatorReimbursementBatchReceipt(data, periodStart);
 }
 
 function toOperatorReimbursementPayload(input: OperatorReimbursementFormInput) {

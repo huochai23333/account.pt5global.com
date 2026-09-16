@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
+import {
+  requireProfileRequestReceipt,
+  requireProfileWriteReceipt,
+} from "./profile-operation-receipts";
 import type { UserProfileRow } from "./user-self-service";
 
 export type ProfileChangeRequestStatus = "pending" | "approved" | "rejected";
@@ -75,6 +79,12 @@ export async function updateCurrentUserProfile(
     throw error;
   }
 
+  requireProfileWriteReceipt(data, {
+    city: normalizedCity,
+    name: normalizedName,
+    userId: options.userId,
+  });
+
   return data;
 }
 
@@ -101,6 +111,12 @@ export async function submitProfileChangeRequest(
   if (error) {
     throw error;
   }
+
+  requireProfileRequestReceipt(data, {
+    city: options.city.trim(),
+    name: options.name.trim(),
+    status: "pending",
+  });
 
   return data;
 }
@@ -145,6 +161,11 @@ export async function approveProfileChangeRequest(
     throw error;
   }
 
+  requireProfileRequestReceipt(data, {
+    requestId,
+    status: "approved",
+  });
+
   return data;
 }
 
@@ -167,6 +188,11 @@ export async function rejectProfileChangeRequest(
   if (error) {
     throw error;
   }
+
+  requireProfileRequestReceipt(data, {
+    requestId,
+    status: "rejected",
+  });
 
   return data;
 }
