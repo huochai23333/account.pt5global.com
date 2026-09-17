@@ -53,12 +53,14 @@ type AdminShellProps = {
   children: ReactNode;
   config: WorkspaceRouteConfig;
   workspaceBusinessAccess: readonly WorkspaceBusinessKey[];
+  wide?: boolean;
 };
 
 export async function AdminShell({
   children,
   config,
   workspaceBusinessAccess,
+  wide = false,
 }: AdminShellProps) {
   const [
     t,
@@ -86,14 +88,14 @@ export async function AdminShell({
       <DashboardConfirmProvider>
         <WorkspaceSessionProvider>
           <WorkspaceCustomizationSidebarProvider>
-            <div className="min-h-screen bg-background text-foreground">
+            <div className="min-h-screen overflow-x-clip bg-background text-foreground">
               <div className="pointer-events-none fixed inset-0 overflow-hidden">
                 <div className="absolute right-[-10%] top-[-18%] h-[30rem] w-[30rem] rounded-full bg-[var(--workspace-glow-blue)] blur-3xl" />
                 <div className="absolute bottom-[-14%] left-[-10%] h-[24rem] w-[24rem] rounded-full bg-[var(--workspace-glow-green)] blur-3xl" />
               </div>
 
               <div className="relative flex min-h-screen">
-                <WorkspaceDesktopSidebar
+                {!wide ? <WorkspaceDesktopSidebar
                   defaultContent={
                     <>
                       <div className="mb-10 flex items-center gap-3 px-3">
@@ -122,10 +124,10 @@ export async function AdminShell({
                       <AdminShellLogoutButton label={t("logout")} />
                     </>
                   }
-                />
+                /> : null}
 
                 {/* 768px 平板仍使用顶部导航，把完整内容宽度留给两列工作区；1024px 起再让出桌面侧栏。 */}
-                <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-[284px]">
+                <div className={`flex min-h-screen min-w-0 flex-1 flex-col ${wide ? "lg:ml-0" : "lg:ml-[284px]"}`}>
                   <header
                     className="sticky top-0 z-10 border-b border-border-subtle bg-surface-chrome/80 shadow-surface-header backdrop-blur"
                     data-slot="workspace-header"

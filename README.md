@@ -19,13 +19,14 @@ PT5 Dropshipping Web 端基于 `Next.js 16 App Router`、`React 19`、`TypeScrip
 
 ## 技术栈
 
-- `Next.js 16.2.12` + App Router
+- `Next.js 16.3.4` + App Router
 - `React 19.2.4`
 - `TypeScript 5`
 - `Tailwind CSS 4`
 - `Supabase Auth` / `@supabase/ssr` / `@supabase/supabase-js`
 - `next-intl` 中英文双语
 - `Playwright` 真实浏览器验证
+- `@react-pdf/renderer` 浏览器内生成报价 PDF
 - `lucide-react` 图标
 - `Base UI` / `shadcn` 辅助组件
 - `motion` 全站页面、浮层、列表重排与交互反馈
@@ -486,6 +487,14 @@ PT5-dropshipping-web/
 - 桌面业务分组偏好保存在 `user_workspace_navigation_preferences`，只能由 active 登录账号读取自己的记录，并通过 `save_user_workspace_navigation_preference` 保存完整展开组合；空数组明确表示全部收起，读取失败时 Web 使用默认展开规则，不阻塞工作台。
 - Supabase 上传完成后，再提交和推送 Web 仓库。
 - Function secrets、供应商密钥和真实服务凭据只放在 Supabase secrets 或本机 `.env.local`，不能写入仓库。
+
+## 报价规范表
+
+内部员工首页固定显示“报价规范表”入口，进入 `/<角色>/quotes` 查看自己的报价、创建草稿和继续编辑；尚未开通业务的内部账号也可从登录后的服务说明页进入，客户账号不能访问。历史记录按页完整读取。编辑页沿用提供的 Cost List 英文版式：深蓝参数栏、公司抬头、逐目的地页眉、居中的 COST LIST、逐产品明细表、条款和收款卡片。窄屏可横向查看完整明细表。汇率及费率初始值来自表单，填写人应按该次报价核对并可修改。目的地可逐页选择是否导出，也可在顶部全选或全不选。
+
+“保存草稿”将完整表单写入私有报价记录；“导出 PDF”要求客户、报价人、日期、有效汇率以及所选目的地的产品名称、工厂价和时效齐全。系统先生成 A4 PDF，再确认记录保存为已完成并触发浏览器下载。横版 PDF 以原表的费用表格和逐产品重量、尺寸、交期为主；竖版使用紧凑产品卡片。每个目的地独立起页，可选的条款与收款详情另起页，明细过长自动续页。新报价在提交前固定记录 ID，提交后断线并在同一页面重试时会核对原记录，避免创建重复报价。员工只能查看和修改自己创建的记录；修改已完成报价后再次保存草稿会恢复草稿状态。
+
+产品图片可上传、粘贴或从公开 HTTPS 图片网址导入，实际文件进入私有 `quotation-images` 存储桶。图片上传和报价写入各自验证最终存储对象或数据库修订号；导出时若所需图片缺失，不会生成缺图 PDF。报价表位于 Web 仓库，数据库表、RPC、RLS 和存储策略位于相邻 Supabase 仓库的 `private_quotations` 与 `quotation_idempotency` 迁移中。先在本地 Docker 应用并验证迁移，再运行网页端测试。
 
 ## 测试与验证
 

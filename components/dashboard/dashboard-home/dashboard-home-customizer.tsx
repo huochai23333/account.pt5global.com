@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Check, SlidersHorizontal } from "lucide-react";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { useWorkspaceCustomizationSidebar } from "@/components/dashboard/workspace-customization-sidebar";
 import type { DashboardHomePageData } from "@/lib/dashboard-home";
 import { cn } from "@/lib/utils";
+import { getDefaultWorkspaceBasePath } from "@/lib/auth-routing";
 
 import { useDashboardHomeLayout } from "./use-dashboard-home-layout";
 import { useDashboardHomeTodos } from "./use-dashboard-home-todos";
@@ -32,6 +35,7 @@ type DashboardHomeCustomizerProps = {
   initialData: DashboardHomePageData;
   locale: string;
   todoCopy: HomeTodoCopy;
+  quoteCopy: { title: string; description: string; open: string };
 };
 
 export function DashboardHomeCustomizer({
@@ -40,6 +44,7 @@ export function DashboardHomeCustomizer({
   initialData,
   locale,
   todoCopy,
+  quoteCopy,
 }: DashboardHomeCustomizerProps) {
   const layout = useDashboardHomeLayout({
     initialWidgets: initialData.homeWidgetLayout,
@@ -193,6 +198,19 @@ export function DashboardHomeCustomizer({
           status={saveStatus}
         />
       </div>
+
+      {initialData.role && initialData.role !== "client" ? (
+        <section className="flex min-w-0 flex-col gap-4 rounded-surface-panel border border-surface-panel-border bg-surface-panel p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <FileText className="mt-1 size-5 shrink-0 text-primary" />
+            <div className="min-w-0"><h2 className="break-words text-lg font-bold text-content-strong">{quoteCopy.title}</h2>
+              <p className="break-words text-sm text-content-muted">{quoteCopy.description}</p></div>
+          </div>
+          <Link className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white" href={`${getDefaultWorkspaceBasePath(initialData.role)}/quotes`}>
+            {quoteCopy.open}
+          </Link>
+        </section>
+      ) : null}
 
       <div className="relative min-w-0">
         <div
