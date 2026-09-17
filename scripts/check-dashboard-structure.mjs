@@ -46,6 +46,8 @@ const dashboardMaterialOwners = new Set([
   "components/dashboard/dashboard-section-header.tsx",
   "components/dashboard/dashboard-segmented-tabs.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-account-switcher-section.tsx",
+  // 个人资料与认证展示已从页面组装器拆出，原有材质只允许在该展示层继续使用。
+  "components/dashboard/dashboard-shared-my/dashboard-my-content-sections.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-my-section-ui.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-shared-my-dialogs.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-shared-my-sections.tsx",

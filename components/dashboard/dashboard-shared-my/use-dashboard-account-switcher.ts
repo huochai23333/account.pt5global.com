@@ -8,18 +8,13 @@ import { useTranslations } from "next-intl";
 import type { AppRole } from "@/lib/auth-routing";
 import {
   clearAccountSwitcherStorage,
-  createStoredAccountFromCurrentSession,
   getStoredAlternateAccount,
   isStoredAccountExpired,
   isStoredAccountReauthenticationRequired,
-  markStoredAlternateAccountNeedsReauthentication,
   removeStoredAlternateAccount,
-  restoreStoredAccountSession,
-  saveStoredAlternateAccount,
-  startAddAlternateAccount,
-  startAlternateAccountReauthentication,
   type AccountSwitcherStoredAccount,
 } from "@/lib/account-switcher";
+import { executeAccountSwitcherAction } from "@/lib/account-switcher-actions";
 import { signOutCurrentBrowserSession } from "@/lib/browser-auth-session";
 import type { getBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -89,21 +84,17 @@ export function useDashboardAccountSwitcher({
     Boolean(authUser) && storedAlternateAccount?.userId === authUser?.id;
   const alternateAccount = hasSavedCurrentAccount ? null : storedAlternateAccount;
 
-  const createCurrentSnapshot = useCallback(async () => {
-    return createStoredAccountFromCurrentSession({
-      displayName,
-      role,
-      supabase,
-    });
-  }, [displayName, role, supabase]);
-
   const addAlternateAccount = useCallback(async () => {
     setBusyKey("account-switcher-add");
     setPageNotice(null);
 
     try {
-      const currentSnapshot = await createCurrentSnapshot();
-      startAddAlternateAccount(currentSnapshot);
+      await executeAccountSwitcherAction({
+        action: { kind: "add" },
+        displayName,
+        role,
+        supabase,
+      });
       signOutCurrentBrowserSession(supabase, "/login");
     } catch {
       setPageNotice({
@@ -112,7 +103,7 @@ export function useDashboardAccountSwitcher({
       });
       setBusyKey(null);
     }
-  }, [createCurrentSnapshot, setBusyKey, setPageNotice, supabase, t]);
+  }, [displayName, role, setBusyKey, setPageNotice, supabase, t]);
 
   const reauthenticateAlternateAccount = useCallback(async () => {
     if (!alternateAccount) {
@@ -123,10 +114,11 @@ export function useDashboardAccountSwitcher({
     setPageNotice(null);
 
     try {
-      const currentSnapshot = await createCurrentSnapshot();
-      startAlternateAccountReauthentication({
-        currentAccount: currentSnapshot,
-        targetAccount: alternateAccount,
+      await executeAccountSwitcherAction({
+        action: { kind: "reauthenticate", target: alternateAccount },
+        displayName,
+        role,
+        supabase,
       });
       signOutCurrentBrowserSession(supabase, "/login");
     } catch {
@@ -138,7 +130,8 @@ export function useDashboardAccountSwitcher({
     }
   }, [
     alternateAccount,
-    createCurrentSnapshot,
+    displayName,
+    role,
     setBusyKey,
     setPageNotice,
     supabase,
@@ -165,28 +158,34 @@ export function useDashboardAccountSwitcher({
     setPageNotice(null);
 
     try {
-      const currentSnapshot = await createCurrentSnapshot();
-      await restoreStoredAccountSession({
-        account: alternateAccount,
+      const result = await executeAccountSwitcherAction({
+        action: { kind: "switch", target: alternateAccount },
+        displayName,
+        role,
         supabase,
       });
-      saveStoredAlternateAccount(currentSnapshot);
+      if (result.status === "switched") {
+        window.location.assign(result.destination);
+        return;
+      }
 
-      window.location.assign(alternateAccount.defaultPath);
-    } catch {
-      const alternateAccountNeedingLogin =
-        markStoredAlternateAccountNeedsReauthentication(alternateAccount);
-
+      setStoredAlternateAccount(getStoredAlternateAccount());
       setPageNotice({
         tone: "error",
         message: t("accountSwitcherSessionExpiredNotice"),
       });
       setBusyKey(null);
-      setStoredAlternateAccount(alternateAccountNeedingLogin);
+    } catch {
+      setPageNotice({
+        tone: "error",
+        message: t("accountSwitcherUnavailable"),
+      });
+      setBusyKey(null);
     }
   }, [
     alternateAccount,
-    createCurrentSnapshot,
+    displayName,
+    role,
     setBusyKey,
     setPageNotice,
     supabase,

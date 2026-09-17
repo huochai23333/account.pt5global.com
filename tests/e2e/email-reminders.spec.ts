@@ -47,6 +47,8 @@ test("客户看不到入口并且不能直接进入邮件提醒", async ({ page 
   await loginForEmailReminders(page, "client");
   await page.goto("/client/my");
   await expect(page.getByRole("link", { name: "管理邮件提醒" })).toHaveCount(0);
+  await page.getByTestId("workspace-account-menu-trigger").click();
+  await expect(page.getByTestId("workspace-account-menu").getByRole("link", { name: "邮件提醒" })).toHaveCount(0);
   await page.goto("/email-reminders");
   await expect(page.getByRole("heading", { name: "这个页面不在你的工作范围内" })).toBeVisible();
 });
@@ -77,8 +79,48 @@ test("管理员只看到脱敏健康信息并可维护规则", async ({ page }) 
 test("内部员工可从个人页进入，暂无业务员工可从说明页进入", async ({ page }) => {
   await loginForEmailReminders(page, "salesman");
   await page.goto("/salesman/my");
-  await expect(page.getByRole("link", { name: "管理邮件提醒" })).toHaveAttribute("href", "/email-reminders");
+  const accountCenter = page.locator("#account-center");
+  await expect(accountCenter.getByRole("link", { name: "管理邮件提醒" })).toHaveAttribute("href", "/email-reminders");
+  await page.getByTestId("workspace-account-menu-trigger").click();
+  await page.getByTestId("workspace-account-menu").getByRole("link", { name: "邮件提醒" }).click();
+  await expect(page).toHaveURL(/\/email-reminders(?:[?#].*)?$/);
+  await expect(page.getByRole("heading", { name: "邮件提醒" })).toBeVisible();
 
   await page.goto("/business-unavailable");
   await expect(page.getByRole("link", { name: "邮件提醒" })).toHaveAttribute("href", "/email-reminders");
+});
+
+test("账号菜单与账号中心在桌面和手机宽度均可完整操作", async ({ page }) => {
+  await loginForEmailReminders(page, "administrator");
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 320, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/admin/my");
+    const accountCenter = page.locator("#account-center");
+    await expect(accountCenter.getByRole("link", { name: "管理邮件提醒" })).toBeVisible();
+    await page.getByTestId("workspace-account-menu-trigger").click();
+
+    const menu = page.getByTestId("workspace-account-menu");
+    const switchButton = menu.getByTestId("workspace-account-switch");
+    await expect(menu.getByRole("link", { name: "邮件提醒" })).toBeVisible();
+    await expect(switchButton).toBeVisible();
+
+    const [menuBox, switchBox] = await Promise.all([menu.boundingBox(), switchButton.boundingBox()]);
+    expect(menuBox).not.toBeNull();
+    expect(switchBox).not.toBeNull();
+    if (menuBox && switchBox) {
+      expect(menuBox.x).toBeGreaterThanOrEqual(0);
+      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(switchBox.height).toBeGreaterThanOrEqual(44);
+    }
+    const widths = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: window.innerWidth,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+  }
 });

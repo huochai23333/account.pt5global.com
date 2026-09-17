@@ -619,7 +619,11 @@
       "personalCenter": "Personal Center",
       "accountCenter": "Account Center",
       "profileInfo": "Profile",
-      "accountVerification": "Account & Verification"
+      "accountVerification": "Account & Verification",
+      "emailReminders": "Email reminders",
+      "switchAccount": "Switch account",
+      "sessionExpired": "This saved account needs a new sign-in. Select Switch account again to continue.",
+      "switchUnavailable": "Unable to switch accounts right now. Please try again."
     }
   },
   "WorkspaceLoadingShell": {

@@ -619,7 +619,11 @@
       "personalCenter": "个人中心",
       "accountCenter": "账号中心",
       "profileInfo": "个人资料",
-      "accountVerification": "账号与认证"
+      "accountVerification": "账号与认证",
+      "emailReminders": "邮件提醒",
+      "switchAccount": "切换账号",
+      "sessionExpired": "这个常用账号需要重新登录后才能继续切换，请再点一次切换账号。",
+      "switchUnavailable": "暂时无法切换账号，请稍后重试。"
     }
   },
   "WorkspaceLoadingShell": {

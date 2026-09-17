@@ -147,6 +147,7 @@ export async function AdminShell({
                           initialAnnouncementsState={initialAnnouncementsState}
                           initials={workspace.initials}
                           myHref={workspace.myHref}
+                          role={config.authRole}
                         />
                       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { WorkspaceAnnouncementsState } from "@/lib/workspace-announcements";
+import type { AppRole } from "@/lib/auth-routing";
 
 import { WorkspaceAnnouncementAction } from "./workspace-announcement-action";
 import { WorkspaceAccountMenu } from "./workspace-account-menu";
@@ -11,6 +12,7 @@ type WorkspaceHeaderActionsProps = {
   initialAnnouncementsState: WorkspaceAnnouncementsState;
   initials: string;
   myHref: string;
+  role: AppRole;
 };
 
 /**
@@ -22,6 +24,7 @@ export function WorkspaceHeaderActions({
   initialAnnouncementsState,
   initials,
   myHref,
+  role,
 }: WorkspaceHeaderActionsProps) {
   return (
     <>
@@ -33,6 +36,7 @@ export function WorkspaceHeaderActions({
         accountLabel={accountLabel}
         initials={initials}
         myHref={myHref}
+        role={role}
       />
     </>
   );

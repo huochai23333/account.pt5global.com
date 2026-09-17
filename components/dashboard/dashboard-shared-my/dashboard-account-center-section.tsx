@@ -4,6 +4,7 @@ import { Copy, KeyRound, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { EmailReminderEntryCard } from "./email-reminder-entry-card";
 
 import type { DashboardMyCopy } from "./dashboard-shared-my-copy";
 import { DashboardBusinessReferralPanel } from "./dashboard-business-referral-panel";
@@ -17,12 +18,14 @@ import type { DashboardSharedMyState } from "./use-dashboard-shared-my-state";
 export function DashboardAccountCenterSection({
   account,
   copy,
+  emailReminderHref,
   onRefreshProfile,
   stats,
   ui,
 }: {
   account: DashboardSharedMyState["account"];
   copy: DashboardMyCopy;
+  emailReminderHref?: string | null;
   onRefreshProfile: () => void;
   stats: readonly DashboardMyStatItem[];
   ui: DashboardSharedMyState["ui"];
@@ -83,6 +86,12 @@ export function DashboardAccountCenterSection({
         referralCode={account.referralCode}
         role={account.role}
       />
+      {/* 邮件管理属于账号工具，入口与密码、邀请码一起留在账号中心。 */}
+      {emailReminderHref ? (
+        <div className="mt-6">
+          <EmailReminderEntryCard href={emailReminderHref} />
+        </div>
+      ) : null}
     </DashboardMySectionShell>
   );
 }

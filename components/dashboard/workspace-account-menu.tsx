@@ -5,11 +5,13 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 import {
+  BellRing,
   ChevronDown,
   IdCard,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
+  RefreshCw,
   Settings,
   ShieldCheck,
 } from "lucide-react";
@@ -19,23 +21,29 @@ import { InteractiveButton as DesignButton } from "@/components/ui/button";
 import { signOutCurrentBrowserSession } from "@/lib/browser-auth-session";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { useStaleFocusRecovery } from "@/lib/use-stale-focus-recovery";
+import type { AppRole } from "@/lib/auth-routing";
+
+import { useWorkspaceAccountSwitch } from "./use-workspace-account-switch";
 
 type WorkspaceAccountMenuProps = {
   accountLabel: string;
   initials: string;
   myHref: string;
+  role: AppRole;
 };
 
 export function WorkspaceAccountMenu({
   accountLabel,
   initials,
   myHref,
+  role,
 }: WorkspaceAccountMenuProps) {
   const t = useTranslations("DashboardShell");
   const shouldUseFullPageLoad = useStaleFocusRecovery();
   const supabase = getBrowserSupabaseClient();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
+  const accountSwitch = useWorkspaceAccountSwitch(role);
   const accountMenuItems = useMemo(
     () => [
       {
@@ -68,9 +76,14 @@ export function WorkspaceAccountMenu({
     signOutCurrentBrowserSession(supabase);
   };
 
+  const emailReminderHref = role === "client" ? null : "/email-reminders";
+
   return (
     <Popover.Root
-      onOpenChange={setAccountMenuOpen}
+      onOpenChange={(open) => {
+        setAccountMenuOpen(open);
+        if (open) accountSwitch.setError(null);
+      }}
       open={accountMenuOpen}
     >
       <Popover.Trigger
@@ -150,6 +163,47 @@ export function WorkspaceAccountMenu({
                   </Link>
                 );
               })}
+              {emailReminderHref ? (
+                <Link
+                  className="flex min-h-11 items-center gap-3 rounded-control-default px-3 py-2.5 text-sm font-medium text-content-muted transition-colors hover:bg-surface-inset"
+                  href={emailReminderHref}
+                  onClick={(event) => {
+                    setAccountMenuOpen(false);
+                    if (shouldUseFullPageLoad()) {
+                      event.preventDefault();
+                      window.location.assign(emailReminderHref);
+                    }
+                  }}
+                  prefetch={false}
+                >
+                  <BellRing className="size-4 text-content-muted" />
+                  {t("accountMenu.emailReminders")}
+                </Link>
+              ) : null}
+            </div>
+
+            <div className="border-t border-border-subtle p-2">
+              <DesignButton
+                className="flex min-h-11 w-full items-center gap-3 rounded-control-default px-3 py-2.5 text-left text-sm font-medium text-content-muted transition-colors hover:bg-surface-inset disabled:cursor-not-allowed disabled:opacity-70"
+                data-testid="workspace-account-switch"
+                disabled={accountSwitch.pending || logoutPending}
+                onClick={() => void accountSwitch.switchAccount()}
+                type="button"
+              >
+                {accountSwitch.pending ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-4" />
+                )}
+                {t("accountMenu.switchAccount")}
+              </DesignButton>
+              {accountSwitch.error ? (
+                <p aria-live="polite" className="px-3 py-2 text-xs leading-5 text-status-danger">
+                  {t(accountSwitch.error === "session-expired"
+                    ? "accountMenu.sessionExpired"
+                    : "accountMenu.switchUnavailable")}
+                </p>
+              ) : null}
             </div>
 
             <div className="border-t border-border-subtle p-2">

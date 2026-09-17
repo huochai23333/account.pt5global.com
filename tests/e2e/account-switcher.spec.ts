@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { getRegressionAccount } from "./helpers/accounts";
 import { loginAs, loginWithAccount, setTestLocale } from "./helpers/auth";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const STORED_ACCOUNT_KEY =
@@ -10,6 +11,97 @@ const PENDING_LOGIN_KEY =
   "pt5-dropshipping.account-switcher.v2.pending";
 
 test.describe("common account switching", () => {
+  test("顶部菜单可添加账号，并以服务端身份核对一键切换", async ({ page }) => {
+    test.setTimeout(120_000);
+    const admin = getLocalSupabaseAdminClient();
+    test.skip(!admin, "需要本地数据库独立核对账号身份。");
+    if (!admin) return;
+
+    const administrator = await loginAs(page, "administrator");
+    await page.getByTestId("workspace-account-menu-trigger").click();
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 30_000 });
+    await expect(page.getByText(/请登录另一个账号/)).toBeVisible();
+    expect(await readPendingLoginSummary(page)).toMatchObject({
+      currentEmail: administrator.email,
+      kind: "add",
+    });
+
+    const client = getRegressionAccount("client");
+    await loginWithAccount(page, client);
+    await page.getByTestId("workspace-account-menu-trigger").click();
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page).toHaveURL(/\/admin\/home(?:[?#].*)?$/, { timeout: 30_000 });
+    await page.getByTestId("workspace-account-menu-trigger").click();
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page).toHaveURL(/\/client\/home(?:[?#].*)?$/, { timeout: 30_000 });
+
+    // 工作区布局会在服务端重新验证 Auth 用户与数据库角色；另行查询权威表核对目标账号。
+    const { data: profile, error: profileError } = await admin
+      .from("user_profiles")
+      .select("user_id,email")
+      .eq("email", client.email)
+      .single<{ user_id: string; email: string }>();
+    if (profileError) throw profileError;
+    const { data: roleLink, error: roleLinkError } = await admin
+      .from("user_roles_data")
+      .select("role_id")
+      .eq("user_id", profile.user_id)
+      .single<{ role_id: string }>();
+    if (roleLinkError) throw roleLinkError;
+    const { data: role, error: roleError } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("id", roleLink.role_id)
+      .single<{ role: string }>();
+    if (roleError) throw roleError;
+    expect(profile.email).toBe(client.email);
+    expect(role.role).toBe("client");
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/client\/home(?:[?#].*)?$/);
+    await page.goto("/client/my");
+    await expect(page.getByText(client.email, { exact: true }).first()).toBeVisible();
+  });
+
+  test("菜单遇到损坏的备用会话时拒绝切换并要求重新登录", async ({ page }) => {
+    await addClientAndSwitchBackToAdministrator(page);
+    await replaceStoredSessionWithInvalidTokens(page);
+    await page.reload();
+
+    await page.getByTestId("workspace-account-menu-trigger").click();
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page.getByText(/需要重新登录后才能继续切换/)).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/my(?:[?#].*)?$/);
+    expect(await readStoredAccountSummary(page)).toMatchObject({
+      hasSession: false,
+      state: "reauthentication-required",
+    });
+
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 30_000 });
+    expect(await readPendingLoginSummary(page)).toMatchObject({ kind: "reauthenticate" });
+  });
+
+  test("菜单遇到已过期的备用会话时直接进入目标账号重新登录", async ({ page }) => {
+    const client = getRegressionAccount("client");
+    await addClientAndSwitchBackToAdministrator(page);
+    await expireStoredAccount(page);
+    await page.reload();
+
+    await page.getByTestId("workspace-account-menu-trigger").click();
+    await page.getByTestId("workspace-account-switch").click();
+    await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 30_000 });
+    expect(await readPendingLoginSummary(page)).toMatchObject({
+      kind: "reauthenticate",
+      targetEmail: client.email,
+    });
+    expect(await readStoredAccountSummary(page)).toMatchObject({
+      hasSession: false,
+      state: "reauthentication-required",
+    });
+  });
+
   test("remembers the alternate account after reopening the browser", async ({
     browser,
   }) => {
