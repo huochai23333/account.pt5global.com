@@ -28,6 +28,7 @@ export function WholesaleSettlementReleaseClient({
         onClearAllocations={actions.clearAllocations}
         onCreateRelease={actions.createRelease}
         onSaveAllocations={actions.saveAllocations}
+        monthlyAllocatedUsd={initialData.monthlyAllocatedUsd}
         orderSettlements={initialData.orderSettlements}
         orders={initialData.orders}
         pendingKey={actions.pendingKey}

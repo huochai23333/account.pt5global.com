@@ -94,8 +94,10 @@ export function WholesaleEmptyState({
 }
 
 export function WholesaleStatGrid({
+  className,
   stats,
 }: {
+  className?: string;
   stats: Array<{
     helper?: string;
     icon: ReactNode;
@@ -106,7 +108,7 @@ export function WholesaleStatGrid({
 }) {
   return (
     // 批发业务的汇总数字与旅游业务共用紧凑摘要条，避免同一级页面出现两套卡片高度和信息层级。
-    <MetricGrid layout="summary-strip">
+    <MetricGrid className={className} layout="summary-strip">
       {stats.map((stat) => (
         <MetricCard
           description={stat.helper}

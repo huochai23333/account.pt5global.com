@@ -4723,6 +4723,10 @@
       "attribute009": "There are currently no eligible foreign exchange settlement collections.",
       "allAllocated": "Fully allocated",
       "statAllocated": "Fully allocated",
+      "statMonthlyAllocatedUsd": "Allocated this month (USD)",
+      "statMonthlyMissingRates": "{count} allocations need the USD rate for the payment date.",
+      "statMonthlyUnavailable": "Unavailable",
+      "statMonthlyUnavailableHelp": "We cannot verify this total right now. Please refresh later.",
       "statRecords": "Posted payments",
       "statUnallocatedAmount": "Unallocated amount",
       "statWaiting": "Needs allocation"

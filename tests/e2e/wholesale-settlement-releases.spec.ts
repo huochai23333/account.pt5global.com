@@ -11,16 +11,24 @@ import {
   expectSelectValue,
   getSelectValue,
 } from "./helpers/select-control";
-import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import {
+  cleanupRateFixtures,
+  cleanupSettlementReleaseFixtures,
+  ensureLocalUsdRate,
+  getActiveAllocationTotal,
+} from "./helpers/wholesale-settlement-fixtures";
 
 test.describe("wholesale settlement releases", () => {
   const createdReleaseNotes = new Set<string>();
+  const createdRateIds = new Set<string>();
 
   test.afterEach(async () => {
     // 结汇会真实生成收款、分配和订单结算记录。每次用例结束后只按本次唯一备注
     // 删除对应记录，避免前一次运行改变后一次“最早订单优先”的业务结果。
     await cleanupSettlementReleaseFixtures([...createdReleaseNotes]);
     createdReleaseNotes.clear();
+    await cleanupRateFixtures([...createdRateIds]);
+    createdRateIds.clear();
   });
 
   test("一笔收款可部分分配到多笔订单并整组调整", async ({
@@ -37,6 +45,8 @@ test.describe("wholesale settlement releases", () => {
     createdReleaseNotes.add(temporaryAllocationNote);
     createdReleaseNotes.add(cancelledNote);
     const receivedDate = getShanghaiDateInputValue();
+    const createdRateId = await ensureLocalUsdRate(receivedDate);
+    if (createdRateId) createdRateIds.add(createdRateId);
     const currentMonth = receivedDate.slice(0, 7).replace("-", "");
     const firstOrderNumber = `WH-LOCAL-${currentMonth}-001`;
 
@@ -93,6 +103,10 @@ test.describe("wholesale settlement releases", () => {
     await expect(
       salesmanPage.getByRole("button", { name: "发布收款" }),
     ).toHaveCount(0);
+    const monthlyCard = salesmanPage.locator('[data-slot="metric-card"]').filter({
+      hasText: "本月已分配金额",
+    });
+    await expect(monthlyCard).toContainText("US$0.00");
 
     await salesmanPage.getByLabel("搜索收款").fill(allocationNote);
     const allocationRow = salesmanPage.getByRole("row").filter({
@@ -170,6 +184,10 @@ test.describe("wholesale settlement releases", () => {
     await expect(allocationRow).toContainText(firstOrderNumber);
     await expect(allocationRow).toContainText(secondOrderNumber);
     await expect(allocationRow).toContainText("US$1,500.00");
+    await expect.poll(() => getActiveAllocationTotal(allocationNote)).toBe(1500);
+    await expect(monthlyCard).toContainText("US$1,500.00");
+    await salesmanPage.reload();
+    await expect(monthlyCard).toContainText("US$1,500.00");
 
     await allocationRow.getByRole("button", { name: "继续分配" }).click();
     const continueDialog = salesmanPage.getByRole("dialog", {
@@ -196,6 +214,8 @@ test.describe("wholesale settlement releases", () => {
 
     await expect(salesmanPage.getByText("结汇收款分配已保存。")).toBeVisible();
     await expect(allocationRow).toContainText("已分配");
+    await expect.poll(() => getActiveAllocationTotal(allocationNote)).toBe(3000);
+    await expect(monthlyCard).toContainText("US$3,000.00");
     await allocationRow.getByRole("button", { name: "调整分配" }).click();
     const adjustDialog = salesmanPage.getByRole("dialog", {
       name: "调整收款分配",
@@ -205,8 +225,9 @@ test.describe("wholesale settlement releases", () => {
       .click();
     await expect(adjustDialog.getByText("确认清空这笔收款的全部分配？"))
       .toBeVisible();
-    await adjustDialog.getByRole("button", { name: "保留当前分配" }).click();
-    await adjustDialog.getByRole("button", { name: "关闭弹窗" }).click();
+    await adjustDialog.getByRole("button", { name: "确认清空" }).click();
+    await expect.poll(() => getActiveAllocationTotal(allocationNote)).toBe(0);
+    await expect(monthlyCard).toContainText("US$0.00");
 
     // 手填名称的收款必须先归到正式客户；保存失败后客户和逐笔金额都应保留。
     await salesmanPage.getByLabel("搜索收款").fill(temporaryAllocationNote);
@@ -261,6 +282,9 @@ test.describe("wholesale settlement releases", () => {
     await expect(
       salesmanPage.getByRole("heading", { name: "结汇发布" }),
     ).toBeVisible();
+    await expectNoDocumentHorizontalOverflow(salesmanPage);
+    await expectNoCompressedText(salesmanPage);
+    await salesmanPage.setViewportSize({ height: 844, width: 320 });
     await expectNoDocumentHorizontalOverflow(salesmanPage);
     await expectNoCompressedText(salesmanPage);
     await salesmanPage.close();
@@ -329,7 +353,9 @@ async function expectNoDocumentHorizontalOverflow(page: Page) {
 
 async function expectNoCompressedText(page: Page) {
   const compressedText = await page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>("button, label, option"))
+    Array.from(document.querySelectorAll<HTMLElement>(
+      'button, label, option, [data-slot="metric-card"] p',
+    ))
       .filter((element) => {
         const text = element.innerText.trim();
         const rect = element.getBoundingClientRect();
@@ -370,64 +396,4 @@ async function expectTouchTargets(scope: Locator) {
   );
 
   expect(tooSmallTargets).toEqual([]);
-}
-
-async function cleanupSettlementReleaseFixtures(notes: string[]) {
-  if (notes.length === 0) {
-    return;
-  }
-
-  const admin = getLocalSupabaseAdminClient();
-
-  if (!admin) {
-    throw new Error("结汇回归只能在提供本地 Supabase 管理连接时运行。");
-  }
-
-  const { data: releases, error: releaseQueryError } = await admin
-    .from("wholesale_settlement_releases")
-    .select("id")
-    .in("note", notes);
-
-  if (releaseQueryError) {
-    throw releaseQueryError;
-  }
-
-  const releaseIds = (releases ?? []).map((release) => release.id);
-
-  if (releaseIds.length === 0) {
-    return;
-  }
-
-  // 先记住本次分配生成的订单结算 ID。删除收款会级联删除分配明细，
-  // 随后删除这些结算记录，由数据库触发器重新计算订单的结算状态。
-  const { data: settlements, error: settlementQueryError } = await admin
-    .from("wholesale_order_settlements")
-    .select("id")
-    .in("source_settlement_release_id", releaseIds);
-
-  if (settlementQueryError) {
-    throw settlementQueryError;
-  }
-
-  const { error: releaseDeleteError } = await admin
-    .from("wholesale_settlement_releases")
-    .delete()
-    .in("id", releaseIds);
-
-  if (releaseDeleteError) {
-    throw releaseDeleteError;
-  }
-
-  const settlementIds = (settlements ?? []).map((settlement) => settlement.id);
-
-  if (settlementIds.length > 0) {
-    const { error: settlementDeleteError } = await admin
-      .from("wholesale_order_settlements")
-      .delete()
-      .in("id", settlementIds);
-
-    if (settlementDeleteError) {
-      throw settlementDeleteError;
-    }
-  }
 }

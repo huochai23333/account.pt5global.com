@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
 import { getCurrentSessionContext } from "./current-session-context";
+import {
+  getMonthlySettlementAllocatedUsdSummary,
+  type MonthlySettlementAllocatedUsdSummary,
+} from "./wholesale-settlement-release-summary";
 import type {
   WholesaleCustomer,
   WholesaleOrder,
@@ -64,6 +68,7 @@ export type WholesaleSettlementReleasePageData = {
   orderSettlements: WholesaleOrderSettlement[];
   profiles: WholesaleProfile[];
   releases: WholesaleSettlementRelease[];
+  monthlyAllocatedUsd: MonthlySettlementAllocatedUsdSummary | null;
 };
 
 type QueryResult<T> = {
@@ -89,6 +94,7 @@ export async function getWholesaleSettlementReleasePageData(
     profilesResult,
     roleRowsResult,
     rolesResult,
+    monthlyAllocatedUsd,
   ] = await Promise.all([
     supabase
       .from("wholesale_settlement_releases")
@@ -135,6 +141,7 @@ export async function getWholesaleSettlementReleasePageData(
     supabase.from("user_roles").select("id,role") as unknown as Promise<
       QueryResult<{ id: string; role: AppRole }>
     >,
+    getMonthlySettlementAllocatedUsdSummary(supabase),
   ]);
 
   const rolesById = new Map(
@@ -160,6 +167,7 @@ export async function getWholesaleSettlementReleasePageData(
     orderSettlements: readRows(orderSettlementsResult),
     profiles,
     releases: readRows(releasesResult),
+    monthlyAllocatedUsd,
   };
 }
 

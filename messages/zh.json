@@ -4723,6 +4723,10 @@
       "attribute009": "当前没有符合条件的结汇收款。",
       "allAllocated": "已全部分配",
       "statAllocated": "已全部分配",
+      "statMonthlyAllocatedUsd": "本月已分配金额",
+      "statMonthlyMissingRates": "{count} 笔分配缺少收款日美元汇率，请先补齐汇率。",
+      "statMonthlyUnavailable": "暂无法计算",
+      "statMonthlyUnavailableHelp": "当前无法核对统计，请稍后刷新。",
       "statRecords": "发布记录",
       "statUnallocatedAmount": "尚未分配金额",
       "statWaiting": "待继续分配"

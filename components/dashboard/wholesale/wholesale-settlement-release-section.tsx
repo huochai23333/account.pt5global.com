@@ -4,14 +4,7 @@ import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import {
-  BadgeCheck,
-  CircleDollarSign,
-  Clock3,
-  Plus,
-  RefreshCcw,
-  ReceiptText,
-} from "lucide-react";
+import { Plus, RefreshCcw, ReceiptText } from "lucide-react";
 import {
   DashboardFilterField,
   DashboardListSection,
@@ -29,8 +22,8 @@ import type {
   WholesaleSettlementRelease,
   WholesaleSettlementReleaseAllocation,
 } from "@/lib/wholesale-settlement-releases";
+import type { MonthlySettlementAllocatedUsdSummary } from "@/lib/wholesale-settlement-release-summary";
 import { normalizeSearchText } from "@/lib/value-normalizers";
-import { formatCurrency } from "./wholesale-display";
 import { WholesaleSettlementReleaseAllocationDialog } from "./wholesale-settlement-release-allocation-dialog";
 import { WholesaleSettlementReleaseCreateDialog } from "./wholesale-settlement-release-dialogs";
 import {
@@ -38,11 +31,11 @@ import {
   WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS,
 } from "./wholesale-settlement-release-display";
 import { WholesaleSettlementReleaseTable } from "./wholesale-settlement-release-table";
+import { WholesaleSettlementReleaseSummary } from "./wholesale-settlement-release-summary";
 import type { SettlementReleaseAllocationSubmission } from "./use-wholesale-settlement-release-actions";
 import {
   WholesaleEmptyState,
   WholesalePageShell,
-  WholesaleStatGrid,
 } from "./wholesale-ui";
 type WholesaleSettlementReleaseSectionProps = {
   allocations: WholesaleSettlementReleaseAllocation[];
@@ -58,6 +51,7 @@ type WholesaleSettlementReleaseSectionProps = {
   onSaveAllocations: (
     submission: SettlementReleaseAllocationSubmission,
   ) => Promise<boolean>;
+  monthlyAllocatedUsd: MonthlySettlementAllocatedUsdSummary | null;
   orderSettlements: WholesaleOrderSettlement[];
   orders: WholesaleOrder[];
   pendingKey: string | null;
@@ -75,6 +69,7 @@ export function WholesaleSettlementReleaseSection({
   onClearAllocations,
   onCreateRelease,
   onSaveAllocations,
+  monthlyAllocatedUsd,
   orderSettlements,
   orders,
   pendingKey,
@@ -141,18 +136,6 @@ export function WholesaleSettlementReleaseSection({
     searchText,
     statusFilter,
   ]);
-  const waitingCount = releases.filter(
-    (release) =>
-      release.status === "pending" || release.status === "partially_allocated",
-  ).length;
-  const allocatedCount = releases.filter(
-    (release) => release.status === "allocated",
-  ).length;
-  const unallocatedAmountSummary = formatUnallocatedAmountSummary(
-    releases,
-    allocationsByReleaseId,
-    uiText("allAllocated"),
-  );
   const hasActiveFilters = searchText || statusFilter !== ALL;
   return (
     <WholesalePageShell
@@ -171,33 +154,10 @@ export function WholesaleSettlementReleaseSection({
       }
       title={uiText("attribute003")}
     >
-      <WholesaleStatGrid
-        stats={[
-          {
-            icon: <ReceiptText className="size-4" />,
-            label: uiText("statRecords"),
-            tone: "info",
-            value: `${releases.length}`,
-          },
-          {
-            icon: <Clock3 className="size-4" />,
-            label: uiText("statWaiting"),
-            tone: "warning",
-            value: `${waitingCount}`,
-          },
-          {
-            icon: <BadgeCheck className="size-4" />,
-            label: uiText("statAllocated"),
-            tone: "success",
-            value: `${allocatedCount}`,
-          },
-          {
-            icon: <CircleDollarSign className="size-4" />,
-            label: uiText("statUnallocatedAmount"),
-            tone: "warning",
-            value: unallocatedAmountSummary,
-          },
-        ]}
+      <WholesaleSettlementReleaseSummary
+        allocations={allocations}
+        monthlyAllocatedUsd={monthlyAllocatedUsd}
+        releases={releases}
       />
 
       <DashboardListSection
@@ -305,42 +265,4 @@ export function WholesaleSettlementReleaseSection({
       ) : null}
     </WholesalePageShell>
   );
-}
-function formatUnallocatedAmountSummary(
-  releases: WholesaleSettlementRelease[],
-  allocationsByReleaseId: Map<
-    string,
-    WholesaleSettlementReleaseAllocation[]
-  >,
-  allAllocatedLabel: string,
-) {
-  const totals = new Map<string, number>();
-  for (const release of releases) {
-    if (release.status === "cancelled" || release.status === "allocated") {
-      continue;
-    }
-    const allocatedAmount = (allocationsByReleaseId.get(release.id) ?? [])
-      .filter((allocation) => allocation.status === "active")
-      .reduce(
-        (sum, allocation) => sum + Number(allocation.allocation_amount ?? 0),
-        0,
-      );
-    const remainingAmount = Math.max(
-      Number(release.release_amount) - allocatedAmount,
-      0,
-    );
-    // 不同币种不能直接相加，先按币种分别累计再展示。
-    totals.set(
-      release.release_currency,
-      (totals.get(release.release_currency) ?? 0) +
-        remainingAmount,
-    );
-  }
-  if (totals.size === 0) {
-    return allAllocatedLabel;
-  }
-  return Array.from(totals.entries())
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([currency, amount]) => formatCurrency(amount, currency))
-    .join(" / ");
 }
