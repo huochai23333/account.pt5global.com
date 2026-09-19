@@ -79,11 +79,13 @@ const homeNavItems = [
 
 const internalGlobalNavItems = [
   { segment: "home", labelKey: "home" },
+  { segment: "company-templates", labelKey: "companyTemplates" },
   { segment: "settings", labelKey: "exchangeRates" },
 ] as const satisfies readonly WorkspaceNavItem[];
 
 const adminGlobalNavItems = [
   { segment: "home", labelKey: "home" },
+  { segment: "company-templates", labelKey: "companyTemplates" },
   { segment: "reviews", labelKey: "reviews" },
   { segment: "accounts", labelKey: "accounts" },
   { segment: "announcements", labelKey: "announcements" },
@@ -95,12 +97,14 @@ const adminGlobalNavItems = [
 
 const financeGlobalNavItems = [
   { segment: "home", labelKey: "home" },
+  { segment: "company-templates", labelKey: "companyTemplates" },
   { segment: "company-expenses", labelKey: "companyExpenses" },
   { segment: "settings", labelKey: "exchangeRates" },
 ] as const satisfies readonly WorkspaceNavItem[];
 
 const operatorGlobalNavItems = [
   { segment: "home", labelKey: "home" },
+  { segment: "company-templates", labelKey: "companyTemplates" },
   { segment: "reimbursements", labelKey: "reimbursements" },
   { segment: "settings", labelKey: "exchangeRates" },
 ] as const satisfies readonly WorkspaceNavItem[];
@@ -248,6 +252,7 @@ const workspaceWholesaleSectionKeySet = new Set<string>(workspaceWholesaleSectio
 const workspaceGlobalNavSegmentSet = new Set<string>([
   "accounts",
   "announcements",
+  "company-templates",
   "company-expenses",
   "feedback",
   "home",

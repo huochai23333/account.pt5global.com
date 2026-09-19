@@ -52,7 +52,7 @@ export default async function BusinessUnavailablePage({
               {role && role !== "client" ? (
                 <>
                   <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
-                    href={`${getDefaultWorkspaceBasePath(role)}/quotes`}>{copy.quotations}</Link>
+                    href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
                   <Link
                     className={cn(
                       buttonVariants({ size: "default", variant: "primary" }),
@@ -103,7 +103,7 @@ function getUnavailableCopy(locale: string, isTourismAddress: boolean) {
         : `Your account does not currently have an available business workspace. Contact ${companyConfig.supportEmail} if you need help.`,
       help: "Email support",
       emailReminders: "Email reminders",
-      quotations: "Quotation form",
+      companyTemplates: "Company templates",
       signOut: "Sign out",
       title: isTourismAddress
         ? "Travel services are temporarily unavailable"
@@ -118,7 +118,7 @@ function getUnavailableCopy(locale: string, isTourismAddress: boolean) {
       : `这个账号目前没有可进入的业务工作区。如需帮助，请联系 ${companyConfig.supportEmail}。`,
     help: "联系帮助邮箱",
     emailReminders: "邮件提醒",
-    quotations: "报价规范表",
+    companyTemplates: "公司模板",
     signOut: "退出登录",
     title: isTourismAddress ? "旅游业务暂时停止服务" : "当前没有可使用的业务",
   };

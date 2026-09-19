@@ -160,7 +160,6 @@ export function DashboardHomeClient({ initialData }: DashboardHomeClientProps) {
       initialData={initialData}
       locale={locale}
       todoCopy={todoCopy}
-      quoteCopy={{ title: t("quote.title"), description: t("quote.description"), open: t("quote.open") }}
     />
   );
 }

@@ -36,6 +36,7 @@ export type WorkspaceWholesaleSectionKey =
 export type WorkspaceGlobalNavSegment =
   | "accounts"
   | "announcements"
+  | "company-templates"
   | "company-expenses"
   | "feedback"
   | "home"
@@ -53,6 +54,7 @@ export type WorkspaceNavSegment =
 export type WorkspaceNavLabelKey =
   | "accounts"
   | "announcements"
+  | "companyTemplates"
   | "companyExpenses"
   | "home"
   | "my"

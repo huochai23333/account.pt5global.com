@@ -26,7 +26,6 @@ PT5 Dropshipping Web 端基于 `Next.js 16 App Router`、`React 19`、`TypeScrip
 - `Supabase Auth` / `@supabase/ssr` / `@supabase/supabase-js`
 - `next-intl` 中英文双语
 - `Playwright` 真实浏览器验证
-- `@react-pdf/renderer` 浏览器内生成报价 PDF
 - `lucide-react` 图标
 - `Base UI` / `shadcn` 辅助组件
 - `motion` 全站页面、浮层、列表重排与交互反馈
@@ -242,6 +241,11 @@ app/
 ├─ access-limited/
 ├─ business-unavailable/
 ├─ email-reminders/
+├─ (company-templates)/
+│  └─ [workspace]/
+│     └─ company-templates/
+├─ api/
+│  └─ company-templates/
 ├─ (workspace)/
 │  └─ [workspace]/
 │     ├─ announcements/
@@ -265,6 +269,8 @@ app/
 - `lib/current-session-context.ts`：会话薄编排层；缓存、Auth 获取和数据库访问上下文分别位于 `current-session-cache.ts`、`current-session-auth.ts` 与 `current-session-access-context.ts`。
 - `lib/user-self-service.ts`：个人中心读取编排；资料、隐私申请、媒体上传和预览缓存分别位于对应的 `user-*` 服务文件。
 - `lib/emailconnect/`：EmailConnect 服务端签名客户端、统一员工身份映射、页面查询和 Worker 反向人员状态验证；不会在浏览器中读取安装密钥。
+- `lib/company-templates/`：公司模板权限、文件校验、查询、管理员写入回执和内容完整性核对；页面与接口只负责组装和请求调度。
+- `components/dashboard/company-templates/`：模板列表、管理弹窗、模板卡片和沙箱查看器；HTML 正文由独立内容接口返回。
 - `components/dashboard/email-reminders/`：个人 Gmail 连接、管理员规则和连接健康状态的独立展示与 view-model；详情 Page 只组装查询结果。`dashboard-my-content-sections.tsx` 承载个人页资料与认证展示，个人页组装器只排列区块。
 - `lib/workspace-config.ts`：全局工作台配置中心，负责角色 base path、全局入口和从业务模块清单组装后的页面能力。
 - `lib/workspace-route-segments.ts`：工作台角色路由段枚举。
@@ -488,13 +494,13 @@ PT5-dropshipping-web/
 - Supabase 上传完成后，再提交和推送 Web 仓库。
 - Function secrets、供应商密钥和真实服务凭据只放在 Supabase secrets 或本机 `.env.local`，不能写入仓库。
 
-## 报价规范表
+## 公司模板
 
-内部员工首页固定显示“报价规范表”入口，进入 `/<角色>/quotes` 查看自己的报价、创建草稿和继续编辑；尚未开通业务的内部账号也可从登录后的服务说明页进入，客户账号不能访问。历史记录按页完整读取。编辑页沿用提供的 Cost List 英文版式：深蓝参数栏、公司抬头、逐目的地页眉、居中的 COST LIST、逐产品明细表、条款和收款卡片。窄屏可横向查看完整明细表。汇率及费率初始值来自表单，填写人应按该次报价核对并可修改。目的地可逐页选择是否导出，也可在顶部全选或全不选。
+所有内部员工的工作栏固定显示“公司模板”，进入 `/<角色>/company-templates` 使用公司当前发布的互动 HTML；客户账号不能访问。没有已启用业务的内部账号仍可从服务说明页进入。模板中的填写状态由 HTML 自己管理，系统不会保存正在填写的内容，刷新或离开前应先按模板说明下载结果。当前 PT5 DS 多目的国报价单通过页面内的打印入口或 `Ctrl+P`，在浏览器中选择“另存为 PDF”。
 
-“保存草稿”将完整表单写入私有报价记录；“导出 PDF”要求客户、报价人、日期、有效汇率以及所选目的地的产品名称、工厂价和时效齐全。系统先生成 A4 PDF，再确认记录保存为已完成并触发浏览器下载。横版 PDF 以原表的费用表格和逐产品重量、尺寸、交期为主；竖版使用紧凑产品卡片。每个目的地独立起页，可选的条款与收款详情另起页，明细过长自动续页。新报价在提交前固定记录 ID，提交后断线并在同一页面重试时会核对原记录，避免创建重复报价。员工只能查看和修改自己创建的记录；修改已完成报价后再次保存草稿会恢复草稿状态。
+只有管理员可以新建模板、上传新版本、回退历史版本和停用模板。发布接口接受 UTF-8 单文件 HTML，模板和可选指南各不超过 5 MB；包含外部脚本、嵌入页面、自动跳转或外部表单提交的文件会被拒绝。新版本与指南在同一数据库事务内写入并立即启用，空指南会沿用上一版本。每次写入必须返回模板编号、版本编号、递增修订号和 SHA-256，并在成功提示前独立重新读取核对。
 
-产品图片可上传、粘贴或从公开 HTTPS 图片网址导入，实际文件进入私有 `quotation-images` 存储桶。图片上传和报价写入各自验证最终存储对象或数据库修订号；导出时若所需图片缺失，不会生成缺图 PDF。报价表位于 Web 仓库，数据库表、RPC、RLS 和存储策略位于相邻 Supabase 仓库的 `private_quotations` 与 `quotation_idempotency` 迁移中。先在本地 Docker 应用并验证迁移，再运行网页端测试。
+互动 HTML 通过带严格 CSP 的独立响应装入沙箱 iframe，允许模板自身的内联交互、图片粘贴、文件选择、打印、下载及打开产品链接，但不授予同源权限。模板正文、指南、版本元数据、RLS 和管理员 RPC 位于相邻 Supabase 仓库的 `company_templates` 与 `company_template_versions` 迁移中；先在本地 Docker 应用并验证迁移，再运行网页端测试。
 
 ## 测试与验证
 
@@ -519,6 +525,7 @@ PT5-dropshipping-web/
 - Playwright 固定使用单 worker 串行执行，因为角色用例共用本地种子账号和 Supabase 数据；不要通过增加 worker 加速，否则写入场景和登录查询会互相干扰。
 - 如果 `3000` 不是当前项目服务，不要直接运行默认 e2e；先设置 `PLAYWRIGHT_BASE_URL` 指向当前项目端口，已手动启动 dev server 时同时设置 `PLAYWRIGHT_SKIP_WEB_SERVER=1`。
 - `tests/e2e` 覆盖登录、角色首页、越权拦截和关键工作区入口。
+- `tests/e2e/company-templates.spec.ts` 覆盖七类内部岗位、客户拒绝、v32 交互与打印、新建/更新/指南/回退/停用、文件限制、权限、冲突、原子回滚、重复请求、断线、业务失败和内容哈希篡改，并独立查询本地数据库核对最终编号、版本、修订号与哈希。
 - `tests/e2e/design-system-visual.spec.ts` 维护 44 张基线：在 `1440 × 900` 与 `390 × 844` 下覆盖登录、注册、找回密码、法律、异常、管理员、运营和客户关键页面、移动筛选折叠态、长表单底部操作区、标准表单弹窗、选择菜单，以及日期、月份和日期时间浮层的展开状态；首页另有 768px 自动布局和 1280px 桌面布局分界基线，768px 也会检查三类日期浮层和代表页面都留在视口内。用例会关闭动画、冻结时间、隐藏开发入口，检查认证页使用共享大型控件、工作台使用共享默认控件，并验证两者的语义颜色和焦点规则一致；截图基线保存在同名 `-snapshots` 目录。
 - `tests/e2e/motion.spec.ts` 覆盖认证页首屏动效、减少动态效果、工作台菜单退出、待办列表重排和移动端密集表格宽度稳定性。
 - `tests/e2e/api-request-limits.spec.ts` 覆盖 AI 与 1688 请求体上限、1688 十分钟窗口限制和 `Retry-After`；数据库 SQL 断言继续覆盖 AI/1688 并发租约、释放和跨用户拒绝。

@@ -26,6 +26,7 @@ const NAV_LABELS = {
   accounts: "账号管理",
   announcements: "公告管理",
   businessSettings: "业务设置",
+  companyTemplates: "公司模板",
   companyExpenses: "公司费用",
   commission: "佣金",
   customerInventoryOrders: "库存订单",
@@ -57,6 +58,7 @@ const NAV_ENTRY_DESCRIPTIONS = {
   accounts: "管理系统登录账号、身份、状态和城市",
   announcements: "发布和管理系统公告",
   businessSettings: "维护当前业务内的价格、佣金和相关规则",
+  companyTemplates: "打开公司发布的互动模板和配套使用指南",
   companyExpenses: "按月份记录公司对外支出费用",
   commission: "查看或处理订单佣金与任务奖励",
   customerInventoryOrders:

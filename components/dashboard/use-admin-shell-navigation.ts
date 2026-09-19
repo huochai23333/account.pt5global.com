@@ -25,7 +25,13 @@ export function useAdminShellNavigation(
   const resolvedPendingHref =
     pendingNavigation?.startPathname === pathname ? pendingNavigation.href : null;
   const activeItem = useMemo(
-    () => items.find((item) => item.href === pathname) ?? items[0] ?? null,
+    () => {
+      // 模板查看、详情等子页面仍属于它们的工作栏入口；优先选择最长的匹配地址，避免手机菜单退回显示“首页”。
+      const matchingItems = items
+        .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+        .sort((left, right) => right.href.length - left.href.length);
+      return matchingItems[0] ?? items[0] ?? null;
+    },
     [items, pathname],
   );
 

@@ -12,6 +12,7 @@ import {
   GitBranchPlus,
   Home,
   HeartPulse,
+  LayoutTemplate,
   LoaderCircle,
   Megaphone,
   MessageSquareWarning,
@@ -36,6 +37,7 @@ import { useAdminShellNavigation } from "./use-admin-shell-navigation";
 export const ADMIN_NAV_ICONS: Record<WorkspaceNavSegment, LucideIcon> = {
   accounts: UserCog,
   announcements: Megaphone,
+  "company-templates": LayoutTemplate,
   "company-expenses": ReceiptText,
   commission: WalletCards,
   customers: UsersRound,
