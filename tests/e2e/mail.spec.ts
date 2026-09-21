@@ -89,6 +89,18 @@ test("业务员上传安全附件并新建邮件", async ({ page }) => {
   expect(count).toBe(1);
 });
 
+test("管理员没有业务员发件资料时不会误触发发送", async ({ page }) => {
+  await login(page, "administrator");
+  await page.goto("/admin/mail");
+  await page.getByRole("button", { name: "新邮件", exact: true }).click();
+  const composer = page.getByTestId("mail-composer");
+  await expect(composer.getByTestId("mail-sender-unavailable")).toHaveText("当前账号还没有启用发件资料，请联系管理员配置后再发送。");
+  await composer.getByLabel("收件人").fill("buyer@example.com");
+  await composer.getByLabel("主题").fill("Admin must not send");
+  await composer.getByLabel("正文").fill("The send button must stay disabled.");
+  await expect(composer.getByRole("button", { name: "发送邮件" })).toBeDisabled();
+});
+
 test("当前负责人转交后版本、审计与刷新结果一致", async ({ page }) => {
   await login(page, "salesman");
   await page.goto("/salesman/mail");

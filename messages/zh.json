@@ -5127,6 +5127,7 @@
     "suggestReply": "生成回复建议",
     "confirmingSend": "正在确认发送",
     "sendMail": "发送邮件",
+    "senderUnavailable": "当前账号还没有启用发件资料，请联系管理员配置后再发送。",
     "editableSuggestion": "这是一份可编辑建议，不会自动发送。",
     "companyMailbox": "公司邮箱",
     "notConnected": "尚未连接",

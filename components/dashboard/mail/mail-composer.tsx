@@ -13,6 +13,11 @@ export function MailComposer(props: {
   value: ComposerState;
   busy: string | null;
   canSuggest: boolean;
+  /**
+   * 发信资格由服务端工作台概况决定。管理员虽然能查看和整理全部会话，
+   * 但只有已经启用发件资料的业务员才能真正提交发送任务。
+   */
+  canSend: boolean;
   aiDraft: string;
   onChange: (value: ComposerState) => void;
   onFiles: (files: File[]) => void;
@@ -33,12 +38,13 @@ export function MailComposer(props: {
       <Field className="mt-3" label={t("body")}><Textarea className="min-h-40" onChange={(event) => set("body", event.target.value)} value={props.value.body} /></Field>
       {props.value.attachments.length > 0 ? <ul className="mt-3 space-y-1 text-xs text-content-muted">{props.value.attachments.map((item) => <li className="break-all" key={item.id}>{item.name} · {item.status === "clean" ? t("attachmentReady") : t("attachmentChecking")}</li>)}</ul> : null}
       <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <DashboardFilePicker disabled={props.busy !== null} label={t("addAttachment")} multiple onFiles={props.onFiles} />
+        <DashboardFilePicker disabled={props.busy !== null || !props.canSend} label={t("addAttachment")} multiple onFiles={props.onFiles} />
         {props.canSuggest ? <Button disabled={props.busy !== null} onClick={props.onSuggest} type="button" variant="outline">{props.busy === "ai-reply" ? <LoaderCircle className="size-4 animate-spin" /> : <Bot className="size-4" />}{t("suggestReply")}</Button> : null}
-        <Button className="sm:ml-auto" disabled={props.busy !== null || hasUnsafeAttachment || !props.value.to.trim() || !props.value.subject.trim() || !props.value.body.trim()} onClick={props.onSend} type="button">
+        <Button className="sm:ml-auto" disabled={!props.canSend || props.busy !== null || hasUnsafeAttachment || !props.value.to.trim() || !props.value.subject.trim() || !props.value.body.trim()} onClick={props.onSend} type="button">
           {props.busy === "send" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}{props.busy === "send" ? t("confirmingSend") : t("sendMail")}
         </Button>
       </div>
+      {!props.canSend ? <p className="mt-3 text-xs leading-5 text-content-muted" data-testid="mail-sender-unavailable">{t("senderUnavailable")}</p> : null}
       {props.aiDraft ? <p className="mt-3 text-xs leading-5 text-content-muted">{t("editableSuggestion")}</p> : null}
     </section>
   );

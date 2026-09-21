@@ -5127,6 +5127,7 @@
     "suggestReply": "Suggest a reply",
     "confirmingSend": "Confirming delivery",
     "sendMail": "Send email",
+    "senderUnavailable": "Sending is not enabled for this account. Ask an administrator to finish the sender setup before sending.",
     "editableSuggestion": "This is an editable suggestion and will not be sent automatically.",
     "companyMailbox": "Company mailbox",
     "notConnected": "Not connected",
