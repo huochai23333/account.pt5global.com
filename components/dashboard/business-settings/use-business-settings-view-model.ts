@@ -20,15 +20,15 @@ export function useBusinessSettingsViewModel(
   const [orderDiscountOptions, setOrderDiscountOptions] = useState(
     initialData.orderDiscountOptions,
   );
-  const [commissionRuleSettings, setCommissionRuleSettings] = useState(
-    initialData.commissionRuleSettings,
+  const [businessParameterSettings, setBusinessParameterSettings] = useState(
+    initialData.businessParameterSettings,
   );
   return {
-    commissionRuleSettings,
+    businessParameterSettings,
     orderDiscountOptions,
     serviceFeeTypeOptions,
     serviceOrderPriceOptions,
-    setCommissionRuleSettings,
+    setBusinessParameterSettings,
     setOrderDiscountOptions,
     setServiceFeeTypeOptions,
     setServiceOrderPriceOptions,

@@ -1,287 +1,179 @@
 "use client";
 
-import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
-
-import * as FormControls from "@/components/ui/form-controls";
-import { RecordCard } from "@/components/ui/data-display";
-
 import type { ReactNode } from "react";
-
+import { History, Pencil, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { DashboardTableFrame } from "@/components/dashboard/dashboard-section-panel";
+import { Button } from "@/components/ui/button";
+import { RecordCard } from "@/components/ui/data-display";
+import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import type {
-  CommissionRuleCode,
-  CommissionRuleSetting,
+  BusinessParameterSetting,
+  BusinessParameterVersion,
 } from "@/lib/commission-settings";
-import { DashboardInlineEditActions } from "@/components/dashboard/dashboard-framework-primitives";
-import {
-  DashboardTableFrame,
-  dashboardFilterInputClassName,
-} from "@/components/dashboard/dashboard-section-panel";
 
 import {
-  type CommissionRuleDefinition,
-  formatCommissionCalculationFormula,
+  COMMISSION_RULE_DEFINITIONS,
   formatCommissionSettingValue,
   getRuleConfigValue,
+  type CommissionRuleDefinition,
 } from "./commission-settings-display";
 
-type RuleDraft = Record<string, string>;
-type VisibleRule = {
-  definition: CommissionRuleDefinition;
-  row: CommissionRuleSetting | null;
-};
-
-export function CommissionSettingsRulesTable({
-  canManageSettings,
-  draft,
-  editingRule,
+export function BusinessParameterSettingsTable({
   locale,
-  pendingRule,
-  visibleRules,
-  onCancel,
-  onDraftChange,
+  onCancelSchedule,
   onEdit,
-  onSave,
+  onHistory,
+  pendingKey,
+  settings,
 }: {
-  canManageSettings: boolean;
-  draft: RuleDraft;
-  editingRule: CommissionRuleCode | null;
   locale: string;
-  pendingRule: CommissionRuleCode | null;
-  visibleRules: VisibleRule[];
-  onCancel: () => void;
-  onDraftChange: (draft: RuleDraft) => void;
-  onEdit: (definition: CommissionRuleDefinition) => void;
-  onSave: (definition: CommissionRuleDefinition) => void;
+  onCancelSchedule: (setting: BusinessParameterSetting) => void;
+  onEdit: (setting: BusinessParameterSetting) => void;
+  onHistory: (setting: BusinessParameterSetting) => void;
+  pendingKey: string | null;
+  settings: BusinessParameterSetting[];
 }) {
-  const t = useTranslations("Commission");
+  const t = useTranslations("Commission.settings");
+  const rows = settings.flatMap((setting) => {
+    const definition = COMMISSION_RULE_DEFINITIONS.find(
+      (item) => item.code === setting.parameterCode,
+    );
+    return definition ? [{ definition, setting }] : [];
+  });
 
   return (
-    <>
-      {/* 移动端用卡片承载每条佣金规则，避免设置表格横向滑动。 */}
-      <ResponsiveDataView
-        desktop={
-          <>
-            <DashboardTableFrame>
-              <table className="w-full min-w-[980px] table-fixed border-collapse">
-                <thead className="bg-surface-inset">
-                  <tr className="border-b border-border-subtle">
-                    <HeaderCell className="w-[28%]">
-                      {t("settings.table.rule")}
-                    </HeaderCell>
-                    <HeaderCell className="w-[24%]">
-                      {t("settings.table.value")}
-                    </HeaderCell>
-                    <HeaderCell className="w-[30%]">
-                      {t("settings.table.calculation")}
-                    </HeaderCell>
-                    {canManageSettings ? (
-                      <HeaderCell className="w-[18%] text-right">
-                        {t("settings.table.actions")}
-                      </HeaderCell>
-                    ) : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRules.map(({ definition, row }) => {
-                    const isEditing = editingRule === definition.code;
-                    const isSaving = pendingRule === definition.code;
-
-                    return (
-                      <tr
-                        className="border-b border-border-subtle align-top last:border-b-0"
-                        key={definition.code}
-                      >
-                        <td className="px-5 py-4">
-                          <div className="text-sm font-semibold leading-6 text-content-strong">
-                            {t(definition.labelKey)}
-                          </div>
-                          <p className="mt-1 text-xs leading-5 text-content-muted">
-                            {t(definition.descriptionKey)}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4">
-                          {row ? (
-                            isEditing ? (
-                              <RuleDraftInputs
-                                definition={definition}
-                                draft={draft}
-                                onDraftChange={onDraftChange}
-                              />
-                            ) : (
-                              <RuleValueList
-                                definition={definition}
-                                locale={locale}
-                                row={row}
-                              />
-                            )
-                          ) : (
-                            <span className="text-sm text-content-subtle">
-                              {t("settings.table.missing")}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-sm leading-6 text-content-muted">
-                          {row
-                            ? formatCommissionCalculationFormula(
-                                definition,
-                                row.config,
-                                locale,
-                                t,
-                              )
-                            : t("settings.table.missing")}
-                        </td>
-                        {canManageSettings ? (
-                          <ActionsCell
-                            isEditing={isEditing}
-                            isSaving={isSaving}
-                            pendingRule={pendingRule}
-                            row={row}
-                            onCancel={onCancel}
-                            onEdit={() => onEdit(definition)}
-                            onSave={() => onSave(definition)}
-                          />
-                        ) : null}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </DashboardTableFrame>
-          </>
-        }
-        mobile={
-          <>
-            {visibleRules.map(({ definition, row }) => {
-              const isEditing = editingRule === definition.code;
-              const isSaving = pendingRule === definition.code;
-
-              return (
-                <RecordCard key={definition.code}>
-                  <div className="min-w-0">
-                    <h4 className="break-words text-sm font-semibold leading-6 text-content-strong">
-                      {t(definition.labelKey)}
-                    </h4>
-                    <p className="mt-1 break-words text-xs leading-5 text-content-muted">
-                      {t(definition.descriptionKey)}
-                    </p>
-                  </div>
-                  <div className="mt-4 grid gap-3">
-                    <MobileField label={t("settings.table.value")}>
-                      {row ? (
-                        isEditing ? (
-                          <RuleDraftInputs
-                            definition={definition}
-                            draft={draft}
-                            onDraftChange={onDraftChange}
-                          />
-                        ) : (
-                          <RuleValueList
-                            definition={definition}
-                            locale={locale}
-                            row={row}
-                          />
-                        )
-                      ) : (
-                        <span className="text-sm text-content-subtle">
-                          {t("settings.table.missing")}
-                        </span>
-                      )}
-                    </MobileField>
-                    <MobileField label={t("settings.table.calculation")}>
-                      <p className="break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
-                        {row
-                          ? formatCommissionCalculationFormula(
-                              definition,
-                              row.config,
-                              locale,
-                              t,
-                            )
-                          : t("settings.table.missing")}
-                      </p>
-                    </MobileField>
-                    {canManageSettings ? (
-                      <RuleActionButtons
-                        isEditing={isEditing}
-                        isSaving={isSaving}
-                        pendingRule={pendingRule}
-                        row={row}
-                        onCancel={onCancel}
-                        onEdit={() => onEdit(definition)}
-                        onSave={() => onSave(definition)}
+    <ResponsiveDataView
+      desktop={
+        <DashboardTableFrame>
+          <table className="w-full min-w-[1040px] table-fixed border-collapse">
+            <thead className="bg-surface-inset">
+              <tr className="border-b border-border-subtle">
+                <HeaderCell className="w-[24%]">{t("table.rule")}</HeaderCell>
+                <HeaderCell className="w-[27%]">{t("table.value")}</HeaderCell>
+                <HeaderCell className="w-[27%]">
+                  {t("table.schedule")}
+                </HeaderCell>
+                <HeaderCell className="w-[22%] text-right">
+                  {t("table.actions")}
+                </HeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ definition, setting }) => (
+                <tr
+                  className="border-b border-border-subtle align-top last:border-b-0"
+                  data-testid={`business-parameter-row-${setting.parameterCode}`}
+                  key={setting.parameterCode}
+                >
+                  <td className="px-5 py-5">
+                    <RuleIdentity definition={definition} />
+                  </td>
+                  <td className="px-5 py-5">
+                    <VersionSummary
+                      definition={definition}
+                      locale={locale}
+                      version={setting.currentVersion}
+                    />
+                  </td>
+                  <td className="px-5 py-5">
+                    {setting.scheduledVersion ? (
+                      <VersionSummary
+                        definition={definition}
+                        locale={locale}
+                        version={setting.scheduledVersion}
                       />
-                    ) : null}
-                  </div>
-                </RecordCard>
-              );
-            })}
-          </>
-        }
-      />
-    </>
+                    ) : (
+                      <span className="text-sm text-content-subtle">
+                        {t("schedule.none")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-5">
+                    <RuleActions
+                      hasSchedule={Boolean(setting.scheduledVersion)}
+                      onCancelSchedule={() => onCancelSchedule(setting)}
+                      onEdit={() => onEdit(setting)}
+                      onHistory={() => onHistory(setting)}
+                      pending={pendingKey !== null}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DashboardTableFrame>
+      }
+      mobile={
+        <div className="grid gap-4">
+          {rows.map(({ definition, setting }) => (
+            <RecordCard
+              data-testid={`business-parameter-card-${setting.parameterCode}`}
+              key={setting.parameterCode}
+            >
+              <RuleIdentity definition={definition} />
+              <MobileField label={t("table.value")}>
+                <VersionSummary
+                  definition={definition}
+                  locale={locale}
+                  version={setting.currentVersion}
+                />
+              </MobileField>
+              <MobileField label={t("table.schedule")}>
+                {setting.scheduledVersion ? (
+                  <VersionSummary
+                    definition={definition}
+                    locale={locale}
+                    version={setting.scheduledVersion}
+                  />
+                ) : (
+                  <span className="text-sm text-content-subtle">
+                    {t("schedule.none")}
+                  </span>
+                )}
+              </MobileField>
+              <RuleActions
+                hasSchedule={Boolean(setting.scheduledVersion)}
+                onCancelSchedule={() => onCancelSchedule(setting)}
+                onEdit={() => onEdit(setting)}
+                onHistory={() => onHistory(setting)}
+                pending={pendingKey !== null}
+              />
+            </RecordCard>
+          ))}
+        </div>
+      }
+    />
   );
 }
 
-function RuleDraftInputs({
-  definition,
-  draft,
-  onDraftChange,
-}: {
-  definition: CommissionRuleDefinition;
-  draft: RuleDraft;
-  onDraftChange: (draft: RuleDraft) => void;
-}) {
-  const t = useTranslations("Commission");
-
-  return (
-    <div className="grid gap-2">
-      {definition.fields.map((field) => (
-        <FormControls.Field key={field.configKey} label={t(field.labelKey)}>
-          <FormControls.Input
-            className={dashboardFilterInputClassName}
-            inputMode="decimal"
-            onChange={(event) =>
-              onDraftChange({
-                ...draft,
-                [field.configKey]: event.target.value,
-              })
-            }
-            value={draft[field.configKey] ?? ""}
-          />
-        </FormControls.Field>
-      ))}
-    </div>
-  );
-}
-
-function RuleValueList({
+export function ParameterValueList({
+  config,
   definition,
   locale,
-  row,
 }: {
+  config: BusinessParameterVersion["config"];
   definition: CommissionRuleDefinition;
   locale: string;
-  row: CommissionRuleSetting;
 }) {
-  const t = useTranslations("Commission");
-
+  const t = useTranslations("Commission.settings");
+  const ruleText = useTranslations("Commission");
   return (
-    <div className="grid gap-1.5 text-sm leading-6">
+    <div className="grid min-w-0 gap-1.5 text-sm leading-6">
       {definition.fields.map((field) => {
-        const value = getRuleConfigValue(row.config, field.configKey);
-
+        const value = getRuleConfigValue(config, field.configKey);
         return (
           <div
-            className="flex items-center justify-between gap-3"
+            className="flex min-w-0 justify-between gap-3"
             key={field.configKey}
           >
-            <span className="text-xs font-semibold text-content-muted">
-              {t(field.labelKey)}
+            <span className="break-words text-xs font-semibold text-content-muted">
+              {ruleText(field.labelKey)}
             </span>
-            <span className="font-semibold text-content-strong">
+            <span className="break-words text-right font-semibold text-content-strong [overflow-wrap:anywhere]">
               {value === null
-                ? t("settings.table.missing")
+                ? t("table.missing")
                 : formatCommissionSettingValue(field.kind, value, locale)}
             </span>
           </div>
@@ -291,69 +183,114 @@ function RuleValueList({
   );
 }
 
-function ActionsCell({
-  isEditing,
-  isSaving,
-  pendingRule,
-  row,
-  onCancel,
-  onEdit,
-  onSave,
+function VersionSummary({
+  definition,
+  locale,
+  version,
 }: {
-  isEditing: boolean;
-  isSaving: boolean;
-  pendingRule: CommissionRuleCode | null;
-  row: CommissionRuleSetting | null;
-  onCancel: () => void;
-  onEdit: () => void;
-  onSave: () => void;
+  definition: CommissionRuleDefinition;
+  locale: string;
+  version: BusinessParameterVersion;
 }) {
+  const t = useTranslations("Commission.settings");
   return (
-    <td className="px-5 py-4">
-      <RuleActionButtons
-        isEditing={isEditing}
-        isSaving={isSaving}
-        pendingRule={pendingRule}
-        row={row}
-        onCancel={onCancel}
-        onEdit={onEdit}
-        onSave={onSave}
+    <div className="min-w-0 space-y-3">
+      <ParameterValueList
+        config={version.config}
+        definition={definition}
+        locale={locale}
       />
-    </td>
+      <div className="space-y-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+        <p>{t("version.number", { version: version.versionNumber })}</p>
+        <p>
+          {t("version.effective", {
+            time: formatShanghaiTime(version.effectiveFrom, locale),
+          })}
+        </p>
+        <p>{t("version.reason", { reason: version.changeReason })}</p>
+        <p>
+          {t("version.publisher", {
+            name:
+              version.publisherName ||
+              version.publisherEmail ||
+              t("version.migrationPublisher"),
+          })}
+        </p>
+      </div>
+    </div>
   );
 }
 
-function RuleActionButtons({
-  isEditing,
-  isSaving,
-  pendingRule,
-  row,
-  onCancel,
-  onEdit,
-  onSave,
+function RuleIdentity({
+  definition,
 }: {
-  isEditing: boolean;
-  isSaving: boolean;
-  pendingRule: CommissionRuleCode | null;
-  row: CommissionRuleSetting | null;
-  onCancel: () => void;
-  onEdit: () => void;
-  onSave: () => void;
+  definition: CommissionRuleDefinition;
 }) {
-  const t = useTranslations("Commission");
-
+  const ruleText = useTranslations("Commission");
   return (
-    <DashboardInlineEditActions
-      cancelLabel={t("settings.actions.cancel")}
-      editLabel={t("settings.actions.edit")}
-      editing={isEditing}
-      onCancel={onCancel}
-      onEdit={onEdit}
-      onSave={onSave}
-      pending={pendingRule !== null || row === null}
-      saveLabel={t("settings.actions.save")}
-      saving={isSaving}
-    />
+    <div className="min-w-0">
+      <h3 className="break-words text-sm font-semibold leading-6 text-content-strong">
+        {ruleText(definition.labelKey)}
+      </h3>
+      <p className="mt-1 break-words text-xs leading-5 text-content-muted">
+        {ruleText(definition.descriptionKey)}
+      </p>
+    </div>
+  );
+}
+
+function RuleActions({
+  hasSchedule,
+  onCancelSchedule,
+  onEdit,
+  onHistory,
+  pending,
+}: {
+  hasSchedule: boolean;
+  onCancelSchedule: () => void;
+  onEdit: () => void;
+  onHistory: () => void;
+  pending: boolean;
+}) {
+  const t = useTranslations("Commission.settings");
+  return (
+    <div className="flex min-w-0 flex-wrap justify-end gap-2 max-sm:justify-start">
+      <Button
+        disabled={pending}
+        onClick={onEdit}
+        size="compact"
+        type="button"
+        variant="outline"
+        wrap
+      >
+        <Pencil className="size-4" />
+        {t("actions.edit")}
+      </Button>
+      <Button
+        disabled={pending}
+        onClick={onHistory}
+        size="compact"
+        type="button"
+        variant="outline"
+        wrap
+      >
+        <History className="size-4" />
+        {t("actions.history")}
+      </Button>
+      {hasSchedule ? (
+        <Button
+          disabled={pending}
+          onClick={onCancelSchedule}
+          size="compact"
+          type="button"
+          variant="outline"
+          wrap
+        >
+          <XCircle className="size-4" />
+          {t("actions.cancelSchedule")}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -365,8 +302,8 @@ function MobileField({
   label: string;
 }) {
   return (
-    <div>
-      <p className="mb-1.5 font-label text-[10px] font-semibold tracking-[0.14em] text-content-muted uppercase">
+    <div className="mt-4 min-w-0">
+      <p className="mb-2 font-label text-[10px] font-semibold tracking-[0.14em] text-content-muted uppercase">
         {label}
       </p>
       {children}
@@ -390,4 +327,10 @@ function HeaderCell({
   );
 }
 
-export type { RuleDraft, VisibleRule };
+export function formatShanghaiTime(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Shanghai",
+  }).format(new Date(value));
+}

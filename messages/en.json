@@ -306,19 +306,19 @@
   "RegisterForm": {
     "progressLabel": "Registration progress",
     "steps": {
-    "invite": {
-      "title": "Enter an Invite Code",
-      "description": "This step is optional. We will check whether registration can continue."
-    },
-    "business": {
-      "title": "Choose a Business",
-      "description": "Choose the business you want to explore."
-    },
-    "profile": {
-      "title": "Add Account Details",
-      "description": "Enter your email and name. A phone number is optional."
-    },
-    "password": {
+      "invite": {
+        "title": "Enter an Invite Code",
+        "description": "This step is optional. We will check whether registration can continue."
+      },
+      "business": {
+        "title": "Choose a Business",
+        "description": "Choose the business you want to explore."
+      },
+      "profile": {
+        "title": "Add Account Details",
+        "description": "Enter your email and name. A phone number is optional."
+      },
+      "password": {
         "title": "Create a Password",
         "description": "Set a secure password, accept the terms, and register."
       }
@@ -335,10 +335,10 @@
     "email": "Email",
     "inviteCode": "Invite Code",
     "inviteCodePlaceholder": "Leave blank if you do not have one",
-  "inviteCodeHint": "A wholesale invite can connect you with your referrer. You may also continue without one.",
+    "inviteCodeHint": "A wholesale invite can connect you with your referrer. You may also continue without one.",
     "businessLocked": "Your invite code matched this business, so it cannot be changed for this registration.",
     "businesses": {
-    "wholesale": {
+      "wholesale": {
         "title": "Explore Wholesale",
         "description": "Access wholesale orders, logistics, settlement, and customer benefits."
       }
@@ -368,8 +368,8 @@
     "referralRequired": "Invite codes are optional. If you use one, enter the complete code.",
     "referralNotFound": "The invite code does not exist. Please check and try again.",
     "referralMaxUses": "The invite code has reached its usage limit.",
-  "referralExpired": "The invite code has expired. Please contact an administrator for a new one.",
-  "businessUnavailable": "Registration for the service linked to this invite is currently paused. Contact an administrator for help.",
+    "referralExpired": "The invite code has expired. Please contact an administrator for a new one.",
+    "businessUnavailable": "Registration for the service linked to this invite is currently paused. Contact an administrator for help.",
     "registrationFailed": "Registration could not be completed. Check your details or contact an administrator.",
     "userExists": "This email is already registered. Please sign in instead.",
     "weakPassword": "This password is too common. Please choose a stronger one.",
@@ -1125,8 +1125,8 @@
         "description": "Calculate sales incentives from wholesale order profit and order amount, with settlement status."
       },
       "settings": {
-        "title": "Wholesale Settings",
-        "description": "Manage wholesale order sales incentives and customer referral commission rules."
+        "title": "Wholesale Parameter Center",
+        "description": "Manage wholesale order sales incentives, referral order commission, and monthly waybill rewards."
       }
     },
     "directoryUi": {
@@ -2058,7 +2058,7 @@
     "header": {
       "badge": "Exchange Rates",
       "title": "Exchange Rates",
-      "manageDescription": "View and manage currency rates, automatic fetching, and history here. Wholesale rules are maintained in Wholesale Settings.",
+      "manageDescription": "View and manage currency rates, automatic fetching, and history here. Wholesale rules are maintained in the Wholesale Parameter Center.",
       "readonlyDescription": "View current exchange rates and history. Contact an administrator when a rate needs to be changed or added."
     },
     "businessHeader": {
@@ -2072,8 +2072,8 @@
         "description": "Tourism service fees, service prices, discounts, and service commission"
       },
       "wholesale": {
-        "title": "Wholesale Settings",
-        "description": "Wholesale order sales incentives and customer referral commission"
+        "title": "Wholesale Parameter Center",
+        "description": "Wholesale order sales incentives, referral order commission, and monthly waybill rewards"
       },
       "exchangeRates": {
         "title": "Exchange Rates",
@@ -2922,6 +2922,9 @@
     },
     "settings": {
       "badge": "Commission Rules",
+      "calculationUnavailable": "Unavailable",
+      "missingExchangeRate": "The USD to CNY rate is missing, so this month's waybill reward cannot be calculated yet.",
+      "missingParameterVersion": "No reward version is available for this month, so the amount cannot be calculated yet.",
       "title": "Commission Rules",
       "description": "Manage order commission, referral commission, and VIP first-year reward rules here. Task rewards are still set from task types and task creation.",
       "summary": {
@@ -2936,6 +2939,7 @@
       "table": {
         "rule": "Rule",
         "value": "Current Value",
+        "schedule": "Scheduled Value",
         "calculation": "Calculation",
         "actions": "Actions",
         "missing": "Not available"
@@ -2978,24 +2982,89 @@
         "vipFirstYearReferralBonus": "Commission = {bonusUsd} × order transaction rate",
         "wholesaleOrderSalesmanTier": "Commission = max(wholesale order gross profit, 0) × matching rate; orders up to {tier1Limit} use {tier1Rate}, orders above that use {tier2Rate}",
         "wholesaleReferralOrderAmount": "Commission = monthly order RMB amount × {rate}",
-        "wholesaleReferralWaybillBonus": "More than {tier1Count} waybills adds {tier1BonusUsd}; more than {tier2Count} adds {tier2BonusUsd}; more than {tier3Count} adds {tier3BonusUsd}"
+        "wholesaleReferralWaybillBonus": "At {tier1Count} waybills the reward is {tier1BonusUsd}; at {tier2Count} it is {tier2BonusUsd}; at {tier3Count} it is {tier3BonusUsd}"
       },
       "actions": {
         "edit": "Edit",
         "save": "Save",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "history": "View history",
+        "cancelSchedule": "Cancel schedule",
+        "confirmCancelSchedule": "Cancel schedule",
+        "restore": "Restore this version",
+        "close": "Close",
+        "reviewPublish": "Review and publish",
+        "confirmPublish": "Publish"
       },
       "validation": {
         "rate": "Enter a rate between 0 and 100.",
         "amount": "Enter an amount greater than 0.",
-        "count": "Enter a whole number greater than 0."
+        "count": "Enter a whole number greater than 0.",
+        "tierOrder": "Waybill thresholds must increase from the first tier to the third.",
+        "reason": "Enter a change reason with at least 2 characters.",
+        "effectiveTime": "Choose a valid start time."
       },
       "feedback": {
-        "updateSuccess": "Commission rules have been updated."
+        "updateSuccess": "Commission rules have been updated.",
+        "publishSuccess": "Version {version} was published and verified. Version receipt: {id}",
+        "cancelSuccess": "The schedule was cancelled and verified."
       },
       "errors": {
         "permission": "This account cannot update commission rules.",
-        "unknown": "Commission rules could not be saved. Please try again later."
+        "unknown": "This change was not completed. Please try again later.",
+        "conflict": "This page is out of date because another administrator made a change. Refresh and try again.",
+        "scheduleExists": "This parameter already has a scheduled version. Cancel it first.",
+        "monthlyTiming": "The monthly waybill reward can start only on the first day of the next Shanghai calendar month.",
+        "timeout": "The result took too long. You can submit again; the same change will not create a duplicate version.",
+        "finalCheck": "The final database check did not match, so this change was not shown as successful. Refresh to confirm."
+      },
+      "schedule": {
+        "none": "No scheduled value"
+      },
+      "version": {
+        "number": "Version {version}",
+        "effective": "Starts: {time}",
+        "reason": "Reason: {reason}",
+        "publisher": "Changed by: {name}",
+        "migrationPublisher": "System migration"
+      },
+      "effective": {
+        "title": "Start time",
+        "immediate": "Use immediately after publishing",
+        "scheduled": "Schedule for later",
+        "time": "Scheduled time (Shanghai)",
+        "monthlyOnly": "Monthly waybill rewards follow Shanghai calendar months and can start only on the first day of the next month.",
+        "monthlyHint": "The first day of the next Shanghai calendar month is selected.",
+        "scheduleHint": "New orders automatically use this version after the selected time."
+      },
+      "editor": {
+        "title": "Edit {name}",
+        "description": "Enter the new values and reason. You will confirm once more before publishing.",
+        "reason": "Change reason",
+        "reasonHint": "For example: adjusted for the latest business plan. This note is kept in history.",
+        "before": "Before",
+        "after": "After"
+      },
+      "publish": {
+        "confirmTitle": "Publish this change?",
+        "confirmDescription": "{name} will start with “{timing}”. Each order keeps the version active when it is created."
+      },
+      "cancelSchedule": {
+        "confirmTitle": "Cancel this schedule?",
+        "confirmDescription": "Version {version} stays in history but will not start."
+      },
+      "history": {
+        "title": "{name} history",
+        "description": "Restoring old values creates a new version and does not rewrite old records."
+      },
+      "restore": {
+        "defaultReason": "Restore the values from version {version}"
+      },
+      "status": {
+        "current": "Current",
+        "scheduled": "Scheduled",
+        "history": "History",
+        "cancelled": "Cancelled"
       }
     },
     "salesmanTaskSection": {
@@ -4136,32 +4205,227 @@
     }
   },
   "SalesLeads": {
-    "view": {"label":"Display","list":"List","card":"Cards","expand":"Show information","collapse":"Hide information"},
-    "rules": {"title":"Claim and follow-up rules","firstContact":{"title":"First contact within 3 days","description":"Record your first contact within 3 days of claiming, or the lead returns to the hall automatically."},"followUp":{"title":"Keep in touch every 7 days","description":"After the first contact, 7 days without a new contact record sends the lead back to the hall automatically."},"claimPeriod":{"title":"Up to 30 days per claim","description":"After 30 days, a lead not marked as used returns to the hall, even if contact continues."},"shared":"The same rules apply to administrators and salespeople. Reclaiming starts a new period with access to earlier contact records. There is no limit on claims."},
-    "header": {"badge":"Customer leads","title":"Lead Hall","description":"Claim prospects, record every contact, and keep follow-ups moving before the deadline."},
-    "boards": {"hall":"Lead Hall","mine":"My Leads","used":"My Used Leads","allClaimed":"All Claimed"},
-    "priority": "Priority {priority}",
-    "status": {"hall":"In hall","claimed":"Claimed","used":"Used"},
-    "actions": {"claimForMe":"Claim for myself","claim":"Claim lead","details":"View details","addContact":"Record contact","return":"Return to hall","markUsed":"Mark as used","assign":"Assign salesperson","reopen":"Reopen","syncNow":"Sync now","cancel":"Cancel"},
-    "filters": {"searchLabel":"Search leads","searchPlaceholder":"Search name, country, email, or phone","assignee":"Filter by salesperson","allSalespeople":"All salespeople"},
-    "fields": {"country":"Country or region","email":"Email","phone":"Phone","whatsapp":"WhatsApp","website":"Website","publicContact":"Public contact details","recommendedApproach":"Suggested approach","timeRemaining":"Time remaining","assignee":"Current owner","nextFollowUp":"Next follow-up","sourceDate":"Lead date","channel":"Contact method","outcome":"Contact result","contactNote":"Contact note","sourceId":"Lead reference","category":"Type","regionTimezone":"Location and time zone","priority":"Contact priority","contactToday":"Today's contact suggestion","community":"Community link","customerProfile":"Customer profile","targetCustomer":"Target customers","publicPricing":"Public pricing and requirements","talkingPoints":"Suggested talking points","sourceUrl":"Information source","sourceNotes":"Things to know","status":"Current status","claimedAt":"Claimed on","firstContact":"First contact","lastContact":"Latest contact","expiresAt":"Contact deadline","hardDeadline":"Claim period ends","usedAt":"Used on","usedSummary":"Business result"},
-    "countdown": {"expired":"Expired","daysHours":"{days}d {hours}h","hoursMinutes":"{hours}h {minutes}m"},
-    "detail": {"description":"Public details and the complete progress history for this lead.","contactHistory":"Contact history","assignmentHistory":"Claim history","recordedBy":"Recorded by {name}","noContacts":"No contact has been recorded yet.","noAssignments":"No claim has been recorded yet.","notProvided":"Not provided","basicInfo":"Basic information","publicContacts":"Public contact details","cooperation":"Working together","sourceInfo":"Source and reminders","progress":"Follow-up progress","recommendedToday":"Contact today","normalSchedule":"Follow your schedule"},
-    "channels": {"phone":"Phone","email":"Email","whatsapp":"WhatsApp","social":"Social platform","video":"Video call","other":"Other"},
-    "outcomes": {"reached":"Reached","no_reply":"No reply","interested":"Interested","follow_up":"Follow-up needed","not_interested":"Not interested","invalid_contact":"Invalid contact","other":"Other"},
-    "endReasons": {"voluntary_return":"Returned by salesperson","admin_return":"Returned by administrator","reassigned":"Reassigned","initial_timeout":"First contact overdue","follow_up_timeout":"Follow-up overdue","hard_deadline":"Claim period ended","used":"Confirmed as used","reopened":"Reopened by administrator"},
-    "dialogs": {
-      "contact": {"title":"Record this contact","description":"Every contact needs a result and note. Saved entries cannot be overwritten.","reasonLabel":"Contact note","notePlaceholder":"Describe the conversation, response, and next step","submit":"Save contact"},
-      "return": {"title":"Return lead to hall","description":"Another salesperson can claim it after it is returned.","reasonLabel":"Reason for return","notePlaceholder":"Explain why this lead is being returned","submit":"Confirm return"},
-      "use": {"title":"Mark as used","description":"Confirm that this lead has produced a real business result.","reasonLabel":"Result summary","notePlaceholder":"Describe the business result from this lead","submit":"Confirm used"},
-      "assign": {"title":"Assign salesperson","description":"Administrators can assign or change the salesperson responsible for this lead.","reasonLabel":"Assignment note","notePlaceholder":"Explain this assignment or reassignment","personPlaceholder":"Choose a salesperson","submit":"Confirm assignment"},
-      "reopen": {"title":"Reopen lead","description":"The lead will return to the hall for a new claim.","reasonLabel":"Reason for reopening","notePlaceholder":"Explain why this lead should be reopened","submit":"Confirm reopening"}
+    "view": {
+      "label": "Display",
+      "list": "List",
+      "card": "Cards",
+      "expand": "Show information",
+      "collapse": "Hide information"
     },
-    "states": {"emptyTitle":"No leads match these filters","emptyDescription":"Try another board or search.","noPermissionTitle":"Leads are unavailable","noPermissionDescription":"The lead hall is available only to administrators and salespeople."},
-    "list": {"title":"Leads","name":"Lead and category","location":"Country and region","priorityStatus":"Priority and status","contacts":"Contact details","followUp":"Owner and follow-up","actions":"Actions"},
-    "sync": {"missingSource":"Source information for {dates} is incomplete. Other complete batches will continue to sync.","lastSuccess":"Last successful sync","recentRuns":"Recent sync records","failed":"The last sync did not finish. The system will retry automatically.","result":{"queued":"The sync is scheduled and waiting to start.","running":"The sync is processing.","succeeded":"This sync is confirmed complete.","partial_failed":"Some records did not finish. The system will retry.","failed":"This sync did not finish. The system will retry.","needs_attention":"This sync repeatedly failed and needs administrator attention.","skipped":"There was nothing to sync.","confirming":"The result is still being confirmed. Check System Runs later."}},
-    "pagination": {"previous":"Previous","next":"Next"},
-    "errors": {"unknown":"The action could not be completed. Please try again.","sales_lead_already_claimed":"Another salesperson just claimed this lead.","sales_lead_not_active":"This lead has expired or is no longer assigned to this account.","sales_lead_contact_not_owned":"You can record contact only for your current leads.","sales_lead_return_not_owned":"You can return only your current leads.","sales_lead_use_not_owned":"You can confirm only your current leads.","sales_lead_follow_up_must_be_future":"The next follow-up must be in the future.","sales_lead_reason_required":"Enter a note of at least two characters.","sales_lead_used_locked":"An administrator must reopen this used lead first.","sales_lead_assignee_invalid":"Choose an active salesperson.","sales_lead_read_not_allowed":"This account cannot view the lead."}
+    "rules": {
+      "title": "Claim and follow-up rules",
+      "firstContact": {
+        "title": "First contact within 3 days",
+        "description": "Record your first contact within 3 days of claiming, or the lead returns to the hall automatically."
+      },
+      "followUp": {
+        "title": "Keep in touch every 7 days",
+        "description": "After the first contact, 7 days without a new contact record sends the lead back to the hall automatically."
+      },
+      "claimPeriod": {
+        "title": "Up to 30 days per claim",
+        "description": "After 30 days, a lead not marked as used returns to the hall, even if contact continues."
+      },
+      "shared": "The same rules apply to administrators and salespeople. Reclaiming starts a new period with access to earlier contact records. There is no limit on claims."
+    },
+    "header": {
+      "badge": "Customer leads",
+      "title": "Lead Hall",
+      "description": "Claim prospects, record every contact, and keep follow-ups moving before the deadline."
+    },
+    "boards": {
+      "hall": "Lead Hall",
+      "mine": "My Leads",
+      "used": "My Used Leads",
+      "allClaimed": "All Claimed"
+    },
+    "priority": "Priority {priority}",
+    "status": { "hall": "In hall", "claimed": "Claimed", "used": "Used" },
+    "actions": {
+      "claimForMe": "Claim for myself",
+      "claim": "Claim lead",
+      "details": "View details",
+      "addContact": "Record contact",
+      "return": "Return to hall",
+      "markUsed": "Mark as used",
+      "assign": "Assign salesperson",
+      "reopen": "Reopen",
+      "syncNow": "Sync now",
+      "cancel": "Cancel"
+    },
+    "filters": {
+      "searchLabel": "Search leads",
+      "searchPlaceholder": "Search name, country, email, or phone",
+      "assignee": "Filter by salesperson",
+      "allSalespeople": "All salespeople"
+    },
+    "fields": {
+      "country": "Country or region",
+      "email": "Email",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "website": "Website",
+      "publicContact": "Public contact details",
+      "recommendedApproach": "Suggested approach",
+      "timeRemaining": "Time remaining",
+      "assignee": "Current owner",
+      "nextFollowUp": "Next follow-up",
+      "sourceDate": "Lead date",
+      "channel": "Contact method",
+      "outcome": "Contact result",
+      "contactNote": "Contact note",
+      "sourceId": "Lead reference",
+      "category": "Type",
+      "regionTimezone": "Location and time zone",
+      "priority": "Contact priority",
+      "contactToday": "Today's contact suggestion",
+      "community": "Community link",
+      "customerProfile": "Customer profile",
+      "targetCustomer": "Target customers",
+      "publicPricing": "Public pricing and requirements",
+      "talkingPoints": "Suggested talking points",
+      "sourceUrl": "Information source",
+      "sourceNotes": "Things to know",
+      "status": "Current status",
+      "claimedAt": "Claimed on",
+      "firstContact": "First contact",
+      "lastContact": "Latest contact",
+      "expiresAt": "Contact deadline",
+      "hardDeadline": "Claim period ends",
+      "usedAt": "Used on",
+      "usedSummary": "Business result"
+    },
+    "countdown": {
+      "expired": "Expired",
+      "daysHours": "{days}d {hours}h",
+      "hoursMinutes": "{hours}h {minutes}m"
+    },
+    "detail": {
+      "description": "Public details and the complete progress history for this lead.",
+      "contactHistory": "Contact history",
+      "assignmentHistory": "Claim history",
+      "recordedBy": "Recorded by {name}",
+      "noContacts": "No contact has been recorded yet.",
+      "noAssignments": "No claim has been recorded yet.",
+      "notProvided": "Not provided",
+      "basicInfo": "Basic information",
+      "publicContacts": "Public contact details",
+      "cooperation": "Working together",
+      "sourceInfo": "Source and reminders",
+      "progress": "Follow-up progress",
+      "recommendedToday": "Contact today",
+      "normalSchedule": "Follow your schedule"
+    },
+    "channels": {
+      "phone": "Phone",
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "social": "Social platform",
+      "video": "Video call",
+      "other": "Other"
+    },
+    "outcomes": {
+      "reached": "Reached",
+      "no_reply": "No reply",
+      "interested": "Interested",
+      "follow_up": "Follow-up needed",
+      "not_interested": "Not interested",
+      "invalid_contact": "Invalid contact",
+      "other": "Other"
+    },
+    "endReasons": {
+      "voluntary_return": "Returned by salesperson",
+      "admin_return": "Returned by administrator",
+      "reassigned": "Reassigned",
+      "initial_timeout": "First contact overdue",
+      "follow_up_timeout": "Follow-up overdue",
+      "hard_deadline": "Claim period ended",
+      "used": "Confirmed as used",
+      "reopened": "Reopened by administrator"
+    },
+    "dialogs": {
+      "contact": {
+        "title": "Record this contact",
+        "description": "Every contact needs a result and note. Saved entries cannot be overwritten.",
+        "reasonLabel": "Contact note",
+        "notePlaceholder": "Describe the conversation, response, and next step",
+        "submit": "Save contact"
+      },
+      "return": {
+        "title": "Return lead to hall",
+        "description": "Another salesperson can claim it after it is returned.",
+        "reasonLabel": "Reason for return",
+        "notePlaceholder": "Explain why this lead is being returned",
+        "submit": "Confirm return"
+      },
+      "use": {
+        "title": "Mark as used",
+        "description": "Confirm that this lead has produced a real business result.",
+        "reasonLabel": "Result summary",
+        "notePlaceholder": "Describe the business result from this lead",
+        "submit": "Confirm used"
+      },
+      "assign": {
+        "title": "Assign salesperson",
+        "description": "Administrators can assign or change the salesperson responsible for this lead.",
+        "reasonLabel": "Assignment note",
+        "notePlaceholder": "Explain this assignment or reassignment",
+        "personPlaceholder": "Choose a salesperson",
+        "submit": "Confirm assignment"
+      },
+      "reopen": {
+        "title": "Reopen lead",
+        "description": "The lead will return to the hall for a new claim.",
+        "reasonLabel": "Reason for reopening",
+        "notePlaceholder": "Explain why this lead should be reopened",
+        "submit": "Confirm reopening"
+      }
+    },
+    "states": {
+      "emptyTitle": "No leads match these filters",
+      "emptyDescription": "Try another board or search.",
+      "noPermissionTitle": "Leads are unavailable",
+      "noPermissionDescription": "The lead hall is available only to administrators and salespeople."
+    },
+    "list": {
+      "title": "Leads",
+      "name": "Lead and category",
+      "location": "Country and region",
+      "priorityStatus": "Priority and status",
+      "contacts": "Contact details",
+      "followUp": "Owner and follow-up",
+      "actions": "Actions"
+    },
+    "sync": {
+      "missingSource": "Source information for {dates} is incomplete. Other complete batches will continue to sync.",
+      "lastSuccess": "Last successful sync",
+      "recentRuns": "Recent sync records",
+      "failed": "The last sync did not finish. The system will retry automatically.",
+      "result": {
+        "queued": "The sync is scheduled and waiting to start.",
+        "running": "The sync is processing.",
+        "succeeded": "This sync is confirmed complete.",
+        "partial_failed": "Some records did not finish. The system will retry.",
+        "failed": "This sync did not finish. The system will retry.",
+        "needs_attention": "This sync repeatedly failed and needs administrator attention.",
+        "skipped": "There was nothing to sync.",
+        "confirming": "The result is still being confirmed. Check System Runs later."
+      }
+    },
+    "pagination": { "previous": "Previous", "next": "Next" },
+    "errors": {
+      "unknown": "The action could not be completed. Please try again.",
+      "sales_lead_already_claimed": "Another salesperson just claimed this lead.",
+      "sales_lead_not_active": "This lead has expired or is no longer assigned to this account.",
+      "sales_lead_contact_not_owned": "You can record contact only for your current leads.",
+      "sales_lead_return_not_owned": "You can return only your current leads.",
+      "sales_lead_use_not_owned": "You can confirm only your current leads.",
+      "sales_lead_follow_up_must_be_future": "The next follow-up must be in the future.",
+      "sales_lead_reason_required": "Enter a note of at least two characters.",
+      "sales_lead_used_locked": "An administrator must reopen this used lead first.",
+      "sales_lead_assignee_invalid": "Choose an active salesperson.",
+      "sales_lead_read_not_allowed": "This account cannot view the lead."
+    }
   },
   "UiText": {
     "shared": {
@@ -4838,28 +5102,62 @@
   "CompanyTemplates": {
     "title": "Company Templates",
     "description": "Use work templates published by the company. Entries stay on the current page, so download or save the result before leaving.",
-    "status": { "active": "In use", "inactive": "Inactive", "current": "Current" },
-    "labels": { "version": "Current version", "versionValue": "v{version}", "historyVersion": "v{version} · {file}", "file": "Template file" },
+    "status": {
+      "active": "In use",
+      "inactive": "Inactive",
+      "current": "Current"
+    },
+    "labels": {
+      "version": "Current version",
+      "versionValue": "v{version}",
+      "historyVersion": "v{version} · {file}",
+      "file": "Template file"
+    },
     "actions": {
-      "create": "New template", "open": "Open", "guide": "Guide", "newVersion": "Upload new version",
-      "disable": "Disable", "enable": "Enable", "history": "Version history", "restore": "Restore version",
-      "back": "Back to templates", "close": "Close", "cancel": "Cancel", "publish": "Upload and enable", "publishing": "Uploading"
+      "create": "New template",
+      "open": "Open",
+      "guide": "Guide",
+      "newVersion": "Upload new version",
+      "disable": "Disable",
+      "enable": "Enable",
+      "history": "Version history",
+      "restore": "Restore version",
+      "back": "Back to templates",
+      "close": "Close",
+      "cancel": "Cancel",
+      "publish": "Upload and enable",
+      "publishing": "Uploading"
     },
     "fields": {
-      "name": "Template name", "slug": "Template ID", "description": "Description", "htmlFile": "Interactive HTML",
-      "htmlHint": "Use one UTF-8 HTML file up to 5 MB.", "guideFile": "HTML guide (optional)",
-      "guideHint": "Leave blank when no guide is needed.", "guideKeepHint": "Leave blank to keep the current guide."
+      "name": "Template name",
+      "slug": "Template ID",
+      "description": "Description",
+      "htmlFile": "Interactive HTML",
+      "htmlHint": "Use one UTF-8 HTML file up to 5 MB.",
+      "guideFile": "HTML guide (optional)",
+      "guideHint": "Leave blank when no guide is needed.",
+      "guideKeepHint": "Leave blank to keep the current guide."
     },
     "publish": {
-      "createTitle": "Create company template", "updateTitle": "Upload template version",
+      "createTitle": "Create company template",
+      "updateTitle": "Upload template version",
       "description": "After validation and confirmed storage, the file becomes the current employee version immediately."
     },
     "feedback": {
-      "created": "The template was created and enabled.", "updated": "The new version was uploaded and enabled.",
-      "restored": "The selected version is active again.", "disabled": "The template was disabled.", "enabled": "The template was enabled."
+      "created": "The template was created and enabled.",
+      "updated": "The new version was uploaded and enabled.",
+      "restored": "The selected version is active again.",
+      "disabled": "The template was disabled.",
+      "enabled": "The template was enabled."
     },
-    "empty": { "title": "No templates are available", "description": "Templates will appear here after an administrator publishes them." },
-    "viewer": { "guideTitle": "Template guide", "refreshNotice": "Refreshing reloads the current template and clears entries on this page." },
+    "empty": {
+      "title": "No templates are available",
+      "description": "Templates will appear here after an administrator publishes them."
+    },
+    "viewer": {
+      "guideTitle": "Template guide",
+      "refreshNotice": "Refreshing reloads the current template and clears entries on this page."
+    },
     "errors": {
       "company_template_forbidden": "This account cannot manage company templates.",
       "company_template_revision_conflict": "Someone updated this template. Refresh and try again.",

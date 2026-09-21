@@ -55,8 +55,8 @@ export function BusinessSettingsClient({
       ) : (
         <BusinessSettingsPanel
           canManageCommissionSettings={initialData.canManageCommissionSettings}
-          commissionRuleSettings={viewModel.commissionRuleSettings}
-          onCommissionRuleRowsChange={viewModel.setCommissionRuleSettings}
+          businessParameterSettings={viewModel.businessParameterSettings}
+          onBusinessParameterRowsChange={viewModel.setBusinessParameterSettings}
           onOrderDiscountRowsChange={viewModel.setOrderDiscountOptions}
           onServiceFeeRowsChange={viewModel.setServiceFeeTypeOptions}
           onServiceOrderPriceRowsChange={viewModel.setServiceOrderPriceOptions}

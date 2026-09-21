@@ -106,7 +106,9 @@ export function WholesaleClient({
       ) : null}
 
       {initialData.section === "order-claims" && !initialData.claimPage ? (
-        <FeedbackNotice tone="error">{uiText("claimsLoadError")}</FeedbackNotice>
+        <FeedbackNotice tone="error">
+          {uiText("claimsLoadError")}
+        </FeedbackNotice>
       ) : null}
 
       {initialData.section === "logistics" ? (
@@ -170,13 +172,11 @@ export function WholesaleClient({
           commissionRuleSettings={initialData.commissionRuleSettings}
           commissions={initialData.commissions}
           customersById={customersById}
-          exchangeRates={initialData.exchangeRates}
-          referralWaybillCounts={initialData.referralWaybillCounts}
           onSettleCommission={actions.settleCommission}
           orders={initialData.orders}
           pendingKey={actions.pendingKey}
           profilesById={profilesById}
-          referrals={initialData.referrals}
+          referralRows={initialData.referralCommissionRows}
           variant={initialData.section}
         />
       ) : null}

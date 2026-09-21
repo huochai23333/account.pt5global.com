@@ -8,8 +8,8 @@ import type { WorkspaceBusinessSettingsModule } from "@/lib/workspace-business-m
 
 export function BusinessSettingsPanel({
   canManageCommissionSettings,
-  commissionRuleSettings,
-  onCommissionRuleRowsChange,
+  businessParameterSettings,
+  onBusinessParameterRowsChange,
   onOrderDiscountRowsChange,
   onServiceFeeRowsChange,
   onServiceOrderPriceRowsChange,
@@ -20,9 +20,9 @@ export function BusinessSettingsPanel({
   serviceOrderTypeOptions,
 }: {
   canManageCommissionSettings: BusinessSettingsPageData["canManageCommissionSettings"];
-  commissionRuleSettings: BusinessSettingsPageData["commissionRuleSettings"];
-  onCommissionRuleRowsChange: (
-    rows: BusinessSettingsPageData["commissionRuleSettings"],
+  businessParameterSettings: BusinessSettingsPageData["businessParameterSettings"];
+  onBusinessParameterRowsChange: (
+    rows: BusinessSettingsPageData["businessParameterSettings"],
   ) => void;
   onOrderDiscountRowsChange: (
     rows: BusinessSettingsPageData["orderDiscountOptions"],
@@ -73,8 +73,8 @@ export function BusinessSettingsPanel({
           <AdminCommissionSettingsSection
             canManageSettings={canManageCommissionSettings}
             key={`${section.kind}-${section.ruleCodes.join("-")}`}
-            onRowsChange={onCommissionRuleRowsChange}
-            rows={commissionRuleSettings}
+            onRowsChange={onBusinessParameterRowsChange}
+            rows={businessParameterSettings}
             ruleCodes={section.ruleCodes}
           />
         );

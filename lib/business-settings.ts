@@ -10,8 +10,8 @@ import {
   type ServiceOrderTypeOption,
 } from "./admin-orders";
 import {
-  getCommissionRuleSettings,
-  type CommissionRuleSetting,
+  listBusinessParameterSettings,
+  type BusinessParameterSetting,
 } from "./commission-settings";
 import { getCurrentSessionContext } from "./current-session-context";
 import type { ServiceFeeTypeOption } from "./service-fee-types";
@@ -21,7 +21,7 @@ import { parseEnabledWorkspaceBusinessKey } from "./workspace-business-availabil
 export type BusinessSettingsPageData = {
   business: WorkspaceBusinessKey;
   canManageCommissionSettings: boolean;
-  commissionRuleSettings: CommissionRuleSetting[];
+  businessParameterSettings: BusinessParameterSetting[];
   hasPermission: boolean;
   orderDiscountOptions: OrderDiscountTypeOption[];
   serviceFeeTypeOptions: ServiceFeeTypeOption[];
@@ -45,19 +45,19 @@ export async function getBusinessSettingsPageData(
     serviceOrderTypeOptions,
     serviceOrderPriceOptions,
     orderDiscountOptions,
-    commissionRuleSettings,
+    businessParameterSettings,
   ] = await Promise.all([
     getServiceFeeTypeOptions(supabase),
     getServiceOrderTypeOptions(supabase),
     getServiceOrderPriceOptions(supabase),
     getOrderDiscountTypeOptions(supabase),
-    getCommissionRuleSettings(supabase),
+    listBusinessParameterSettings(supabase),
   ]);
 
   return {
     business: enabledBusiness,
     canManageCommissionSettings: true,
-    commissionRuleSettings,
+    businessParameterSettings,
     hasPermission: true,
     orderDiscountOptions,
     serviceFeeTypeOptions,
@@ -72,7 +72,7 @@ function createEmptyBusinessSettingsPageData(
   return {
     business,
     canManageCommissionSettings: false,
-    commissionRuleSettings: [],
+    businessParameterSettings: [],
     hasPermission: false,
     orderDiscountOptions: [],
     serviceFeeTypeOptions: [],

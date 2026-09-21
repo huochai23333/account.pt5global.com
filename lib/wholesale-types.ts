@@ -10,6 +10,7 @@ import type {
   WholesaleReferralWaybillCount,
 } from "./wholesale-logistics-page";
 import type { WholesaleOrderPage } from "./wholesale-order-page";
+import type { WholesaleReferralCommissionRow } from "./wholesale-referral-commissions";
 import type { WholesaleClaimPage } from "./wholesale-claims-page";
 import type { WorkspaceWholesaleSectionKey } from "./workspace-config";
 
@@ -49,6 +50,8 @@ export type WholesaleOrder = {
   gross_margin: number | null;
   unit_gross_profit: number | null;
   commission_rate: number;
+  salesman_commission_parameter_version_id: string;
+  referral_amount_parameter_version_id: string;
   notes: string | null;
   order_month: string;
   status: "unsettled" | "partial_settled" | "settled";
@@ -122,9 +125,7 @@ export type WholesaleOrderChangeLog = {
   order_id: string;
   actor_user_id: string | null;
   action:
-    | "direct_update"
-    | "settlement_rate_batch_update"
-    | "settlement_rate_update";
+    "direct_update" | "settlement_rate_batch_update" | "settlement_rate_update";
   previous_data: Record<string, unknown>;
   next_data: Record<string, unknown>;
   note: string | null;
@@ -192,6 +193,8 @@ export type WholesaleCommission = {
   calculated_at: string;
   settled_at: string | null;
   settled_by_user_id: string | null;
+  parameter_version_id: string;
+  calculation_snapshot: Record<string, unknown>;
 };
 
 export type WholesaleReferral = {
@@ -233,6 +236,7 @@ export type WholesalePageData = {
   logisticsPage: WholesaleLogisticsPage | null;
   logisticsStoreOptions: WholesaleLogisticsStoreOption[];
   referralWaybillCounts: WholesaleReferralWaybillCount[];
+  referralCommissionRows: WholesaleReferralCommissionRow[];
   commissions: WholesaleCommission[];
   referrals: WholesaleReferral[];
   profiles: WholesaleProfile[];

@@ -6,10 +6,7 @@ import {
   type CommissionRuleSetting,
 } from "./commission-settings";
 import { getCurrentSessionContext } from "./current-session-context";
-import {
-  getExchangeRates,
-  type ExchangeRateRow,
-} from "./exchange-rates";
+import { getExchangeRates, type ExchangeRateRow } from "./exchange-rates";
 import { getDefaultOrderDateRange } from "./order-date-range";
 import {
   getWholesaleClaimPage,
@@ -22,6 +19,10 @@ import {
   type WholesaleReferralWaybillCount,
 } from "./wholesale-logistics-page";
 import { scopeWholesaleRows } from "./wholesale-scope";
+import {
+  getWholesaleReferralCommissionRows,
+  type WholesaleReferralCommissionRow,
+} from "./wholesale-referral-commissions";
 import {
   getWholesaleOrderPage,
   type WholesaleOrderFilters,
@@ -171,6 +172,7 @@ type WholesaleSectionRows = {
   customers: WholesaleCustomer[];
   exchangeRates: ExchangeRateRow[];
   referralWaybillCounts: WholesaleReferralWaybillCount[];
+  referralCommissionRows: WholesaleReferralCommissionRow[];
   orderChangeLogs: WholesaleOrderChangeLog[];
   orderSettlements: WholesaleOrderSettlement[];
   orders: WholesaleOrder[];
@@ -229,6 +231,7 @@ async function getWholesaleSectionRows(
       profiles,
       exchangeRates,
       commissionRuleSettings,
+      referralCommissionRows,
     ] = await Promise.all([
       getWholesaleCustomers(supabase),
       getAllWholesaleOrders(supabase, canViewInternalFields),
@@ -250,6 +253,7 @@ async function getWholesaleSectionRows(
       getWholesaleProfiles(supabase, false),
       getExchangeRates(supabase),
       getCommissionRuleSettings(supabase),
+      getWholesaleReferralCommissionRows(supabase),
     ]);
 
     return {
@@ -259,6 +263,7 @@ async function getWholesaleSectionRows(
       customers,
       exchangeRates,
       referralWaybillCounts,
+      referralCommissionRows,
       orders,
       profiles,
       referrals,
@@ -299,6 +304,7 @@ function createEmptyWholesaleSectionRows(): WholesaleSectionRows {
     customers: [],
     exchangeRates: [],
     referralWaybillCounts: [],
+    referralCommissionRows: [],
     orderChangeLogs: [],
     orderSettlements: [],
     orders: [],
@@ -328,7 +334,7 @@ async function getAllWholesaleOrders(
 ) {
   const columns = canViewInternalFields
     ? "*"
-    : "id,order_number,customer_id,sales_user_id,small_order_count,packing_fee,courier_company,settlement_exchange_rate,customer_payment_currency,customer_payment_amount,customer_payment_rmb_amount,gross_profit,gross_margin,unit_gross_profit,commission_rate,notes,order_month,status,ordered_at,settled_at,created_by_user_id,created_at,updated_at";
+    : "id,order_number,customer_id,sales_user_id,small_order_count,packing_fee,courier_company,settlement_exchange_rate,customer_payment_currency,customer_payment_amount,customer_payment_rmb_amount,gross_profit,gross_margin,unit_gross_profit,commission_rate,salesman_commission_parameter_version_id,referral_amount_parameter_version_id,notes,order_month,status,ordered_at,settled_at,created_by_user_id,created_at,updated_at";
 
   return queryRows<WholesaleOrder>(
     supabase

@@ -21,16 +21,14 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { CommissionRuleSetting } from "@/lib/commission-settings";
-import type { ExchangeRateRow } from "@/lib/exchange-rates";
+import type { WholesaleReferralCommissionRow } from "@/lib/wholesale-referral-commissions";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 import type {
   WholesaleCommission,
   WholesaleCustomer,
   WholesaleOrder,
   WholesaleProfile,
-  WholesaleReferral,
 } from "@/lib/wholesale";
-import type { WholesaleReferralWaybillCount } from "@/lib/wholesale-logistics-page";
 import {
   formatCurrency,
   getCustomerName,
@@ -41,7 +39,6 @@ import {
   WholesalePageShell,
   WholesaleStatGrid,
 } from "./wholesale-ui";
-import { buildReferralCommissionRows } from "./wholesale-referral-commission";
 import { formatWholesaleOrderCommissionDescription } from "./wholesale-commission-settings";
 import { WholesaleReferralCommissionSection } from "./wholesale-referral-commission-section";
 import { WholesaleCommissionRecords } from "./wholesale-commission-records";
@@ -50,13 +47,11 @@ type WholesaleCommissionSectionProps = {
   commissionRuleSettings: CommissionRuleSetting[];
   commissions: WholesaleCommission[];
   customersById: Map<string, WholesaleCustomer>;
-  exchangeRates: ExchangeRateRow[];
-  referralWaybillCounts: WholesaleReferralWaybillCount[];
   onSettleCommission: (commissionId: string) => void;
   orders: WholesaleOrder[];
   pendingKey: string | null;
   profilesById: Map<string, WholesaleProfile>;
-  referrals: WholesaleReferral[];
+  referralRows: WholesaleReferralCommissionRow[];
   variant: "commission" | "incentives";
 };
 const ALL = "all";
@@ -65,13 +60,11 @@ export function WholesaleCommissionSection({
   commissionRuleSettings,
   commissions,
   customersById,
-  exchangeRates,
-  referralWaybillCounts,
   onSettleCommission,
   orders,
   pendingKey,
   profilesById,
-  referrals,
+  referralRows,
   variant,
 }: WholesaleCommissionSectionProps) {
   const uiText = useTranslations(
@@ -89,25 +82,6 @@ export function WholesaleCommissionSection({
     () =>
       formatWholesaleOrderCommissionDescription(commissionRuleSettings, locale),
     [commissionRuleSettings, locale],
-  );
-  const referralRows = useMemo(
-    () =>
-      buildReferralCommissionRows({
-        commissionRuleSettings,
-        customersById,
-        exchangeRates,
-        waybillCounts: referralWaybillCounts,
-        orders,
-        referrals,
-      }),
-    [
-      commissionRuleSettings,
-      customersById,
-      exchangeRates,
-      referralWaybillCounts,
-      orders,
-      referrals,
-    ],
   );
   const filteredCommissions = useMemo(() => {
     const searchValue = normalizeSearchText(incentiveSearch);

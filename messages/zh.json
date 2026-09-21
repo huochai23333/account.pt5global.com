@@ -306,19 +306,19 @@
   "RegisterForm": {
     "progressLabel": "注册进度",
     "steps": {
-    "invite": {
-      "title": "填写邀请码",
-      "description": "邀请码为选填项，填写后会先确认是否可以继续注册。"
-    },
-    "business": {
-      "title": "选择业务",
-      "description": "选择目前想了解的业务。"
-    },
-    "profile": {
-      "title": "填写账号资料",
-      "description": "填写邮箱和用户名；手机号可以不填。"
-    },
-    "password": {
+      "invite": {
+        "title": "填写邀请码",
+        "description": "邀请码为选填项，填写后会先确认是否可以继续注册。"
+      },
+      "business": {
+        "title": "选择业务",
+        "description": "选择目前想了解的业务。"
+      },
+      "profile": {
+        "title": "填写账号资料",
+        "description": "填写邮箱和用户名；手机号可以不填。"
+      },
+      "password": {
         "title": "设置登录密码",
         "description": "设置安全密码并确认条款后立即注册。"
       }
@@ -335,10 +335,10 @@
     "email": "电子邮箱",
     "inviteCode": "邀请码",
     "inviteCodePlaceholder": "没有邀请码可以留空",
-  "inviteCodeHint": "批发业务邀请码可用于关联推荐人；没有邀请码也可以继续。",
+    "inviteCodeHint": "批发业务邀请码可用于关联推荐人；没有邀请码也可以继续。",
     "businessLocked": "已根据邀请码为您匹配业务，本次注册不能改为其他业务。",
     "businesses": {
-    "wholesale": {
+      "wholesale": {
         "title": "了解批发业务",
         "description": "查看批发订单、物流、结汇和客户权益相关内容。"
       }
@@ -368,8 +368,8 @@
     "referralRequired": "邀请码可以留空；如需使用，请填写完整邀请码。",
     "referralNotFound": "邀请码不存在，请确认后重新输入。",
     "referralMaxUses": "邀请码已达到使用上限。",
-  "referralExpired": "邀请码已过期，请联系管理员获取新的邀请码。",
-  "businessUnavailable": "这个邀请码对应的服务暂时停止注册，请联系管理员了解后续安排。",
+    "referralExpired": "邀请码已过期，请联系管理员获取新的邀请码。",
+    "businessUnavailable": "这个邀请码对应的服务暂时停止注册，请联系管理员了解后续安排。",
     "registrationFailed": "注册没有完成，请检查填写内容后重试，或联系管理员处理。",
     "userExists": "该邮箱已注册，请直接登录。",
     "weakPassword": "这个密码太常见，请换一个更安全的密码。",
@@ -1125,8 +1125,8 @@
         "description": "按批发订单毛利和订单金额统计业务员提成与结算状态。"
       },
       "settings": {
-        "title": "批发业务设置",
-        "description": "维护批发订单业务员提成和客户推荐佣金规则。"
+        "title": "批发业务参数中心",
+        "description": "维护批发订单业务员提成、推荐订单佣金和月度运单奖励。"
       }
     },
     "directoryUi": {
@@ -2058,7 +2058,7 @@
     "header": {
       "badge": "汇率",
       "title": "汇率",
-      "manageDescription": "查看并维护币种汇率、自动获取和历史记录。批发规则在批发业务设置中维护。",
+      "manageDescription": "查看并维护币种汇率、自动获取和历史记录。批发规则在批发业务参数中心维护。",
       "readonlyDescription": "查看当前汇率和历史记录，需要调整或补充时请联系管理员。"
     },
     "businessHeader": {
@@ -2072,8 +2072,8 @@
         "description": "旅游订单服务费、服务价格、折扣和服务佣金"
       },
       "wholesale": {
-        "title": "批发业务设置",
-        "description": "批发订单业务员提成和客户推荐佣金"
+        "title": "批发业务参数中心",
+        "description": "批发订单业务员提成、推荐订单佣金和月度运单奖励"
       },
       "exchangeRates": {
         "title": "汇率",
@@ -2922,6 +2922,9 @@
     },
     "settings": {
       "badge": "佣金规则",
+      "calculationUnavailable": "暂无法计算",
+      "missingExchangeRate": "缺少美元兑人民币汇率，本月运单奖励暂无法计算。",
+      "missingParameterVersion": "缺少本月可用的奖励版本，暂无法计算。",
       "title": "佣金规则",
       "description": "这里集中管理订单佣金、推荐佣金和 VIP 首年奖励的计算规则；任务奖励仍在任务类型和任务创建时设置。",
       "summary": {
@@ -2936,6 +2939,7 @@
       "table": {
         "rule": "规则",
         "value": "当前值",
+        "schedule": "已预约的新值",
         "calculation": "计算方式",
         "actions": "操作",
         "missing": "暂无"
@@ -2978,24 +2982,89 @@
         "vipFirstYearReferralBonus": "佣金 = {bonusUsd} × 订单成交汇率",
         "wholesaleOrderSalesmanTier": "佣金 = max(批发订单毛利, 0) × 对应比例；订单人民币金额不超过 {tier1Limit} 用 {tier1Rate}，超过用 {tier2Rate}",
         "wholesaleReferralOrderAmount": "佣金 = 每月订单人民币金额 × {rate}",
-        "wholesaleReferralWaybillBonus": "运单数量大于 {tier1Count} 加 {tier1BonusUsd}，大于 {tier2Count} 加 {tier2BonusUsd}，大于 {tier3Count} 加 {tier3BonusUsd}"
+        "wholesaleReferralWaybillBonus": "运单数量达到 {tier1Count} 奖励 {tier1BonusUsd}，达到 {tier2Count} 奖励 {tier2BonusUsd}，达到 {tier3Count} 奖励 {tier3BonusUsd}"
       },
       "actions": {
         "edit": "修改",
         "save": "保存",
-        "cancel": "取消"
+        "cancel": "取消",
+        "history": "查看记录",
+        "cancelSchedule": "取消预约",
+        "confirmCancelSchedule": "确认取消",
+        "restore": "恢复此版本",
+        "close": "关闭",
+        "reviewPublish": "检查并发布",
+        "confirmPublish": "确认发布"
       },
       "validation": {
         "rate": "请输入 0 到 100 之间的比例。",
         "amount": "请输入大于 0 的金额。",
-        "count": "请输入大于 0 的整数数量。"
+        "count": "请输入大于 0 的整数数量。",
+        "tierOrder": "三个运单档位必须从小到大排列。",
+        "reason": "请填写至少 2 个字的修改原因。",
+        "effectiveTime": "请选择有效的开始使用时间。"
       },
       "feedback": {
-        "updateSuccess": "佣金规则已更新。"
+        "updateSuccess": "佣金规则已更新。",
+        "publishSuccess": "已发布第 {version} 版，并完成最终核对。版本凭证：{id}",
+        "cancelSuccess": "预约已取消，并完成最终核对。"
       },
       "errors": {
         "permission": "当前账号不能修改佣金规则。",
-        "unknown": "佣金规则保存失败，请稍后再试。"
+        "unknown": "这次修改没有完成，请稍后再试。",
+        "conflict": "页面内容已过期，其他管理员刚刚修改过。请刷新后再操作。",
+        "scheduleExists": "这项参数已经有一条预约，请先取消原预约。",
+        "monthlyTiming": "月度运单奖励只能从下一个上海自然月的第一天开始使用。",
+        "timeout": "等待结果超时。你可以再次提交，同一次修改不会重复生成版本。",
+        "finalCheck": "发布后的最终核对没有通过，页面未把这次操作标记为成功。请刷新后确认。"
+      },
+      "schedule": {
+        "none": "暂时没有预约"
+      },
+      "version": {
+        "number": "第 {version} 版",
+        "effective": "开始使用：{time}",
+        "reason": "修改原因：{reason}",
+        "publisher": "修改人：{name}",
+        "migrationPublisher": "系统迁移"
+      },
+      "effective": {
+        "title": "开始使用时间",
+        "immediate": "发布后立即使用",
+        "scheduled": "预约以后使用",
+        "time": "预约时间（上海时间）",
+        "monthlyOnly": "月度运单奖励按上海自然月计算，只能预约到下一个月的第一天。",
+        "monthlyHint": "系统已选择下一个上海自然月第一天。",
+        "scheduleHint": "到这个时间后，新订单自动使用新版本。"
+      },
+      "editor": {
+        "title": "修改{name}",
+        "description": "填写新数值和修改原因，发布前会再请你确认一次。",
+        "reason": "修改原因",
+        "reasonHint": "例如：按最新业务方案调整；这段说明会保存在历史记录中。",
+        "before": "修改前",
+        "after": "修改后"
+      },
+      "publish": {
+        "confirmTitle": "确认发布这次修改？",
+        "confirmDescription": "{name}将按“{timing}”开始使用。订单创建后会锁定当时的版本。"
+      },
+      "cancelSchedule": {
+        "confirmTitle": "取消这条预约？",
+        "confirmDescription": "第 {version} 版会保留在记录中，但不会开始使用。"
+      },
+      "history": {
+        "title": "{name}的修改记录",
+        "description": "恢复旧值也会生成一个新版本，不会改写原来的记录。"
+      },
+      "restore": {
+        "defaultReason": "恢复第 {version} 版的数值"
+      },
+      "status": {
+        "current": "当前使用",
+        "scheduled": "等待生效",
+        "history": "历史版本",
+        "cancelled": "已取消"
       }
     },
     "salesmanTaskSection": {
@@ -4136,32 +4205,227 @@
     }
   },
   "SalesLeads": {
-    "view": {"label":"展示方式","list":"列表","card":"卡片","expand":"展开资料","collapse":"收起资料"},
-    "rules": {"title":"认领与跟进规则","firstContact":{"title":"3 天内首次联系","description":"认领后 3 天内没有记录首次联系，线索会自动退回大厅。"},"followUp":{"title":"每 7 天持续跟进","description":"首次联系后，连续 7 天没有新的联系记录，线索会自动退回大厅。"},"claimPeriod":{"title":"每次认领最多 30 天","description":"认领满 30 天仍未标记已使用，即使持续联系，也会自动退回大厅。"},"shared":"管理员和业务员遵循相同规则。重新认领后开始新的周期，负责人可查看此前联系记录；认领数量不限。"},
-    "header": {"badge":"客户线索","title":"线索大厅","description":"认领潜在客户、记录每次联系，并在有效期内持续推进。"},
-    "boards": {"hall":"线索大厅","mine":"我的线索","used":"我已使用","allClaimed":"全部认领"},
-    "priority": "{priority} 级",
-    "status": {"hall":"大厅","claimed":"已认领","used":"已使用"},
-    "actions": {"claimForMe":"认领给自己","claim":"认领线索","details":"查看详情","addContact":"记录联系","return":"退回大厅","markUsed":"标记已使用","assign":"安排业务员","reopen":"重新开放","syncNow":"立即同步","cancel":"取消"},
-    "filters": {"searchLabel":"搜索线索","searchPlaceholder":"搜索名称、国家、邮箱或电话","assignee":"筛选业务员","allSalespeople":"全部业务员"},
-    "fields": {"country":"国家或地区","email":"邮箱","phone":"电话","whatsapp":"WhatsApp","website":"网站","publicContact":"公开联系方式","recommendedApproach":"建议联系方法","timeRemaining":"剩余联系时间","assignee":"当前负责人","nextFollowUp":"下次跟进","sourceDate":"线索日期","channel":"联系方法","outcome":"联系结果","contactNote":"联系备注","sourceId":"线索编号","category":"类型","regionTimezone":"所在地区与时区","priority":"联系优先级","contactToday":"今日联系建议","community":"社群入口","customerProfile":"客户画像","targetCustomer":"目标客户","publicPricing":"公开收费与门槛","talkingPoints":"联系话术","sourceUrl":"资料来源","sourceNotes":"注意事项","status":"当前状态","claimedAt":"认领时间","firstContact":"首次联系","lastContact":"最近联系","expiresAt":"本次联系截止","hardDeadline":"认领周期截止","usedAt":"使用时间","usedSummary":"使用结果"},
-    "countdown": {"expired":"已到期","daysHours":"{days} 天 {hours} 小时","hoursMinutes":"{hours} 小时 {minutes} 分钟"},
-    "detail": {"description":"查看完整公开资料和跟进记录。","contactHistory":"联系记录","assignmentHistory":"认领记录","recordedBy":"记录人：{name}","noContacts":"还没有联系记录。","noAssignments":"还没有认领记录。","notProvided":"未提供","basicInfo":"基本资料","publicContacts":"公开联系方式","cooperation":"合作建议","sourceInfo":"来源与提醒","progress":"跟进进度","recommendedToday":"建议今天联系","normalSchedule":"按计划联系"},
-    "channels": {"phone":"电话","email":"邮件","whatsapp":"WhatsApp","social":"社交平台","video":"视频通话","other":"其他方式"},
-    "outcomes": {"reached":"已联系上","no_reply":"暂未回复","interested":"有兴趣","follow_up":"需要跟进","not_interested":"暂无兴趣","invalid_contact":"联系方式无效","other":"其他结果"},
-    "endReasons": {"voluntary_return":"业务员主动退回","admin_return":"管理员退回","reassigned":"管理员转派","initial_timeout":"首次联系超时","follow_up_timeout":"跟进超时","hard_deadline":"认领周期结束","used":"已确认使用","reopened":"管理员重新开放"},
-    "dialogs": {
-      "contact": {"title":"记录本次联系","description":"每次联系都要留下结果和说明，提交后不能覆盖。","reasonLabel":"联系备注","notePlaceholder":"说明沟通内容、客户反馈和接下来要做什么","submit":"保存联系记录"},
-      "return": {"title":"退回线索大厅","description":"退回后其他业务员可以重新认领。","reasonLabel":"退回原因","notePlaceholder":"说明为什么退回这条线索","submit":"确认退回"},
-      "use": {"title":"标记为已使用","description":"确认这条线索已经带来实际业务结果。","reasonLabel":"结果说明","notePlaceholder":"说明客户已产生的业务结果","submit":"确认已使用"},
-      "assign": {"title":"安排业务员","description":"管理员可以安排或更换负责这条线索的业务员。","reasonLabel":"安排说明","notePlaceholder":"说明本次安排或转派原因","personPlaceholder":"选择业务员","submit":"确认安排"},
-      "reopen": {"title":"重新开放线索","description":"线索会回到大厅，等待业务员重新认领。","reasonLabel":"重新开放原因","notePlaceholder":"说明为什么需要重新开放","submit":"确认重新开放"}
+    "view": {
+      "label": "展示方式",
+      "list": "列表",
+      "card": "卡片",
+      "expand": "展开资料",
+      "collapse": "收起资料"
     },
-    "states": {"emptyTitle":"当前没有符合条件的线索","emptyDescription":"可以更换分类或搜索条件后再查看。","noPermissionTitle":"无法查看线索","noPermissionDescription":"线索大厅只向管理员和业务员开放。"},
-    "list": {"title":"线索","name":"线索名称与类型","location":"国家与地区","priorityStatus":"优先级与状态","contacts":"联系方式","followUp":"负责人及跟进时间","actions":"操作"},
-    "sync": {"missingSource":"{dates} 的来源资料尚未补齐，其他完整资料会继续同步。","lastSuccess":"最近同步成功","recentRuns":"最近同步记录","failed":"上一次同步没有完成，系统会自动重试。","result":{"queued":"同步已安排，正在等待处理。","running":"同步正在处理。","succeeded":"本次同步已确认完成。","partial_failed":"本次同步有部分资料未完成，系统会自动重试。","failed":"本次同步没有完成，系统会自动重试。","needs_attention":"本次同步多次未完成，需要管理员处理。","skipped":"本次没有需要同步的资料。","confirming":"同步结果仍在确认中，可稍后到系统运行页查看。"}},
-    "pagination": {"previous":"上一页","next":"下一页"},
-    "errors": {"unknown":"操作没有完成，请稍后重试。","sales_lead_already_claimed":"这条线索刚刚已被其他业务员认领。","sales_lead_not_active":"这条线索已过期或不再由当前账号处理。","sales_lead_contact_not_owned":"只能为自己当前认领的线索记录联系。","sales_lead_return_not_owned":"只能退回自己当前认领的线索。","sales_lead_use_not_owned":"只能确认自己当前认领的线索。","sales_lead_follow_up_must_be_future":"下次跟进时间必须晚于当前时间。","sales_lead_reason_required":"请填写至少两个字的说明。","sales_lead_used_locked":"已使用的线索需要先由管理员重新开放。","sales_lead_assignee_invalid":"请选择仍在职的业务员。","sales_lead_read_not_allowed":"当前账号不能查看这条线索。"}
+    "rules": {
+      "title": "认领与跟进规则",
+      "firstContact": {
+        "title": "3 天内首次联系",
+        "description": "认领后 3 天内没有记录首次联系，线索会自动退回大厅。"
+      },
+      "followUp": {
+        "title": "每 7 天持续跟进",
+        "description": "首次联系后，连续 7 天没有新的联系记录，线索会自动退回大厅。"
+      },
+      "claimPeriod": {
+        "title": "每次认领最多 30 天",
+        "description": "认领满 30 天仍未标记已使用，即使持续联系，也会自动退回大厅。"
+      },
+      "shared": "管理员和业务员遵循相同规则。重新认领后开始新的周期，负责人可查看此前联系记录；认领数量不限。"
+    },
+    "header": {
+      "badge": "客户线索",
+      "title": "线索大厅",
+      "description": "认领潜在客户、记录每次联系，并在有效期内持续推进。"
+    },
+    "boards": {
+      "hall": "线索大厅",
+      "mine": "我的线索",
+      "used": "我已使用",
+      "allClaimed": "全部认领"
+    },
+    "priority": "{priority} 级",
+    "status": { "hall": "大厅", "claimed": "已认领", "used": "已使用" },
+    "actions": {
+      "claimForMe": "认领给自己",
+      "claim": "认领线索",
+      "details": "查看详情",
+      "addContact": "记录联系",
+      "return": "退回大厅",
+      "markUsed": "标记已使用",
+      "assign": "安排业务员",
+      "reopen": "重新开放",
+      "syncNow": "立即同步",
+      "cancel": "取消"
+    },
+    "filters": {
+      "searchLabel": "搜索线索",
+      "searchPlaceholder": "搜索名称、国家、邮箱或电话",
+      "assignee": "筛选业务员",
+      "allSalespeople": "全部业务员"
+    },
+    "fields": {
+      "country": "国家或地区",
+      "email": "邮箱",
+      "phone": "电话",
+      "whatsapp": "WhatsApp",
+      "website": "网站",
+      "publicContact": "公开联系方式",
+      "recommendedApproach": "建议联系方法",
+      "timeRemaining": "剩余联系时间",
+      "assignee": "当前负责人",
+      "nextFollowUp": "下次跟进",
+      "sourceDate": "线索日期",
+      "channel": "联系方法",
+      "outcome": "联系结果",
+      "contactNote": "联系备注",
+      "sourceId": "线索编号",
+      "category": "类型",
+      "regionTimezone": "所在地区与时区",
+      "priority": "联系优先级",
+      "contactToday": "今日联系建议",
+      "community": "社群入口",
+      "customerProfile": "客户画像",
+      "targetCustomer": "目标客户",
+      "publicPricing": "公开收费与门槛",
+      "talkingPoints": "联系话术",
+      "sourceUrl": "资料来源",
+      "sourceNotes": "注意事项",
+      "status": "当前状态",
+      "claimedAt": "认领时间",
+      "firstContact": "首次联系",
+      "lastContact": "最近联系",
+      "expiresAt": "本次联系截止",
+      "hardDeadline": "认领周期截止",
+      "usedAt": "使用时间",
+      "usedSummary": "使用结果"
+    },
+    "countdown": {
+      "expired": "已到期",
+      "daysHours": "{days} 天 {hours} 小时",
+      "hoursMinutes": "{hours} 小时 {minutes} 分钟"
+    },
+    "detail": {
+      "description": "查看完整公开资料和跟进记录。",
+      "contactHistory": "联系记录",
+      "assignmentHistory": "认领记录",
+      "recordedBy": "记录人：{name}",
+      "noContacts": "还没有联系记录。",
+      "noAssignments": "还没有认领记录。",
+      "notProvided": "未提供",
+      "basicInfo": "基本资料",
+      "publicContacts": "公开联系方式",
+      "cooperation": "合作建议",
+      "sourceInfo": "来源与提醒",
+      "progress": "跟进进度",
+      "recommendedToday": "建议今天联系",
+      "normalSchedule": "按计划联系"
+    },
+    "channels": {
+      "phone": "电话",
+      "email": "邮件",
+      "whatsapp": "WhatsApp",
+      "social": "社交平台",
+      "video": "视频通话",
+      "other": "其他方式"
+    },
+    "outcomes": {
+      "reached": "已联系上",
+      "no_reply": "暂未回复",
+      "interested": "有兴趣",
+      "follow_up": "需要跟进",
+      "not_interested": "暂无兴趣",
+      "invalid_contact": "联系方式无效",
+      "other": "其他结果"
+    },
+    "endReasons": {
+      "voluntary_return": "业务员主动退回",
+      "admin_return": "管理员退回",
+      "reassigned": "管理员转派",
+      "initial_timeout": "首次联系超时",
+      "follow_up_timeout": "跟进超时",
+      "hard_deadline": "认领周期结束",
+      "used": "已确认使用",
+      "reopened": "管理员重新开放"
+    },
+    "dialogs": {
+      "contact": {
+        "title": "记录本次联系",
+        "description": "每次联系都要留下结果和说明，提交后不能覆盖。",
+        "reasonLabel": "联系备注",
+        "notePlaceholder": "说明沟通内容、客户反馈和接下来要做什么",
+        "submit": "保存联系记录"
+      },
+      "return": {
+        "title": "退回线索大厅",
+        "description": "退回后其他业务员可以重新认领。",
+        "reasonLabel": "退回原因",
+        "notePlaceholder": "说明为什么退回这条线索",
+        "submit": "确认退回"
+      },
+      "use": {
+        "title": "标记为已使用",
+        "description": "确认这条线索已经带来实际业务结果。",
+        "reasonLabel": "结果说明",
+        "notePlaceholder": "说明客户已产生的业务结果",
+        "submit": "确认已使用"
+      },
+      "assign": {
+        "title": "安排业务员",
+        "description": "管理员可以安排或更换负责这条线索的业务员。",
+        "reasonLabel": "安排说明",
+        "notePlaceholder": "说明本次安排或转派原因",
+        "personPlaceholder": "选择业务员",
+        "submit": "确认安排"
+      },
+      "reopen": {
+        "title": "重新开放线索",
+        "description": "线索会回到大厅，等待业务员重新认领。",
+        "reasonLabel": "重新开放原因",
+        "notePlaceholder": "说明为什么需要重新开放",
+        "submit": "确认重新开放"
+      }
+    },
+    "states": {
+      "emptyTitle": "当前没有符合条件的线索",
+      "emptyDescription": "可以更换分类或搜索条件后再查看。",
+      "noPermissionTitle": "无法查看线索",
+      "noPermissionDescription": "线索大厅只向管理员和业务员开放。"
+    },
+    "list": {
+      "title": "线索",
+      "name": "线索名称与类型",
+      "location": "国家与地区",
+      "priorityStatus": "优先级与状态",
+      "contacts": "联系方式",
+      "followUp": "负责人及跟进时间",
+      "actions": "操作"
+    },
+    "sync": {
+      "missingSource": "{dates} 的来源资料尚未补齐，其他完整资料会继续同步。",
+      "lastSuccess": "最近同步成功",
+      "recentRuns": "最近同步记录",
+      "failed": "上一次同步没有完成，系统会自动重试。",
+      "result": {
+        "queued": "同步已安排，正在等待处理。",
+        "running": "同步正在处理。",
+        "succeeded": "本次同步已确认完成。",
+        "partial_failed": "本次同步有部分资料未完成，系统会自动重试。",
+        "failed": "本次同步没有完成，系统会自动重试。",
+        "needs_attention": "本次同步多次未完成，需要管理员处理。",
+        "skipped": "本次没有需要同步的资料。",
+        "confirming": "同步结果仍在确认中，可稍后到系统运行页查看。"
+      }
+    },
+    "pagination": { "previous": "上一页", "next": "下一页" },
+    "errors": {
+      "unknown": "操作没有完成，请稍后重试。",
+      "sales_lead_already_claimed": "这条线索刚刚已被其他业务员认领。",
+      "sales_lead_not_active": "这条线索已过期或不再由当前账号处理。",
+      "sales_lead_contact_not_owned": "只能为自己当前认领的线索记录联系。",
+      "sales_lead_return_not_owned": "只能退回自己当前认领的线索。",
+      "sales_lead_use_not_owned": "只能确认自己当前认领的线索。",
+      "sales_lead_follow_up_must_be_future": "下次跟进时间必须晚于当前时间。",
+      "sales_lead_reason_required": "请填写至少两个字的说明。",
+      "sales_lead_used_locked": "已使用的线索需要先由管理员重新开放。",
+      "sales_lead_assignee_invalid": "请选择仍在职的业务员。",
+      "sales_lead_read_not_allowed": "当前账号不能查看这条线索。"
+    }
   },
   "UiText": {
     "shared": {
@@ -4838,28 +5102,62 @@
   "CompanyTemplates": {
     "title": "公司模板",
     "description": "使用公司统一发布的工作模板。模板中的填写内容只保留在当前页面，请完成后及时下载或保存。",
-    "status": { "active": "使用中", "inactive": "已停用", "current": "当前版本" },
-    "labels": { "version": "当前版本", "versionValue": "v{version}", "historyVersion": "v{version} · {file}", "file": "模板文件" },
+    "status": {
+      "active": "使用中",
+      "inactive": "已停用",
+      "current": "当前版本"
+    },
+    "labels": {
+      "version": "当前版本",
+      "versionValue": "v{version}",
+      "historyVersion": "v{version} · {file}",
+      "file": "模板文件"
+    },
     "actions": {
-      "create": "新建模板", "open": "开始使用", "guide": "使用指南", "newVersion": "上传新版本",
-      "disable": "停用", "enable": "重新启用", "history": "版本记录", "restore": "恢复此版本",
-      "back": "返回模板列表", "close": "关闭", "cancel": "取消", "publish": "上传并启用", "publishing": "正在上传"
+      "create": "新建模板",
+      "open": "开始使用",
+      "guide": "使用指南",
+      "newVersion": "上传新版本",
+      "disable": "停用",
+      "enable": "重新启用",
+      "history": "版本记录",
+      "restore": "恢复此版本",
+      "back": "返回模板列表",
+      "close": "关闭",
+      "cancel": "取消",
+      "publish": "上传并启用",
+      "publishing": "正在上传"
     },
     "fields": {
-      "name": "模板名称", "slug": "模板标识", "description": "模板说明", "htmlFile": "互动 HTML",
-      "htmlHint": "仅支持 UTF-8 的单文件 HTML，最大 5 MB。", "guideFile": "使用指南 HTML（可选）",
-      "guideHint": "没有使用指南时可以留空。", "guideKeepHint": "留空会继续使用当前版本的指南。"
+      "name": "模板名称",
+      "slug": "模板标识",
+      "description": "模板说明",
+      "htmlFile": "互动 HTML",
+      "htmlHint": "仅支持 UTF-8 的单文件 HTML，最大 5 MB。",
+      "guideFile": "使用指南 HTML（可选）",
+      "guideHint": "没有使用指南时可以留空。",
+      "guideKeepHint": "留空会继续使用当前版本的指南。"
     },
     "publish": {
-      "createTitle": "新建公司模板", "updateTitle": "上传模板新版本",
+      "createTitle": "新建公司模板",
+      "updateTitle": "上传模板新版本",
       "description": "文件校验并写入成功后会立即成为员工使用的当前版本。"
     },
     "feedback": {
-      "created": "模板已创建并启用。", "updated": "新版本已上传并启用。", "restored": "已恢复所选版本。",
-      "disabled": "模板已停用。", "enabled": "模板已重新启用。"
+      "created": "模板已创建并启用。",
+      "updated": "新版本已上传并启用。",
+      "restored": "已恢复所选版本。",
+      "disabled": "模板已停用。",
+      "enabled": "模板已重新启用。"
     },
-    "empty": { "title": "还没有可用模板", "description": "管理员发布模板后会显示在这里。" },
-    "viewer": { "guideTitle": "模板使用指南", "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。" },
+    "empty": {
+      "title": "还没有可用模板",
+      "description": "管理员发布模板后会显示在这里。"
+    },
+    "viewer": {
+      "guideTitle": "模板使用指南",
+      "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。"
+    },
     "errors": {
       "company_template_forbidden": "当前账号不能管理公司模板。",
       "company_template_revision_conflict": "模板刚刚被其他人更新，请刷新后重试。",

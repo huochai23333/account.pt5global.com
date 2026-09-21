@@ -1,43 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-import { useTranslations } from "next-intl";
-
-import {
-  type CommissionRuleCode,
-  type CommissionRuleConfig,
-  type CommissionRuleSetting,
-  updateCommissionRuleSetting,
-} from "@/lib/commission-settings";
-import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { useLocale } from "@/components/i18n/locale-provider";
-import {
-  FeedbackNotice,
-  type FeedbackTone,
-} from "@/components/dashboard/dashboard-shared-ui";
 import { DashboardListSection } from "@/components/dashboard/dashboard-section-panel";
+import { FeedbackNotice } from "@/components/dashboard/dashboard-shared-ui";
+import type {
+  BusinessParameterSetting,
+  CommissionRuleCode,
+} from "@/lib/commission-settings";
 
-import {
-  COMMISSION_RULE_DEFINITIONS,
-  type CommissionRuleDefinition,
-  type CommissionRuleField,
-  formatCommissionSettingInput,
-  getRuleConfigValue,
-} from "./commission-settings-display";
-import {
-  CommissionSettingsRulesTable,
-  type RuleDraft,
-} from "./admin-commission-settings-ui";
+import { BusinessParameterSettingsTable } from "./admin-commission-settings-ui";
+import { BusinessParameterEditDialog } from "./business-parameter-edit-dialog";
+import { BusinessParameterHistoryDialog } from "./business-parameter-history-dialog";
+import { useBusinessParameterSettingsViewModel } from "./use-business-parameter-settings-view-model";
 
-type PageFeedback = { message: string; tone: FeedbackTone } | null;
-type SettingsErrorKey =
-  | "settings.errors.permission"
-  | "settings.errors.unknown"
-  | "settings.validation.amount"
-  | "settings.validation.count";
-type SettingsErrorTranslator = (key: SettingsErrorKey) => string;
-
+/**
+ * 参数中心区块只负责组合列表和两个弹窗。查询、发布、取消、最终回读和表单状态
+ * 分别放在数据模块及 view-model 中，避免页面组件同时承担多个职责。
+ */
 export function AdminCommissionSettingsSection({
   canManageSettings,
   onRowsChange,
@@ -45,227 +24,61 @@ export function AdminCommissionSettingsSection({
   rows,
 }: {
   canManageSettings: boolean;
-  onRowsChange?: (rows: CommissionRuleSetting[]) => void;
+  onRowsChange?: (rows: BusinessParameterSetting[]) => void;
   ruleCodes?: readonly CommissionRuleCode[];
-  rows: CommissionRuleSetting[];
+  rows: BusinessParameterSetting[];
 }) {
-  const supabase = getBrowserSupabaseClient();
-  const t = useTranslations("Commission");
   const { locale } = useLocale();
-  const [settingsRows, setSettingsRows] = useState(() => sortRows(rows));
-  const [editingRule, setEditingRule] = useState<CommissionRuleCode | null>(
-    null,
-  );
-  const [draft, setDraft] = useState<RuleDraft>({});
-  const [pendingRule, setPendingRule] = useState<CommissionRuleCode | null>(
-    null,
-  );
-  const [feedback, setFeedback] = useState<PageFeedback>(null);
+  const viewModel = useBusinessParameterSettingsViewModel({
+    onRowsChange,
+    rows,
+  });
+  const visibleSettings = ruleCodes
+    ? viewModel.settings.filter((setting) =>
+        ruleCodes.includes(setting.parameterCode),
+      )
+    : viewModel.settings;
 
-  useEffect(() => {
-    if (editingRule === null && pendingRule === null) {
-      setSettingsRows(sortRows(rows));
-    }
-  }, [editingRule, pendingRule, rows]);
-
-  const rowsByCode = useMemo(
-    () => new Map(settingsRows.map((row) => [row.ruleCode, row])),
-    [settingsRows],
-  );
-  const ruleCodeSet = useMemo(
-    () => (ruleCodes ? new Set<CommissionRuleCode>(ruleCodes) : null),
-    [ruleCodes],
-  );
-  const visibleRules = useMemo(
-    () =>
-      COMMISSION_RULE_DEFINITIONS.filter(
-        (definition) => !ruleCodeSet || ruleCodeSet.has(definition.code),
-      ).map((definition) => ({
-        definition,
-        row: rowsByCode.get(definition.code) ?? null,
-      })),
-    [rowsByCode, ruleCodeSet],
-  );
-  function startEditing(definition: CommissionRuleDefinition) {
-    const row = rowsByCode.get(definition.code);
-
-    if (!row) {
-      return;
-    }
-
-    setEditingRule(definition.code);
-    setDraft(createDraft(definition, row.config));
-    setFeedback(null);
-  }
-
-  function clearEditing() {
-    setEditingRule(null);
-    setDraft({});
-  }
-
-  async function saveRule(definition: CommissionRuleDefinition) {
-    if (!supabase || pendingRule !== null) {
-      return;
-    }
-
-    const row = rowsByCode.get(definition.code);
-
-    if (!row) {
-      return;
-    }
-
-    const parsed = parseDraft(definition, row.config, draft);
-
-    if (!parsed.ok) {
-      setFeedback({ tone: "error", message: t(parsed.messageKey) });
-      return;
-    }
-
-    setPendingRule(definition.code);
-    setFeedback(null);
-
-    try {
-      const updated = await updateCommissionRuleSetting(
-        supabase,
-        definition.code,
-        parsed.config,
-      );
-      const nextRows = sortRows(
-        settingsRows.map((item) =>
-          item.ruleCode === updated.ruleCode ? updated : item,
-        ),
-      );
-      setSettingsRows(nextRows);
-      onRowsChange?.(nextRows);
-      clearEditing();
-      setFeedback({
-        tone: "success",
-        message: t("settings.feedback.updateSuccess"),
-      });
-    } catch (error) {
-      setFeedback({ tone: "error", message: toSettingsErrorMessage(error, t) });
-    } finally {
-      setPendingRule(null);
-    }
-  }
+  if (!canManageSettings) return null;
 
   return (
     <DashboardListSection bodyClassName="flex flex-col gap-5">
-      {feedback ? (
-        <FeedbackNotice tone={feedback.tone}>{feedback.message}</FeedbackNotice>
+      {viewModel.feedback ? (
+        <FeedbackNotice tone={viewModel.feedback.tone}>
+          {viewModel.feedback.message}
+        </FeedbackNotice>
       ) : null}
 
-      <CommissionSettingsRulesTable
-        canManageSettings={canManageSettings}
-        draft={draft}
-        editingRule={editingRule}
+      <BusinessParameterSettingsTable
         locale={locale}
-        pendingRule={pendingRule}
-        visibleRules={visibleRules}
-        onCancel={clearEditing}
-        onDraftChange={setDraft}
-        onEdit={startEditing}
-        onSave={(definition) => void saveRule(definition)}
+        onCancelSchedule={(setting) => void viewModel.cancelSchedule(setting)}
+        onEdit={viewModel.openEditor}
+        onHistory={viewModel.openHistory}
+        pendingKey={viewModel.pendingKey}
+        settings={visibleSettings}
+      />
+
+      <BusinessParameterEditDialog
+        editor={viewModel.editor}
+        locale={locale}
+        onClose={viewModel.closeEditor}
+        onPublish={() => void viewModel.publish()}
+        onUpdate={viewModel.updateEditor}
+        pending={viewModel.pendingKey?.startsWith("publish:") ?? false}
+      />
+
+      <BusinessParameterHistoryDialog
+        locale={locale}
+        onClose={viewModel.closeHistory}
+        onRestore={(version) => {
+          if (!viewModel.historySetting) return;
+          const setting = viewModel.historySetting;
+          viewModel.closeHistory();
+          viewModel.openEditor(setting, version);
+        }}
+        pending={viewModel.pendingKey !== null}
+        setting={viewModel.historySetting}
       />
     </DashboardListSection>
   );
-}
-
-function createDraft(
-  definition: CommissionRuleDefinition,
-  config: CommissionRuleConfig,
-) {
-  return definition.fields.reduce<RuleDraft>((result, field) => {
-    result[field.configKey] = formatCommissionSettingInput(
-      field.kind,
-      getRuleConfigValue(config, field.configKey),
-    );
-    return result;
-  }, {});
-}
-
-function parseDraft(
-  definition: CommissionRuleDefinition,
-  currentConfig: CommissionRuleConfig,
-  draft: RuleDraft,
-):
-  | { config: CommissionRuleConfig; ok: true }
-  | {
-      messageKey:
-        | "settings.validation.amount"
-        | "settings.validation.count"
-        | "settings.validation.rate";
-      ok: false;
-    } {
-  const nextConfig = { ...currentConfig };
-
-  for (const field of definition.fields) {
-    const parsed = parseFieldValue(field, draft[field.configKey] ?? "");
-
-    if (parsed === null) {
-      return {
-        ok: false,
-        messageKey:
-          field.kind === "rate"
-            ? "settings.validation.rate"
-            : field.kind === "count"
-              ? "settings.validation.count"
-              : "settings.validation.amount",
-      };
-    }
-
-    nextConfig[field.configKey] = parsed;
-  }
-
-  return { ok: true, config: nextConfig };
-}
-
-function parseFieldValue(field: CommissionRuleField, rawValue: string) {
-  const parsed = Number(rawValue.trim());
-
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  if (field.kind === "rate") {
-    const ratio = parsed > 1 ? parsed / 100 : parsed;
-
-    if (ratio <= 0 || ratio > 1) {
-      return null;
-    }
-
-    return Math.round(ratio * 10000) / 10000;
-  }
-
-  if (field.kind === "count") {
-    const count = Math.trunc(parsed);
-
-    return count > 0 ? count : null;
-  }
-
-  if (parsed <= 0) {
-    return null;
-  }
-
-  return Math.round(parsed * 100) / 100;
-}
-
-function sortRows(rows: CommissionRuleSetting[]) {
-  return [...rows].sort((left, right) => left.sortOrder - right.sortOrder);
-}
-
-function toSettingsErrorMessage(error: unknown, t: SettingsErrorTranslator) {
-  const message = String(
-    (error as { message?: string })?.message ?? "",
-  ).toLowerCase();
-
-  if (message.includes("permission")) {
-    return t("settings.errors.permission");
-  }
-
-  if (message.includes("invalid")) {
-    return t("settings.validation.amount");
-  }
-
-  return t("settings.errors.unknown");
 }

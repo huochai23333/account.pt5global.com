@@ -22,7 +22,8 @@ export function formatWholesaleOrderCommissionDescription(
     : null;
 
   if (tier1Limit === null || tier1Rate === null || tier2Rate === null) {
-    return "批发订单保存后会自动按当前业务设置生成提成记录。";
+    // 规则缺失时必须明确停止计算，不能用代码中的旧比例悄悄代替数据库版本。
+    return "当前缺少可用的提成规则，相关金额暂无法计算。";
   }
 
   return [

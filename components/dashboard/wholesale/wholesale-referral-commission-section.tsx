@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 import type { WholesaleCustomer } from "@/lib/wholesale";
+import type { WholesaleReferralCommissionRow } from "@/lib/wholesale-referral-commissions";
 import {
   formatCurrency,
   formatNumber,
@@ -36,7 +37,6 @@ import {
   WholesaleTd,
   WholesaleTh,
 } from "./wholesale-ui";
-import type { WholesaleReferralCommissionRow } from "./wholesale-referral-commission";
 const ALL = "all";
 export function WholesaleReferralCommissionSection({
   customersById,
@@ -48,6 +48,7 @@ export function WholesaleReferralCommissionSection({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_referral_commission_section",
   );
+  const commissionText = useTranslations("Commission.settings");
   const [search, setSearch] = useState("");
   const [customerFilter, setCustomerFilter] = useState(ALL);
   const filteredRows = useMemo(() => {
@@ -70,7 +71,7 @@ export function WholesaleReferralCommissionSection({
     });
   }, [customerFilter, customersById, referralRows, search]);
   const totalReferralCommission = referralRows.reduce(
-    (sum, row) => sum + row.amount,
+    (sum, row) => sum + (row.amount ?? 0),
     0,
   );
   const chargedWaybillCount = referralRows.reduce(
@@ -79,9 +80,7 @@ export function WholesaleReferralCommissionSection({
   );
   const hasActiveFilters = search || customerFilter !== ALL;
   return (
-    <WholesalePageShell
-      title={uiText("attribute003")}
-    >
+    <WholesalePageShell title={uiText("attribute003")}>
       <WholesaleStatGrid
         stats={[
           {
@@ -221,7 +220,9 @@ export function WholesaleReferralCommissionSection({
                               <ReferralCommissionBreakdown row={row} />
                             </WholesaleTd>
                             <WholesaleTd className="whitespace-normal">
-                              {formatCurrency(row.amount)}
+                              {row.amount === null
+                                ? commissionText("calculationUnavailable")
+                                : formatCurrency(row.amount)}
                             </WholesaleTd>
                           </tr>
                         ))}
@@ -257,7 +258,9 @@ export function WholesaleReferralCommissionSection({
                           </p>
                         </div>
                         <p className="shrink-0 text-sm font-semibold text-primary">
-                          {formatCurrency(row.amount)}
+                          {row.amount === null
+                            ? commissionText("calculationUnavailable")
+                            : formatCurrency(row.amount)}
                         </p>
                       </div>
                       <div className="mt-3">
@@ -279,6 +282,7 @@ function ReferralCommissionBreakdown({
 }: {
   row: WholesaleReferralCommissionRow;
 }) {
+  const t = useTranslations("Commission.settings");
   return (
     <div className="grid gap-1 text-xs leading-5 text-content-muted">
       <p>
@@ -291,11 +295,19 @@ function ReferralCommissionBreakdown({
         <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text011" />
         {formatNumber(row.waybillCount)}
         <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text012" />{" "}
-        {formatCurrency(row.waybillBonusUsd, "USD")}
-        {row.waybillBonusUsd > 0
-          ? ` / ${formatCurrency(row.waybillBonusRmb)}`
+        {row.waybillBonusUsd === null
+          ? t("calculationUnavailable")
+          : formatCurrency(row.waybillBonusUsd, "USD")}
+        {(row.waybillBonusUsd ?? 0) > 0
+          ? ` / ${row.waybillBonusRmb === null ? t("calculationUnavailable") : formatCurrency(row.waybillBonusRmb)}`
           : ""}
       </p>
+      {row.rateMissing ? (
+        <p className="text-status-warning">{t("missingExchangeRate")}</p>
+      ) : null}
+      {row.parameterMissing ? (
+        <p className="text-status-warning">{t("missingParameterVersion")}</p>
+      ) : null}
       <p className="break-words [overflow-wrap:anywhere]">
         <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text013" />
         {row.orderNumbers.length > 0 ? row.orderNumbers.join("、") : "暂无"}
