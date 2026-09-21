@@ -4226,7 +4226,7 @@
         "title": "Up to 30 days per claim",
         "description": "After 30 days, a lead not marked as used returns to the hall, even if contact continues."
       },
-      "shared": "The same rules apply to administrators and salespeople. Reclaiming starts a new period with access to earlier contact records. There is no limit on claims."
+      "shared": "The same rules apply to administrators and salespeople. Each person can receive up to 5 leads per day. Administrator assignments, transfers, and reclaimed leads all count toward that day's total. Reclaiming starts a new period with access to earlier contact records."
     },
     "header": {
       "badge": "Customer leads",
@@ -4416,6 +4416,7 @@
     "errors": {
       "unknown": "The action could not be completed. Please try again.",
       "sales_lead_already_claimed": "Another salesperson just claimed this lead.",
+      "sales_lead_daily_limit_reached": "You have already received 5 leads today. Please continue tomorrow.",
       "sales_lead_not_active": "This lead has expired or is no longer assigned to this account.",
       "sales_lead_contact_not_owned": "You can record contact only for your current leads.",
       "sales_lead_return_not_owned": "You can return only your current leads.",
