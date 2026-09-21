@@ -28,13 +28,8 @@ export default async function WorkspaceMyPage({
   }
 
   return (
-    <ScopedIntlProvider
-      namespaces={["DashboardMy", "DashboardMyState", "DashboardShared", "EmailReminders"]}
-    >
-      <DashboardSharedMyClient
-        emailReminderHref={workspaceConfig.authRole === "client" ? null : "/email-reminders"}
-        initialData={bundle}
-      />
+    <ScopedIntlProvider namespaces={["DashboardMy", "DashboardMyState", "DashboardShared"]}>
+      <DashboardSharedMyClient initialData={bundle} />
     </ScopedIntlProvider>
   );
 }

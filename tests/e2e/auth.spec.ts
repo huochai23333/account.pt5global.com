@@ -61,7 +61,7 @@ test.describe("authentication regression", () => {
       await page.goto(entryPath);
       await expectUnavailablePage(page);
       // 这个账号的 Auth 缓存仍是业务员；页面隐藏内部员工专用入口，证明服务端采用了数据库中的客户角色。
-      await expect(page.getByRole("link", { name: "邮件提醒" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "邮件工作台" })).toHaveCount(0);
       await expect(
         page.getByRole("heading", { name: "这个页面不在你的工作范围内" }),
       ).toHaveCount(0);

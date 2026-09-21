@@ -85,6 +85,7 @@ const internalGlobalNavItems = [
 
 const adminGlobalNavItems = [
   { segment: "home", labelKey: "home" },
+  { segment: "mail", labelKey: "mail" },
   { segment: "company-templates", labelKey: "companyTemplates" },
   { segment: "reviews", labelKey: "reviews" },
   { segment: "accounts", labelKey: "accounts" },
@@ -217,7 +218,12 @@ const WORKSPACE_ROUTE_CONFIG_BY_SEGMENT = {
   salesman: createWorkspaceRouteConfig({
     authRole: "salesman",
     basePath: "/salesman",
-    globalNavItems: internalGlobalNavItems,
+    globalNavItems: [
+      { segment: "home", labelKey: "home" },
+      { segment: "mail", labelKey: "mail" },
+      { segment: "company-templates", labelKey: "companyTemplates" },
+      { segment: "settings", labelKey: "exchangeRates" },
+    ],
     globalPageVariants: {
       settings: true,
     },
@@ -256,6 +262,7 @@ const workspaceGlobalNavSegmentSet = new Set<string>([
   "company-expenses",
   "feedback",
   "home",
+  "mail",
   "my",
   "reimbursements",
   "reviews",

@@ -121,9 +121,18 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
 NEXT_PUBLIC_SITE_URL=https://account.pt5global.com
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-EMAILCONNECT_BASE_URL=https://connect.pt5global.com
-EMAILCONNECT_INSTALLATION_ID=pt5-dropshipping
-EMAILCONNECT_SIGNING_SECRET=your-emailconnect-installation-signing-secret
+MAIL_CREDENTIAL_ENCRYPTION_KEY=64-character-hex-key
+MAIL_CONTENT_ENCRYPTION_KEY=another-64-character-hex-key
+MAIL_EMAIL_HASH_SECRET=at-least-32-random-characters
+MAIL_TASK_SECRET=background-task-secret
+MAIL_SHARED_MAILBOX_EMAIL=chinapt5@gmail.com
+MAIL_ATTACHMENT_BUCKET=pt5-mail-attachments
+MAIL_ATTACHMENT_SCANNER_URL=https://your-malware-scanner.example/scan
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_PUBSUB_TOPIC=projects/your-project/topics/your-topic
+FEISHU_APP_ID=your-feishu-app-id
+FEISHU_APP_SECRET=your-feishu-app-secret
 EXCHANGE_RATE_API_KEY=your-exchangerate-api-key
 DEEPSEEK_API_KEY=your-deepseek-api-key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
@@ -135,8 +144,8 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 - `NEXT_PUBLIC_*` 用于浏览器端和 SSR 访问 Supabase。
 - `NEXT_PUBLIC_SITE_URL` 用于邮箱确认等服务端回跳地址，线上必须填写包含 `https://` 的完整站点根地址，并与 Supabase Auth 的 Site URL 保持一致；未配置或格式无效时自动使用默认线上域名，避免确认邮件和退出登录入口返回 500。
 - `SUPABASE_SERVICE_ROLE_KEY` 只允许服务端脚本或受控管理任务使用，不能暴露到前端。
-- `EMAILCONNECT_BASE_URL`、`EMAILCONNECT_INSTALLATION_ID` 和 `EMAILCONNECT_SIGNING_SECRET` 只供 Next.js 服务端调用独立 EmailConnect；签名密钥不能写入 `NEXT_PUBLIC_*` 或交给浏览器。EmailConnect 反向验证人员状态时调用 `/api/integrations/emailconnect/verify-users`。
-- 人员反向验证失败时，运行日志只记录失败的查询阶段和 Supabase 诊断字段，不记录人员 UUID、邮箱或任何密钥。
+- `MAIL_CREDENTIAL_ENCRYPTION_KEY` 与 `MAIL_CONTENT_ENCRYPTION_KEY` 分别加密授权凭据和邮件内容；`MAIL_EMAIL_HASH_SECRET` 生成客户邮箱盲索引，三者只能配置在 Next.js 服务端。`MAIL_TASK_SECRET` 保护后台补偿任务入口。
+- Google 变量用于管理员连接公司邮箱和续订 Gmail Watch；飞书变量用于员工绑定与应用私聊。附件扫描服务必须明确返回安全结果，文件才可进入发信队列。所有这些变量都不能使用 `NEXT_PUBLIC_*` 前缀。
 - `EXCHANGE_RATE_API_KEY` 只配置为 Supabase Edge Function secret。
 - `LOGISTICS_SOURCE_ARCHIVE_API_URL` 和 `LOGISTICS_SOURCE_ARCHIVE_API_TOKEN` 只配置为 Supabase Edge Function secrets，用于把店小秘必要物流字段归档到主系统，不暴露到浏览器端；同步只调用来源项目的受控接口。
 - `USER_MEDIA_IMAGE_REVIEW_PROVIDER` 和真实内容安全供应商密钥只配置为 Supabase Function secrets，默认 provider 为 `disabled`。
@@ -241,7 +250,8 @@ app/
 │  └─ sign-out/
 ├─ access-limited/
 ├─ business-unavailable/
-├─ email-reminders/
+├─ (account-tools)/
+│  └─ mail/
 ├─ (company-templates)/
 │  └─ [workspace]/
 │     └─ company-templates/
@@ -269,10 +279,10 @@ app/
 - `lib/workspace-business-modules.ts`：同时维护系统认识的业务与当前启用业务，分别提供 registered/enabled 类型和判断函数；旅游、批发定义仍保留在独立模块中。
 - `lib/current-session-context.ts`：会话薄编排层；缓存、Auth 获取和数据库访问上下文分别位于 `current-session-cache.ts`、`current-session-auth.ts` 与 `current-session-access-context.ts`。
 - `lib/user-self-service.ts`：个人中心读取编排；资料、隐私申请、媒体上传和预览缓存分别位于对应的 `user-*` 服务文件。
-- `lib/emailconnect/`：EmailConnect 服务端签名客户端、统一员工身份映射、页面查询和 Worker 反向人员状态验证；不会在浏览器中读取安装密钥。
+- `lib/mail/`：系统内置邮件数据访问、内容加密、Gmail/飞书边界、收发队列、Watch 维护、附件私有存储和 AI 上下文；浏览器不会读取服务密钥或直接访问邮件表。
 - `lib/company-templates/`：公司模板权限、文件校验、查询、管理员写入回执和内容完整性核对；页面与接口只负责组装和请求调度。
 - `components/dashboard/company-templates/`：模板列表、管理弹窗、模板卡片和沙箱查看器；HTML 正文由独立内容接口返回。
-- `components/dashboard/email-reminders/`：个人 Gmail 连接、管理员规则和连接健康状态的独立展示与 view-model；详情 Page 只组装查询结果。`dashboard-my-content-sections.tsx` 承载个人页资料与认证展示，个人页组装器只排列区块。
+- `components/dashboard/mail/`：共享邮箱列表、详情、编辑器、人员设置、运行状态、AI 报告和 view-model；`/[workspace]/mail` Page 只组合首屏查询结果。
 - `lib/workspace-config.ts`：全局工作台配置中心，负责角色 base path、全局入口和从业务模块清单组装后的页面能力。
 - `lib/workspace-route-segments.ts`：工作台角色路由段枚举。
 - `lib/workspace-business-access.ts`：当前账号可见业务读取、业务键规范化和导航过滤辅助。
@@ -444,7 +454,9 @@ PT5-dropshipping-web/
 - 个人资料中姓名和城市按资料修改规则处理：管理员修改自己立即生效，其他角色提交后进入管理员审核。资料更新、申请提交和管理员审核都必须返回同一用户或申请编号、目标状态及提交字段；影响 0 行或返回旧字段时页面显示失败。写入已确认但资料重读失败时显示“个人资料已保存，页面内容正在刷新”，并保留表单，不能覆盖成绿色成功。
 - “我的”页的个人照片和视频提交面向所有有个人中心的角色；地推账号与业务员一样可以提交和删除自己待审核的个人媒体。上传必须核对 Storage 返回的准确路径、逐个确认对象存在、核对数据库媒体编号，并把上传完成与图片审核完成分开展示；删除必须在操作运行中记录防重复编号、核对准确删除数量，并在逐个确认 Storage 对象已经不存在后才显示成功。HTTP 200、数据库记录已删或页面提示都不能单独作为媒体操作完成凭证。
 - “我的”页可在同一浏览器保存 1 个额外常用账号；顶栏账号菜单可直接切换，尚未添加时进入添加登录流程，失效时进入目标账号重新登录流程。添加或重新启用都必须重新登录，重新登录必须匹配目标账号，成功切换会刷新 30 天有效期。超过 30 天后继续显示账号信息，但会删除失效会话并要求重新登录。
-- 状态正常且有可用业务的内部员工从“我的”页账号中心或顶栏账号菜单进入“邮件提醒”；暂时没有已启用业务的内部员工从业务说明页进入同一独立账号工具。客户账号不显示入口且不能直接进入。一个员工绑定一个飞书身份并可连接多个 Gmail，每个 Gmail 只能属于一名员工。授权由独立 EmailConnect 托管，完成后只返回本站预先登记地址，不共享 Cookie 或 Supabase 会话。管理员可维护平台发件域名和可选主题关键词，并查看员工姓名、脱敏邮箱与连接健康状态，但不能查看邮件主题或摘要。
+- 邮件工作台固定显示在管理员和业务员左侧工作栏，地址分别为 `/admin/mail` 与 `/salesman/mail`；其他角色无入口且接口拒绝。全公司只连接 `chinapt5@gmail.com`，业务员只绑定飞书并使用系统界面。业务员只能读取自己负责的会话，当前负责人可转交给其他启用业务员；管理员可查看全部、待指派、人员配置、邮箱健康和 AI 报告。
+- 邮件新建和回复支持 To/Cc/Bcc、最多 10 个附件、独立签名和 Ref。页面提交后保持“正在发送”，只有 Gmail 返回 message/thread ID 且系统再次确认消息位于 `SENT`，才显示发送完成；HTTP 2xx、任务入队或按钮提示都不是成功。附件经服务端加密私有存储和安全检查，下载必须重新执行会话所有权校验。管理员删除只清理系统密文和附件，Gmail 原件保留。
+- 回复建议由业务员手动触发并写入可编辑正文，不会自动发送；管理员报告的数字先由 SQL 计算，模型只负责归纳。两类 AI 调用都复用站内额度租约、完整流结束校验和运行账本，正文为空、流中断、超时或账本未保存时不得显示完成。
 - 公告按发布对象和当前账号角色过滤；管理员管理页可维护全部公告。
 - 首页由可自定义组件组成，1280px 起按 5 列固定坐标摆放，最大尺寸统一为 `5 × 5`，最小尺寸按功能分别限制：问候 `2 × 1`、待办 `3 × 3`，公告、邀请码和时间均为 `2 × 2`。这些下限保证待办快速添加与筛选、不同角色的邀请码复制操作、日期及时区等内容仍可使用；鼠标缩放、调整弹窗、默认布局和布局归一化共同遵守同一套限制。编辑后桌面端原左侧功能栏会切换为添加组件侧栏，一行高或一列宽的组件改为只显示图标、名称、尺寸和管理操作，两行及以上组件用独立工具栏与预览区，业务内容不会再被删除或尺寸信息遮住。普通编辑状态保留轻微摇晃作为可编辑提示；鼠标靠近缩放边缘或编辑按钮、拖动组件、调整大小或打开调整弹窗时，摇晃会立即暂停，结束操作后自动恢复，系统开启“减少动态效果”时不播放摇晃。鼠标靠近边缘时显示贴边的小型标准缩放把手和当前边界，44px 透明操作区保证容易抓取但不会遮住内容。拖动大小期间只移动带尺寸信息的网格预览，真实组件和相邻组件保持原位，松开鼠标后才一次性落位并处理冲突；“调整组件”弹窗继续提供上下左右、加宽缩窄和增高变矮的键盘替代操作，到达组件下限或网格边界的按钮会自动禁用。新增、位置拖动和删除保留现有过渡效果；布局按当前登录账号保存，页面会明确显示正在保存、已保存或保存失败，失败时保留当前页面布局并允许重新保存。
 - 小于 1280px 的首页使用轻量管理：组件按照保存数组的先后顺序显示，同类组件重复添加时用“当前时间 2”一类名称区分；手机和平板可通过“管理首页”添加、移除、恢复默认、向前移动和向后移动，不设置独立宽高，也不改变桌面坐标。
@@ -535,7 +547,7 @@ PT5-dropshipping-web/
 - `tests/e2e/legacy-tourism-disabled.spec.ts` 覆盖旅游专属账号登录、旧旅游地址、未知地址、导航与邀请入口、伪造 API 请求，以及运营账号在桌面和 390px 宽度下进入批发订单工作区；批发工作流继续由原有批发专项用例覆盖。
 - 权限回归会检查有效越权账号仍可直接返回自己的首页；开发服务器输出不应出现 `Forbidden` 性能测量异常。当前使用 Next.js 最新稳定补丁，不采用 canary 或 preview 版本。
 - 本地运营报销回归使用两名种子运营账号，运行 `operator-reimbursements.spec.ts` 与 `operator-reimbursements-sharing.spec.ts`；协作套件要求 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`。批量写入回归固定使用专用协作运营和保留的历史周期，执行前确认该周期没有非测试记录，结束后只删除本次标识数据，不能改动结算共享账号的其他费用。套件覆盖真实创建和报销凭证、HTTP 200 但影响 0 行时拒绝成功、历史补报、205 条分页、相互查阅、本人写入边界、搜索 300ms 防抖、删除期间切换运营的查询竞态、上海跨日时间显示、查询失败重试及 1440/390/320px 排版。
-- `tests/e2e/email-reminders.spec.ts` 使用本地 EmailConnect 边界模拟，不连接真实 Gmail、飞书或云端服务。用例覆盖七种内部角色、客户拒绝、账号中心和顶栏入口、业务说明页入口、管理员脱敏健康信息和规则区域，并在 1440/390/320px 检查菜单触控区域、文字换行与页面横向溢出。`tests/e2e/account-switcher.spec.ts` 从顶栏发起添加与切换，另行核对本地数据库角色、服务端工作区权限和刷新后的账号，并故意破坏备用会话确认不会误报成功。运行邮件用例时必须为新启动的 Next 进程提供三项 `EMAILCONNECT_*` 测试配置；生产授权回调从经过白名单校验的公开站点 origin 生成，不能使用托管平台代理后的内部 `request.url`。
+- `tests/e2e/mail.spec.ts` 直接使用本地 PT5 Supabase，并只模拟 Gmail、飞书、附件扫描和 DeepSeek 外部边界。用例覆盖左侧入口、其余六类角色拒绝、收件已读、AI 建议编辑、回复、新建、附件、转交、管理员报告、删除系统副本，以及 Gmail 返回编号但独立查询没有 `SENT` 时必须失败；并在 1440/390/320px 检查横向溢出。真实 Google OAuth、真实收发可见性和真实飞书到达需要在生产切换前单独验收。
 - 测试账号优先读取 `E2E_*` 环境变量；未设置时，若当前 `.env.local` 指向本地 Supabase，则优先从同级 `supabase/local-test-data.sql`、`supabase/supabase/local-test-data.sql` 或 `PT5-dropshipping-supabase/supabase/local-test-data.sql` 读取 `local.*@bs.test` 账号，再读取本机测试账号文件。
 - 本地 Supabase 测试数据会生成 100 条最近 30 天内的批发订单，订单列表默认范围应能直接看到足够的订单样本；协作订单 `WH-PEER-LOCAL-001` 用于验证管理员、财务和两名业务员都只使用直接修改入口。当天汇率按上海业务日期写入，午夜后运行结汇回归也必须能匹配当天汇率。
 - 批发浏览器回归会拦截真实写请求，验证订单、附件、客户别名、账号合并、1688 导入、单条与批量认领组、物流店铺归属、推荐、结汇发布和结汇分配失败时表单保持打开、字段不丢失、反馈可见；订单列表框架只覆盖当前三类批发订单页面，推荐树只覆盖当前启用的批发业务，不再把已停用的旅游页面当作可用入口。结汇发布用例还覆盖同一收款分到多笔订单、部分分配、最早订单优先建议、整组重配、临时名称选择正式客户、清空二次确认，以及桌面和移动排版。`tests/e2e/settlement-rate-repair-receipts.spec.ts` 的真实链路从页面发布缺少精确日期汇率的收款，等待专用后台任务终态，再独立核对运行记录、汇率记录 ID、收款分配和刷新后页面；故障链路故意让任务以 `partial_failed` 结束，确认页面不重试分配、不显示成功，并核对数据库仍为待分配。`tests/e2e/wholesale-order-attachment-receipts.spec.ts` 另用真实页面、独立服务端数据库连接和 Storage 查询验证上传、删除、整页刷新后的最终一致性，并故意把登记接口改成 HTTP 200 但只返回一半记录，确认页面拒绝成功且不会留下孤立对象；该用例同时检查 390px 页面横向溢出。1688 用例覆盖收货人和采购日期筛选、当前结果全选、多订单选择、认领组调整与撤销、刷新后持久化、四类角色权限以及桌面和移动排版。订单关联用例检查客户联动、编号金额、日期倒序、详情展示和关联单号搜索，物流用例单独检查永久档案统计与响应式布局。

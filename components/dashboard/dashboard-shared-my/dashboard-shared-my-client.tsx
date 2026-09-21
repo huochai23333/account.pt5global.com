@@ -14,14 +14,10 @@ import { DashboardSharedMySections } from "./dashboard-shared-my-sections";
 import { useDashboardSharedMyState } from "./use-dashboard-shared-my-state";
 
 type DashboardSharedMyClientProps = {
-  emailReminderHref?: string | null;
   initialData?: CurrentUserBundle | null;
 };
 
-export function DashboardSharedMyClient({
-  emailReminderHref = null,
-  initialData = null,
-}: DashboardSharedMyClientProps) {
+export function DashboardSharedMyClient({ initialData = null }: DashboardSharedMyClientProps) {
   const copy = useDashboardMyCopy();
   const {
     account,
@@ -71,7 +67,6 @@ export function DashboardSharedMyClient({
       >
         <DashboardSharedMySections
           copy={copy}
-          emailReminderHref={emailReminderHref}
           state={{
             account,
             accountSwitcher,

@@ -20,6 +20,7 @@ export async function createServerOperationRun(options: {
     throw new Error("server_operation_run_invalid");
   }
   return {
+    attemptNumber: 1,
     isReplay: data.isReplay === true,
     operationId: data.operationId,
     status: typeof data.status === "string" ? data.status : "running",
@@ -27,6 +28,7 @@ export async function createServerOperationRun(options: {
 }
 
 export async function finishServerOperationRun(options: {
+  attemptNumber?: number;
   errorCode?: string;
   errorMessage?: string;
   operationId: string;
@@ -35,7 +37,8 @@ export async function finishServerOperationRun(options: {
 }) {
   const supabase = getSupabaseServiceRoleClient();
   const succeeded = options.outcome === "succeeded";
-  const { data, error } = await supabase.rpc("finish_operation_attempt", {
+  const { data, error } = await supabase.rpc("finish_operation_attempt_checked", {
+    p_attempt_number: options.attemptNumber ?? 1,
     p_error_code: options.errorCode ?? null,
     p_error_message: options.errorMessage ?? null,
     p_expected_count: 1,

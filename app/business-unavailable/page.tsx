@@ -53,15 +53,15 @@ export default async function BusinessUnavailablePage({
                 <>
                   <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
                     href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
-                  <Link
+                  {role === "administrator" || role === "salesman" ? <Link
                     className={cn(
                       buttonVariants({ size: "default", variant: "primary" }),
                       "min-w-0 whitespace-normal text-center",
                     )}
-                    href="/email-reminders"
+                    href={`${getDefaultWorkspaceBasePath(role)}/mail`}
                   >
                     {copy.emailReminders}
-                  </Link>
+                  </Link> : null}
                 </>
               ) : null}
               <a
@@ -102,7 +102,7 @@ function getUnavailableCopy(locale: string, isTourismAddress: boolean) {
         ? `Travel services are currently paused. Your previous records are kept safely. Contact ${companyConfig.supportEmail} if you need help.`
         : `Your account does not currently have an available business workspace. Contact ${companyConfig.supportEmail} if you need help.`,
       help: "Email support",
-      emailReminders: "Email reminders",
+      emailReminders: "Mail workspace",
       companyTemplates: "Company templates",
       signOut: "Sign out",
       title: isTourismAddress
@@ -117,7 +117,7 @@ function getUnavailableCopy(locale: string, isTourismAddress: boolean) {
       ? `旅游业务目前暂停服务，你之前的记录会继续妥善保留。如需帮助，请联系 ${companyConfig.supportEmail}。`
       : `这个账号目前没有可进入的业务工作区。如需帮助，请联系 ${companyConfig.supportEmail}。`,
     help: "联系帮助邮箱",
-    emailReminders: "邮件提醒",
+    emailReminders: "邮件工作台",
     companyTemplates: "公司模板",
     signOut: "退出登录",
     title: isTourismAddress ? "旅游业务暂时停止服务" : "当前没有可使用的业务",

@@ -16,7 +16,6 @@ import type { DashboardSharedMyState } from "./use-dashboard-shared-my-state";
 
 type DashboardSharedMySectionsProps = {
   copy: DashboardMyCopy;
-  emailReminderHref?: string | null;
   state: Pick<
     DashboardSharedMyState,
     | "account"
@@ -53,7 +52,6 @@ const SECTION_ITEMS = [
 
 export function DashboardSharedMySections({
   copy,
-  emailReminderHref,
   state,
 }: DashboardSharedMySectionsProps) {
   const { account, accountSwitcher, assetDialog, page, profileDialog, ui } =
@@ -95,7 +93,6 @@ export function DashboardSharedMySections({
         <DashboardAccountCenterSection
           account={account}
           copy={copy}
-          emailReminderHref={emailReminderHref}
           onRefreshProfile={() => void page.refreshBundle({ quiet: false })}
           stats={accountStats}
           ui={ui}

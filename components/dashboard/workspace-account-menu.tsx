@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 import {
-  BellRing,
   ChevronDown,
   IdCard,
   LayoutDashboard,
@@ -75,8 +74,6 @@ export function WorkspaceAccountMenu({
     setLogoutPending(true);
     signOutCurrentBrowserSession(supabase);
   };
-
-  const emailReminderHref = role === "client" ? null : "/email-reminders";
 
   return (
     <Popover.Root
@@ -163,23 +160,6 @@ export function WorkspaceAccountMenu({
                   </Link>
                 );
               })}
-              {emailReminderHref ? (
-                <Link
-                  className="flex min-h-11 items-center gap-3 rounded-control-default px-3 py-2.5 text-sm font-medium text-content-muted transition-colors hover:bg-surface-inset"
-                  href={emailReminderHref}
-                  onClick={(event) => {
-                    setAccountMenuOpen(false);
-                    if (shouldUseFullPageLoad()) {
-                      event.preventDefault();
-                      window.location.assign(emailReminderHref);
-                    }
-                  }}
-                  prefetch={false}
-                >
-                  <BellRing className="size-4 text-content-muted" />
-                  {t("accountMenu.emailReminders")}
-                </Link>
-              ) : null}
             </div>
 
             <div className="border-t border-border-subtle p-2">
