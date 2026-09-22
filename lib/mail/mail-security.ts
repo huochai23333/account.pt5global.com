@@ -35,8 +35,11 @@ export function encryptMailValue(value: string, keyHex: string) {
 }
 
 export function decryptMailValue(value: string, keyHex: string) {
-  const [version, ivValue, tagValue, ciphertextValue] = value.split(":");
-  if (version !== ENCRYPTION_VERSION || !ivValue || !tagValue || !ciphertextValue) {
+  const parts = value.split(":");
+  const [version, ivValue, tagValue, ciphertextValue] = parts;
+  // 空字符串经过 AES-GCM 加密后，密文部分本来就是空值，但认证标签仍能校验内容没有被篡改。
+  // 因此这里只拒绝“缺少第四段”，不能用真假判断把合法的空签名误判为损坏密文。
+  if (parts.length !== 4 || version !== ENCRYPTION_VERSION || !ivValue || !tagValue || ciphertextValue === undefined) {
     throw new Error("无法识别邮件密文格式。");
   }
   const decipher = createDecipheriv("aes-256-gcm", parseEncryptionKey(keyHex), Buffer.from(ivValue, "base64url"));
