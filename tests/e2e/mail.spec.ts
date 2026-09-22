@@ -241,6 +241,33 @@ test("业务员上传安全附件并新建邮件", async ({ page }) => {
   expect(count).toBe(1);
 });
 
+test("新建邮件在桌面和窄屏都直接显示核心输入框", async ({ page }) => {
+  await login(page, "administrator");
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 320, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/admin/mail");
+    await page.getByRole("button", { name: "新邮件", exact: true }).click();
+
+    const panel = page.getByTestId("mail-new-message-panel");
+    const composer = page.getByTestId("mail-composer");
+    await expect(panel).toBeVisible();
+    await expect(composer.getByLabel("收件人")).toBeInViewport();
+    await expect(composer.getByLabel("主题")).toBeInViewport();
+    await expect(composer.getByLabel("正文")).toBeInViewport();
+
+    const panelBox = await panel.boundingBox();
+    const composerBox = await composer.boundingBox();
+    expect(panelBox).not.toBeNull();
+    expect(composerBox).not.toBeNull();
+    // 紧凑标题区应保持在 120px 内，防止再次出现把表单推到首屏以下的大块空白。
+    expect((composerBox?.y ?? 0) - (panelBox?.y ?? 0)).toBeLessThanOrEqual(120);
+  }
+});
+
 test("管理员首次打开自动生成发件资料并取得 Gmail 最终凭证", async ({ page }) => {
   await login(page, "administrator");
   await page.goto("/admin/mail");

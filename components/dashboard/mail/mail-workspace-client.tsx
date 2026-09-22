@@ -47,6 +47,19 @@ export function MailWorkspaceClient(props: {
   });
   const feedback = intake.feedback ?? state.feedback;
   const busy = intake.busy ?? state.busy;
+  const startNewMessage = () => {
+    state.startNew();
+    /*
+      窄屏会把邮件列表和编辑器上下排列。状态更新完成后的下一帧再滚动，
+      可以保证目标面板已经渲染；减少动态效果的用户则使用即时滚动。
+    */
+    window.requestAnimationFrame(() => {
+      const panel = document.querySelector<HTMLElement>('[data-testid="mail-new-message-panel"]');
+      if (!panel) return;
+      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      panel.scrollIntoView({ behavior, block: "start" });
+    });
+  };
   return (
     <DashboardPageShell
       feedback={feedback ? { message: feedback, tone: /已|正常|完成/.test(feedback) && !/没有|未全部/.test(feedback) ? "success" : "info" } : null}
@@ -72,7 +85,7 @@ export function MailWorkspaceClient(props: {
           }}
           onBulkRuleOption={setBulkRuleOption}
           onFilter={(filters) => void state.loadThreads(filters)}
-          onNew={state.startNew}
+          onNew={startNewMessage}
           onOpen={(id) => void state.openThread(id)}
           onToggleSelected={intake.toggleActiveSelection}
           selectedId={state.selected?.id ?? null}

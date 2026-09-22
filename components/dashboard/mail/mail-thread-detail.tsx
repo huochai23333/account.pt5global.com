@@ -35,8 +35,15 @@ export function MailThreadDetailPanel(props: {
   const stateLabel = (state: MailThreadState) => state === "waiting_pt5" ? t("waitingPt5") : state === "waiting_customer" ? t("waitingCustomer") : t("closed");
   if (!props.detail) {
     return (
-      <Surface className="flex min-h-[36rem] flex-col" padding={null}>
-        <div className="flex min-h-80 flex-1 flex-col items-center justify-center px-5 text-center text-content-muted"><Mail className="mb-3 size-9" /><h2 className="text-lg font-bold text-content-strong">{t("newTitle")}</h2><p className="mt-1 text-sm">{t("newDescription")}</p></div>
+      <Surface className="self-start overflow-hidden scroll-mt-4" data-testid="mail-new-message-panel" padding={null}>
+        {/*
+          新建邮件没有历史消息区，不应像会话详情那样占满左侧邮件列表的高度。
+          使用紧凑标题栏并让面板按内容自然收缩，可以避免表单被大块空白推到页面底部。
+        */}
+        <div className="flex items-center gap-3 border-b border-border-subtle p-3 text-content-muted sm:p-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inset"><Mail className="size-5" /></span>
+          <div className="min-w-0"><h2 className="text-lg font-bold text-content-strong">{t("newTitle")}</h2><p className="mt-0.5 text-sm leading-5">{t("newDescription")}</p></div>
+        </div>
         <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest={false} onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} value={props.composer} />
       </Surface>
     );
