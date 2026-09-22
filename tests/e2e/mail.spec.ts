@@ -4,7 +4,7 @@ import type { Server } from "node:http";
 import { getRegressionAccount, type RegressionRole } from "./helpers/accounts";
 import { setTestLocale } from "./helpers/auth";
 import { getMailBoundaryState, resetMailBoundaryState, startMailBoundaryMockServer } from "./helpers/mail-boundary-mock-server";
-import { getMailAdmin, MESSAGE_ID, PEER_SALESMAN_ID, resetIntegratedMailFixture, SALESMAN_ID, THREAD_ID } from "./helpers/mail-fixtures";
+import { ADMIN_ID, getMailAdmin, MESSAGE_ID, PEER_SALESMAN_ID, resetIntegratedMailFixture, SALESMAN_ID, THREAD_ID } from "./helpers/mail-fixtures";
 
 let boundaryServer: Server;
 
@@ -110,10 +110,13 @@ test("业务员修改并恢复自己的别名和 Ref，但不能修改其他人"
   await expect(page.getByTestId(`mail-agent-${SALESMAN_ID}`).getByLabel("加号别名")).toHaveValue("local.salesman");
 });
 
-test("管理员可以修改任意业务员的发件设置", async ({ page }) => {
+test("管理员可以修改管理员和业务员的发件设置", async ({ page }) => {
   await login(page, "administrator");
   await page.goto("/admin/mail");
   await page.getByRole("button", { name: "邮箱设置" }).click();
+  const adminCard = page.getByTestId(`mail-agent-${ADMIN_ID}`);
+  await expect(adminCard.getByText("管理员", { exact: true })).toBeVisible();
+  await expect(adminCard.getByLabel("加号别名")).toHaveValue("local.admin");
   const peerCard = page.getByTestId(`mail-agent-${PEER_SALESMAN_ID}`);
   await peerCard.getByLabel("加号别名").fill("peer.custom");
   await peerCard.getByLabel("Ref 前缀").fill("PEERCUSTOM");
@@ -238,16 +241,34 @@ test("业务员上传安全附件并新建邮件", async ({ page }) => {
   expect(count).toBe(1);
 });
 
-test("管理员没有业务员发件资料时不会误触发发送", async ({ page }) => {
+test("管理员首次打开自动生成发件资料并取得 Gmail 最终凭证", async ({ page }) => {
   await login(page, "administrator");
   await page.goto("/admin/mail");
+  const { data: profile } = await getMailAdmin().from("mail_agent_profiles")
+    .select("alias_local_part,ref_prefix,enabled,version").eq("user_id", ADMIN_ID).single();
+  expect(profile).toMatchObject({ alias_local_part: "local.admin", ref_prefix: "LOCALADMIN", enabled: true, version: 1 });
   await page.getByRole("button", { name: "新邮件", exact: true }).click();
   const composer = page.getByTestId("mail-composer");
-  await expect(composer.getByTestId("mail-sender-unavailable")).toHaveText("当前账号还没有启用发件资料，请联系管理员配置后再发送。");
-  await composer.getByLabel("收件人").fill("buyer@example.com");
-  await composer.getByLabel("主题").fill("Admin must not send");
-  await composer.getByLabel("正文").fill("The send button must stay disabled.");
-  await expect(composer.getByRole("button", { name: "发送邮件" })).toBeDisabled();
+  await expect(composer.getByTestId("mail-sender-unavailable")).toHaveCount(0);
+  await composer.getByLabel("收件人").fill("matchstick2333@gmail.com");
+  await composer.getByLabel("主题").fill("ADMIN-SENDER-PROFILE-TEST");
+  await composer.getByLabel("正文").fill("Administrator sender profile verification.");
+  await composer.getByRole("button", { name: "发送邮件" }).click();
+  await expect(page.getByText("邮件已在公司邮箱的“已发送”中确认。")).toBeVisible({ timeout: 30_000 });
+  const { data: job } = await getMailAdmin().from("mail_outbound_jobs")
+    .select("actor_user_id,status,provider_message_id,sent_message_id").eq("actor_user_id", ADMIN_ID).single();
+  expect(job?.status).toBe("sent");
+  expect(job?.provider_message_id).toMatch(/^gmail-/);
+  expect(job?.sent_message_id).toBeTruthy();
+  expect(getMailBoundaryState().sent.at(-1)?.verifiedInSent).toBe(true);
+  await page.reload();
+  await page.getByRole("button", { name: "新邮件", exact: true }).click();
+  const refreshedComposer = page.getByTestId("mail-composer");
+  await expect(refreshedComposer.getByTestId("mail-sender-unavailable")).toHaveCount(0);
+  await refreshedComposer.getByLabel("收件人").fill("matchstick2333@gmail.com");
+  await refreshedComposer.getByLabel("主题").fill("ADMIN-SENDER-REFRESH-CHECK");
+  await refreshedComposer.getByLabel("正文").fill("The sender profile remains available after refresh.");
+  await expect(refreshedComposer.getByRole("button", { name: "发送邮件" })).toBeEnabled();
 });
 
 test("当前负责人转交后版本、审计与刷新结果一致", async ({ page }) => {
@@ -255,7 +276,8 @@ test("当前负责人转交后版本、审计与刷新结果一致", async ({ pa
   await page.goto("/salesman/mail");
   await page.getByText("New wholesale inquiry").click();
   await page.getByLabel("负责人").click();
-  await page.getByRole("option").last().click();
+  await expect(page.getByRole("option", { name: "本地管理员" })).toHaveCount(0);
+  await page.getByRole("option", { name: "本地协作业务员" }).click();
   await expect(page.getByText("会话已转交。")).toBeVisible();
   const { data: thread } = await getMailAdmin().from("mail_threads").select("assigned_user_id,version").eq("id", THREAD_ID).single();
   const { data: audit } = await getMailAdmin().from("mail_assignment_events").select("assigned_user_id,thread_version").eq("thread_id", THREAD_ID).single();

@@ -5,6 +5,7 @@ import { getLocalSupabaseAdminClient } from "./local-supabase-admin";
 export const MAILBOX_ID = "81000000-0000-4000-8000-000000000001";
 export const THREAD_ID = "82000000-0000-4000-8000-000000000001";
 export const MESSAGE_ID = "83000000-0000-4000-8000-000000000001";
+export const ADMIN_ID = "11111111-1111-4111-8111-111111111111";
 export const SALESMAN_ID = "55555555-5555-4555-8555-555555555555";
 export const PEER_SALESMAN_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 

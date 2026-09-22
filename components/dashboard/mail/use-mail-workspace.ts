@@ -273,7 +273,8 @@ export function useMailWorkspace(input: {
     } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件副本没有删除完成。"); }
     finally { setBusy(null); }
   }, [confirm, refreshSummary, selected, t]);
-  const enabledAgents = useMemo(() => agents.filter((agent) => agent.enabled), [agents]);
+  // 发件设置包含管理员，但客户会话仍只允许转交给启用的业务员。
+  const enabledAgents = useMemo(() => agents.filter((agent) => agent.enabled && agent.role === "salesman"), [agents]);
   const removeThreads = useCallback((threadIds: string[]) => {
     setThreads((current) => current.filter((item) => !threadIds.includes(item.id)));
     setSelected((current) => current && threadIds.includes(current.id) ? null : current);

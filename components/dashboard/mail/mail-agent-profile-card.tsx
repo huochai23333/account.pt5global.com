@@ -19,7 +19,12 @@ export function MailAgentProfileCard(props: {
   return (
     <article className="min-w-0 rounded-surface-inset border border-border-subtle bg-surface-inset p-4" data-testid={`mail-agent-${profile.memberId}`}>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <h3 className="break-words font-bold text-content-strong">{profile.displayName}</h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h3 className="break-words font-bold text-content-strong">{profile.displayName}</h3>
+          <span className="rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-xs text-content-muted">
+            {t(profile.role === "administrator" ? "administratorRole" : "salespersonRole")}
+          </span>
+        </div>
         {props.canToggle ? <ChoiceField checked={profile.enabled} label={t("enabled")} onChange={(event) => props.onChange({ ...profile, enabled: event.target.checked })} rootClassName="min-h-0 border-0 bg-transparent px-0 py-0" /> : null}
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">

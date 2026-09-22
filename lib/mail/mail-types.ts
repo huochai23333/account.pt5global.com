@@ -8,6 +8,8 @@ export type MailIdentity = {
   status: UserStatus;
 };
 
+export type MailSenderRole = Extract<AppRole, "administrator" | "salesman">;
+
 export type MailThreadState = "waiting_pt5" | "waiting_customer" | "closed";
 export type MailIntakeStatus = "active" | "quarantined";
 export type MailIntakeRuleMatcher = "sender" | "domain" | "subject_contains";
@@ -86,6 +88,7 @@ export type MailThreadQuery = {
 export type MailAgentProfile = {
   memberId: string;
   displayName: string;
+  role: MailSenderRole;
   aliasLocalPart: string;
   refPrefix: string;
   senderDisplayName: string;

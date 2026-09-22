@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const profile = await request.json() as Omit<MailAgentProfile, "displayName" | "feishuBound" | "suggestedAliasLocalPart" | "suggestedRefPrefix"> & { resetToGenerated?: boolean };
+    const profile = await request.json() as Omit<MailAgentProfile, "displayName" | "role" | "feishuBound" | "suggestedAliasLocalPart" | "suggestedRefPrefix"> & { resetToGenerated?: boolean };
     return NextResponse.json(await updateMailAgentProfile(await requireMailIdentity(), profile));
   } catch (error) { return mailApiError(error, "人员配置暂时无法保存。"); }
 }
