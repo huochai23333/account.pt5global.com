@@ -28,10 +28,20 @@ export {
   deleteMailThread,
   getAdminMailMetrics,
   getAdminReportContext,
+  getMailAgentProfile,
   listAssignableMailAgents,
   listMailAgents,
   updateMailAgentProfile,
 } from "./mail-admin-service";
+export {
+  createMailIntakeRule,
+  deleteMailIntakeRule,
+  listMailIntakeRules,
+  quarantineMailThreads,
+  queryMailQuarantine,
+  restoreMailThread,
+  updateMailIntakeRule,
+} from "./mail-intake-service";
 
 type ThreadRow = {
   id: string;
@@ -39,7 +49,7 @@ type ThreadRow = {
   customer_email_enc: string;
   assigned_user_id: string | null;
   state: MailThreadState;
-  ref_code: string;
+  ref_code: string | null;
   routing_source: MailThreadDetail["routingSource"];
   name_hint_user_ids: string[];
   last_message_at: string;
@@ -73,12 +83,13 @@ async function getDisplayNames(userIds: Array<string | null>) {
   ]));
 }
 
-async function assertThreadAccess(identity: MailIdentity, threadId: string) {
+async function assertThreadAccess(identity: MailIdentity, threadId: string, allowQuarantinedForAdmin = false) {
   let query = getSupabaseServiceRoleClient()
     .from("mail_threads")
     .select("id,assigned_user_id,version")
     .eq("id", threadId)
     .is("deleted_at", null);
+  if (!allowQuarantinedForAdmin || identity.role !== "administrator") query = query.eq("intake_status", "active");
   if (identity.role !== "administrator") query = query.eq("assigned_user_id", identity.userId);
   const { data, error } = await query.maybeSingle();
   if (error) databaseError("邮件会话权限暂时无法确认。", error);
@@ -120,7 +131,7 @@ async function toThreadItems(identity: MailIdentity, rows: ThreadRow[]): Promise
     assignedMemberId: row.assigned_user_id,
     assignedDisplayName: row.assigned_user_id ? names.get(row.assigned_user_id) ?? "内部员工" : null,
     state: row.state,
-    refCode: row.ref_code,
+    refCode: row.ref_code ?? "",
     lastMessageAt: row.last_message_at,
     unread: unread.has(row.id),
     version: row.version,
@@ -132,16 +143,20 @@ export async function getMailWorkspace(identity: MailIdentity): Promise<MailWork
   let threadQuery = supabase
     .from("mail_threads")
     .select("id,subject_enc,customer_email_enc,assigned_user_id,state,ref_code,routing_source,name_hint_user_ids,last_message_at,last_inbound_at,version")
+    .eq("intake_status", "active")
     .is("deleted_at", null);
   if (identity.role !== "administrator") threadQuery = threadQuery.eq("assigned_user_id", identity.userId);
 
-  const [mailboxResult, threadsResult, profileResult, feishuResult] = await Promise.all([
+  const [mailboxResult, threadsResult, profileResult, feishuResult, quarantineResult] = await Promise.all([
     supabase.from("mail_shared_mailboxes").select("email_masked,status,last_healthy_at,last_error").maybeSingle(),
     threadQuery,
     supabase.from("mail_agent_profiles").select("user_id").eq("user_id", identity.userId).eq("enabled", true).maybeSingle(),
     supabase.from("mail_feishu_bindings").select("user_id").eq("user_id", identity.userId).maybeSingle(),
+    identity.role === "administrator"
+      ? supabase.from("mail_threads").select("id", { count: "exact", head: true }).eq("intake_status", "quarantined").is("deleted_at", null)
+      : Promise.resolve({ count: 0, error: null }),
   ]);
-  for (const result of [mailboxResult, threadsResult, profileResult, feishuResult]) {
+  for (const result of [mailboxResult, threadsResult, profileResult, feishuResult, quarantineResult]) {
     if (result.error) databaseError("邮件工作台状态暂时无法读取。", result.error);
   }
   const rows = (threadsResult.data ?? []) as ThreadRow[];
@@ -166,6 +181,7 @@ export async function getMailWorkspace(identity: MailIdentity): Promise<MailWork
       unread: unread.size,
       closed: rows.filter((row) => row.state === "closed").length,
       unassigned: rows.filter((row) => !row.assigned_user_id).length,
+      quarantined: quarantineResult.count ?? 0,
     },
     canAdminister: identity.role === "administrator",
     feishuBound: Boolean(feishuResult.data),
@@ -184,6 +200,7 @@ export async function queryMailThreads(identity: MailIdentity, filters: MailThre
   let query = getSupabaseServiceRoleClient()
     .from("mail_threads")
     .select("id,subject_enc,customer_email_enc,assigned_user_id,state,ref_code,routing_source,name_hint_user_ids,last_message_at,last_inbound_at,version")
+    .eq("intake_status", "active")
     .is("deleted_at", null)
     .order("last_message_at", { ascending: false })
     .order("id", { ascending: false })
@@ -205,8 +222,8 @@ export async function queryMailThreads(identity: MailIdentity, filters: MailThre
   return { threads: items, nextCursor: hasMore ? items.at(-1)?.lastMessageAt ?? null : null };
 }
 
-export async function getMailThread(identity: MailIdentity, threadId: string): Promise<MailThreadDetail> {
-  await assertThreadAccess(identity, threadId);
+export async function getMailThread(identity: MailIdentity, threadId: string, options?: { includeQuarantined?: boolean }): Promise<MailThreadDetail> {
+  await assertThreadAccess(identity, threadId, options?.includeQuarantined === true);
   const supabase = getSupabaseServiceRoleClient();
   const [threadResult, messagesResult] = await Promise.all([
     supabase.from("mail_threads")
@@ -368,7 +385,7 @@ export async function downloadMailAttachment(identity: MailIdentity, attachmentI
   const { data: message, error: messageError } = await supabase.from("mail_messages")
     .select("thread_id").eq("id", attachment.message_id).single();
   if (messageError || !message) databaseError("附件所属会话暂时无法确认。", messageError);
-  await assertThreadAccess(identity, message.thread_id as string);
+  await assertThreadAccess(identity, message.thread_id as string, true);
   const encrypted = await downloadEncryptedObject(attachment.storage_path as string);
   return {
     filename: decryptContent(String(attachment.filename_enc)),

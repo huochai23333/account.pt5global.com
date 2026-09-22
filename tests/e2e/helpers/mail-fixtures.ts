@@ -20,7 +20,7 @@ export async function resetIntegratedMailFixture() {
     "mail_audit_events", "mail_oauth_transactions", "mail_inbound_events", "mail_notifications",
     "mail_outbound_jobs", "mail_thread_reads", "mail_attachments", "mail_uploads",
     "mail_messages", "mail_assignment_events", "mail_threads", "mail_feishu_bindings",
-    "mail_agent_profiles", "mail_shared_mailbox_watches", "mail_shared_mailbox_credentials",
+    "mail_intake_rules", "mail_agent_profiles", "mail_shared_mailbox_watches", "mail_shared_mailbox_credentials",
     "mail_shared_mailboxes",
   ]) {
     const key = ({

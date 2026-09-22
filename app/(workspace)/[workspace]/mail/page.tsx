@@ -22,6 +22,9 @@ export default async function WorkspaceMailPage({ params }: { params: Promise<{ 
           initialAgents={data.agents}
           initialError={data.loadError}
           initialMetrics={data.metrics}
+          initialOwnProfile={data.ownProfile}
+          initialQuarantine={data.quarantine}
+          initialRules={data.intakeRules}
           initialSummary={data.summary}
           initialThreads={data.threads}
           isAdmin={identity.role === "administrator"}

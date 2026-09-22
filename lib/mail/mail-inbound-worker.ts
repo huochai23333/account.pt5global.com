@@ -15,7 +15,10 @@ import {
   type GmailFullMessage,
   type GmailPayloadPart,
 } from "./mail-google";
-import { decideMailRouting, type RoutingAgent } from "./mail-routing";
+import { decideMailIntake } from "./mail-intake";
+import { loadDecryptedMailIntakeRules, recordMailIntakeRuleHit } from "./mail-intake-service";
+import { decideMailRouting } from "./mail-routing";
+import { createUniqueMailRef, loadMailRoutingAgents } from "./mail-routing-service";
 import { createBlindIndex, encryptMailValue } from "./mail-security";
 import { cleanAttachmentFilename, deleteEncryptedObjects, scanAttachment, uploadEncryptedObject } from "./mail-storage";
 
@@ -84,43 +87,12 @@ async function parseMessage(accessToken: string, message: GmailFullMessage) {
     textBody: output.texts.join("\n").trim(),
     htmlBody,
     messageIdHeader: headers.get("message-id") ?? "",
-    headers: Object.fromEntries([...headers].filter(([name]) => ["message-id", "in-reply-to", "references", "reply-to", "delivered-to"].includes(name))),
+    headers: Object.fromEntries([...headers].filter(([name]) => [
+      "message-id", "in-reply-to", "references", "reply-to", "delivered-to",
+      "list-unsubscribe", "list-id", "precedence", "auto-submitted",
+    ].includes(name))),
     attachments: output.attachments,
   };
-}
-
-async function loadRoutingAgents(): Promise<RoutingAgent[]> {
-  const supabase = getSupabaseServiceRoleClient();
-  const { data: mailProfiles, error } = await supabase.from("mail_agent_profiles")
-    .select("user_id,alias_local_part,ref_prefix").eq("enabled", true);
-  if (error) throw new Error("邮件路由人员暂时无法读取。", { cause: error });
-  const ids = (mailProfiles ?? []).map((profile) => profile.user_id as string);
-  if (ids.length === 0) return [];
-  const { data: profiles, error: profileError } = await supabase.from("user_profiles")
-    .select("user_id,name,email,status").in("user_id", ids).eq("status", "active");
-  if (profileError) throw new Error("业务员资料暂时无法读取。", { cause: profileError });
-  const names = new Map((profiles ?? []).map((profile) => [
-    profile.user_id as string,
-    String(profile.name ?? "").trim() || String(profile.email ?? "").trim() || "内部员工",
-  ]));
-  return (mailProfiles ?? []).flatMap((profile) => names.has(profile.user_id as string) ? [{
-    memberId: profile.user_id as string,
-    aliasLocalPart: profile.alias_local_part as string,
-    refPrefix: profile.ref_prefix as string,
-    displayName: names.get(profile.user_id as string)!,
-    enabled: true,
-  }] : []);
-}
-
-async function createUniqueRef(prefix: string) {
-  const supabase = getSupabaseServiceRoleClient();
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = `PT5-${new Date().getUTCFullYear()}-${prefix}-${randomBytes(4).toString("hex").toUpperCase()}`;
-    const result = await supabase.from("mail_threads").select("id").eq("ref_code", code).maybeSingle();
-    if (result.error) throw new Error("邮件 Ref 暂时无法确认。", { cause: result.error });
-    if (!result.data) return code;
-  }
-  throw new Error("无法生成唯一邮件 Ref，请稍后重试。");
 }
 
 async function listBoundAdministrators() {
@@ -146,11 +118,24 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   const customerEmail = extractAddresses(parsed.from)[0];
   if (!customerEmail) throw new Error("客户来信没有可识别的发件邮箱。");
   const existing = await supabase.from("mail_threads")
-    .select("id,assigned_user_id,ref_code").eq("mailbox_id", mailboxId).eq("provider_thread_id", message.threadId).is("deleted_at", null).maybeSingle();
+    .select("id,assigned_user_id,ref_code,intake_status,quarantine_reason,intake_rule_id")
+    .eq("mailbox_id", mailboxId).eq("provider_thread_id", message.threadId).is("deleted_at", null).maybeSingle();
   if (existing.error) throw new Error("邮件会话暂时无法确认。", { cause: existing.error });
-  const agents = await loadRoutingAgents();
+  const intake = existing.data?.intake_status === "quarantined"
+    ? {
+        status: "quarantined" as const,
+        reason: String(existing.data.quarantine_reason ?? "会话已在隔离区"),
+        ruleId: existing.data.intake_rule_id as string | null,
+      }
+    : decideMailIntake({
+        sender: customerEmail,
+        subject: parsed.subject,
+        headers: parsed.headers,
+        existingActiveThread: existing.data?.intake_status === "active",
+      }, await loadDecryptedMailIntakeRules());
+  const agents = await loadMailRoutingAgents();
   const routing = decideMailRouting({
-    knownAssignedMemberId: existing.data?.assigned_user_id as string | null | undefined,
+    knownAssignedMemberId: intake.status === "active" ? existing.data?.assigned_user_id as string | null | undefined : null,
     deliveredTo: parsed.deliveredTo,
     to: parsed.to,
     cc: parsed.cc,
@@ -159,7 +144,8 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
     htmlBody: parsed.htmlBody,
   }, agents);
   const assignedAgent = agents.find((agent) => agent.memberId === routing.assignedMemberId);
-  const refCode = (existing.data?.ref_code as string | undefined) ?? await createUniqueRef(assignedAgent?.refPrefix ?? "GENERAL");
+  const refCode = (existing.data?.ref_code as string | null | undefined)
+    ?? (intake.status === "active" ? await createUniqueMailRef(assignedAgent?.refPrefix ?? "GENERAL") : null);
   const occurredAt = new Date(Number(message.internalDate ?? Date.now())).toISOString();
   const stagedPaths: string[] = [];
   const staged = [] as Array<ParsedAttachment & { path: string; hash: string; status: "clean" | "quarantined"; error: string | null }>;
@@ -180,18 +166,22 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
         subject_enc: encryptMailValue(parsed.subject, getMailEnv().contentKey),
         customer_email_enc: encryptMailValue(customerEmail, getMailEnv().contentKey),
         customer_email_hash: createBlindIndex(customerEmail, getMailEnv().emailHashSecret),
-        assigned_user_id: routing.assignedMemberId,
+        assigned_user_id: intake.status === "active" ? routing.assignedMemberId : null,
         state: "waiting_pt5",
         ref_code: refCode,
-        routing_source: routing.source,
+        routing_source: intake.status === "active" ? routing.source : "quarantine",
         routing_evidence: { ...routing.evidence, conflicting: routing.conflicting },
         name_hint_user_ids: routing.nameHintMemberIds,
+        intake_status: intake.status,
+        quarantine_reason: intake.reason,
+        intake_rule_id: intake.ruleId,
+        quarantined_at: intake.status === "quarantined" ? new Date().toISOString() : null,
         last_message_at: occurredAt,
         last_inbound_at: occurredAt,
       }).select("id").single();
       if (createdError || !createdData) throw new Error("新邮件会话没有确认保存。", { cause: createdError });
       threadId = createdData.id as string;
-      if (routing.assignedMemberId) {
+      if (intake.status === "active" && routing.assignedMemberId) {
         const { data: assignmentData, error: assignmentError } = await supabase.from("mail_assignment_events").insert({
           thread_id: threadId,
           assigned_user_id: routing.assignedMemberId,
@@ -206,6 +196,10 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
         subject_enc: encryptMailValue(parsed.subject, getMailEnv().contentKey),
         customer_email_enc: encryptMailValue(customerEmail, getMailEnv().contentKey),
         customer_email_hash: createBlindIndex(customerEmail, getMailEnv().emailHashSecret),
+        intake_status: intake.status,
+        quarantine_reason: intake.reason,
+        intake_rule_id: intake.ruleId,
+        quarantined_at: intake.status === "quarantined" ? new Date().toISOString() : null,
         last_message_at: occurredAt,
         last_inbound_at: occurredAt,
         updated_at: new Date().toISOString(),
@@ -245,16 +239,19 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
       }))).select("id");
       if (insertedError || (insertedData?.length ?? 0) !== staged.length) throw new Error("来信附件没有全部确认保存。", { cause: insertedError });
     }
-    const targetIds = routing.assignedMemberId ? [routing.assignedMemberId] : await listBoundAdministrators();
-    const reason = routing.assignedMemberId ? "assigned_inbound" : "unassigned_inbound";
-    if (targetIds.length > 0) {
-      const { data: notificationData, error: notificationError } = await supabase.from("mail_notifications").upsert(targetIds.map((userId) => ({
-        message_id: savedData.id,
-        target_user_id: userId,
-        reason,
-      })), { onConflict: "message_id,target_user_id,reason", ignoreDuplicates: true }).select("id");
-      if (notificationError || (notificationData?.length ?? 0) !== targetIds.length) throw new Error("新邮件提醒没有确认入队。", { cause: notificationError });
+    if (intake.status === "active") {
+      const targetIds = routing.assignedMemberId ? [routing.assignedMemberId] : await listBoundAdministrators();
+      const reason = routing.assignedMemberId ? "assigned_inbound" : "unassigned_inbound";
+      if (targetIds.length > 0) {
+        const { data: notificationData, error: notificationError } = await supabase.from("mail_notifications").upsert(targetIds.map((userId) => ({
+          message_id: savedData.id,
+          target_user_id: userId,
+          reason,
+        })), { onConflict: "message_id,target_user_id,reason", ignoreDuplicates: true }).select("id");
+        if (notificationError || (notificationData?.length ?? 0) !== targetIds.length) throw new Error("新邮件提醒没有确认入队。", { cause: notificationError });
+      }
     }
+    if (intake.ruleId) await recordMailIntakeRuleHit(intake.ruleId);
   } catch (error) {
     await deleteEncryptedObjects(stagedPaths).catch(() => undefined);
     throw error;

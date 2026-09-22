@@ -1,14 +1,16 @@
 "use client";
 
-import { Bot, Cable, LoaderCircle, Save, Settings2 } from "lucide-react";
+import { Bot, Cable, LoaderCircle, Settings2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
-import { ChoiceField, Field, Input, Textarea } from "@/components/ui/form-controls";
+import { Field } from "@/components/ui/form-controls";
 import { Surface } from "@/components/ui/surface";
 import type { AdminMailMetrics, MailAgentProfile, MailWorkspaceSummary } from "@/lib/mail/mail-types";
+
+import { MailAgentProfileCard } from "./mail-agent-profile-card";
 
 function today(offsetDays = 0) {
   const date = new Date();
@@ -23,7 +25,7 @@ export function MailAdminPanel(props: {
   busy: string | null;
   report: string;
   onAgents: (agents: MailAgentProfile[]) => void;
-  onSaveAgent: (agent: MailAgentProfile) => void;
+  onSaveAgent: (agent: MailAgentProfile, resetToGenerated?: boolean) => void;
   onConnect: () => void;
   onReport: (start: string, end: string) => void;
 }) {
@@ -34,6 +36,7 @@ export function MailAdminPanel(props: {
     [t("syncQueue"), props.metrics.synchronizationQueue], [t("sending"), props.metrics.outboundQueue],
     [t("sendFailed"), props.metrics.outboundFailures], [t("notificationQueue"), props.metrics.notificationQueue],
     [t("unassigned"), props.metrics.unassigned], [t("waitingPt5"), props.metrics.waitingPt5],
+    [t("quarantine"), props.metrics.quarantined],
   ] as const : [], [props.metrics, t]);
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-2" data-testid="mail-admin-panel">
@@ -54,13 +57,14 @@ export function MailAdminPanel(props: {
         <h2 className="flex items-center gap-2 text-xl font-bold text-content-strong"><Settings2 className="size-5" />{t("agentSettings")}</h2>
         <p className="mt-1 text-sm leading-6 text-content-muted">{t("agentSettingsDescription")}</p>
         <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-2">{props.agents.length === 0 ? <p className="text-sm text-content-muted">{t("emptyAgents")}</p> : props.agents.map((agent, index) => (
-          <article className="min-w-0 rounded-surface-inset border border-border-subtle bg-surface-inset p-4" key={agent.memberId}>
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><h3 className="break-words font-bold text-content-strong">{agent.displayName}</h3><ChoiceField checked={agent.enabled} label={t("enabled")} onChange={(event) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? { ...item, enabled: event.target.checked } : item))} rootClassName="min-h-0 border-0 bg-transparent px-0 py-0" /></div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2"><Field label={t("plusAlias")}><Input onChange={(event) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? { ...item, aliasLocalPart: event.target.value } : item))} value={agent.aliasLocalPart} /></Field><Field label={t("refPrefix")}><Input onChange={(event) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? { ...item, refPrefix: event.target.value } : item))} value={agent.refPrefix} /></Field></div>
-            <Field className="mt-3" label={t("senderDisplayName")}><Input onChange={(event) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? { ...item, senderDisplayName: event.target.value } : item))} value={agent.senderDisplayName} /></Field>
-            <Field className="mt-3" label={t("signature")}><Textarea className="min-h-24" onChange={(event) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? { ...item, signatureHtml: event.target.value } : item))} value={agent.signatureHtml} /></Field>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><span className={`text-xs ${agent.feishuBound ? "text-status-success" : "text-status-warning"}`}>{agent.feishuBound ? t("feishuBound") : t("feishuUnbound")}</span><Button disabled={props.busy !== null} onClick={() => props.onSaveAgent(agent)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button></div>
-          </article>
+          <MailAgentProfileCard
+            busy={props.busy !== null}
+            canToggle
+            key={agent.memberId}
+            onChange={(next) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? next : item))}
+            onSave={(reset) => props.onSaveAgent(agent, reset)}
+            profile={agent}
+          />
         ))}</div>
       </Surface>
     </div>

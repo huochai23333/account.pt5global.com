@@ -9,6 +9,9 @@ export type MailIdentity = {
 };
 
 export type MailThreadState = "waiting_pt5" | "waiting_customer" | "closed";
+export type MailIntakeStatus = "active" | "quarantined";
+export type MailIntakeRuleMatcher = "sender" | "domain" | "subject_contains";
+export type MailIntakeRuleAction = "allow" | "quarantine";
 
 export type MailWorkspaceSummary = {
   mailbox: {
@@ -23,6 +26,7 @@ export type MailWorkspaceSummary = {
     unread: number;
     closed: number;
     unassigned: number;
+    quarantined: number;
   };
   canAdminister: boolean;
   feishuBound: boolean;
@@ -63,7 +67,7 @@ export type MailMessageView = {
 };
 
 export type MailThreadDetail = MailThreadListItem & {
-  routingSource: "thread" | "alias" | "ref" | "unassigned" | "manual";
+  routingSource: "thread" | "alias" | "ref" | "unassigned" | "manual" | "quarantine";
   nameHintMemberIds: string[];
   messages: MailMessageView[];
 };
@@ -88,6 +92,39 @@ export type MailAgentProfile = {
   signatureHtml: string;
   feishuBound: boolean;
   enabled: boolean;
+  version: number;
+  suggestedAliasLocalPart: string;
+  suggestedRefPrefix: string;
+};
+
+export type MailQuarantineItem = {
+  id: string;
+  subject: string;
+  customerEmail: string;
+  assignedMemberId: string | null;
+  assignedDisplayName: string | null;
+  reason: string;
+  quarantinedAt: string;
+  lastMessageAt: string;
+  version: number;
+};
+
+export type MailIntakeRule = {
+  id: string;
+  matchType: MailIntakeRuleMatcher;
+  action: MailIntakeRuleAction;
+  pattern: string;
+  enabled: boolean;
+  hitCount: number;
+  version: number;
+  updatedAt: string;
+};
+
+export type MailQuarantineReceipt = {
+  status: "completed" | "partial_failed";
+  updated: Array<{ threadId: string; version: number }>;
+  failed: Array<{ threadId: string; error: string }>;
+  ruleId: string | null;
 };
 
 export type OutboundMessageInput = {
@@ -118,4 +155,5 @@ export type AdminMailMetrics = {
   unassigned: number;
   waitingPt5: number;
   averageFirstReplyMinutes: number | null;
+  quarantined: number;
 };

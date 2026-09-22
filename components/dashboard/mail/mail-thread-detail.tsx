@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Mail, Trash2, UserRound } from "lucide-react";
+import { Archive, Mail, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export function MailThreadDetailPanel(props: {
   onAssign: (memberId: string) => void;
   canDelete: boolean;
   onDelete: () => void;
+  onQuarantine: () => void;
 }) {
   const t = useTranslations("MailWorkspace");
   const stateLabel = (state: MailThreadState) => state === "waiting_pt5" ? t("waitingPt5") : state === "waiting_customer" ? t("waitingCustomer") : t("closed");
@@ -51,6 +52,7 @@ export function MailThreadDetailPanel(props: {
           <Field className="w-full sm:w-64" label={<span className="flex items-center gap-2"><UserRound className="size-4 shrink-0" />{t("assignee")}</span>}><Select disabled={props.busy !== null} onValueChange={props.onAssign} options={props.agents.map((agent) => ({ label: agent.displayName, value: agent.memberId }))} placeholder={t("selectAgent")} value={props.detail.assignedMemberId} /></Field>
           {(["waiting_pt5", "waiting_customer", "closed"] as MailThreadState[]).map((state) => <Button disabled={props.busy !== null || props.detail?.state === state} key={state} onClick={() => props.onState(state)} size="compact" type="button" variant="outline">{state === "closed" ? <Archive className="size-4" /> : null}{stateLabel(state)}</Button>)}
           {props.canDelete ? <Button disabled={props.busy !== null} onClick={props.onDelete} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteCopy")}</Button> : null}
+          <Button disabled={props.busy !== null} onClick={props.onQuarantine} size="compact" type="button" variant="outline"><ShieldCheck className="size-4" />{t("moveToQuarantine")}</Button>
         </div>
       </header>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-inset/40 p-3 sm:p-4" data-testid="mail-messages">

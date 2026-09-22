@@ -1,6 +1,12 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
+import {
+  addStableAliasSuffix,
+  addStableRefSuffix,
+  createSuggestedMailAlias,
+  createSuggestedRefPrefix,
+} from "./mail-agent-identifiers";
 import { requireMailAdministrator } from "./mail-identity";
 import { decryptMailValue, encryptMailValue } from "./mail-security";
 import { deleteEncryptedObjects } from "./mail-storage";
@@ -29,7 +35,51 @@ async function listActiveSalesmen() {
   return (profiles ?? []).map((profile) => ({
     userId: profile.user_id as string,
     displayName: String(profile.name ?? "").trim() || String(profile.email ?? "").trim() || "内部员工",
+    name: profile.name as string | null,
+    email: profile.email as string | null,
   }));
+}
+
+type ActiveSalesman = Awaited<ReturnType<typeof listActiveSalesmen>>[number];
+
+async function generatedIdentifiers(salesman: ActiveSalesman) {
+  const supabase = getSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("mail_agent_profiles").select("user_id,alias_local_part,ref_prefix").neq("user_id", salesman.userId);
+  if (error) databaseError("业务员邮件标识暂时无法生成。", error);
+  const usedAliases = new Set((data ?? []).map((row) => String(row.alias_local_part).toLowerCase()));
+  const usedRefs = new Set((data ?? []).map((row) => String(row.ref_prefix).toUpperCase()));
+  const baseAlias = createSuggestedMailAlias({ userId: salesman.userId, name: salesman.name, email: salesman.email });
+  const aliasLocalPart = usedAliases.has(baseAlias) ? addStableAliasSuffix(baseAlias, salesman.userId) : baseAlias;
+  const baseRef = createSuggestedRefPrefix(aliasLocalPart, salesman.userId);
+  const refPrefix = usedRefs.has(baseRef) ? addStableRefSuffix(baseRef, salesman.userId) : baseRef;
+  return { aliasLocalPart, refPrefix };
+}
+
+/** 新业务员首次进入邮件工作台时自动建立可用的发件身份，不要求管理员先手工填写。 */
+async function ensureMailAgentProfile(salesman: ActiveSalesman) {
+  const supabase = getSupabaseServiceRoleClient();
+  const existing = await supabase.from("mail_agent_profiles")
+    .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version")
+    .eq("user_id", salesman.userId).maybeSingle();
+  if (existing.error) databaseError("发件人配置暂时无法读取。", existing.error);
+  if (existing.data) return existing.data;
+  const generated = await generatedIdentifiers(salesman);
+  const { data: insertedData, error: insertedError } = await supabase.from("mail_agent_profiles").insert({
+    user_id: salesman.userId,
+    alias_local_part: generated.aliasLocalPart,
+    ref_prefix: generated.refPrefix,
+    sender_display_name_enc: encryptMailValue(salesman.displayName, getMailEnv().contentKey),
+    signature_html_enc: encryptMailValue("", getMailEnv().contentKey),
+    enabled: true,
+  }).select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version").maybeSingle();
+  if (insertedError || !insertedData) {
+    const raced = await supabase.from("mail_agent_profiles")
+      .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version")
+      .eq("user_id", salesman.userId).maybeSingle();
+    if (raced.error || !raced.data) databaseError("发件人配置没有确认创建。", insertedError ?? raced.error);
+    return raced.data;
+  }
+  return insertedData;
 }
 
 export async function listAssignableMailAgents(identity: MailIdentity) {
@@ -43,18 +93,20 @@ export async function listMailAgents(identity: MailIdentity) {
   const supabase = getSupabaseServiceRoleClient();
   const salesmen = await listActiveSalesmen();
   if (salesmen.length === 0) return { agents: [] as MailAgentProfile[] };
+  for (const salesman of salesmen) await ensureMailAgentProfile(salesman);
   const ids = salesmen.map((agent) => agent.userId);
   const [profilesResult, bindingsResult] = await Promise.all([
     supabase.from("mail_agent_profiles")
-      .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled").in("user_id", ids),
+      .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version").in("user_id", ids),
     supabase.from("mail_feishu_bindings").select("user_id").in("user_id", ids),
   ]);
   if (profilesResult.error || bindingsResult.error) databaseError("邮件人员设置暂时无法读取。", profilesResult.error ?? bindingsResult.error);
   const profiles = new Map((profilesResult.data ?? []).map((row) => [row.user_id as string, row]));
   const bound = new Set((bindingsResult.data ?? []).map((row) => row.user_id as string));
-  return {
-    agents: salesmen.map((salesman) => {
+  const agents = await Promise.all(salesmen.map(async (salesman) => {
       const profile = profiles.get(salesman.userId);
+      if (!profile) throw new Error("业务员发件资料没有确认创建。");
+      const suggested = await generatedIdentifiers(salesman);
       return {
         memberId: salesman.userId,
         displayName: salesman.displayName,
@@ -64,30 +116,71 @@ export async function listMailAgents(identity: MailIdentity) {
         signatureHtml: profile ? decryptContent(String(profile.signature_html_enc)) : "",
         feishuBound: bound.has(salesman.userId),
         enabled: Boolean(profile?.enabled),
+        version: Number(profile.version),
+        suggestedAliasLocalPart: suggested.aliasLocalPart,
+        suggestedRefPrefix: suggested.refPrefix,
       } satisfies MailAgentProfile;
-    }),
-  };
+    }));
+  return { agents };
 }
 
-export async function updateMailAgentProfile(identity: MailIdentity, profile: Omit<MailAgentProfile, "displayName" | "feishuBound">) {
-  requireMailAdministrator(identity);
+export async function getMailAgentProfile(identity: MailIdentity, memberId = identity.userId) {
   const salesmen = await listActiveSalesmen();
-  if (!salesmen.some((agent) => agent.userId === profile.memberId)) throw new Error("目标业务员当前不可用。");
-  const alias = profile.aliasLocalPart.trim().toLowerCase();
-  const refPrefix = profile.refPrefix.trim().toUpperCase();
+  const salesman = salesmen.find((agent) => agent.userId === memberId);
+  if (!salesman) throw new Error("目标业务员当前不可用。");
+  if (identity.role !== "administrator" && memberId !== identity.userId) throw new Error("只能查看自己的发件设置。");
+  const profile = await ensureMailAgentProfile(salesman);
+  const suggested = await generatedIdentifiers(salesman);
+  const binding = await getSupabaseServiceRoleClient().from("mail_feishu_bindings").select("user_id").eq("user_id", memberId).maybeSingle();
+  if (binding.error) databaseError("飞书绑定状态暂时无法读取。", binding.error);
+  return {
+    memberId,
+    displayName: salesman.displayName,
+    aliasLocalPart: String(profile.alias_local_part),
+    refPrefix: String(profile.ref_prefix),
+    senderDisplayName: decryptContent(String(profile.sender_display_name_enc)),
+    signatureHtml: decryptContent(String(profile.signature_html_enc)),
+    feishuBound: Boolean(binding.data),
+    enabled: Boolean(profile.enabled),
+    version: Number(profile.version),
+    suggestedAliasLocalPart: suggested.aliasLocalPart,
+    suggestedRefPrefix: suggested.refPrefix,
+  } satisfies MailAgentProfile;
+}
+
+export async function updateMailAgentProfile(identity: MailIdentity, profile: Omit<MailAgentProfile, "displayName" | "feishuBound" | "suggestedAliasLocalPart" | "suggestedRefPrefix"> & { resetToGenerated?: boolean }) {
+  const salesmen = await listActiveSalesmen();
+  const salesman = salesmen.find((agent) => agent.userId === profile.memberId);
+  if (!salesman) throw new Error("目标业务员当前不可用。");
+  if (identity.role !== "administrator" && identity.userId !== profile.memberId) throw new Error("只能修改自己的发件设置。");
+  const current = await ensureMailAgentProfile(salesman);
+  if (Number(current.version) !== profile.version) throw new Error("发件设置已被其他人修改，请刷新后重试。");
+  const suggested = await generatedIdentifiers(salesman);
+  const alias = (profile.resetToGenerated ? suggested.aliasLocalPart : profile.aliasLocalPart).trim().toLowerCase();
+  const refPrefix = (profile.resetToGenerated ? suggested.refPrefix : profile.refPrefix).trim().toUpperCase();
   if (!/^[a-z0-9][a-z0-9.-]{1,39}$/.test(alias)) throw new Error("邮箱别名格式不正确。");
   if (!/^[A-Z0-9]{2,16}$/.test(refPrefix)) throw new Error("Ref 前缀格式不正确。");
-  const { data, error } = await getSupabaseServiceRoleClient().from("mail_agent_profiles").upsert({
-    user_id: profile.memberId,
+  const update = {
     alias_local_part: alias,
     ref_prefix: refPrefix,
     sender_display_name_enc: encryptMailValue(profile.senderDisplayName.trim(), getMailEnv().contentKey),
     signature_html_enc: encryptMailValue(profile.signatureHtml, getMailEnv().contentKey),
-    enabled: profile.enabled,
+    enabled: identity.role === "administrator" ? profile.enabled : Boolean(current.enabled),
+    version: profile.version + 1,
     updated_at: new Date().toISOString(),
-  }).select("user_id,alias_local_part,ref_prefix,enabled").single();
-  if (error || data?.user_id !== profile.memberId) databaseError("邮件人员设置没有确认保存。", error);
-  return { memberId: data.user_id as string, aliasLocalPart: data.alias_local_part as string, refPrefix: data.ref_prefix as string, enabled: Boolean(data.enabled) };
+  };
+  const { data, error } = await getSupabaseServiceRoleClient().from("mail_agent_profiles").update(update)
+    .eq("user_id", profile.memberId).eq("version", profile.version)
+    .select("user_id,alias_local_part,ref_prefix,enabled,version").maybeSingle();
+  if (error?.code === "23505") throw new Error("这个别名或 Ref 前缀已被其他业务员使用。");
+  if (error || data?.user_id !== profile.memberId) throw new Error("发件设置已被其他人修改，请刷新后重试。", { cause: error });
+  return {
+    memberId: data.user_id as string,
+    aliasLocalPart: data.alias_local_part as string,
+    refPrefix: data.ref_prefix as string,
+    enabled: Boolean(data.enabled),
+    version: Number(data.version),
+  };
 }
 
 export async function getAdminMailMetrics(identity: MailIdentity): Promise<AdminMailMetrics> {
@@ -99,16 +192,17 @@ export async function getAdminMailMetrics(identity: MailIdentity): Promise<Admin
     supabase.from("mail_outbound_jobs").select("id", { count: "exact", head: true }).in("status", ["pending", "processing", "retrying"]),
     supabase.from("mail_outbound_jobs").select("id", { count: "exact", head: true }).in("status", ["failed", "partial_failed"]),
     supabase.from("mail_notifications").select("id", { count: "exact", head: true }).in("status", ["pending", "processing", "retrying", "attention_required"]),
-    supabase.from("mail_threads").select("id", { count: "exact", head: true }).is("assigned_user_id", null).is("deleted_at", null),
-    supabase.from("mail_threads").select("id", { count: "exact", head: true }).eq("state", "waiting_pt5").is("deleted_at", null),
+    supabase.from("mail_threads").select("id", { count: "exact", head: true }).eq("intake_status", "active").is("assigned_user_id", null).is("deleted_at", null),
+    supabase.from("mail_threads").select("id", { count: "exact", head: true }).eq("intake_status", "active").eq("state", "waiting_pt5").is("deleted_at", null),
+    supabase.from("mail_threads").select("id", { count: "exact", head: true }).eq("intake_status", "quarantined").is("deleted_at", null),
     ]),
     supabase.rpc("get_mail_average_first_reply_minutes", { p_start: null, p_end: null }),
   ]);
   const metricError = results.find((result) => result.error)?.error;
   if (metricError || replyMetric.error) databaseError("邮件运行指标暂时无法读取。", metricError ?? replyMetric.error);
-  const [synchronizationQueue, outboundQueue, outboundFailures, notificationQueue, unassigned, waitingPt5] = results.map((result) => result.count ?? 0);
+  const [synchronizationQueue, outboundQueue, outboundFailures, notificationQueue, unassigned, waitingPt5, quarantined] = results.map((result) => result.count ?? 0);
   const averageFirstReplyMinutes = replyMetric.data == null ? null : Number(replyMetric.data);
-  return { synchronizationQueue, outboundQueue, outboundFailures, notificationQueue, unassigned, waitingPt5, averageFirstReplyMinutes };
+  return { synchronizationQueue, outboundQueue, outboundFailures, notificationQueue, unassigned, waitingPt5, quarantined, averageFirstReplyMinutes };
 }
 
 export async function deleteMailThread(identity: MailIdentity, threadId: string) {
@@ -152,7 +246,7 @@ export async function getAdminReportContext(identity: MailIdentity, start: strin
   const [{ data, error }, replyMetric] = await Promise.all([supabase.from("mail_threads")
     .select("id,subject_enc,state,ref_code,last_message_at,assigned_user_id")
     .gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString())
-    .is("deleted_at", null).order("last_message_at", { ascending: false }).limit(100),
+    .eq("intake_status", "active").is("deleted_at", null).order("last_message_at", { ascending: false }).limit(100),
   supabase.rpc("get_mail_average_first_reply_minutes", { p_start: startDate.toISOString(), p_end: endDate.toISOString() })]);
   if (error || replyMetric.error) databaseError("邮件报告数据暂时无法读取。", error ?? replyMetric.error);
   const threads = data ?? [];

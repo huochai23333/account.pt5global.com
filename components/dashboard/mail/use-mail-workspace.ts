@@ -52,6 +52,7 @@ export function useMailWorkspace(input: {
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
   initialAgents: MailAgentProfile[];
+  initialOwnProfile: MailAgentProfile | null;
   initialMetrics: AdminMailMetrics | null;
   initialError: string | null;
   isAdmin: boolean;
@@ -61,6 +62,7 @@ export function useMailWorkspace(input: {
   const [summary, setSummary] = useState(input.initialSummary);
   const [threads, setThreads] = useState(input.initialThreads);
   const [agents, setAgents] = useState(input.initialAgents);
+  const [ownProfile, setOwnProfile] = useState(input.initialOwnProfile);
   const [metrics, setMetrics] = useState(input.initialMetrics);
   const [selected, setSelected] = useState<MailThreadDetail | null>(null);
   const [filters, setFilters] = useState<MailThreadQuery>({ scope: input.isAdmin ? "all" : "mine", limit: 40 });
@@ -217,18 +219,26 @@ export function useMailWorkspace(input: {
     finally { setBusy(null); }
   }, []);
 
-  const saveAgent = useCallback(async (profile: MailAgentProfile) => {
+  const saveAgent = useCallback(async (profile: MailAgentProfile, resetToGenerated = false) => {
     setBusy(`agent:${profile.memberId}`); setFeedback(null);
     try {
-      await requestJson("/api/mail/agents", { method: "PUT", body: JSON.stringify({
+      const receipt = await requestJson<{ memberId: string; aliasLocalPart: string; refPrefix: string; version: number }>("/api/mail/agents", { method: "PUT", body: JSON.stringify({
         memberId: profile.memberId, aliasLocalPart: profile.aliasLocalPart, refPrefix: profile.refPrefix,
         senderDisplayName: profile.senderDisplayName, signatureHtml: profile.signatureHtml, enabled: profile.enabled,
+        version: profile.version, resetToGenerated,
       }) });
+      const expectedAlias = resetToGenerated ? profile.suggestedAliasLocalPart : profile.aliasLocalPart.trim().toLowerCase();
+      const expectedRef = resetToGenerated ? profile.suggestedRefPrefix : profile.refPrefix.trim().toUpperCase();
+      if (receipt.memberId !== profile.memberId || receipt.aliasLocalPart !== expectedAlias || receipt.refPrefix !== expectedRef || receipt.version <= profile.version) {
+        throw new Error("发件人配置保存结果没有确认完整。");
+      }
       const result = await requestJson<{ agents: MailAgentProfile[] }>("/api/mail/agents");
-      setAgents(result.agents); setFeedback("发件人配置已保存。");
+      if (input.isAdmin) setAgents(result.agents);
+      else setOwnProfile(result.agents[0] ?? null);
+      await refreshSummary(); setFeedback("发件人配置已保存。");
     } catch (error) { setFeedback(error instanceof Error ? error.message : "发件人配置没有保存。"); }
     finally { setBusy(null); }
-  }, []);
+  }, [input.isAdmin, refreshSummary]);
 
   const connectMailbox = useCallback(async () => {
     setBusy("connect"); setFeedback(null);
@@ -264,10 +274,14 @@ export function useMailWorkspace(input: {
     finally { setBusy(null); }
   }, [confirm, refreshSummary, selected, t]);
   const enabledAgents = useMemo(() => agents.filter((agent) => agent.enabled), [agents]);
+  const removeThreads = useCallback((threadIds: string[]) => {
+    setThreads((current) => current.filter((item) => !threadIds.includes(item.id)));
+    setSelected((current) => current && threadIds.includes(current.id) ? null : current);
+  }, []);
 
   return {
-    summary, threads, agents, enabledAgents, metrics, selected, filters, composer, busy, feedback, aiDraft, report,
-    setComposer, setAgents, loadThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
-    generateReport, saveAgent, connectMailbox, connectFeishu, startNew, deleteSelected,
+    summary, threads, agents, ownProfile, enabledAgents, metrics, selected, filters, composer, busy, feedback, aiDraft, report,
+    setComposer, setAgents, setOwnProfile, loadThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
+    generateReport, saveAgent, connectMailbox, connectFeishu, startNew, deleteSelected, refreshSummary, removeThreads,
   };
 }

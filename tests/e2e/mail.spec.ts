@@ -4,7 +4,7 @@ import type { Server } from "node:http";
 import { getRegressionAccount, type RegressionRole } from "./helpers/accounts";
 import { setTestLocale } from "./helpers/auth";
 import { getMailBoundaryState, resetMailBoundaryState, startMailBoundaryMockServer } from "./helpers/mail-boundary-mock-server";
-import { getMailAdmin, MESSAGE_ID, PEER_SALESMAN_ID, resetIntegratedMailFixture, THREAD_ID } from "./helpers/mail-fixtures";
+import { getMailAdmin, MESSAGE_ID, PEER_SALESMAN_ID, resetIntegratedMailFixture, SALESMAN_ID, THREAD_ID } from "./helpers/mail-fixtures";
 
 let boundaryServer: Server;
 
@@ -43,6 +43,10 @@ for (const role of ["client", "finance", "manager", "operator", "promoter", "rec
     await expect(page.getByRole("link", { name: "邮件工作台" })).toHaveCount(0);
     const response = await page.request.get("/api/mail/workspace", { maxRedirects: 0 });
     expect([302, 307, 400, 401, 403]).toContain(response.status());
+    const rulesResponse = await page.request.get("/api/mail/intake-rules", { maxRedirects: 0 });
+    const quarantineResponse = await page.request.get("/api/mail/quarantine", { maxRedirects: 0 });
+    expect([302, 307, 400, 401, 403]).toContain(rulesResponse.status());
+    expect([302, 307, 400, 401, 403]).toContain(quarantineResponse.status());
     await page.goto(`/${role}/mail`);
     await expect(page.getByRole("heading", { name: "邮件工作台" })).toHaveCount(0);
   });
@@ -68,6 +72,151 @@ test("业务员阅读、生成并编辑建议、回复后取得数据库与 Gmai
   expect(read?.last_read_message_id).toBe(MESSAGE_ID);
   await page.reload();
   await expect(page.getByText("New wholesale inquiry")).toBeVisible();
+});
+
+test("业务员修改并恢复自己的别名和 Ref，但不能修改其他人", async ({ page }) => {
+  await login(page, "salesman");
+  await page.goto("/salesman/mail");
+  await page.getByRole("button", { name: "我的发件设置" }).click();
+  const card = page.getByTestId(`mail-agent-${SALESMAN_ID}`);
+  await card.getByLabel("加号别名").fill("local.sales.updated");
+  await card.getByLabel("Ref 前缀").fill("LOCALNEW");
+  await card.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("发件人配置已保存。")).toBeVisible();
+  let profile = await getMailAdmin().from("mail_agent_profiles").select("alias_local_part,ref_prefix,version").eq("user_id", SALESMAN_ID).single();
+  expect(profile.data).toMatchObject({ alias_local_part: "local.sales.updated", ref_prefix: "LOCALNEW", version: 2 });
+
+  const forbidden = await page.request.put("/api/mail/agents", {
+    data: {
+      memberId: PEER_SALESMAN_ID,
+      aliasLocalPart: "stolen-alias",
+      refPrefix: "STOLEN",
+      senderDisplayName: "No access",
+      signatureHtml: "",
+      enabled: true,
+      version: 1,
+    },
+  });
+  expect(forbidden.ok()).toBe(false);
+  const peer = await getMailAdmin().from("mail_agent_profiles").select("alias_local_part,ref_prefix,version").eq("user_id", PEER_SALESMAN_ID).single();
+  expect(peer.data).toMatchObject({ alias_local_part: "peer-sales", ref_prefix: "PEER", version: 1 });
+
+  await card.getByRole("button", { name: "恢复系统建议" }).click();
+  await expect(page.getByText("发件人配置已保存。")).toBeVisible();
+  profile = await getMailAdmin().from("mail_agent_profiles").select("alias_local_part,ref_prefix,version").eq("user_id", SALESMAN_ID).single();
+  expect(profile.data).toMatchObject({ alias_local_part: "local.salesman", ref_prefix: "LOCALSALESMAN", version: 3 });
+  await page.reload();
+  await page.getByRole("button", { name: "我的发件设置" }).click();
+  await expect(page.getByTestId(`mail-agent-${SALESMAN_ID}`).getByLabel("加号别名")).toHaveValue("local.salesman");
+});
+
+test("管理员可以修改任意业务员的发件设置", async ({ page }) => {
+  await login(page, "administrator");
+  await page.goto("/admin/mail");
+  await page.getByRole("button", { name: "邮箱设置" }).click();
+  const peerCard = page.getByTestId(`mail-agent-${PEER_SALESMAN_ID}`);
+  await peerCard.getByLabel("加号别名").fill("peer.custom");
+  await peerCard.getByLabel("Ref 前缀").fill("PEERCUSTOM");
+  await peerCard.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("发件人配置已保存。")).toBeVisible();
+  const { data: profile } = await getMailAdmin().from("mail_agent_profiles").select("alias_local_part,ref_prefix,version").eq("user_id", PEER_SALESMAN_ID).single();
+  expect(profile).toMatchObject({ alias_local_part: "peer.custom", ref_prefix: "PEERCUSTOM", version: 2 });
+  await page.reload();
+  await page.getByRole("button", { name: "邮箱设置" }).click();
+  await expect(page.getByTestId(`mail-agent-${PEER_SALESMAN_ID}`).getByLabel("加号别名")).toHaveValue("peer.custom");
+});
+
+test("业务员隔离自己的会话后列表、数据库和审计一致", async ({ page }) => {
+  await login(page, "salesman");
+  await page.goto("/salesman/mail");
+  await page.getByText("New wholesale inquiry").click();
+  await page.getByRole("button", { name: "移入隔离区" }).click();
+  await expect(page.getByText("邮件已移入隔离区，Gmail 原件仍然保留。")).toBeVisible();
+  await expect(page.getByText("New wholesale inquiry")).toHaveCount(0);
+  const { data: thread } = await getMailAdmin().from("mail_threads").select("intake_status,assigned_user_id,ref_code,version").eq("id", THREAD_ID).single();
+  expect(thread).toMatchObject({ intake_status: "quarantined", assigned_user_id: SALESMAN_ID, ref_code: "PT5-2026-LOCAL-ABC12345", version: 2 });
+  const { data: audit } = await getMailAdmin().from("mail_audit_events").select("event_type,details").eq("entity_id", THREAD_ID).single();
+  expect(audit?.event_type).toBe("mail_thread_quarantined");
+  expect(JSON.stringify(audit)).not.toContain("Hello, we need");
+  const { count: notifications } = await getMailAdmin().from("mail_notifications").select("id", { count: "exact", head: true });
+  expect(notifications).toBe(0);
+  await page.reload();
+  await expect(page.getByText("New wholesale inquiry")).toHaveCount(0);
+});
+
+test("管理员创建规则、批量隔离并恢复后取得最终凭证", async ({ page }) => {
+  await login(page, "administrator");
+  await page.goto("/admin/mail");
+  await page.getByRole("button", { name: "收件规则" }).click();
+  const rulesPanel = page.getByTestId("mail-intake-rules-panel");
+  await rulesPanel.getByLabel("匹配内容").fill("newsletter@example.com");
+  await rulesPanel.getByRole("button", { name: "添加规则" }).click();
+  await expect(page.getByText("收件规则已创建。")).toBeVisible();
+  const { data: createdRule } = await getMailAdmin().from("mail_intake_rules").select("id,pattern_enc,pattern_hash,version").single();
+  expect(createdRule?.id).toBeTruthy();
+  expect(createdRule?.pattern_hash).toBeTruthy();
+  expect(createdRule?.pattern_enc).not.toContain("newsletter@example.com");
+
+  await page.getByRole("button", { name: "邮件", exact: true }).click();
+  await page.getByLabel("选择邮件：New wholesale inquiry").check();
+  await page.getByLabel("后续来信").click();
+  await page.getByRole("option", { name: "屏蔽发件人" }).click();
+  await page.getByRole("button", { name: "隔离所选 1 封" }).click();
+  await expect(page.getByText("邮件已移入隔离区，Gmail 原件仍然保留。")).toBeVisible();
+  const { data: quarantined } = await getMailAdmin().from("mail_threads").select("intake_status,assigned_user_id,ref_code,version").eq("id", THREAD_ID).single();
+  expect(quarantined).toMatchObject({ intake_status: "quarantined", assigned_user_id: SALESMAN_ID, ref_code: "PT5-2026-LOCAL-ABC12345", version: 2 });
+  const { count: ruleCount } = await getMailAdmin().from("mail_intake_rules").select("id", { count: "exact", head: true });
+  expect(ruleCount).toBe(2);
+
+  await page.getByRole("button", { name: /隔离区 1/ }).click();
+  await page.getByText("New wholesale inquiry").click();
+  await page.getByRole("button", { name: "恢复到工作台" }).click();
+  await expect(page.getByText("邮件已恢复到工作台。")).toBeVisible();
+  const { data: restored } = await getMailAdmin().from("mail_threads").select("intake_status,assigned_user_id,ref_code,version").eq("id", THREAD_ID).single();
+  expect(restored).toMatchObject({ intake_status: "active", assigned_user_id: SALESMAN_ID, ref_code: "PT5-2026-LOCAL-ABC12345", version: 3 });
+  const { data: events } = await getMailAdmin().from("mail_audit_events").select("event_type").eq("entity_id", THREAD_ID).order("created_at");
+  expect(events?.map((event) => event.event_type)).toEqual(["mail_thread_quarantined", "mail_thread_restored"]);
+  const { data: notification } = await getMailAdmin().from("mail_notifications").select("message_id,target_user_id,reason,status").single();
+  expect(notification).toMatchObject({ message_id: MESSAGE_ID, target_user_id: SALESMAN_ID, reason: "assigned_inbound", status: "pending" });
+  await page.getByRole("button", { name: "邮件", exact: true }).click();
+  await expect(page.getByText("New wholesale inquiry")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("New wholesale inquiry")).toBeVisible();
+});
+
+test("隔离接口 HTTP 200 但没有任何更新时页面不会误报成功", async ({ page }) => {
+  await login(page, "salesman");
+  await page.route("**/api/mail/quarantine", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "completed", updated: [], failed: [], ruleId: null }) });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto("/salesman/mail");
+  await page.getByText("New wholesale inquiry").click();
+  await page.getByRole("button", { name: "移入隔离区" }).click();
+  await expect(page.getByText("部分邮件没有确认移入隔离区。")).toBeVisible();
+  await expect(page.getByText("邮件已移入隔离区，Gmail 原件仍然保留。")).toHaveCount(0);
+  const { data: thread } = await getMailAdmin().from("mail_threads").select("intake_status,version").eq("id", THREAD_ID).single();
+  expect(thread).toMatchObject({ intake_status: "active", version: 1 });
+});
+
+test("管理员可删除隔离区系统副本且不留下正文", async ({ page }) => {
+  await login(page, "administrator");
+  await page.goto("/admin/mail");
+  await page.getByLabel("选择邮件：New wholesale inquiry").check();
+  await page.getByRole("button", { name: "隔离所选 1 封" }).click();
+  await page.getByRole("button", { name: /隔离区 1/ }).click();
+  await page.getByText("New wholesale inquiry").click();
+  await page.getByRole("button", { name: "删除系统副本" }).click();
+  await page.getByRole("button", { name: "确认操作" }).click();
+  await expect(page.getByText("系统副本已删除，Gmail 原件仍然保留。")).toBeVisible();
+  const { count } = await getMailAdmin().from("mail_threads").select("id", { count: "exact", head: true }).eq("id", THREAD_ID);
+  expect(count).toBe(0);
+  const { data: audit } = await getMailAdmin().from("mail_audit_events").select("event_type,details").eq("event_type", "mail_thread_deleted").single();
+  expect(audit?.event_type).toBe("mail_thread_deleted");
+  expect(JSON.stringify(audit)).not.toContain("Hello, we need");
 });
 
 test("业务员上传安全附件并新建邮件", async ({ page }) => {
@@ -119,8 +268,10 @@ test("当前负责人转交后版本、审计与刷新结果一致", async ({ pa
 test("管理员生成报告并删除系统副本，数据库保留无正文审计", async ({ page }) => {
   await login(page, "administrator");
   await page.goto("/admin/mail");
+  await page.getByRole("button", { name: "邮箱设置" }).click();
   await page.getByRole("button", { name: "生成分析报告" }).click();
   await expect(page.getByText("本期询盘稳定")).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "邮件", exact: true }).click();
   await page.getByText("New wholesale inquiry").click();
   await page.getByRole("button", { name: "删除系统副本" }).click();
   await page.getByRole("button", { name: "确认操作" }).click();
@@ -159,5 +310,11 @@ test("1440、390、320px 下左栏与邮件内容没有横向溢出", async ({ p
     await expect(page.getByRole("heading", { name: "邮件工作台" })).toBeVisible();
     const layout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
     expect(layout.scroll).toBeLessThanOrEqual(layout.viewport);
+    await page.getByRole("button", { name: "收件规则" }).click();
+    const rulesLayout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
+    expect(rulesLayout.scroll).toBeLessThanOrEqual(rulesLayout.viewport);
+    await page.getByRole("button", { name: /隔离区 0/ }).click();
+    const quarantineLayout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
+    expect(quarantineLayout.scroll).toBeLessThanOrEqual(quarantineLayout.viewport);
   }
 });
