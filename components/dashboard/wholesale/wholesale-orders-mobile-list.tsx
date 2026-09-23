@@ -93,11 +93,11 @@ export function WholesaleOrdersMobileList({
                   {getCustomerName(customersById, order.customer_id)}
                 </p>
               </div>
-              <StatusBadge
+              {canViewInternalFields ? <StatusBadge
                 tone={order.status === "settled" ? "success" : "warning"}
               >
                 {t(`statuses.${order.status}`)}
-              </StatusBadge>
+              </StatusBadge> : null}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -108,10 +108,13 @@ export function WholesaleOrdersMobileList({
                   order.customer_payment_currency,
                 )}
               />
-              <MobileOrderValue
+              {canViewInternalFields ? <MobileOrderValue
                 label={uiText("attribute002")}
                 value={`${formatCurrency(settledAmount, order.customer_payment_currency)} / ${formatCurrency(order.customer_payment_amount, order.customer_payment_currency)}`}
-              />
+              /> : <MobileOrderValue
+                label={t("clientColumns.courier")}
+                value={order.courier_company ?? t("fallbacks.notRecorded")}
+              />}
               <MobileOrderValue
                 label={uiText("attribute003")}
                 value={getProfileName(profilesById, order.sales_user_id)}

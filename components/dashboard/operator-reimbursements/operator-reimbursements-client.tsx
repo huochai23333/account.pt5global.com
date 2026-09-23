@@ -66,6 +66,7 @@ export function OperatorReimbursementsClient({
       <OperatorReimbursementFormDialog
         copy={copy.dialog}
         feedback={vm.form.feedback}
+        fieldError={vm.form.fieldError}
         formState={vm.form.form}
         onOpenChange={vm.form.changeOpen}
         onSubmit={() => void vm.form.submit()}

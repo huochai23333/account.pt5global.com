@@ -17,6 +17,7 @@ export function useWholesaleOrderPage({
   initialPage: WholesaleOrderPage;
 }) {
   const [page, setPage] = useState<WholesaleOrderPage | null>(initialPage);
+  const [appliedFilters, setAppliedFilters] = useState(filters);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -34,6 +35,7 @@ export function useWholesaleOrderPage({
 
     const version = ++requestVersion.current;
     setLoading(true);
+    setLoadingMore(false);
     setLoadError(null);
     // 筛选变化后先清空旧批次，避免新条件加载期间继续展示不匹配的订单。
     setPage(null);
@@ -43,6 +45,7 @@ export function useWholesaleOrderPage({
 
       if (version === requestVersion.current) {
         setPage(nextPage);
+        setAppliedFilters(filters);
       }
     } catch (error) {
       if (version === requestVersion.current) {
@@ -80,6 +83,9 @@ export function useWholesaleOrderPage({
       return;
     }
 
+    // 翻页与首页共用版本号；切换筛选后，旧页不能再覆盖新条件的列表或汇总。
+    const version = requestVersion.current;
+    const cursor = page.nextCursor;
     setLoadingMore(true);
     setLoadError(null);
 
@@ -87,17 +93,25 @@ export function useWholesaleOrderPage({
       const nextPage = await getWholesaleOrderPage(
         supabase,
         filters,
-        page.nextCursor,
+        cursor,
       );
-      setPage((current) => (current ? mergeWholesaleOrderPages(current, nextPage) : nextPage));
+      if (version === requestVersion.current) {
+        setPage((current) =>
+          current?.nextCursor === cursor
+            ? mergeWholesaleOrderPages(current, nextPage)
+            : current,
+        );
+      }
     } catch (error) {
-      setLoadError(
-        error instanceof Error
-          ? error.message
-          : "更多订单暂时没有加载成功，请稍后重试。",
-      );
+      if (version === requestVersion.current) {
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "更多订单暂时没有加载成功，请稍后重试。",
+        );
+      }
     } finally {
-      setLoadingMore(false);
+      if (version === requestVersion.current) setLoadingMore(false);
     }
   }, [filters, loadingMore, page]);
 
@@ -118,6 +132,7 @@ export function useWholesaleOrderPage({
 
   return {
     loadError,
+    appliedFilters,
     loading,
     loadingMore,
     loadMore,

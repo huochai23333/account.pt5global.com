@@ -135,6 +135,8 @@ export function MobileAdminNavLink({
   isFocusable?: boolean;
   setMobileMenuOpen: (value: boolean) => void;
 }) {
+  // 报价模板需要桌面录入和打印，手机菜单不提供这个入口。
+  if (item.icon === "company-templates") return null;
   const Icon = ADMIN_NAV_ICONS[item.icon];
   const isActive = pathname === item.href;
   const isPending = resolvedPendingHref === item.href && !isActive;

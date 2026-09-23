@@ -27,7 +27,9 @@ export default async function WorkspaceMailPage({ params }: { params: Promise<{ 
           initialRules={data.intakeRules}
           initialSummary={data.summary}
           initialThreads={data.threads}
+          initialNextCursor={data.nextCursor}
           isAdmin={identity.role === "administrator"}
+          viewerId={identity.userId}
         />
       </DashboardConfirmProvider>
     </ScopedIntlProvider>

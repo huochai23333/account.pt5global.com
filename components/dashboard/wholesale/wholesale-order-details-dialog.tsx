@@ -66,6 +66,7 @@ export function WholesaleOrderDetailsDialog({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_details_dialog",
   );
+  const t = useTranslations("WholesaleBusiness.ordersUi");
   const orderListText = useTranslations("WholesaleBusiness.ordersUi.orderList");
   const settledAmount = settlements.reduce(
     (sum, settlement) => sum + Number(settlement.settlement_amount),
@@ -101,7 +102,7 @@ export function WholesaleOrderDetailsDialog({
           </div>
         ) : null
       }
-      description={uiText("attribute001")}
+      description={canViewInternalFields ? uiText("attribute001") : t("clientDetailDescription")}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
@@ -114,10 +115,13 @@ export function WholesaleOrderDetailsDialog({
             rows={[
               { label: "客户", value: customerName },
               { label: "业务员", value: salesName },
-              {
+              ...(canViewInternalFields ? [{
                 label: "状态",
                 value: WHOLESALE_ORDER_STATUS_LABELS[order.status],
-              },
+              }] : [{
+                label: t("clientColumns.courier"),
+                value: order.courier_company ?? t("fallbacks.notRecorded"),
+              }]),
               { label: "下单时间", value: formatDateTime(order.ordered_at) },
               {
                 label: "客户支付",
@@ -138,7 +142,7 @@ export function WholesaleOrderDetailsDialog({
           />
         </DetailGroup>
 
-        <DetailGroup title={uiText("attribute003")}>
+        {canViewInternalFields ? <DetailGroup title={uiText("attribute003")}>
           <WholesaleDetailGrid
             rows={[
               {
@@ -181,9 +185,9 @@ export function WholesaleOrderDetailsDialog({
               },
             ]}
           />
-        </DetailGroup>
+        </DetailGroup> : null}
 
-        <DetailGroup title={uiText("attribute004")}>
+        {canViewInternalFields ? <DetailGroup title={uiText("attribute004")}>
           <p className="mb-3 text-sm text-content-muted">
             <UiMessage id="components_dashboard_wholesale_wholesale_order_details_dialog.text002" />
             {formatCurrency(settledAmount, order.customer_payment_currency)}
@@ -220,14 +224,14 @@ export function WholesaleOrderDetailsDialog({
               <UiMessage id="components_dashboard_wholesale_wholesale_order_details_dialog.text005" />
             </p>
           )}
-        </DetailGroup>
+        </DetailGroup> : null}
 
-        <DetailGroup title={uiText("attribute005")}>
+        {canViewInternalFields ? <DetailGroup title={uiText("attribute005")}>
           <RecordLabels
             emptyText={uiText("attribute006")}
             labels={purchaseOrders.map((item) => item.external_order_number)}
           />
-        </DetailGroup>
+        </DetailGroup> : null}
 
         <DetailGroup title={orderListText("title")}>
           <WholesaleOrderListAttachments

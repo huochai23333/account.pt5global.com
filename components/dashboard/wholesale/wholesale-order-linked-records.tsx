@@ -41,6 +41,15 @@ export function LinkedPurchaseOrders({
     return <span className="text-content-muted">{uiText("text001")}</span>;
   }
 
+  if (!canViewInternalFields) {
+    // 客户只看关联采购单号；采购明细和内部认领资料不再经浏览器接口提供。
+    return <div className="flex flex-wrap gap-2">{purchaseOrders.map((purchaseOrder) =>
+      <span className="break-all rounded-control-default border border-border-subtle px-2 py-1 text-sm" key={purchaseOrder.id}>
+        {purchaseOrder.external_order_number}
+      </span>,
+    )}</div>;
+  }
+
   return (
     <>
       <div className="max-h-24 space-y-2 overflow-y-auto pr-1">

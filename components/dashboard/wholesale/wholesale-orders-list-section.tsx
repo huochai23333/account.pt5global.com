@@ -3,6 +3,7 @@
 import { LoaderCircle, ReceiptText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useState } from "react";
 
 import {
   DashboardOrderListSection,
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import type { WholesaleOrderPage } from "@/lib/wholesale-order-page";
 
 import { WholesaleOrdersMobileList } from "./wholesale-orders-mobile-list";
+import { ClientWholesaleOrdersTable } from "./client-wholesale-orders-table";
+import { WholesaleOrdersCompactTable } from "./wholesale-orders-compact-table";
 import {
   WholesaleOrdersTable,
   type WholesaleOrdersTableProps,
@@ -52,6 +55,8 @@ export function WholesaleOrdersListSection({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_orders_section",
   );
+  const t = useTranslations("WholesaleBusiness.ordersUi");
+  const [showAllColumns, setShowAllColumns] = useState(false);
   return (
     <DashboardOrderListSection
       ariaLabel={uiText("attribute004")}
@@ -110,10 +115,25 @@ export function WholesaleOrdersListSection({
       ) : page ? (
         <ResponsiveDataView
           desktop={
-            <WholesaleOrdersTable
-              {...renderProps}
-              canViewInternalFields={page.canViewInternalFields}
+            page.canViewInternalFields ? <div>
+              <div className="mb-3 flex justify-end">
+                <Button onClick={() => setShowAllColumns((current) => !current)} size="compact" type="button" variant="outline">
+                  {showAllColumns ? t("compactColumns.showCommon") : t("compactColumns.showAll")}
+                </Button>
+              </div>
+              {showAllColumns ? <WholesaleOrdersTable
+                {...renderProps}
+                canViewInternalFields
+                orders={page.orders}
+              /> : <WholesaleOrdersCompactTable
+                {...renderProps}
+                canViewInternalFields
+                orders={page.orders}
+              />}
+            </div> : <ClientWholesaleOrdersTable
               orders={page.orders}
+              orderListAttachmentsByOrderId={renderProps.orderListAttachmentsByOrderId}
+              profilesById={renderProps.profilesById}
             />
           }
           mobile={

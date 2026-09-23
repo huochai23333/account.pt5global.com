@@ -8,6 +8,19 @@ import {
 } from "./helpers/auth";
 
 test.describe("wholesale customer management", () => {
+  test("桌面客户详情可用键盘打开并返回原位置", async ({ page }) => {
+    await loginAs(page, "administrator");
+    await page.goto("/admin/wholesale/customers");
+    const trigger = page.getByRole("button", { name: "Wholesale Alpha", exact: true }).filter({ visible: true });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Wholesale Alpha" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
   test("admin can edit and delete a created customer", async ({ page }) => {
     await expectCreateEditAndDeleteCustomer(page, "administrator", "/admin");
   });

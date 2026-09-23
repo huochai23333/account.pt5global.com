@@ -1,68 +1,46 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AdminPersonAccountUpdatePayload } from "./admin-people";
-import type { SalesmanBusinessBoard } from "./salesman-business-access";
 import { withRequestTimeout } from "./request-timeout";
 import type { WorkspaceBusinessKey } from "./workspace-business-access";
 
 const ADMIN_PEOPLE_MUTATION_TIMEOUT_MS = 30_000;
 
-export async function prepareAdminPersonAccountChange(
+export type AdminPersonBundleReceipt = {
+  logId: string;
+  targetUserId: string;
+  role: string;
+  status: string;
+  city: string | null;
+  workspaceBusinessAccess: WorkspaceBusinessKey[];
+  salesmanBusinessBoards: string[];
+  authSyncRequired: boolean;
+};
+
+/** 核心账号、业务范围和审计由单次数据库 RPC 共同提交，返回逐项可核对的回执。 */
+export async function applyAdminPersonAccountBundle(
   supabase: SupabaseClient,
   input: AdminPersonAccountUpdatePayload,
-) {
-  await runRpc(supabase, "admin_prepare_person_account_change", {
-    _target_user_id: input.targetUserId,
-    _next_role: input.nextRole,
-    _next_status: input.nextStatus,
-    _next_city: input.nextCity,
-  });
-}
-
-export async function applyAdminPersonAccountChange(
-  supabase: SupabaseClient,
-  input: AdminPersonAccountUpdatePayload,
-) {
-  await runRpc(supabase, "admin_apply_person_account_change", {
-    _target_user_id: input.targetUserId,
-    _next_role: input.nextRole,
-    _next_status: input.nextStatus,
-    _next_city: input.nextCity,
-    _note: input.note ?? null,
-  });
-}
-
-export async function setSalesmanBusinessAccess(
-  supabase: SupabaseClient,
-  targetUserId: string,
-  businessBoards: SalesmanBusinessBoard[],
-) {
-  await runRpc(supabase, "admin_set_salesman_business_access", {
-    _salesman_user_id: targetUserId,
-    _business_boards: businessBoards,
-  });
-}
-
-export async function setWorkspaceBusinessAccess(
-  supabase: SupabaseClient,
-  targetUserId: string,
   workspaceBusinessAccess: WorkspaceBusinessKey[],
-) {
-  await runRpc(supabase, "admin_set_workspace_business_access", {
-    _target_user_id: targetUserId,
-    _business_keys: workspaceBusinessAccess,
-  });
-}
-
-async function runRpc(
-  supabase: SupabaseClient,
-  functionName: string,
-  parameters: Record<string, unknown>,
-) {
-  // 所有人员数据库变更共享同一超时和错误处理，编排层只决定调用顺序。
-  const { error } = await withRequestTimeout(
-    supabase.rpc(functionName, parameters),
+): Promise<AdminPersonBundleReceipt> {
+  const { data, error } = await withRequestTimeout(
+    supabase.rpc("admin_update_person_account_bundle", {
+      p_target_user_id: input.targetUserId,
+      p_next_role: input.nextRole,
+      p_next_status: input.nextStatus,
+      p_next_city: input.nextCity,
+      p_note: input.note ?? null,
+      p_expected: {
+        role: input.expected.role,
+        status: input.expected.status,
+        city: input.expected.city,
+        workspaceBusinessAccess: input.expected.workspace_business_access,
+        salesmanBusinessBoards: input.expected.salesman_business_boards,
+      },
+      p_business_keys: workspaceBusinessAccess,
+    }),
     { timeoutMs: ADMIN_PEOPLE_MUTATION_TIMEOUT_MS },
   );
-  if (error) throw error;
+  if (error || !data) throw error ?? new Error("账号修改结果没有确认。");
+  return data as AdminPersonBundleReceipt;
 }

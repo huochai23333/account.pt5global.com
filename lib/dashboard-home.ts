@@ -43,6 +43,7 @@ export type DashboardHomePageData = {
   role: AppRole | null;
   status: UserStatus | null;
   todos: UserTodoItemRow[];
+  workspaceBusinessAccess: WorkspaceBusinessKey[];
 };
 
 type HomeProfileRow = {
@@ -66,7 +67,7 @@ export async function getDashboardHomePageData(
     isSalesStaffRole(role) && status === "active"
       ? getVisibleHomeBusinessBoards(supabase, role)
       : Promise.resolve([]);
-  const [profile, announcements, todos, homeLayout, businessBoards] =
+  const [profile, announcements, todos, homeLayout, businessBoards, workspaceBusinessAccess] =
     await Promise.all([
       getHomeProfile(supabase, user.id),
       getVisibleAnnouncements(supabase, undefined, { role, status }),
@@ -77,6 +78,7 @@ export async function getDashboardHomePageData(
         userId: user.id,
       }),
       businessBoardsPromise,
+      getCurrentWorkspaceBusinessAccess(supabase),
     ]);
 
   return {
@@ -96,6 +98,7 @@ export async function getDashboardHomePageData(
     role,
     status,
     todos,
+    workspaceBusinessAccess,
   };
 }
 

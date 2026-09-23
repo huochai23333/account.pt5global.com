@@ -8,5 +8,7 @@
 @source "./global-error.tsx";
 /* 独立权限提示页不经过认证或工作台样式入口，必须在根样式中明确扫描它使用的工具类。 */
 @source "./access-limited/page.tsx";
+/* 服务说明页独立于工作台样式入口，手机隐藏模板链接所需的响应式类也要在此编译。 */
+@source "./business-unavailable/page.tsx";
 @source "../components/motion";
 @source "../components/ui";

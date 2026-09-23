@@ -1,8 +1,9 @@
 "use client";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
+import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
 import { DashboardFilterField } from "@/components/dashboard/dashboard-section-panel";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
@@ -40,6 +41,17 @@ export function WholesaleOrderFormDialog({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_form_dialog",
   );
+  const [dirty, setDirty] = useState(false);
+  const confirm = useDashboardConfirm();
+  useEffect(() => {
+    if (!open || !dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, open]);
   const submission = useWholesaleOrderCreateSubmission({
     onCreateOrder,
     onOpenChange,
@@ -68,18 +80,36 @@ export function WholesaleOrderFormDialog({
   return (
     <DashboardDialog
       description={uiText("attribute001")}
-      onOpenChange={submission.handleOpenChange}
+      onOpenChange={(nextOpen) => {
+        // Escape、遮罩和关闭按钮都经过这里；保留输入直到用户明确选择放弃。
+        if (!nextOpen && submission.pending) return;
+        if (!nextOpen && dirty) {
+          void confirm({
+            title: uiText("attribute002"),
+            description: uiText("discardDraftConfirm"),
+            tone: "warning",
+          }).then((accepted) => {
+            if (!accepted) return;
+            setDirty(false);
+            submission.handleOpenChange(false);
+          });
+          return;
+        }
+        if (!nextOpen) setDirty(false);
+        submission.handleOpenChange(nextOpen);
+      }}
       open={open}
       title={uiText("attribute002")}
     >
       <form
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        onChange={() => setDirty(true)}
         onSubmit={async (event) => {
           event.preventDefault();
-          await submission.submit(event.currentTarget);
+          if (await submission.submit(event.currentTarget)) setDirty(false);
         }}
       >
-        <DashboardFilterField label={uiText("attribute003")}>
+        <DashboardFilterField label={uiText("attribute003")} required>
           <Select
             aria-label={uiText("attribute003")}
             name="customer_id"
@@ -154,7 +184,7 @@ export function WholesaleOrderFormDialog({
           type="number"
         />
         <WholesaleField label={uiText("attribute010")} name="courier_company" />
-        <DashboardFilterField label={uiText("attribute011")}>
+        <DashboardFilterField label={uiText("attribute011")} required>
           <Select
             aria-label={uiText("attribute011")}
             defaultValue={defaultCurrency}
@@ -200,7 +230,7 @@ export function WholesaleOrderFormDialog({
             ]}
           />
         </DashboardFilterField>
-        <DashboardFilterField label={uiText("attribute014")}>
+        <DashboardFilterField label={uiText("attribute014")} required>
           <DatePicker mode="month" name="order_month" required />
         </DashboardFilterField>
         <div className="md:col-span-2 xl:col-span-4">

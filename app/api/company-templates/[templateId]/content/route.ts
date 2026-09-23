@@ -3,6 +3,8 @@ import { requireCompanyTemplateApiAccess } from "@/lib/company-templates/access"
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
 const CONTENT_SECURITY_POLICY = [
+  // 正文地址可能被员工直接打开；响应本身也必须成为不带本站来源的沙箱。
+  "sandbox allow-scripts allow-forms allow-modals allow-downloads allow-popups",
   "default-src 'none'",
   "style-src 'unsafe-inline'",
   "script-src 'unsafe-inline'",
@@ -17,7 +19,8 @@ const CONTENT_SECURITY_POLICY = [
 ].join("; ");
 
 /**
- * HTML 正文使用独立响应交给沙箱 iframe。CSP 禁止联网脚本、接口请求、嵌入页面和表单提交，
+ * HTML 正文使用独立响应交给沙箱 iframe。响应级 sandbox 同时保护直接打开的地址；
+ * CSP 禁止联网脚本、接口请求、嵌入页面和表单提交，
  * 同时保留模板需要的内联交互、data/blob 图片以及员工主动打开的产品链接。
  */
 export async function GET(request: Request, context: { params: Promise<{ templateId: string }> }) {

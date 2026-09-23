@@ -73,6 +73,7 @@ export function AdminPeopleClient({
             onDraftRoleChange={viewModel.handleDraftRoleChange}
             onDraftStatusChange={viewModel.handleDraftStatusChange}
             onSave={() => void viewModel.handleSaveAccountChange()}
+            onRetryAuthSync={() => void viewModel.handleRetryAuthSync()}
             open={viewModel.dialogOpen}
             person={viewModel.selectedPerson}
             roleLabels={viewModel.roleLabels}
@@ -81,6 +82,7 @@ export function AdminPeopleClient({
             selectedPersonIsCurrentViewer={
               viewModel.selectedPersonIsCurrentViewer
             }
+            selectedPersonAuthSyncPending={viewModel.selectedPersonAuthSyncPending}
             selectedPersonName={viewModel.selectedPersonName}
             statusLabels={viewModel.statusLabels}
             statusOptions={viewModel.statusOptions}

@@ -71,6 +71,7 @@ export async function getMailPageData(identity: MailIdentity) {
     return {
       summary,
       threads: list.threads,
+      nextCursor: list.nextCursor,
       agents,
       metrics,
       ownProfile,
@@ -82,6 +83,7 @@ export async function getMailPageData(identity: MailIdentity) {
     return {
       summary: null,
       threads: [],
+      nextCursor: null,
       agents: [],
       metrics: null,
       ownProfile: null,

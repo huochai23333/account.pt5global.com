@@ -37,8 +37,8 @@ export function toOperatorReimbursementInput(
   formState: OperatorReimbursementFormState,
   copy: OperatorReimbursementErrorCopy,
 ): OperatorReimbursementFormInput {
-  if (!formState.content.trim()) {
-    throw new Error(copy.missingContent);
+  if (!isDateInputValue(formState.spentAt)) {
+    throw new Error(copy.invalidDate);
   }
 
   if (!formState.amount.trim()) {
@@ -51,8 +51,8 @@ export function toOperatorReimbursementInput(
     throw new Error(copy.invalidAmount);
   }
 
-  if (!isDateInputValue(formState.spentAt)) {
-    throw new Error(copy.invalidDate);
+  if (!formState.content.trim()) {
+    throw new Error(copy.missingContent);
   }
 
   return {

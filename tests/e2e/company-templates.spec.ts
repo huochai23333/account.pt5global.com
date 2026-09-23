@@ -23,6 +23,16 @@ const SIMPLE_HTML = (heading: string) =>
   `<!doctype html><html><head><meta charset="utf-8"><title>${heading}</title></head><body><h1>${heading}</h1><button onclick="document.body.dataset.clicked='yes'">Use</button></body></html>`;
 
 test.describe("公司模板", () => {
+  test("没有业务工作区的岗位在手机服务说明页不显示模板入口", async ({ page }) => {
+    await loginAs(page, "manager");
+    await page.goto("/business-unavailable");
+    const templateLink = page.locator('a[href="/manager/company-templates"]');
+    await expect(templateLink).toHaveCount(1);
+    await expect(templateLink).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole("link", { name: "公司模板" })).toHaveCount(0);
+  });
+
   for (const role of INTERNAL_ROLES) {
     test(`${role} 可以从工作栏进入当前模板`, async ({ page }) => {
       const account = await loginAs(page, role);
@@ -88,6 +98,7 @@ test.describe("公司模板", () => {
     await frame.locator("#client").fill("Playwright Store");
     await frame.locator("#quoter").fill("Local Sales");
     await frame.locator("#lhMail").fill("sales@example.test");
+    await expect(frame.locator("tr.prow")).toHaveCount(1);
     await frame.getByRole("button", { name: "+ Add product" }).first().click();
     // 等模板同步插入第二行后再新增目的地，避免两个 DOM 操作紧挨时把行数变化合并成不稳定断言。
     await expect(frame.locator("tr.prow")).toHaveCount(2);
@@ -124,21 +135,20 @@ test.describe("公司模板", () => {
 
     await page.setViewportSize({ height: 844, width: 390 });
     await expectNoPageOverflow(page);
-    expect(await frame.locator("body").evaluate((body) => body.scrollWidth <= body.clientWidth + 1)).toBe(true);
-    expect(await page.locator("iframe").evaluate((iframe) => {
-      const viewport = iframe.parentElement;
-      return Boolean(viewport && viewport.scrollWidth > viewport.clientWidth);
-    })).toBe(true);
+    await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
     const mobileHeader = page.locator("header").first();
     await mobileHeader.getByRole("button", { exact: true, name: "公司模板" }).click();
-    await expect(mobileHeader.locator('nav[aria-hidden="false"]').getByRole("link", { name: "公司模板" })).toBeVisible();
+    await expect(mobileHeader.locator('nav[aria-hidden="false"]').getByRole("link", { name: "公司模板" })).toHaveCount(0);
     await mobileHeader.getByRole("button", { exact: true, name: "公司模板" }).click();
     await page.getByRole("link", { name: "使用指南" }).click();
-    await expect(page.frameLocator("iframe").getByRole("heading", { name: "DS 报价单（多目的国版）使用指南" })).toBeVisible();
+    await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
     await expectNoPageOverflow(page);
 
-    await page.goto(`${account.workspacePath}/company-templates/${SEEDED_TEMPLATE_ID}`);
-    await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("");
+    await page.goto(`${account.workspacePath}/company-templates`);
+    await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
+    await expect(page.getByRole("link", { name: "开始使用" })).toHaveCount(0);
   });
 
   test("管理员从页面完成新建、更新、指南、回退和停用，并核对数据库最终记录", async ({ page }) => {
@@ -208,10 +218,10 @@ test.describe("公司模板", () => {
       expect(disabled).toMatchObject({ revision: 4, status: "inactive" });
       await expect(page.locator("article").filter({ hasText: name }).getByRole("link", { name: "开始使用" })).toHaveCount(0);
 
-      await page.setViewportSize({ height: 844, width: 390 });
-      await expectNoPageOverflow(page);
-      await page.locator("article").filter({ hasText: name }).getByRole("button", { name: "上传新版本" }).click();
-      await expect(page.getByRole("dialog", { name: "上传模板新版本" })).toBeVisible();
+    await page.setViewportSize({ height: 844, width: 390 });
+    await expectNoPageOverflow(page);
+    await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
+    await expect(page.getByRole("button", { name: "上传新版本" })).toHaveCount(0);
       await expectNoPageOverflow(page);
     } finally {
       if (templateId) await deleteTemplate(admin, templateId);

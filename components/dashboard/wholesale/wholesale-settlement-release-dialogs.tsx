@@ -119,8 +119,10 @@ export function WholesaleSettlementReleaseCreateDialog({
         <DashboardFilterField label={uiText("attribute008")}>
           <Select
             aria-label={uiText("attribute008")}
-            defaultValue={currencyOptions[0] ?? "USD"}
+            // 发布结汇款需要操作者明确选币种，排序后的首项不代表实际收款币种。
+            defaultValue={null}
             name="release_currency"
+            placeholder={uiText("selectCurrency")}
             options={currencyOptions.map((currency) => ({
               label: currency,
               value: currency,

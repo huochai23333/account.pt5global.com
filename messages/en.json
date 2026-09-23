@@ -261,12 +261,12 @@
   },
   "RegisterPage": {
     "title": "Register",
-    "asideTitle": "Choose a Business<br></br>and Open Your Workspace",
-    "asideDescription": "Create a customer account step by step and choose the travel or wholesale business you want to explore.",
+    "asideTitle": "Create an Account<br></br>and Open Your Workspace",
+    "asideDescription": "Enter an invite code, your details, and a password to create a customer account.",
     "noteTitle": "Invite Code Is Optional",
     "noteDescription": "Enter an invite code if you have one to connect with your referrer. You can also register without one.",
     "headerTitle": "Create Your Account",
-    "headerDescription": "Create your account in four short steps. Phone number and invite code are optional.",
+    "headerDescription": "Register in three steps: invite code, your details, and password with terms. Phone number and invite code are optional.",
     "footerPrompt": "Already have an account?",
     "footerLinkLabel": "Back to Sign In",
     "mobileNoteTitle": "Invite Code Is Optional",
@@ -696,7 +696,7 @@
       "editTitle": "Edit Expense",
       "editDescription": "Saved changes will update this expense record.",
       "expenseMonthLabel": "Month",
-      "expenseDateLabel": "Paid Date",
+      "expenseDateLabel": "Paid date (optional; can be added later)",
       "titleLabel": "Expense Name",
       "titlePlaceholder": "Example: Office rent",
       "categoryLabel": "Category",
@@ -1017,6 +1017,15 @@
     },
     "creditDialogs": {
       "applyTitle": "Apply for order credit",
+      "estimateTitle": "Review the estimated request",
+      "estimateChoose": "Choose a tier to see its estimated amount.",
+      "estimateFixed": "Fixed credit: {amount}",
+      "estimateHalf": "Single-order credit estimate: {amount}",
+      "estimateExchangeMissing": "An exchange rate is needed; finance will confirm this amount.",
+      "estimateAllOrders": "Long-term credit depends on all orders; finance will confirm this amount.",
+      "estimateIncomplete": "The total will be confirmed during review.",
+      "estimateTotal": "Estimated request total: {amount}",
+      "estimateImpact": "Track progress in Credit Records. Credit takes effect only after approval, and this order's financial details are temporarily locked. Interest on unpaid principal after the due date is calculated daily from a monthly simple rate; the term and rate are confirmed during review.",
       "applyDescription": "You may select multiple different tiers. Financial fields lock while they are pending.",
       "applySubmit": "Submit application",
       "applyOrder": "Order {number}, purchase amount {amount}.",
@@ -1167,6 +1176,27 @@
       }
     },
     "ordersUi": {
+      "clientDetailDescription": "View the order amount, shipping details, and attachments. Contact the assigned sales representative if you need help.",
+      "clientColumns": {
+        "orderNumber": "Order number",
+        "orderedAt": "Order date",
+        "payment": "Order amount",
+        "courier": "Courier",
+        "contact": "Sales contact"
+      },
+      "compactColumns": {
+        "order": "Order number",
+        "customer": "Customer",
+        "orderedAt": "Order date",
+        "payment": "Order amount",
+        "courier": "Courier",
+        "settlement": "Settlement",
+        "actions": "Actions",
+        "details": "View details",
+        "markSettled": "Record settlement",
+        "showAll": "Show all fields",
+        "showCommon": "Show common fields"
+      },
       "actions": {
         "edit": "Edit Order"
       },
@@ -1182,6 +1212,10 @@
         "notGenerated": "Not available"
       },
       "summary": {
+        "currentRange": "Filtered summary: {from}–{to}",
+        "allTime": "All-time order summary",
+        "expand": "(expand)",
+        "collapse": "(collapse)",
         "orderCount": "Orders",
         "customerPaymentRmb": "Customer Paid",
         "grossProfit": "Gross Profit",
@@ -1562,6 +1596,21 @@
     }
   },
   "DashboardHome": {
+    "roleTasks": {
+      "title": "Common tasks",
+      "description": "Choose a task to open its page.",
+      "accounts": "Manage accounts",
+      "companyExpenses": "Review company expenses",
+      "creditOrders": "Manage inventory orders",
+      "exchangeRates": "View exchange rates",
+      "leads": "Follow up leads",
+      "mail": "Handle mail",
+      "my": "View my profile",
+      "orders": "View wholesale orders",
+      "referrals": "View referrals",
+      "reimbursements": "Record reimbursement",
+      "settlements": "Manage settlement releases"
+    },
     "title": "Welcome back, {name}",
     "subtitle": "Review the latest workspace announcements and key notices before moving into daily work.",
     "unnamedUser": "teammate",
@@ -3902,7 +3951,8 @@
       "nextCity": "City",
       "cityPlaceholder": "Enter a city, or leave it blank",
       "note": "Note",
-      "notePlaceholder": "Add a reason so the change is easy to review later"
+      "notePlaceholder": "Add a reason so the change is easy to review later",
+      "retryAuthSync": "Retry sign-in update"
     },
     "details": {
       "basicTitle": "Account Info",
@@ -3965,13 +4015,17 @@
       "noTeam": "No team"
     },
     "feedback": {
-      "saved": "Account information saved. The person will see the updated role, status, and details after the next sign-in or page refresh."
+      "saved": "Account information saved. The person will see the updated role, status, and details after the next sign-in or page refresh.",
+      "authSyncPending": "The account was updated, but sign-in details still need updating. Open this account and retry.",
+      "authSyncComplete": "Sign-in details are updated.",
+      "authSyncRetryFailed": "Sign-in details are still not updated. Please try again later."
     },
     "errors": {
       "forbidden": "The current account cannot adjust people accounts.",
       "invalidInput": "Choose a valid role, account status, and city.",
       "lastAdmin": "The system must keep at least one active administrator account.",
       "noChange": "The account role, status, and city did not change.",
+      "conflict": "Someone else changed this person's details. Refresh before making changes.",
       "notFound": "The person account could not be found.",
       "selfChange": "You cannot adjust your own account information here.",
       "serviceUnavailable": "The account adjustment could not be saved. Please try again later.",
@@ -4214,6 +4268,7 @@
     },
     "rules": {
       "title": "Claim and follow-up rules",
+      "mobileSummary": "First contact in 3 days, then follow up every 7 days",
       "firstContact": {
         "title": "First contact within 3 days",
         "description": "Record your first contact within 3 days of claiming, or the lead returns to the hall automatically."
@@ -4384,6 +4439,10 @@
     "states": {
       "emptyTitle": "No leads match these filters",
       "emptyDescription": "Try another board or search.",
+      "firstUseTitle": "You have not claimed a lead yet",
+      "firstUseDescription": "Browse the lead hall for customers you can follow up with.",
+      "openHall": "Open lead hall",
+      "clearSearch": "Clear search",
       "noPermissionTitle": "Leads are unavailable",
       "noPermissionDescription": "The lead hall is available only to administrators and salespeople."
     },
@@ -4701,6 +4760,7 @@
     "components_dashboard_wholesale_wholesale_order_edit_dialog": {
       "title": "Edit Wholesale Order",
       "description": "This change will be recorded after saving. Return to the order list to record each settlement payment.",
+      "discardDraftConfirm": "You have unsaved changes. Discard them and close?",
       "saveAction": "Save Changes",
       "attribute001": "Customer name",
       "text001": "Select customer",
@@ -4737,15 +4797,16 @@
       "text006": "Partial foreign exchange settlement"
     },
     "components_dashboard_wholesale_wholesale_order_form_dialog": {
+      "discardDraftConfirm": "This order has not been saved. Discard what you entered?",
       "attribute003": "Customer name",
       "text001": "Select customer",
       "attribute004": "Related salesperson",
       "text002": "Not allocated yet",
       "attribute005": "Small order quantity",
-      "attribute006": "Product purchase amount",
-      "attribute007": "International shipping costs",
-      "attribute008": "Other expenses",
-      "attribute009": "Referral commission fee",
+      "attribute006": "Product purchase amount (CNY)",
+      "attribute007": "International shipping costs (CNY)",
+      "attribute008": "Other expenses (CNY)",
+      "attribute009": "Referral commission fee (CNY)",
       "attribute010": "Courier company",
       "attribute011": "Customer payment currency",
       "text003": "Select currency",
@@ -4780,9 +4841,6 @@
       "attribute006": "Fill in the amount of this exchange settlement",
       "attribute007": "Exchange settlement date",
       "attribute001": "Confirm exchange settlement"
-    },
-    "components_dashboard_wholesale_wholesale_order_summary": {
-      "text001": " Overview of this month (click to expand) "
     },
     "components_dashboard_wholesale_wholesale_orders_mobile_list": {
       "attribute003": "Salesman",
@@ -4918,6 +4976,7 @@
       "text001": " Add recommendation relationship "
     },
     "components_dashboard_wholesale_wholesale_settlement_release_dialogs": {
+      "selectCurrency": "Select the received currency",
       "attribute003": "Select customer",
       "attribute010": "Remark",
       "attribute004": "Customer name",
@@ -5121,6 +5180,9 @@
     "blockSender": "Block sender",
     "blockDomain": "Block domain",
     "refreshMail": "Refresh email",
+    "loadMoreThreads": "Load more email",
+    "unsavedDraftTitle": "This email has not been sent",
+    "unsavedDraftDescription": "Your current draft will be lost if you leave. Continue?",
     "emptyTitle": "No email in this view",
     "emptyDescription": "New email will appear here when it arrives.",
     "newTitle": "New email",
@@ -5145,6 +5207,7 @@
     "suggestReply": "Suggest a reply",
     "confirmingSend": "Confirming delivery",
     "sendMail": "Send email",
+    "continueCheckingSend": "Check sending result",
     "senderUnavailable": "Sending is not enabled for this account. Ask an administrator to finish the sender setup before sending.",
     "editableSuggestion": "This is an editable suggestion and will not be sent automatically.",
     "companyMailbox": "Company mailbox",
@@ -5267,7 +5330,8 @@
     },
     "viewer": {
       "guideTitle": "Template guide",
-      "refreshNotice": "Refreshing reloads the current template and clears entries on this page."
+      "refreshNotice": "Refreshing reloads the current template and clears entries on this page.",
+      "desktopOnly": "Please fill in and print company templates on a computer."
     },
     "errors": {
       "company_template_forbidden": "This account cannot manage company templates.",

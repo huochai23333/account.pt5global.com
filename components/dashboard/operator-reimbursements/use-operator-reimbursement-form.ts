@@ -29,11 +29,13 @@ export function useOperatorReimbursementForm(
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(createEmptyOperatorReimbursementForm);
   const [feedback, setFeedback] = useState<ReimbursementFeedback>(null);
+  const [fieldError, setFieldError] = useState<{ field: keyof OperatorReimbursementFormState; message: string } | null>(null);
   const [pending, setPending] = useState(false);
   const lock = useRef(false);
   const openCreate = () => {
     setForm(createEmptyOperatorReimbursementForm());
     setFeedback(null);
+    setFieldError(null);
     setOpen(true);
   };
   const changeOpen = (value: boolean) => {
@@ -44,17 +46,30 @@ export function useOperatorReimbursementForm(
     value: OperatorReimbursementFormState[Key],
   ) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setFieldError((current) => current?.field === field ? null : current);
   };
   const submit = async () => {
     const supabase = getBrowserSupabaseClient();
     if (!supabase || lock.current) return;
+    let payload;
+    try {
+      payload = toOperatorReimbursementInput(form, copy);
+    } catch (error) {
+      const message = toOperatorReimbursementErrorMessage(error, copy);
+      const field = message === copy.invalidDate ? "spentAt"
+        : message === copy.missingAmount || message === copy.invalidAmount ? "amount" : "content";
+      setFieldError({ field, message });
+      // 先把错误关联到输入框，再把键盘焦点送到第一处需要修改的位置。
+      requestAnimationFrame(() => document.getElementById(`reimbursement-${field}`)?.focus());
+      return;
+    }
     lock.current = true;
     setPending(true);
     setFeedback(null);
     try {
       await createOperatorReimbursement(
         supabase,
-        toOperatorReimbursementInput(form, copy),
+        payload,
       );
       markBrowserCloudSyncActivity();
       setOpen(false);
@@ -73,6 +88,7 @@ export function useOperatorReimbursementForm(
     open,
     form,
     feedback,
+    fieldError,
     pending,
     openCreate,
     changeOpen,

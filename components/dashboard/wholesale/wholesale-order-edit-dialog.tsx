@@ -3,8 +3,9 @@
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
+import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import {
@@ -58,6 +59,18 @@ export function WholesaleOrderEditDialog({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_edit_dialog",
   );
+  const confirm = useDashboardConfirm();
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (!open || !dirty) return;
+    // 刷新或关闭浏览器时仍由浏览器提供最后一道草稿提醒。
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, open]);
   const currencyOptions = useWholesaleCurrencyOptions(exchangeRates, order);
   const defaultCurrency =
     order?.customer_payment_currency ??
@@ -70,13 +83,27 @@ export function WholesaleOrderEditDialog({
   return (
     <DashboardDialog
       description={uiText("description")}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && pending) return;
+        if (!nextOpen && dirty) {
+          void confirm({
+            title: uiText("title"),
+            description: uiText("discardDraftConfirm"),
+            tone: "warning",
+          }).then((accepted) => {
+            if (accepted) { setDirty(false); onOpenChange(false); }
+          });
+          return;
+        }
+        onOpenChange(nextOpen);
+      }}
       open={open}
       title={uiText("title")}
     >
       <form
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         key={order.id}
+        onChange={() => setDirty(true)}
         onSubmit={async (event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
@@ -86,6 +113,7 @@ export function WholesaleOrderEditDialog({
           );
           if (hasOrderChanges && !(await onUpdateOrder(formData))) return;
           // 没有修改时直接关闭；保存失败时保留输入，方便用户检查后重试。
+          setDirty(false);
           onOpenChange(false);
         }}
       >

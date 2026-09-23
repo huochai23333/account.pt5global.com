@@ -93,7 +93,7 @@ export function CompanyExpenseFormDialog({
           />
         </DashboardFormField>
 
-        <DashboardFormField label={copy.expenseDateLabel} required>
+        <DashboardFormField label={copy.expenseDateLabel}>
           <DatePicker
             onValueChange={(value) => onUpdateField("expenseDate", value)}
             value={formState.expenseDate}

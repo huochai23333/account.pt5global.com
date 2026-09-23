@@ -203,7 +203,7 @@ export function WholesaleField({
   type?: string;
 }) {
   return (
-    <DashboardFilterField label={label}>
+    <DashboardFilterField label={label} required={required}>
       <FormControls.Input
         className={dashboardFilterInputClassName}
         defaultValue={defaultValue}

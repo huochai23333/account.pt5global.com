@@ -28,13 +28,19 @@ export function normalizeAdminPersonAccountUpdatePayload(
   if (
     !targetUserId ||
     !isAdminPeopleRole(input.nextRole) ||
-    !isAdminPeopleStatus(input.nextStatus)
+    !isAdminPeopleStatus(input.nextStatus) ||
+    !input.expected ||
+    !isAdminPeopleStatus(input.expected.status) ||
+    !(input.expected.role === null || isAdminPeopleRole(input.expected.role)) ||
+    !Array.isArray(input.expected.workspace_business_access) ||
+    !Array.isArray(input.expected.salesman_business_boards)
   ) {
     throw new AdminPeopleMutationError("invalidInput");
   }
 
   return {
     targetUserId,
+    expected: input.expected,
     nextRole: input.nextRole,
     nextStatus: input.nextStatus,
     nextCity,

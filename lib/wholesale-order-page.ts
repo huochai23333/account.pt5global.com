@@ -140,13 +140,18 @@ export async function getWholesaleOrderPage(
     changeLogsResult,
     attachmentsResult,
   ] = await Promise.all([
-    supabase
-      .from("wholesale_order_settlements")
-      .select("*")
-      .in("order_id", orderIds)
-      .order("settled_on", { ascending: false })
-      .order("created_at", { ascending: false }),
-    getLinkedWholesalePurchaseOrders(supabase, orderIds, canViewInternalFields),
+    // 客户页面只需订单、物流和附件；结汇及关联采购属于后台处理资料。
+    canViewInternalFields
+      ? supabase
+          .from("wholesale_order_settlements")
+          .select("*")
+          .in("order_id", orderIds)
+          .order("settled_on", { ascending: false })
+          .order("created_at", { ascending: false })
+      : emptyWholesaleRelatedQuery(),
+    canViewInternalFields
+      ? getLinkedWholesalePurchaseOrders(supabase, orderIds, true)
+      : emptyWholesaleRelatedQuery(),
     canViewInternalFields
       ? supabase
           .from("wholesale_order_change_logs")

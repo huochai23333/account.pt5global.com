@@ -1,16 +1,7 @@
-import { randomUUID } from "node:crypto";
-
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
-import { createBlindIndex, decryptMailValue, encryptMailValue } from "./mail-security";
-import {
-  cleanAttachmentFilename,
-  deleteEncryptedObjects,
-  downloadEncryptedObject,
-  scanAttachment,
-  uploadEncryptedObject,
-} from "./mail-storage";
+import { createBlindIndex, decryptMailValue } from "./mail-security";
 import type {
   MailIdentity,
   MailThreadDetail,
@@ -18,8 +9,6 @@ import type {
   MailThreadQuery,
   MailThreadState,
   MailWorkspaceSummary,
-  OutboundJobReceipt,
-  OutboundMessageInput,
 } from "./mail-types";
 
 export {
@@ -57,16 +46,8 @@ type ThreadRow = {
   version: number;
 };
 
-function databaseError(message: string, error: unknown): never {
+export function databaseError(message: string, error: unknown): never {
   throw new Error(message, { cause: error });
-}
-
-function normalizeAddressList(values: string[]) {
-  const result = [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
-  if (result.some((value) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))) {
-    throw new Error("请检查收件人邮箱地址。");
-  }
-  return result;
 }
 
 async function getDisplayNames(userIds: Array<string | null>) {
@@ -83,7 +64,7 @@ async function getDisplayNames(userIds: Array<string | null>) {
   ]));
 }
 
-async function assertThreadAccess(identity: MailIdentity, threadId: string, allowQuarantinedForAdmin = false) {
+export async function assertThreadAccess(identity: MailIdentity, threadId: string, allowQuarantinedForAdmin = false) {
   let query = getSupabaseServiceRoleClient()
     .from("mail_threads")
     .select("id,assigned_user_id,version")
@@ -194,32 +175,39 @@ export async function queryMailThreads(identity: MailIdentity, filters: MailThre
     throw new Error("只有管理员可以查看这个邮件范围。");
   }
   const limit = Math.max(1, Math.min(filters.limit ?? 40, 100));
-  const cursor = filters.cursor ? new Date(filters.cursor) : null;
-  if (cursor && Number.isNaN(cursor.getTime())) throw new Error("邮件列表位置无效。");
+  let cursorAt: string | null = null;
+  let cursorId: string | null = null;
+  if (filters.cursor) {
+    try {
+      const parsed = JSON.parse(filters.cursor) as { at?: string; id?: string };
+      if (!parsed.at || Number.isNaN(new Date(parsed.at).getTime())
+        || !parsed.id || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(parsed.id)) throw new Error();
+      cursorAt = parsed.at;
+      cursorId = parsed.id;
+    } catch { throw new Error("邮件列表位置无效。"); }
+  }
 
-  let query = getSupabaseServiceRoleClient()
-    .from("mail_threads")
-    .select("id,subject_enc,customer_email_enc,assigned_user_id,state,ref_code,routing_source,name_hint_user_ids,last_message_at,last_inbound_at,version")
-    .eq("intake_status", "active")
-    .is("deleted_at", null)
-    .order("last_message_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(limit + 1);
-  if (filters.scope === "mine") query = query.eq("assigned_user_id", identity.userId);
-  if (filters.scope === "unassigned") query = query.is("assigned_user_id", null);
-  if (filters.state) query = query.eq("state", filters.state);
-  if (filters.assigneeId) query = query.eq("assigned_user_id", filters.assigneeId);
-  if (filters.customer) query = query.eq("customer_email_hash", createBlindIndex(filters.customer, getMailEnv().emailHashSecret));
-  if (filters.refCode) query = query.eq("ref_code", filters.refCode.trim().toUpperCase());
-  if (cursor) query = query.lt("last_message_at", cursor.toISOString());
-
-  const { data, error } = await query;
+  // 未读与复合游标都在数据库查询中生效；先取 limit+1 条，额外一条仅用于判断是否还有下一页。
+  const { data, error } = await getSupabaseServiceRoleClient().rpc("query_mail_thread_page", {
+    p_user_id: identity.userId,
+    p_scope: filters.scope,
+    p_state: filters.state ?? null,
+    p_assignee_id: filters.assigneeId ?? null,
+    p_customer_hash: filters.customer ? createBlindIndex(filters.customer, getMailEnv().emailHashSecret) : null,
+    p_ref_code: filters.refCode?.trim().toUpperCase() || null,
+    p_unread: filters.unread === true,
+    p_cursor_at: cursorAt,
+    p_cursor_id: cursorId,
+    p_limit: limit + 1,
+  });
   if (error) databaseError("邮件列表暂时无法读取。", error);
   const rows = (data ?? []) as ThreadRow[];
   const hasMore = rows.length > limit;
-  let items = await toThreadItems(identity, rows.slice(0, limit));
-  if (filters.unread) items = items.filter((item) => item.unread);
-  return { threads: items, nextCursor: hasMore ? items.at(-1)?.lastMessageAt ?? null : null };
+  const pageRows = rows.slice(0, limit);
+  const items = await toThreadItems(identity, pageRows);
+  const last = pageRows.at(-1);
+  return { threads: items, nextCursor: hasMore && last
+    ? JSON.stringify({ at: last.last_message_at, id: last.id }) : null };
 }
 
 export async function getMailThread(identity: MailIdentity, threadId: string, options?: { includeQuarantined?: boolean }): Promise<MailThreadDetail> {
@@ -339,129 +327,6 @@ export async function updateMailThreadState(identity: MailIdentity, input: {
   if (error?.message.includes("MAIL_VERSION_CONFLICT")) throw new Error("会话已被其他人更新，请刷新后重试。");
   if (error || !result) databaseError("会话状态没有确认更新。", error);
   return { threadId: String(result.thread_id), state: result.state as MailThreadState, version: Number(result.version) };
-}
-
-export async function uploadMailAttachment(identity: MailIdentity, input: {
-  filename: string;
-  contentType: string;
-  base64: string;
-}) {
-  const filename = cleanAttachmentFilename(input.filename);
-  const bytes = Buffer.from(input.base64, "base64");
-  if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) throw new Error("单个附件必须小于 10 MiB。");
-  const id = randomUUID();
-  const storagePath = `${identity.userId}/uploads/${id}`;
-  const encrypted = encryptMailValue(bytes.toString("base64"), getMailEnv().contentKey);
-  const [stored, scan] = await Promise.all([
-    uploadEncryptedObject(storagePath, encrypted),
-    scanAttachment(bytes, filename),
-  ]);
-  const status = scan.clean ? "clean" : "quarantined";
-  const { data, error } = await getSupabaseServiceRoleClient().from("mail_uploads").insert({
-    id,
-    user_id: identity.userId,
-    storage_path: storagePath,
-    filename_enc: encryptMailValue(filename, getMailEnv().contentKey),
-    content_type_enc: encryptMailValue(input.contentType || "application/octet-stream", getMailEnv().contentKey),
-    byte_size: bytes.length,
-    cipher_sha256: stored.cipherSha256,
-    scan_status: status,
-    scan_error: scan.clean ? null : scan.reason,
-  }).select("id,byte_size,scan_status").single();
-  if (error || data?.id !== id) {
-    await deleteEncryptedObjects([storagePath]).catch(() => undefined);
-    databaseError("附件记录没有确认保存。", error);
-  }
-  return { attachmentId: id, filename, byteSize: Number(data.byte_size), status: data.scan_status as string };
-}
-
-export async function downloadMailAttachment(identity: MailIdentity, attachmentId: string) {
-  const supabase = getSupabaseServiceRoleClient();
-  const { data: attachment, error } = await supabase.from("mail_attachments")
-    .select("id,message_id,storage_path,filename_enc,content_type_enc,scan_status")
-    .eq("id", attachmentId).maybeSingle();
-  if (error) databaseError("附件权限暂时无法确认。", error);
-  if (!attachment || attachment.scan_status !== "clean") throw new Error("附件不存在或仍在安全检查中。");
-  const { data: message, error: messageError } = await supabase.from("mail_messages")
-    .select("thread_id").eq("id", attachment.message_id).single();
-  if (messageError || !message) databaseError("附件所属会话暂时无法确认。", messageError);
-  await assertThreadAccess(identity, message.thread_id as string, true);
-  const encrypted = await downloadEncryptedObject(attachment.storage_path as string);
-  return {
-    filename: decryptContent(String(attachment.filename_enc)),
-    contentType: decryptContent(String(attachment.content_type_enc)),
-    base64: decryptContent(encrypted),
-  };
-}
-
-export async function createOutboundMessage(identity: MailIdentity, message: OutboundMessageInput) {
-  const to = normalizeAddressList(message.to);
-  const cc = normalizeAddressList(message.cc);
-  const bcc = normalizeAddressList(message.bcc);
-  if (to.length === 0) throw new Error("请至少填写一个收件人。");
-  if (message.attachmentIds.length > 10) throw new Error("每封邮件最多添加 10 个附件。");
-  if (!message.idempotencyKey.trim()) throw new Error("发送标识不能为空。");
-  if (message.threadId) await assertThreadAccess(identity, message.threadId);
-
-  const supabase = getSupabaseServiceRoleClient();
-  const [mailboxResult, profileResult, existingResult] = await Promise.all([
-    supabase.from("mail_shared_mailboxes").select("id,status").eq("status", "active").maybeSingle(),
-    supabase.from("mail_agent_profiles").select("user_id").eq("user_id", identity.userId).eq("enabled", true).maybeSingle(),
-    supabase.from("mail_outbound_jobs")
-      .select("id,status").eq("actor_user_id", identity.userId).eq("idempotency_key", message.idempotencyKey).maybeSingle(),
-  ]);
-  if (mailboxResult.error || profileResult.error || existingResult.error) databaseError("发信条件暂时无法确认。", mailboxResult.error ?? profileResult.error ?? existingResult.error);
-  if (!mailboxResult.data) throw new Error("公司邮箱尚未连接或当前不可用。");
-  if (!profileResult.data) throw new Error("请先让管理员完善你的发件资料。");
-  if (existingResult.data) return { jobId: existingResult.data.id as string, status: existingResult.data.status as string, created: false };
-
-  let totalBytes = 0;
-  if (message.attachmentIds.length > 0) {
-    const { data: uploads, error } = await supabase.from("mail_uploads")
-      .select("id,byte_size,scan_status,consumed_at,expires_at")
-      .eq("user_id", identity.userId)
-      .in("id", message.attachmentIds);
-    if (error) databaseError("附件状态暂时无法确认。", error);
-    if ((uploads ?? []).length !== message.attachmentIds.length) throw new Error("部分附件不存在，请重新上传。");
-    if ((uploads ?? []).some((upload) => upload.scan_status !== "clean" || upload.consumed_at || new Date(upload.expires_at as string) <= new Date())) {
-      throw new Error("部分附件未通过安全检查或已经过期。");
-    }
-    totalBytes = (uploads ?? []).reduce((sum, upload) => sum + Number(upload.byte_size), 0);
-    if (totalBytes > 20 * 1024 * 1024) throw new Error("附件合计不能超过 20 MiB。");
-  }
-
-  const payload = { ...message, to, cc, bcc };
-  const { data, error } = await supabase.from("mail_outbound_jobs").insert({
-    mailbox_id: mailboxResult.data.id,
-    actor_user_id: identity.userId,
-    thread_id: message.threadId ?? null,
-    idempotency_key: message.idempotencyKey,
-    payload_enc: encryptMailValue(JSON.stringify(payload), getMailEnv().contentKey),
-  }).select("id,status").single();
-  if (error || !data) {
-    const duplicate = await supabase.from("mail_outbound_jobs")
-      .select("id,status").eq("actor_user_id", identity.userId).eq("idempotency_key", message.idempotencyKey).maybeSingle();
-    if (duplicate.data) return { jobId: duplicate.data.id as string, status: duplicate.data.status as string, created: false };
-    databaseError("邮件发送任务没有确认创建。", error);
-  }
-  return { jobId: data.id as string, status: data.status as string, created: true };
-}
-
-export async function getOutboundStatus(identity: MailIdentity, jobId: string): Promise<OutboundJobReceipt> {
-  let query = getSupabaseServiceRoleClient().from("mail_outbound_jobs")
-    .select("id,status,provider_message_id,provider_thread_id,last_error")
-    .eq("id", jobId);
-  if (identity.role !== "administrator") query = query.eq("actor_user_id", identity.userId);
-  const { data, error } = await query.maybeSingle();
-  if (error) databaseError("发送状态暂时无法读取。", error);
-  if (!data) throw new Error("没有找到这个发送任务。");
-  return {
-    jobId: data.id as string,
-    status: data.status as OutboundJobReceipt["status"],
-    providerMessageId: data.provider_message_id as string | null,
-    providerThreadId: data.provider_thread_id as string | null,
-    lastError: data.last_error as string | null,
-  };
 }
 
 export async function getReplyContext(identity: MailIdentity, threadId: string) {

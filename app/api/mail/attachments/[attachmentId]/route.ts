@@ -1,5 +1,5 @@
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { downloadMailAttachment } from "@/lib/mail/mail-service";
+import { downloadMailAttachment } from "@/lib/mail/mail-attachment-service";
 
 import { mailApiError } from "../../_shared";
 

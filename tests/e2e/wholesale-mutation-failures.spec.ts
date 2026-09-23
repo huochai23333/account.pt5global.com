@@ -36,6 +36,12 @@ test.describe("批发写入失败保留表单", () => {
     await expect(createDialog.getByLabel("备注")).toHaveValue(createNote);
     await expectResponsiveLayout(page);
     await page.keyboard.press("Escape");
+    await page.getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？").first().waitFor();
+    await page.getByRole("button", { name: "暂不操作" }).click();
+    await expect(createDialog.getByLabel("备注")).toHaveValue(createNote);
+    await page.keyboard.press("Escape");
+    await page.getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？").first().waitFor();
+    await page.getByRole("button", { name: "确认操作" }).click();
 
     await failJsonRequest(page, "**/rest/v1/rpc/update_wholesale_order");
     await page
@@ -54,6 +60,12 @@ test.describe("批发写入失败保留表单", () => {
     await expect(editDialog).toBeVisible();
     await expect(editDialog.getByLabel("备注")).toHaveValue(editNote);
     await page.keyboard.press("Escape");
+    await page.getByText("还有没保存的修改。确定放弃并关闭吗？").first().waitFor();
+    await page.getByRole("button", { name: "暂不操作" }).click();
+    await expect(editDialog.getByLabel("备注")).toHaveValue(editNote);
+    await page.keyboard.press("Escape");
+    await page.getByText("还有没保存的修改。确定放弃并关闭吗？").first().waitFor();
+    await page.getByRole("button", { name: "确认操作" }).click();
 
     await failJsonRequest(
       page,
@@ -75,7 +87,8 @@ test.describe("批发写入失败保留表单", () => {
       "**/storage/v1/object/wholesale-order-lists/**",
       "POST",
     );
-    await orderRow.getByRole("button", { name: "管理附件" }).click();
+    await orderRow.getByRole("button", { name: "查看详情" }).click();
+    await page.getByRole("dialog", { name: /订单 WH-/ }).getByRole("button", { name: "管理附件" }).click();
     const attachmentDialog = page.getByRole("dialog", {
       name: /Order List/,
     });

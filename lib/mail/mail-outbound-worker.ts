@@ -4,7 +4,7 @@ import sanitizeHtml from "sanitize-html";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
-import { getSharedAccessToken, sendRawMessage, verifySentMessage } from "./mail-google";
+import { findSentMessageByRfcId, getSharedAccessToken, sendRawMessage, verifySentMessage } from "./mail-google";
 import { createBlindIndex, decryptMailValue, encryptMailValue } from "./mail-security";
 import { recordSuccessfulOutboundRecipients } from "./mail-recipient-service";
 import { downloadEncryptedObject } from "./mail-storage";
@@ -19,6 +19,9 @@ type JobRow = {
   attempt_count: number;
   provider_message_id: string | null;
   provider_thread_id: string | null;
+  dispatch_started_at: string | null;
+  rfc_message_id: string | null;
+  created_at: string;
 };
 
 type Context = {
@@ -53,8 +56,10 @@ function cleanHtml(value: string) {
   });
 }
 
-function createRef(prefix: string) {
-  return `PT5-${new Date().getUTCFullYear()}-${prefix}-${crypto.randomUUID().slice(0, 8).replaceAll("-", "").toUpperCase()}`;
+function createRef(prefix: string, job: JobRow) {
+  // 同一任务即使 worker 重启也要得到同一个业务参考号，便于对账和归档。
+  const year = new Date(job.created_at || Date.now()).getUTCFullYear();
+  return `PT5-${year}-${prefix}-${job.id.slice(0, 8).toUpperCase()}`;
 }
 
 async function loadContext(job: JobRow): Promise<Context> {
@@ -68,10 +73,12 @@ async function loadContext(job: JobRow): Promise<Context> {
       ? supabase.from("mail_threads").select("provider_thread_id,subject_enc,ref_code,assigned_user_id").eq("id", job.thread_id).single()
       : Promise.resolve({ data: null, error: null }),
   ]);
-  if (mailbox.error || profile.error || thread.error || mailbox.data?.status !== "active" || profile.data?.enabled !== true) {
+  if (mailbox.error || profile.error || thread.error || mailbox.data?.status !== "active"
+    || (!job.dispatch_started_at && profile.data?.enabled !== true)) {
     throw new Error("发件人配置不存在、已停用，或公司邮箱当前不可用。", { cause: mailbox.error ?? profile.error ?? thread.error });
   }
-  if (job.thread_id && thread.data?.assigned_user_id !== job.actor_user_id) throw new Error("会话负责人已经变化，请刷新后重新发送。");
+  // 已经调用 Gmail 的任务只能核对和归档，负责人变化不应阻止核对既有发送结果。
+  if (!job.dispatch_started_at && job.thread_id && thread.data?.assigned_user_id !== job.actor_user_id) throw new Error("会话负责人已经变化，请刷新后重新发送。");
   return {
     mailboxEmail: decryptMailValue(mailbox.data.email_enc as string, getMailEnv().contentKey),
     senderDisplayName: decryptMailValue(profile.data.sender_display_name_enc as string, getMailEnv().contentKey),
@@ -103,7 +110,8 @@ async function loadAttachments(job: JobRow, ids: string[]): Promise<LoadedAttach
     .eq("user_id", job.actor_user_id).in("id", ids);
   if (result.error) throw new Error("附件暂时无法读取。", { cause: result.error });
   const rows = result.data ?? [];
-  if (rows.length !== ids.length || rows.some((row) => row.scan_status !== "clean" || row.consumed_at || new Date(row.expires_at as string) <= new Date())) {
+  if (rows.length !== ids.length || rows.some((row) => row.scan_status !== "clean"
+    || (!job.dispatch_started_at && (row.consumed_at || new Date(row.expires_at as string) <= new Date())))) {
     throw new Error("部分附件不存在、已过期或未通过安全检查。");
   }
   return Promise.all(rows.map(async (row) => ({
@@ -122,7 +130,7 @@ async function loadAttachments(job: JobRow, ids: string[]): Promise<LoadedAttach
 
 async function buildMime(job: JobRow, payload: OutboundMessageInput, context: Context) {
   const signature = cleanHtml(context.signatureHtml);
-  const refCode = context.refCode ?? createRef(context.refPrefix);
+  const refCode = context.refCode ?? createRef(context.refPrefix, job);
   const subject = context.threadSubject ?? payload.subject;
   const replyHeaders = await loadReplyHeaders(job.thread_id);
   const attachments = await loadAttachments(job, payload.attachmentIds);
@@ -130,6 +138,7 @@ async function buildMime(job: JobRow, payload: OutboundMessageInput, context: Co
   const text = `${payload.textBody.trim()}\n\n${signatureText}\nRef: ${refCode}`.trim();
   const escaped = payload.textBody.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll("\n", "<br>");
   const html = `${cleanHtml(payload.htmlBody || `<p>${escaped}</p>`)}<hr>${signature}<p>Ref: ${refCode}</p>`;
+  const stableMessageId = job.rfc_message_id ?? `<pt5-${job.id}@pt5china.com>`;
   const raw = (await new MailComposer({
     from: { name: context.senderDisplayName, address: context.mailboxEmail },
     replyTo: `${context.mailboxEmail.split("@")[0]}+${context.aliasLocalPart}@gmail.com`,
@@ -137,6 +146,7 @@ async function buildMime(job: JobRow, payload: OutboundMessageInput, context: Co
     cc: payload.cc,
     bcc: payload.bcc,
     subject,
+    messageId: stableMessageId,
     text,
     html,
     inReplyTo: replyHeaders.inReplyTo,
@@ -144,6 +154,7 @@ async function buildMime(job: JobRow, payload: OutboundMessageInput, context: Co
     attachments: attachments.map((item) => ({ filename: item.filename, contentType: item.contentType, content: item.content })),
   }).compile().build()).toString("utf8");
   const rfcMessageId = raw.match(/^Message-ID:\s*(.+)$/im)?.[1]?.trim() ?? "";
+  if (!rfcMessageId) throw new Error("邮件发送标识没有生成。");
   return { raw, rfcMessageId, refCode, subject, text, html, attachments };
 }
 
@@ -274,19 +285,37 @@ async function processJob(job: JobRow) {
   let providerMessageId = job.provider_message_id;
   let providerThreadId = job.provider_thread_id;
   if (!providerMessageId || !providerThreadId) {
-    const sent = await sendRawMessage(accessToken, mime.raw, context.providerThreadId ?? undefined);
+    let sent: { id: string; threadId: string };
+    if (job.dispatch_started_at) {
+      // 只要已经开始对外发送，结果不明时只查询供应商；重试发送会造成重复邮件。
+      const found = await findSentMessageByRfcId(accessToken, job.rfc_message_id ?? mime.rfcMessageId);
+      if (!found) throw new Error("已开始发送，正在等待公司邮箱确认结果。");
+      sent = found;
+    } else {
+      const dispatchStartedAt = new Date().toISOString();
+      // 先持久化发送标识。即使后面的 Gmail 响应或数据库回执丢失，下一次也只能查询。
+      job.dispatch_started_at = dispatchStartedAt;
+      job.rfc_message_id = mime.rfcMessageId;
+      const { data: preparedData, error: preparedError } = await getSupabaseServiceRoleClient().from("mail_outbound_jobs").update({
+        dispatch_started_at: dispatchStartedAt,
+        rfc_message_id: mime.rfcMessageId,
+        updated_at: dispatchStartedAt,
+      }).eq("id", job.id).is("dispatch_started_at", null).select("id").single();
+      if (preparedError || preparedData?.id !== job.id) throw new Error("发送标识没有确认保存。", { cause: preparedError });
+      sent = await sendRawMessage(accessToken, mime.raw, context.providerThreadId ?? undefined);
+    }
+    // 编号写库失败时只按已持久化的 Message-ID 查 Gmail，不能因为内存里有编号就结束对账。
     const { data: recordedData, error: recordedError } = await getSupabaseServiceRoleClient().from("mail_outbound_jobs").update({
       provider_message_id: sent.id,
       provider_thread_id: sent.threadId,
       updated_at: new Date().toISOString(),
     }).eq("id", job.id).select("provider_message_id,provider_thread_id").single();
     if (recordedError || recordedData?.provider_message_id !== sent.id) throw new Error("Gmail 返回编号没有确认保存。", { cause: recordedError });
-    providerMessageId = sent.id;
-    providerThreadId = sent.threadId;
-    // 同步更新本次领取到的任务对象；后续 SENT 核验失败时必须立即记为部分失败，
-    // 不能把已经取得 Gmail 编号的任务误当成“尚未发送”再投递一次。
     job.provider_message_id = sent.id;
     job.provider_thread_id = sent.threadId;
+    providerMessageId = sent.id;
+    providerThreadId = sent.threadId;
+    // 核验 SENT 失败时已有可靠编号，可以立即标记为部分失败等待人工核对。
   }
   await verifySentMessage(accessToken, providerMessageId);
   await finalizeSentJob(job, payload, context, mime, providerMessageId, providerThreadId);
@@ -305,8 +334,10 @@ export async function processOutboundJobBatch() {
       succeededCount += 1;
     } catch (error) {
       failedCount += 1;
-      const terminal = job.provider_message_id ? "partial_failed" : "failed";
-      const nextStatus = job.provider_message_id ? terminal : job.attempt_count < 4 ? "retrying" : terminal;
+      // Gmail 已给出邮件编号却没有最终凭证时立即标记需人工核对；继续自动重试会长时间误导页面。
+      // 只有已经发起请求但尚无编号的情况才按同一 Message-ID 查询，绝不重新投递。
+      const terminal = job.dispatch_started_at || job.provider_message_id ? "partial_failed" : "failed";
+      const nextStatus = job.provider_message_id ? "partial_failed" : job.attempt_count < 4 ? "retrying" : terminal;
       const { data: savedData, error: savedError } = await supabase.from("mail_outbound_jobs").update({
         status: nextStatus,
         next_attempt_at: new Date(Date.now() + Math.min(60_000 * 2 ** job.attempt_count, 3_600_000)).toISOString(),

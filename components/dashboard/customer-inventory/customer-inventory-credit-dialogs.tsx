@@ -43,6 +43,7 @@ export function CustomerInventoryCreditDialogs({
         order={dialog.order}
         pendingKey={pendingKey}
         runAction={runAction}
+        usdToCurrencyRates={usdToCurrencyRates}
       />
     );
   }

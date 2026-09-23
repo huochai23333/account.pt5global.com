@@ -14,6 +14,7 @@ export type AdminPeopleFeedback = {
 export type AdminPeopleUpdateResponse = {
   person?: AdminPersonRow;
   recentChanges?: AdminPeopleChangeLogRow[];
+  outcome?: "success" | "partial_failed";
   error?: string;
 };
 
@@ -31,6 +32,7 @@ export async function readAdminPeopleUpdateResponse(
       error: typeof value.error === "string" ? value.error : undefined,
       person: isAdminPersonRow(value.person) ? value.person : undefined,
       recentChanges: normalizeChangeLogs(value.recentChanges),
+      outcome: value.outcome === "success" || value.outcome === "partial_failed" ? value.outcome : undefined,
     };
   } catch {
     return {};
@@ -43,6 +45,7 @@ export function normalizeAdminPeopleErrorCode(value: string | undefined) {
     case "invalidInput":
     case "lastAdmin":
     case "noChange":
+    case "conflict":
     case "notFound":
     case "processed":
     case "selfChange":

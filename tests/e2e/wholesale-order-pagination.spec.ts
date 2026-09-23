@@ -19,6 +19,8 @@ test.describe("wholesale order pagination", () => {
     await expectNotForbiddenPage(page);
     await expect(page.getByLabel("客户", { exact: true })).toBeVisible();
     await expectNoDocumentHorizontalOverflow(page);
+    // 日常默认表格只保留常用列；完整采购关联仍可按需切换查看。
+    await expect(page.getByRole("columnheader")).toHaveCount(7);
 
     const rows = page.locator('[data-testid^="wholesale-order-row-"]');
     await expect(rows).toHaveCount(20);
@@ -34,6 +36,7 @@ test.describe("wholesale order pagination", () => {
 
     await searchWholesaleOrdersAcrossDates(page, "1688-LOCAL-001");
     await expect(rows).toHaveCount(2);
+    await page.getByRole("button", { name: "查看全部字段" }).click();
     for (const orderId of [
       "c2000000-0000-4000-8000-000000000001",
       "c2000000-0000-4000-8000-000000000004",
@@ -61,7 +64,7 @@ test.describe("wholesale order pagination", () => {
     await page.goto("/admin/wholesale/orders");
 
     await expect(page.getByLabel("搜索订单")).toBeVisible();
-    await expect(page.getByText("本月概览（点击展开）")).toBeVisible();
+    await expect(page.getByText(/当前筛选概览.*（展开）/)).toBeVisible();
     await expect(page.locator('[data-testid^="wholesale-order-card-"]')).toHaveCount(20);
     await expect(page.locator('[data-testid^="wholesale-order-row-"]').first()).toBeHidden();
 
@@ -105,6 +108,8 @@ test.describe("wholesale order pagination", () => {
           '[data-testid="wholesale-order-row-c2000000-0000-4000-8000-000000000002"]',
         );
         await expect(row).toBeVisible();
+        await page.getByRole("button", { name: "查看全部字段" }).click();
+        await expect(page.getByRole("button", { name: "显示常用字段" })).toBeVisible();
         await expect(row.getByRole("button", { name: "管理附件" })).toBeVisible();
       } finally {
         await context.close();
@@ -128,6 +133,8 @@ test.describe("wholesale order pagination", () => {
     await searchWholesaleOrdersAcrossDates(page, "1688-LOCAL-001");
     await expect(page.getByText("部分结汇记录暂时没有加载成功。"))
       .toBeVisible();
+    await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(2);
+    await page.getByRole("button", { name: "查看全部字段" }).click();
     await expect(
       page.locator('[data-testid^="wholesale-order-row-"]').filter({
         hasText: "1688-LOCAL-001",
@@ -176,6 +183,8 @@ test.describe("wholesale order pagination", () => {
         '[data-testid="wholesale-order-row-c2000000-0000-4000-8000-000000000002"]',
       );
       await expect(adminRow).toBeVisible();
+      await adminPage.getByRole("button", { name: "查看全部字段" }).click();
+      await expect(adminPage.getByRole("button", { name: "显示常用字段" })).toBeVisible();
       await adminRow.getByRole("button", { name: "管理附件" }).click();
 
       const attachmentDialog = adminPage.getByRole("dialog", {
@@ -262,17 +271,8 @@ test.describe("wholesale order pagination", () => {
       const download = await downloadPromise;
       expect(download.suggestedFilename()).toBe(fileName);
 
-      // 采购列位于桌面宽表的横向滚动区域中；直接触发原生点击可以跳过
-      // Playwright 对横向滚动动画稳定性的等待，随后仍用弹窗断言验证结果。
-      await clientRow
-        .getByRole("button", { name: "1688-CLIENT-LOCAL-001" })
-        .evaluate((button: HTMLButtonElement) => button.click());
-      const purchaseDialog = clientPage.getByRole("dialog", {
-        name: "1688 订单详情",
-      });
-      await expect(purchaseDialog).toBeVisible();
-      await expect(purchaseDialog.getByText("采购金额", { exact: true })).toHaveCount(0);
-      await purchaseDialog.getByRole("button", { name: "关闭" }).click();
+      // 客户表格不提供内部采购入口；附件下载仍可正常完成。
+      await expect(clientRow.getByRole("button", { name: "1688-CLIENT-LOCAL-001" })).toHaveCount(0);
 
       await clientPage.setViewportSize({ height: 844, width: 390 });
       await clientPage.goto("/client/wholesale/orders");
@@ -379,6 +379,15 @@ async function expectMobileOrderCards(
     }
     await expect(page.locator('[data-testid^="wholesale-order-card-"]').first())
       .toBeVisible();
+    if (role === "client") {
+      // 客户从实际卡片进入详情，确认页面围绕订单履约展示而非后台结汇资料。
+      await page.locator('[data-testid^="wholesale-order-card-"]').first().click();
+      const dialog = page.getByRole("dialog", { name: /^订单 / });
+      await expect(dialog.getByText("物流公司")).toBeVisible();
+      await expect(dialog.getByRole("heading", { name: "结汇记录" })).toHaveCount(0);
+      await expect(dialog.getByRole("heading", { name: "关联采购记录" })).toHaveCount(0);
+      await dialog.getByRole("button", { name: "关闭" }).click();
+    }
     await expectNoDocumentHorizontalOverflow(page);
     await expectNoVerticalText(page);
     await expectVisibleButtonsHaveTouchSize(page);

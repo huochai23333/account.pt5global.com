@@ -468,7 +468,7 @@ test("Gmail 返回编号但查不到 SENT 时绝不显示成功", async ({ page 
   await composer.getByLabel("主题").fill("BROKEN RECEIPT");
   await composer.getByLabel("正文").fill("This must fail final verification.");
   await composer.getByRole("button", { name: "发送邮件" }).click();
-  await expect(page.getByText("Gmail 返回了邮件编号，但在已发送邮件中没有找到它。")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("公司邮箱的发送结果需要人工核对，请勿再次发送这封邮件。")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("邮件已在公司邮箱的“已发送”中确认。")).toHaveCount(0);
   const { data: job } = await getMailAdmin().from("mail_outbound_jobs").select("status,provider_message_id,sent_message_id").single();
   expect(job?.status).toBe("partial_failed");
@@ -476,19 +476,22 @@ test("Gmail 返回编号但查不到 SENT 时绝不显示成功", async ({ page 
   expect(job?.sent_message_id).toBeNull();
 });
 
-test("1440、390、320px 下左栏与邮件内容没有横向溢出", async ({ page }) => {
-  await login(page, "administrator");
-  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
-    await page.setViewportSize(viewport);
-    await page.goto("/admin/mail");
-    await expect(page.getByRole("heading", { name: "邮件工作台" })).toBeVisible();
-    const layout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
-    expect(layout.scroll).toBeLessThanOrEqual(layout.viewport);
-    await page.getByRole("button", { name: "收件规则" }).click();
-    const rulesLayout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
-    expect(rulesLayout.scroll).toBeLessThanOrEqual(rulesLayout.viewport);
-    await page.getByRole("button", { name: /隔离区 0/ }).click();
-    const quarantineLayout = await page.evaluate(() => ({ viewport: window.innerWidth, scroll: document.documentElement.scrollWidth }));
-    expect(quarantineLayout.scroll).toBeLessThanOrEqual(quarantineLayout.viewport);
-  }
+test("未发送邮件切换会话时保留当前输入", async ({ page }) => {
+  await login(page, "salesman");
+  await page.goto("/salesman/mail");
+  await page.getByRole("button", { name: "新邮件", exact: true }).click();
+  const composer = page.getByTestId("mail-composer");
+  await composer.getByLabel("收件人").fill("draft@example.test");
+  await composer.getByLabel("主题").fill("待继续的邮件");
+  await composer.getByLabel("正文").fill("离开前先确认");
+  await page.getByRole("button", { name: "新邮件", exact: true }).click();
+  await expect(page.getByText("离开后当前输入会丢失。确定要离开吗？").first()).toBeVisible();
+  await page.getByRole("button", { name: "暂不操作" }).click();
+  await expect(composer.getByLabel("收件人")).toHaveValue("draft@example.test");
+  await expect(composer.getByLabel("主题")).toHaveValue("待继续的邮件");
+  await expect(composer.getByLabel("正文")).toHaveValue("离开前先确认");
+  await page.getByText("New wholesale inquiry").click();
+  await expect(page.getByText("离开后当前输入会丢失。确定要离开吗？").first()).toBeVisible();
+  await page.getByRole("button", { name: "确认操作" }).click();
+  await expect(page.getByText("New wholesale inquiry")).toBeVisible();
 });

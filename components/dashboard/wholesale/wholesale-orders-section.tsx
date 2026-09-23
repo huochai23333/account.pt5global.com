@@ -160,7 +160,7 @@ export function WholesaleOrdersSection({
         salesAccounts={salesAccounts}
       />
 
-      {page ? <WholesaleOrderSummary summary={page.summary} /> : null}
+      {page ? <WholesaleOrderSummary appliedFilters={pageState.appliedFilters} canViewInternalFields={page.canViewInternalFields} summary={page.summary} /> : null}
 
       <WholesaleOrdersListSection
         assessmentPanel={

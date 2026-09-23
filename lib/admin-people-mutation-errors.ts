@@ -3,6 +3,7 @@ export type AdminPeopleUpdateErrorCode =
   | "invalidInput"
   | "lastAdmin"
   | "noChange"
+  | "conflict"
   | "notFound"
   | "selfChange"
   | "serviceUnavailable"
@@ -39,6 +40,7 @@ export function getAdminPeopleUpdateErrorCode(
   }
   if (message.includes("admin_people_target_not_found")) return "notFound";
   if (message.includes("admin_people_no_change")) return "noChange";
+  if (message.includes("admin_people_conflict")) return "conflict";
   if (
     message.includes("admin_people_invalid_input") ||
     message.includes("admin_people_invalid_business_access") ||

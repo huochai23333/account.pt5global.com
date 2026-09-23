@@ -26,6 +26,13 @@ export async function getLinkedWholesalePurchaseOrders(
   orderIds: string[],
   canViewInternalFields: boolean,
 ): Promise<WholesaleRelatedQueryResult> {
+  if (!canViewInternalFields) {
+    // 客户不能直接读含采购成本和原始导入内容的底表，只通过受控接口取得关联单号。
+    const result = await supabase.rpc("get_client_linked_wholesale_purchases", {
+      p_order_ids: orderIds,
+    });
+    return { data: Array.isArray(result.data) ? result.data : null, error: result.error };
+  }
   const groupOrdersResult = await supabase
     .from("wholesale_1688_claim_group_orders")
     .select("claim_group_id,wholesale_order_id")
@@ -54,20 +61,11 @@ export async function getLinkedWholesalePurchaseOrders(
   ];
   if (purchaseOrderIds.length === 0) return { data: [], error: null };
 
-  // 客户只读取可公开字段，内部采购金额和导入原文不会进入浏览器响应。
-  const purchaseOrdersResult = canViewInternalFields
-    ? await supabase
-        .from("wholesale_1688_orders")
-        .select("*")
-        .in("id", purchaseOrderIds)
-        .order("created_at", { ascending: false })
-    : await supabase
-        .from("wholesale_1688_orders")
-        .select(
-          "id,batch_id,external_order_number,seller_name,item_summary,quantity,order_status,purchased_at,recipient_name,assisted_customer_id,assisted_at,imported_by_user_id,created_at",
-        )
-        .in("id", purchaseOrderIds)
-        .order("created_at", { ascending: false });
+  const purchaseOrdersResult = await supabase
+    .from("wholesale_1688_orders")
+    .select("*")
+    .in("id", purchaseOrderIds)
+    .order("created_at", { ascending: false });
   if (purchaseOrdersResult.error) return purchaseOrdersResult;
 
   const groupsById = new Map(groups.map((group) => [group.id, group]));

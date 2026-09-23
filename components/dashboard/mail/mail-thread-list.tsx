@@ -16,11 +16,13 @@ import { formatMailTime } from "./mail-display";
 export function MailThreadList(props: {
   summary: MailWorkspaceSummary | null;
   threads: MailThreadListItem[];
+  hasMore: boolean;
   filters: MailThreadQuery;
   selectedId: string | null;
   isAdmin: boolean;
   busy: boolean;
   onFilter: (filters: MailThreadQuery) => void;
+  onLoadMore: () => void;
   onOpen: (id: string) => void;
   onNew: () => void;
   selectedIds: string[];
@@ -91,6 +93,7 @@ export function MailThreadList(props: {
             </InteractiveButton>
           </div>
         ))}
+        {props.hasMore ? <div className="flex justify-center p-3"><Button disabled={props.busy} onClick={props.onLoadMore} size="compact" type="button" variant="outline">{t("loadMoreThreads")}</Button></div> : null}
       </div>
     </Surface>
   );

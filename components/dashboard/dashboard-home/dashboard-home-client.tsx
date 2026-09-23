@@ -8,6 +8,7 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import type { DashboardHomePageData } from "@/lib/dashboard-home";
 
 import { DashboardHomeCustomizer } from "./dashboard-home-customizer";
+import { DashboardHomeRoleTasks } from "./dashboard-home-role-tasks";
 import { createHomeTodoCopy } from "./dashboard-home-todo-display";
 
 type DashboardHomeClientProps = {
@@ -154,12 +155,15 @@ export function DashboardHomeClient({ initialData }: DashboardHomeClientProps) {
   const todoCopy = useMemo(() => createHomeTodoCopy(t), [t]);
 
   return (
-    <DashboardHomeCustomizer
+    <div className="space-y-4">
+      <DashboardHomeRoleTasks role={initialData.role} workspaceBusinessAccess={initialData.workspaceBusinessAccess} />
+      <DashboardHomeCustomizer
       copy={widgetCopy}
       customizerCopy={customizerCopy}
       initialData={initialData}
       locale={locale}
       todoCopy={todoCopy}
-    />
+      />
+    </div>
   );
 }

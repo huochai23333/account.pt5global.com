@@ -245,13 +245,15 @@ export function DashboardFilterField({
   children,
   controlId,
   label,
+  required = false,
 }: {
   children: ReactNode;
   controlId?: string;
   label: ReactNode;
+  required?: boolean;
 }) {
   return (
-    <Field controlId={controlId} density="filter" label={label}>
+    <Field controlId={controlId} density="filter" label={label} required={required}>
       {children}
     </Field>
   );

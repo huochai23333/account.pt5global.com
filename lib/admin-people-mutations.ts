@@ -5,12 +5,9 @@ import {
   type AdminPersonAccountUpdatePayload,
   type AdminPersonRow,
 } from "./admin-people";
-import { syncTargetAuthMetadata } from "./admin-people-auth-metadata";
+import { syncPendingTargetAuthMetadata } from "./admin-people-auth-metadata";
 import {
-  applyAdminPersonAccountChange,
-  prepareAdminPersonAccountChange,
-  setSalesmanBusinessAccess,
-  setWorkspaceBusinessAccess,
+  applyAdminPersonAccountBundle,
 } from "./admin-people-mutation-database";
 import { AdminPeopleMutationError } from "./admin-people-mutation-errors";
 import {
@@ -19,7 +16,6 @@ import {
   normalizeAdminPersonAccountUpdatePayload,
   resolveWorkspaceBusinessAccessForUpdate,
 } from "./admin-people-mutation-input";
-import { isSalesStaffRole } from "./sales-staff-roles";
 import { getCurrentSessionContext } from "./user-self-service";
 import { areWorkspaceBusinessAccessListsEqual } from "./workspace-business-access";
 
@@ -29,14 +25,11 @@ export {
   type AdminPeopleUpdateErrorCode,
 } from "./admin-people-mutation-errors";
 
-/**
- * 人员修改的薄编排层：验证操作者，计算差异，再按数据库、Auth 缓存顺序调度。
- * 输入规范化、具体 RPC 和 Auth 管理接口均不在此文件实现。
- */
+/** 人员修改先核对页面快照，再由数据库事务提交核心变更和审计。 */
 export async function updateAdminPersonAccount(
   supabase: SupabaseClient,
   input: AdminPersonAccountUpdatePayload,
-): Promise<AdminPersonRow> {
+): Promise<{ person: AdminPersonRow; outcome: "success" | "partial_failed" }> {
   const sessionContext = await getCurrentSessionContext(supabase);
   if (
     !sessionContext.user ||
@@ -54,6 +47,13 @@ export async function updateAdminPersonAccount(
   if (!currentPerson) throw new AdminPeopleMutationError("notFound");
   if (currentPerson.user_id === sessionContext.user.id) {
     throw new AdminPeopleMutationError("selfChange");
+  }
+  if (currentPerson.role !== payload.expected.role ||
+    currentPerson.status !== payload.expected.status ||
+    normalizeAccountCity(currentPerson.city) !== normalizeAccountCity(payload.expected.city) ||
+    !areWorkspaceBusinessAccessListsEqual(currentPerson.workspace_business_access, payload.expected.workspace_business_access) ||
+    [...currentPerson.salesman_business_boards].sort().join("|") !== [...payload.expected.salesman_business_boards].sort().join("|")) {
+    throw new AdminPeopleMutationError("conflict");
   }
 
   const accountWillChange =
@@ -74,30 +74,26 @@ export async function updateAdminPersonAccount(
     throw new AdminPeopleMutationError("noChange");
   }
 
-  if (accountWillChange || cityWillChange) {
-    await prepareAdminPersonAccountChange(supabase, payload);
-    await applyAdminPersonAccountChange(supabase, payload);
-    if (accountWillChange) await syncTargetAuthMetadata(payload);
-  }
-  if (businessAccessWillChange || accountWillChange) {
-    await setWorkspaceBusinessAccess(
-      supabase,
-      payload.targetUserId,
-      workspaceBusinessAccess,
-    );
-  }
-  if (isSalesStaffRole(currentPerson.role) || isSalesStaffRole(payload.nextRole)) {
-    await setSalesmanBusinessAccess(
-      supabase,
-      payload.targetUserId,
-      getSalesmanBusinessBoardsForRole(payload.nextRole),
-    );
+  const receipt = await applyAdminPersonAccountBundle(supabase, payload, workspaceBusinessAccess);
+  const expectedBoards = getSalesmanBusinessBoardsForRole(payload.nextRole);
+  if (!receipt.logId || receipt.targetUserId !== payload.targetUserId ||
+    receipt.role !== payload.nextRole || receipt.status !== payload.nextStatus ||
+    normalizeAccountCity(receipt.city) !== payload.nextCity ||
+    !areWorkspaceBusinessAccessListsEqual(receipt.workspaceBusinessAccess, workspaceBusinessAccess) ||
+    [...receipt.salesmanBusinessBoards].sort().join("|") !== [...expectedBoards].sort().join("|")) {
+    throw new AdminPeopleMutationError("unknown");
   }
 
   const updatedPerson = await getAdminPersonRowById(
     supabase,
     payload.targetUserId,
   );
-  if (!updatedPerson) throw new AdminPeopleMutationError("notFound");
-  return updatedPerson;
+  if (!updatedPerson || updatedPerson.role !== payload.nextRole ||
+    updatedPerson.status !== payload.nextStatus ||
+    normalizeAccountCity(updatedPerson.city) !== payload.nextCity ||
+    !areWorkspaceBusinessAccessListsEqual(updatedPerson.workspace_business_access, workspaceBusinessAccess)) {
+    throw new AdminPeopleMutationError("unknown");
+  }
+  const authSynced = !receipt.authSyncRequired || await syncPendingTargetAuthMetadata(payload.targetUserId);
+  return { person: updatedPerson, outcome: authSynced ? "success" : "partial_failed" };
 }

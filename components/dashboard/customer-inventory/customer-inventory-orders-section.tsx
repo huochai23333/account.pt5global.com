@@ -168,6 +168,14 @@ export function CustomerInventoryOrdersSection({
                       <InventoryOrderAmountSummary order={order} />
                     </WholesaleTd>
                     <WholesaleTd>
+                      <StatusBadge
+                        tone={getPaymentStatusTone(order.payment_status)}
+                      >
+                        {t(`paymentStatus.${order.payment_status}`)}
+                      </StatusBadge>
+                    </WholesaleTd>
+                    <WholesaleTd>
+                      {/* 行内顺序与表头保持一致，让视觉阅读和读屏关联到同一列。 */}
                       <InventoryOrderItemsButton
                         canManageOrders={canManageOrders}
                         count={
@@ -177,13 +185,6 @@ export function CustomerInventoryOrdersSection({
                         }
                         onClick={() => onItems(order)}
                       />
-                    </WholesaleTd>
-                    <WholesaleTd>
-                      <StatusBadge
-                        tone={getPaymentStatusTone(order.payment_status)}
-                      >
-                        {t(`paymentStatus.${order.payment_status}`)}
-                      </StatusBadge>
                     </WholesaleTd>
                     <WholesaleTd>
                       {formatInventoryDateTime(order.created_at)}

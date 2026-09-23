@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppRole } from "./auth-routing";
 import { normalizeAppRole, normalizeUserStatus } from "./auth-metadata";
 import { withRequestTimeout } from "./request-timeout";
+import { getPendingAuthMetadataUserIds } from "./admin-people-auth-metadata";
 import { type UserStatus, getCurrentSessionContext } from "./user-self-service";
 import { normalizeInteger, normalizeOptionalString } from "./value-normalizers";
 import {
@@ -90,10 +91,12 @@ export type AdminPeoplePageData = {
   currentViewerId: string | null;
   people: AdminPersonRow[];
   recentChanges: AdminPeopleChangeLogRow[];
+  pendingAuthSyncUserIds: string[];
 };
 
 export type AdminPersonAccountUpdatePayload = {
   targetUserId: string;
+  expected: Pick<AdminPersonRow, "role" | "status" | "city" | "workspace_business_access" | "salesman_business_boards">;
   nextRole: AdminPeopleRole;
   nextStatus: AdminPeopleStatus;
   nextCity?: string | null;
@@ -137,9 +140,10 @@ export async function getAdminPeoplePageData(
     return createEmptyAdminPeoplePageData(sessionContext.user?.id ?? null);
   }
 
-  const [people, recentChanges] = await Promise.all([
+  const [people, recentChanges, pendingAuthSyncUserIds] = await Promise.all([
     getAdminPeopleDirectory(supabase),
     getAdminPeopleChangeLogs(supabase, ADMIN_PEOPLE_CHANGE_LOG_LIMIT),
+    getPendingAuthMetadataUserIds(),
   ]);
 
   return {
@@ -147,6 +151,7 @@ export async function getAdminPeoplePageData(
     currentViewerId: sessionContext.user.id,
     people,
     recentChanges,
+    pendingAuthSyncUserIds,
   };
 }
 
@@ -198,6 +203,7 @@ function createEmptyAdminPeoplePageData(
     currentViewerId,
     people: [],
     recentChanges: [],
+    pendingAuthSyncUserIds: [],
   };
 }
 

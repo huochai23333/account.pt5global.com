@@ -32,12 +32,14 @@ export function AdminPeopleAccountDialog({
   onDraftRoleChange,
   onDraftStatusChange,
   onSave,
+  onRetryAuthSync,
   open,
   person,
   roleLabels,
   roleOptions,
   saving,
   selectedPersonIsCurrentViewer,
+  selectedPersonAuthSyncPending,
   selectedPersonName,
   statusLabels,
   statusOptions,
@@ -54,12 +56,14 @@ export function AdminPeopleAccountDialog({
   onDraftRoleChange: (value: string) => void;
   onDraftStatusChange: (value: string) => void;
   onSave: () => void;
+  onRetryAuthSync: () => void;
   open: boolean;
   person: AdminPersonRow | null;
   roleLabels: AdminPeopleViewModel["roleLabels"];
   roleOptions: AdminPeopleViewModel["roleOptions"];
   saving: boolean;
   selectedPersonIsCurrentViewer: boolean;
+  selectedPersonAuthSyncPending: boolean;
   selectedPersonName: string;
   statusLabels: AdminPeopleViewModel["statusLabels"];
   statusOptions: AdminPeopleViewModel["statusOptions"];
@@ -114,6 +118,15 @@ export function AdminPeopleAccountDialog({
             roleLabels={roleLabels}
             statusLabels={statusLabels}
           />
+
+          {selectedPersonAuthSyncPending ? (
+            <div className="rounded-control-default border border-border-subtle bg-surface-inset p-3">
+              <p className="mb-3 text-sm text-content-muted">{t("feedback.authSyncPending")}</p>
+              <Button disabled={saving} onClick={onRetryAuthSync} size="compact" type="button" variant="outline">
+                {t("dialog.retryAuthSync")}
+              </Button>
+            </div>
+          ) : null}
 
           <section className="min-w-0 border-t border-border-subtle pt-6">
             <div className="mb-4">

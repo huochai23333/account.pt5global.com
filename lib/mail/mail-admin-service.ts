@@ -274,12 +274,13 @@ export async function getAdminReportContext(identity: MailIdentity, start: strin
   const endDate = new Date(end);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate >= endDate) throw new Error("报告时间范围无效。");
   const supabase = getSupabaseServiceRoleClient();
-  const [{ data, error }, replyMetric] = await Promise.all([supabase.from("mail_threads")
+  const [{ data, error }, replyMetric, fullMetrics] = await Promise.all([supabase.from("mail_threads")
     .select("id,subject_enc,state,ref_code,last_message_at,assigned_user_id")
     .gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString())
     .eq("intake_status", "active").is("deleted_at", null).order("last_message_at", { ascending: false }).limit(100),
-  supabase.rpc("get_mail_average_first_reply_minutes", { p_start: startDate.toISOString(), p_end: endDate.toISOString() })]);
-  if (error || replyMetric.error) databaseError("邮件报告数据暂时无法读取。", error ?? replyMetric.error);
+  supabase.rpc("get_mail_average_first_reply_minutes", { p_start: startDate.toISOString(), p_end: endDate.toISOString() }),
+  supabase.rpc("get_mail_report_metrics", { p_start: startDate.toISOString(), p_end: endDate.toISOString() })]);
+  if (error || replyMetric.error || fullMetrics.error || !fullMetrics.data) databaseError("邮件报告数据暂时无法读取。", error ?? replyMetric.error ?? fullMetrics.error);
   const threads = data ?? [];
   const { data: messageRows, error: messageError } = threads.length === 0
     ? { data: [], error: null }
@@ -291,19 +292,16 @@ export async function getAdminReportContext(identity: MailIdentity, start: strin
     const threadId = message.thread_id as string;
     if (!latestTextByThread.has(threadId)) latestTextByThread.set(threadId, decryptContent(String(message.text_body_enc)).slice(0, 600));
   }
-  const distribution: Record<string, number> = {};
-  for (const thread of threads) {
-    const key = (thread.assigned_user_id as string | null) ?? "unassigned";
-    distribution[key] = (distribution[key] ?? 0) + 1;
-  }
+  // 指标使用完整报告时间段，代表性摘要仍限制为最近 100 条，避免抽样数量冒充总数。
+  const counts = fullMetrics.data as { inquiryCount: number; unassignedCount: number; waitingPt5Count: number; agentDistribution: Record<string, number> };
   return {
     range: { start: startDate.toISOString(), end: endDate.toISOString() },
     metrics: {
-      inquiryCount: threads.length,
-      unassignedCount: threads.filter((thread) => !thread.assigned_user_id).length,
-      waitingPt5Count: threads.filter((thread) => thread.state === "waiting_pt5").length,
+      inquiryCount: counts.inquiryCount,
+      unassignedCount: counts.unassignedCount,
+      waitingPt5Count: counts.waitingPt5Count,
       averageFirstReplyMinutes: replyMetric.data == null ? null : Number(replyMetric.data),
-      agentDistribution: distribution,
+      agentDistribution: counts.agentDistribution,
     },
     representatives: threads.map((thread) => ({
       id: thread.id as string,

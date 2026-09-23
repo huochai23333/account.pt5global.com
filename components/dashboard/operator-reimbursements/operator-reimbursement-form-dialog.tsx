@@ -24,6 +24,7 @@ type OperatorReimbursementFormDialogProps = {
     spentAtLabel: string;
   };
   feedback: { tone: FeedbackTone; message: string } | null;
+  fieldError: { field: keyof OperatorReimbursementFormState; message: string } | null;
   formState: OperatorReimbursementFormState;
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
@@ -38,6 +39,7 @@ type OperatorReimbursementFormDialogProps = {
 export function OperatorReimbursementFormDialog({
   copy,
   feedback,
+  fieldError,
   formState,
   onOpenChange,
   onSubmit,
@@ -59,14 +61,14 @@ export function OperatorReimbursementFormDialog({
       title={copy.createTitle}
     >
       <div className="grid gap-4 md:grid-cols-[0.8fr_1fr]">
-        <DashboardFormField label={copy.spentAtLabel} required>
+        <DashboardFormField controlId="reimbursement-spentAt" error={fieldError?.field === "spentAt" ? fieldError.message : undefined} label={copy.spentAtLabel} required>
           <DatePicker
             onValueChange={(value) => onUpdateField("spentAt", value)}
             value={formState.spentAt}
           />
         </DashboardFormField>
 
-        <DashboardFormField label={copy.amountLabel} required>
+        <DashboardFormField controlId="reimbursement-amount" error={fieldError?.field === "amount" ? fieldError.message : undefined} label={copy.amountLabel} required>
           <FormControls.Input
             inputMode="decimal"
             min="0"
@@ -78,7 +80,7 @@ export function OperatorReimbursementFormDialog({
         </DashboardFormField>
       </div>
 
-      <DashboardFormField label={copy.contentLabel} required>
+      <DashboardFormField controlId="reimbursement-content" error={fieldError?.field === "content" ? fieldError.message : undefined} label={copy.contentLabel} required>
         <DashboardFormTextarea
           onChange={(event) => onUpdateField("content", event.target.value)}
           placeholder={copy.contentPlaceholder}

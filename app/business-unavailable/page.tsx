@@ -51,8 +51,11 @@ export default async function BusinessUnavailablePage({
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-center">
               {role && role !== "client" ? (
                 <>
-                  <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
-                    href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
+                  {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}
+                  <span className="hidden md:inline-flex">
+                    <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
+                      href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
+                  </span>
                   {role === "administrator" || role === "salesman" ? <Link
                     className={cn(
                       buttonVariants({ size: "default", variant: "primary" }),

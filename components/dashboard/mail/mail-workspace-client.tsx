@@ -26,6 +26,7 @@ export function MailWorkspaceClient(props: {
   backHref: string;
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
+  initialNextCursor: string | null;
   initialAgents: MailAgentProfile[];
   initialOwnProfile: MailAgentProfile | null;
   initialQuarantine: MailQuarantineItem[];
@@ -33,6 +34,7 @@ export function MailWorkspaceClient(props: {
   initialMetrics: AdminMailMetrics | null;
   initialError: string | null;
   isAdmin: boolean;
+  viewerId: string;
 }) {
   const t = useTranslations("MailWorkspace");
   const state = useMailWorkspace(props);
@@ -47,8 +49,8 @@ export function MailWorkspaceClient(props: {
   });
   const feedback = intake.feedback ?? state.feedback;
   const busy = intake.busy ?? state.busy;
-  const startNewMessage = () => {
-    state.startNew();
+  const startNewMessage = async () => {
+    if (!await state.startNew()) return;
     /*
       窄屏会把邮件列表和编辑器上下排列。状态更新完成后的下一帧再滚动，
       可以保证目标面板已经渲染；减少动态效果的用户则使用即时滚动。
@@ -76,7 +78,7 @@ export function MailWorkspaceClient(props: {
       {view === "inbox" ? <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.6fr)]">
         <MailThreadList
           bulkRuleOption={bulkRuleOption}
-          busy={state.busy === "threads"}
+          busy={state.busy === "threads" || state.busy === "threads-more"}
           filters={state.filters}
           isAdmin={props.isAdmin}
           onBulkQuarantine={() => {
@@ -85,6 +87,7 @@ export function MailWorkspaceClient(props: {
           }}
           onBulkRuleOption={setBulkRuleOption}
           onFilter={(filters) => void state.loadThreads(filters)}
+          onLoadMore={() => void state.loadMoreThreads()}
           onNew={startNewMessage}
           onOpen={(id) => void state.openThread(id)}
           onToggleSelected={intake.toggleActiveSelection}
@@ -92,8 +95,9 @@ export function MailWorkspaceClient(props: {
           selectedIds={intake.selectedActiveIds}
           summary={state.summary}
           threads={state.threads}
+          hasMore={Boolean(state.nextCursor)}
         />
-        <MailThreadDetailPanel agents={state.enabledAgents} aiDraft={state.aiDraft} busy={busy} canDelete={props.isAdmin} canSend={Boolean(state.summary?.senderProfileReady)} composer={state.composer} detail={state.selected} onAssign={(id) => void state.assign(id)} onComposer={state.setComposer} onDelete={() => void state.deleteSelected()} onFiles={(files) => void state.uploadFiles(files)} onQuarantine={() => state.selected ? void intake.quarantineThreads([{ threadId: state.selected.id, expectedVersion: state.selected.version }]) : undefined} onSend={() => void state.send()} onState={(value) => void state.updateState(value)} onSuggest={() => void state.generateReply()} />
+        <MailThreadDetailPanel agents={state.enabledAgents} aiDraft={state.aiDraft} busy={busy} canDelete={props.isAdmin} canSend={Boolean(state.summary?.senderProfileReady)} composer={state.composer} detail={state.selected} onAssign={(id) => void state.assign(id)} onComposer={state.setComposer} onDelete={() => void state.deleteSelected()} onFiles={(files) => void state.uploadFiles(files)} onQuarantine={() => state.selected ? void intake.quarantineThreads([{ threadId: state.selected.id, expectedVersion: state.selected.version }]) : undefined} onSend={() => void state.send()} onState={(value) => void state.updateState(value)} onSuggest={() => void state.generateReply()} pendingSend={state.pendingSend} />
       </div> : null}
       {view === "quarantine" && props.isAdmin ? <MailQuarantinePanel busy={intake.busy} detail={intake.selectedQuarantine} items={intake.quarantine} onDelete={(item) => void intake.deleteQuarantine(item)} onOpen={(id) => void intake.openQuarantine(id)} onRefresh={() => void intake.reloadQuarantine()} onRestore={(item) => void intake.restore(item)} /> : null}
       {view === "rules" && props.isAdmin ? <MailIntakeRulesPanel busy={intake.busy} onCreate={(rule) => void intake.createRule(rule)} onDelete={(rule) => void intake.deleteRule(rule)} onRules={intake.setRules} onSave={(rule) => void intake.updateRule(rule)} rules={intake.rules} /> : null}

@@ -1,10 +1,9 @@
-import { randomBytes } from "node:crypto";
-
 import sanitizeHtml from "sanitize-html";
 
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
+import { UnsupportedInboundMessageError } from "./mail-inbound-errors";
 import {
   getFullMessage,
   getMessageAttachment,
@@ -16,13 +15,14 @@ import {
   type GmailPayloadPart,
 } from "./mail-google";
 import { decideMailIntake } from "./mail-intake";
-import { loadDecryptedMailIntakeRules, recordMailIntakeRuleHit } from "./mail-intake-service";
+import { loadDecryptedMailIntakeRules } from "./mail-intake-service";
 import { extractEmailAddresses } from "./mail-recipient-addresses";
 import { loadInboundRecipientHistory, recordIgnoredUnknownInbound } from "./mail-recipient-service";
 import { decideMailRouting } from "./mail-routing";
 import { createUniqueMailRef, loadMailRoutingAgents } from "./mail-routing-service";
 import { createBlindIndex, encryptMailValue } from "./mail-security";
-import { cleanAttachmentFilename, deleteEncryptedObjects, scanAttachment, uploadEncryptedObject } from "./mail-storage";
+import { cleanAttachmentFilename, scanAttachment, uploadEncryptedObject } from "./mail-storage";
+import { deleteUnreferencedInboundObjects } from "./mail-inbound-persistence";
 
 type EventRow = {
   id: string;
@@ -52,8 +52,11 @@ async function collectParts(
       ? (await getMessageAttachment(accessToken, messageId, part.body.attachmentId)).data
       : "");
     const bytes = Buffer.from(data, "base64url");
-    if (bytes.length > 10 * 1024 * 1024) throw new Error("收到的单个附件超过 10 MiB，已停止处理此邮件。");
-    output.attachments.push({ filename: cleanAttachmentFilename(part.filename), contentType, bytes });
+    if (bytes.length > 10 * 1024 * 1024) throw new UnsupportedInboundMessageError("attachment_too_large");
+    let filename: string;
+    try { filename = cleanAttachmentFilename(part.filename); }
+    catch { throw new UnsupportedInboundMessageError("blocked_attachment"); }
+    output.attachments.push({ filename, contentType, bytes });
   } else if (contentType === "text/plain") {
     output.texts.push(decodeBody(part.body?.data));
   } else if (contentType === "text/html") {
@@ -81,9 +84,9 @@ function parseEnvelope(message: GmailFullMessage) {
 async function parseMessage(accessToken: string, message: GmailFullMessage, envelope: ReturnType<typeof parseEnvelope>) {
   const output: { texts: string[]; html: string[]; attachments: ParsedAttachment[] } = { texts: [], html: [], attachments: [] };
   await collectParts(accessToken, message.id, message.payload, output);
-  if (output.attachments.length > 10) throw new Error("收到的附件数量超过 10 个，已停止处理此邮件。");
+  if (output.attachments.length > 10) throw new UnsupportedInboundMessageError("too_many_attachments");
   if (output.attachments.reduce((sum, item) => sum + item.bytes.length, 0) > 20 * 1024 * 1024) {
-    throw new Error("收到的附件合计超过 20 MiB，已停止处理此邮件。");
+    throw new UnsupportedInboundMessageError("attachments_too_large");
   }
   const htmlBody = sanitizeHtml(output.html.join("\n"), {
     allowedTags: ["p", "br", "div", "span", "strong", "b", "em", "i", "u", "ul", "ol", "li", "blockquote", "pre", "code", "table", "thead", "tbody", "tr", "th", "td", "a"],
@@ -120,7 +123,7 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   if (duplicate.data) return;
   const envelope = parseEnvelope(message);
   const customerEmail = extractEmailAddresses(envelope.from)[0];
-  if (!customerEmail) throw new Error("客户来信没有可识别的发件邮箱。");
+  if (!customerEmail) throw new UnsupportedInboundMessageError("missing_sender");
   const occurredAt = new Date(Number(message.internalDate ?? Date.now())).toISOString();
   const recipientHistory = await loadInboundRecipientHistory(mailboxId, customerEmail);
   if (!recipientHistory.known) {
@@ -163,23 +166,26 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   const staged = [] as Array<ParsedAttachment & { path: string; hash: string; status: "clean" | "quarantined"; error: string | null }>;
   try {
     for (const [index, attachment] of parsed.attachments.entries()) {
-      const path = `${mailboxId}/${message.id}/${index}-${randomBytes(5).toString("hex")}`;
+      const path = `${mailboxId}/${message.id}/${index}-${crypto.randomUUID().slice(0, 10)}`;
       const stored = await uploadEncryptedObject(path, encryptMailValue(attachment.bytes.toString("base64"), getMailEnv().contentKey));
       stagedPaths.push(path);
       const scan = await scanAttachment(attachment.bytes, attachment.filename);
       staged.push({ ...attachment, path, hash: stored.cipherSha256, status: scan.clean ? "clean" : "quarantined", error: scan.reason });
     }
 
-    let threadId = existing.data?.id as string | undefined;
-    if (!threadId) {
-      const { data: createdData, error: createdError } = await supabase.from("mail_threads").insert({
+    const targetIds = intake.status !== "active"
+      ? []
+      : routing.assignedMemberId ? [routing.assignedMemberId] : await listBoundAdministrators();
+    const notificationReason = routing.assignedMemberId ? "assigned_inbound" : "unassigned_inbound";
+    // 会话、邮件、附件元数据与提醒由一个数据库事务提交。这里只在事务确认后视为已归档。
+    const { data: receipt, error: commitError } = await supabase.rpc("commit_mail_inbound", {
+      p_thread: {
         mailbox_id: mailboxId,
         provider_thread_id: message.threadId,
         subject_enc: encryptMailValue(parsed.subject, getMailEnv().contentKey),
         customer_email_enc: encryptMailValue(customerEmail, getMailEnv().contentKey),
         customer_email_hash: createBlindIndex(customerEmail, getMailEnv().emailHashSecret),
-        assigned_user_id: intake.status === "active" ? routing.assignedMemberId : null,
-        state: "waiting_pt5",
+        assigned_user_id: routing.assignedMemberId,
         ref_code: refCode,
         routing_source: intake.status === "active" ? routing.source : "quarantine",
         routing_evidence: { ...routing.evidence, conflicting: routing.conflicting },
@@ -187,60 +193,21 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
         intake_status: intake.status,
         quarantine_reason: intake.reason,
         intake_rule_id: intake.ruleId,
-        quarantined_at: intake.status === "quarantined" ? new Date().toISOString() : null,
-        last_message_at: occurredAt,
-        last_inbound_at: occurredAt,
-      }).select("id").single();
-      if (createdError || !createdData) throw new Error("新邮件会话没有确认保存。", { cause: createdError });
-      threadId = createdData.id as string;
-      if (intake.status === "active" && routing.assignedMemberId) {
-        const { data: assignmentData, error: assignmentError } = await supabase.from("mail_assignment_events").insert({
-          thread_id: threadId,
-          assigned_user_id: routing.assignedMemberId,
-          reason: `自动分配：${routing.source}`,
-          thread_version: 1,
-        }).select("id").single();
-        if (assignmentError || !assignmentData) throw new Error("自动指派记录没有确认保存。", { cause: assignmentError });
-      }
-    } else {
-      const { data: updatedData, error: updatedError } = await supabase.from("mail_threads").update({
-        state: "waiting_pt5",
+        occurred_at: occurredAt,
+      },
+      p_message: {
+        provider_message_id: message.id,
+        rfc_message_id_hash: parsed.messageIdHeader ? createBlindIndex(parsed.messageIdHeader, getMailEnv().emailHashSecret) : null,
+        from_enc: encryptMailValue(parsed.from, getMailEnv().contentKey),
+        to_enc: encryptMailValue(JSON.stringify(parsed.to), getMailEnv().contentKey),
+        cc_enc: encryptMailValue(JSON.stringify(parsed.cc), getMailEnv().contentKey),
+        bcc_enc: encryptMailValue(JSON.stringify(parsed.bcc), getMailEnv().contentKey),
         subject_enc: encryptMailValue(parsed.subject, getMailEnv().contentKey),
-        customer_email_enc: encryptMailValue(customerEmail, getMailEnv().contentKey),
-        customer_email_hash: createBlindIndex(customerEmail, getMailEnv().emailHashSecret),
-        intake_status: intake.status,
-        quarantine_reason: intake.reason,
-        intake_rule_id: intake.ruleId,
-        quarantined_at: intake.status === "quarantined" ? new Date().toISOString() : null,
-        last_message_at: occurredAt,
-        last_inbound_at: occurredAt,
-        updated_at: new Date().toISOString(),
-      }).eq("id", threadId).select("id,version").single();
-      if (updatedError || updatedData?.id !== threadId) throw new Error("现有邮件会话没有确认更新。", { cause: updatedError });
-      const { data: versionData, error: versionError } = await supabase.from("mail_threads").update({ version: Number(updatedData.version) + 1 }).eq("id", threadId).eq("version", updatedData.version).select("id").single();
-      if (versionError || versionData?.id !== threadId) throw new Error("邮件会话版本没有确认推进。", { cause: versionError });
-    }
-
-    const { data: savedData, error: savedError } = await supabase.from("mail_messages").insert({
-      mailbox_id: mailboxId,
-      thread_id: threadId,
-      provider_message_id: message.id,
-      rfc_message_id_hash: parsed.messageIdHeader ? createBlindIndex(parsed.messageIdHeader, getMailEnv().emailHashSecret) : null,
-      direction: "inbound",
-      from_enc: encryptMailValue(parsed.from, getMailEnv().contentKey),
-      to_enc: encryptMailValue(JSON.stringify(parsed.to), getMailEnv().contentKey),
-      cc_enc: encryptMailValue(JSON.stringify(parsed.cc), getMailEnv().contentKey),
-      bcc_enc: encryptMailValue(JSON.stringify(parsed.bcc), getMailEnv().contentKey),
-      subject_enc: encryptMailValue(parsed.subject, getMailEnv().contentKey),
-      text_body_enc: encryptMailValue(parsed.textBody, getMailEnv().contentKey),
-      html_body_enc: encryptMailValue(parsed.htmlBody, getMailEnv().contentKey),
-      raw_headers_enc: encryptMailValue(JSON.stringify(parsed.headers), getMailEnv().contentKey),
-      occurred_at: occurredAt,
-    }).select("id").single();
-    if (savedError || !savedData) throw new Error("来信记录没有确认保存。", { cause: savedError });
-    if (staged.length > 0) {
-      const { data: insertedData, error: insertedError } = await supabase.from("mail_attachments").insert(staged.map((attachment) => ({
-        message_id: savedData.id,
+        text_body_enc: encryptMailValue(parsed.textBody, getMailEnv().contentKey),
+        html_body_enc: encryptMailValue(parsed.htmlBody, getMailEnv().contentKey),
+        raw_headers_enc: encryptMailValue(JSON.stringify(parsed.headers), getMailEnv().contentKey),
+      },
+      p_attachments: staged.map((attachment) => ({
         storage_path: attachment.path,
         filename_enc: encryptMailValue(attachment.filename, getMailEnv().contentKey),
         content_type_enc: encryptMailValue(attachment.contentType, getMailEnv().contentKey),
@@ -248,24 +215,21 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
         cipher_sha256: attachment.hash,
         scan_status: attachment.status,
         scan_error: attachment.error,
-      }))).select("id");
-      if (insertedError || (insertedData?.length ?? 0) !== staged.length) throw new Error("来信附件没有全部确认保存。", { cause: insertedError });
+      })),
+      p_target_user_ids: targetIds,
+      p_notification_reason: notificationReason,
+    }).single();
+    const committed = receipt as { attachment_count: number; notification_count: number; created: boolean } | null;
+    if (commitError || !committed ||
+        Number(committed.attachment_count) !== staged.length ||
+        Number(committed.notification_count) !== targetIds.length) {
+      throw new Error("来信归档结果没有全部确认。", { cause: commitError });
     }
-    if (intake.status === "active") {
-      const targetIds = routing.assignedMemberId ? [routing.assignedMemberId] : await listBoundAdministrators();
-      const reason = routing.assignedMemberId ? "assigned_inbound" : "unassigned_inbound";
-      if (targetIds.length > 0) {
-        const { data: notificationData, error: notificationError } = await supabase.from("mail_notifications").upsert(targetIds.map((userId) => ({
-          message_id: savedData.id,
-          target_user_id: userId,
-          reason,
-        })), { onConflict: "message_id,target_user_id,reason", ignoreDuplicates: true }).select("id");
-        if (notificationError || (notificationData?.length ?? 0) !== targetIds.length) throw new Error("新邮件提醒没有确认入队。", { cause: notificationError });
-      }
-    }
-    if (intake.ruleId) await recordMailIntakeRuleHit(intake.ruleId);
+    // 并发重放可能返回已有邮件，此轮上传的对象没有被引用，应按精确路径清理。
+    if (!committed.created) await deleteUnreferencedInboundObjects(stagedPaths);
+
   } catch (error) {
-    await deleteEncryptedObjects(stagedPaths).catch(() => undefined);
+    await deleteUnreferencedInboundObjects(stagedPaths).catch(() => undefined);
     throw error;
   }
 }
@@ -299,7 +263,29 @@ async function processEvent(event: EventRow) {
     }).select("id").single();
     if (auditError || !auditData) throw new Error("同步位置恢复审计没有确认保存。", { cause: auditError });
   }
-  for (const messageId of messageIds) await persistInboundMessage(event.mailbox_id, accessToken, await getFullMessage(accessToken, messageId));
+  for (const messageId of messageIds) {
+    const messageHash = createBlindIndex(messageId, getMailEnv().emailHashSecret);
+    const rejected = await supabase.from("mail_inbound_rejection_receipts").select("id")
+      .eq("mailbox_id", event.mailbox_id).eq("provider_message_hash", messageHash).maybeSingle();
+    if (rejected.error) throw new Error("来信隔离状态暂时无法确认。", { cause: rejected.error });
+    if (rejected.data) continue;
+    const message = await getFullMessage(accessToken, messageId);
+    try {
+      await persistInboundMessage(event.mailbox_id, accessToken, message);
+    } catch (error) {
+      if (!(error instanceof UnsupportedInboundMessageError)) throw error;
+      // 永久输入错误只记录不可逆编号和原因，不阻塞同批后续邮件或游标推进。
+      const occurredAt = new Date(Number(message.internalDate ?? Date.now())).toISOString();
+      const { data: receipt, error: recordError } = await supabase.rpc("record_mail_rejected_inbound", {
+        p_mailbox_id: event.mailbox_id,
+        p_provider_message_hash: messageHash,
+        p_reason: error.reason,
+        p_occurred_at: occurredAt,
+      }).single();
+      const recorded = receipt as { receipt_id: number } | null;
+      if (recordError || !recorded?.receipt_id) throw new Error("不支持来信的处理记录没有确认保存。", { cause: recordError });
+    }
+  }
   const now = new Date().toISOString();
   const data = await Promise.all([
     supabase.from("mail_shared_mailbox_watches").update({ history_id: nextHistoryId, last_notification_at: now, updated_at: now }).eq("mailbox_id", event.mailbox_id).select("mailbox_id").single(),

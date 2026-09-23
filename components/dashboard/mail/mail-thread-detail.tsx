@@ -21,6 +21,7 @@ export function MailThreadDetailPanel(props: {
   busy: string | null;
   aiDraft: string;
   canSend: boolean;
+  pendingSend: boolean;
   onComposer: (value: ComposerState) => void;
   onFiles: (files: File[]) => void;
   onSend: () => void;
@@ -44,7 +45,7 @@ export function MailThreadDetailPanel(props: {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inset"><Mail className="size-5" /></span>
           <div className="min-w-0"><h2 className="text-lg font-bold text-content-strong">{t("newTitle")}</h2><p className="mt-0.5 text-sm leading-5">{t("newDescription")}</p></div>
         </div>
-        <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest={false} onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} value={props.composer} />
+        <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest={false} onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} pendingSend={props.pendingSend} value={props.composer} />
       </Surface>
     );
   }
@@ -71,7 +72,7 @@ export function MailThreadDetailPanel(props: {
           </article>
         ))}
       </div>
-      <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} value={props.composer} />
+      <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} pendingSend={props.pendingSend} value={props.composer} />
     </Surface>
   );
 }

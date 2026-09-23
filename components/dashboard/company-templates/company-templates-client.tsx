@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { FileCode2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -26,6 +26,15 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<DashboardActionFeedback>(null);
   const [publishTarget, setPublishTarget] = useState<CompanyTemplateSummary | null | undefined>();
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    // 手机不提供模板编辑入口；从宽屏切到窄屏时也关闭已经打开的上传窗口。
+    const media = window.matchMedia("(min-width: 768px)");
+    const update = () => { setDesktop(media.matches); if (!media.matches) setPublishTarget(undefined); };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   function refresh(message: string) {
     setFeedback({ message, tone: "success" });
@@ -51,9 +60,9 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
   return (
     <DashboardPageShell
       feedback={feedback}
-      header={<DashboardListHeader actions={isAdmin ? <Button onClick={() => setPublishTarget(null)}><Plus className="size-4" />{t("actions.create")}</Button> : null} description={t("description")} title={t("title")} />}
+      header={<DashboardListHeader actions={isAdmin && desktop ? <Button onClick={() => setPublishTarget(null)}><Plus className="size-4" />{t("actions.create")}</Button> : null} description={t("description")} title={t("title")} />}
     >
-      {initialTemplates.length ? (
+      {!desktop ? <p className="rounded-xl bg-surface-inset p-5 text-sm text-content-muted">{t("viewer.desktopOnly")}</p> : initialTemplates.length ? (
         <div className="grid min-w-0 gap-5 xl:grid-cols-2">
           {initialTemplates.map((template) => <CompanyTemplateCard
             busy={pending}

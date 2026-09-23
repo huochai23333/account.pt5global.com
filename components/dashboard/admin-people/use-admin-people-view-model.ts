@@ -39,6 +39,7 @@ export function useAdminPeopleViewModel({
   const t = useTranslations("AdminPeople");
   const [people, setPeople] = useState(initialData.people);
   const [recentChanges, setRecentChanges] = useState(initialData.recentChanges);
+  const [pendingAuthSyncUserIds, setPendingAuthSyncUserIds] = useState(initialData.pendingAuthSyncUserIds);
   const [feedback, setFeedback] = useState<AdminPeopleFeedback | null>(null);
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] =
@@ -132,6 +133,7 @@ export function useAdminPeopleViewModel({
   const dialogOpen = selectedPerson !== null;
   const selectedPersonIsCurrentViewer =
     selectedPerson?.user_id === initialData.currentViewerId;
+  const selectedPersonAuthSyncPending = selectedPerson !== null && pendingAuthSyncUserIds.includes(selectedPerson.user_id);
   const accountWillChange =
     selectedPerson !== null &&
     (selectedPerson.role !== draftRole ||
@@ -196,11 +198,19 @@ export function useAdminPeopleViewModel({
 
     try {
       let savedAccountChange = false;
+      let savedOutcome: "success" | "partial_failed" = "success";
 
       if (accountWillChange || cityWillChange) {
         const response = await fetch("/api/admin/people/account", {
           body: JSON.stringify({
             targetUserId: selectedPerson.user_id,
+            expected: {
+              role: selectedPerson.role,
+              status: selectedPerson.status,
+              city: selectedPerson.city,
+              workspace_business_access: selectedPerson.workspace_business_access,
+              salesman_business_boards: selectedPerson.salesman_business_boards,
+            },
             nextRole: draftRole,
             nextStatus: draftStatus,
             nextCity: draftCity,
@@ -230,6 +240,11 @@ export function useAdminPeopleViewModel({
         }
 
         savedAccountChange = true;
+        savedOutcome = result.outcome ?? "partial_failed";
+        // Auth 同步失败后保留待处理人员，刷新页面也会从数据库重新读到这条补偿记录。
+        setPendingAuthSyncUserIds((ids) => savedOutcome === "partial_failed"
+          ? [...new Set([...ids, selectedPerson.user_id])]
+          : ids.filter((id) => id !== selectedPerson.user_id));
 
         setPeople((currentPeople) =>
           currentPeople.map((person) =>
@@ -244,14 +259,38 @@ export function useAdminPeopleViewModel({
 
       setSelectedPerson(null);
       setFeedback({
-        tone: "success",
-        message: savedAccountChange ? t("feedback.saved") : t("feedback.saved"),
+        tone: savedAccountChange && savedOutcome === "partial_failed" ? "info" : "success",
+        message: savedAccountChange && savedOutcome === "partial_failed" ? t("feedback.authSyncPending") : t("feedback.saved"),
       });
     } catch {
       setFeedback({
         tone: "error",
         message: t("errors.serviceUnavailable"),
       });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRetryAuthSync = async () => {
+    if (!selectedPerson || !selectedPersonAuthSyncPending || saving) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const response = await fetch("/api/admin/people/account/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: selectedPerson.user_id }),
+      });
+      const result: unknown = await response.json();
+      const succeeded = response.ok && typeof result === "object" && result !== null &&
+        "outcome" in result && result.outcome === "success";
+      if (succeeded) {
+        setPendingAuthSyncUserIds((ids) => ids.filter((id) => id !== selectedPerson.user_id));
+      }
+      setFeedback({ tone: succeeded ? "success" : "info", message: t(succeeded ? "feedback.authSyncComplete" : "feedback.authSyncRetryFailed") });
+    } catch {
+      setFeedback({ tone: "info", message: t("feedback.authSyncRetryFailed") });
     } finally {
       setSaving(false);
     }
@@ -278,6 +317,7 @@ export function useAdminPeopleViewModel({
     searchText,
     selectedPerson,
     selectedPersonIsCurrentViewer,
+    selectedPersonAuthSyncPending,
     selectedPersonName,
     statusFilter,
     statusLabels,
@@ -289,6 +329,7 @@ export function useAdminPeopleViewModel({
     handleDraftStatusChange,
     handleRoleFilterChange,
     handleSaveAccountChange,
+    handleRetryAuthSync,
     handleStatusFilterChange,
     openAccountDialog,
     setDraftNote,

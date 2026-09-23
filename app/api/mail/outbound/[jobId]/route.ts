@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { getOutboundStatus } from "@/lib/mail/mail-service";
+import { getOutboundStatus } from "@/lib/mail/mail-outbound-service";
 
 import { mailApiError } from "../../_shared";
 

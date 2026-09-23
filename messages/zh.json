@@ -261,12 +261,12 @@
   },
   "RegisterPage": {
     "title": "注册",
-    "asideTitle": "选择业务<br></br>开启专属工作台",
-    "asideDescription": "按步骤创建客户账号，并选择目前想了解的旅游或批发业务。",
+    "asideTitle": "创建账号<br></br>进入工作台",
+    "asideDescription": "填写邀请码、基本信息和登录密码，完成客户账号注册。",
     "noteTitle": "邀请码可选",
     "noteDescription": "有邀请码时可以填写，系统会为您匹配推荐关系；没有邀请码也可以直接注册。",
     "headerTitle": "注册账号",
-    "headerDescription": "只需四步即可创建账号，手机号和邀请码都可以稍后补充。",
+    "headerDescription": "按三步完成注册：邀请码、基本信息、密码与条款。手机号和邀请码可以不填。",
     "footerPrompt": "已有账号？",
     "footerLinkLabel": "返回登录",
     "mobileNoteTitle": "邀请码可选",
@@ -696,7 +696,7 @@
       "editTitle": "编辑费用",
       "editDescription": "修改后会同步更新费用记录。",
       "expenseMonthLabel": "所属月份",
-      "expenseDateLabel": "付款日期",
+      "expenseDateLabel": "付款日期（选填，可后补）",
       "titleLabel": "费用名称",
       "titlePlaceholder": "例如：办公室房租",
       "categoryLabel": "费用分类",
@@ -1017,6 +1017,15 @@
     },
     "creditDialogs": {
       "applyTitle": "申请订单信贷",
+      "estimateTitle": "提交前看一下申请金额",
+      "estimateChoose": "选择档位后显示预计金额。",
+      "estimateFixed": "安心周转额度：{amount}",
+      "estimateHalf": "订单助力额度预计：{amount}",
+      "estimateExchangeMissing": "订单助力额度还缺少换算汇率，金额需由财务确认。",
+      "estimateAllOrders": "长期合作额度按所有订单金额计算，金额需由财务确认。",
+      "estimateIncomplete": "本次合计金额将在审核时确认。",
+      "estimateTotal": "预计申请合计：{amount}",
+      "estimateImpact": "提交后可在信贷记录查看进度。审核通过前额度不会生效；这笔订单的金额信息会暂时锁定。到期未还本金会按月单利折算每日利息，期限和利率以审核结果为准。",
       "applyDescription": "可以同时选择多个不同档位。提交后，这笔订单的财务字段会暂时锁定。",
       "applySubmit": "提交申请",
       "applyOrder": "订单 {number}，购买金额 {amount}。",
@@ -1167,6 +1176,27 @@
       }
     },
     "ordersUi": {
+      "clientDetailDescription": "查看订单金额、物流信息和附件。如需协助，请联系负责此单的业务员。",
+      "clientColumns": {
+        "orderNumber": "订单号",
+        "orderedAt": "下单时间",
+        "payment": "订单金额",
+        "courier": "物流公司",
+        "contact": "负责业务员"
+      },
+      "compactColumns": {
+        "order": "订单号",
+        "customer": "客户",
+        "orderedAt": "下单时间",
+        "payment": "订单金额",
+        "courier": "物流公司",
+        "settlement": "结汇进度",
+        "actions": "操作",
+        "details": "查看详情",
+        "markSettled": "登记结汇",
+        "showAll": "查看全部字段",
+        "showCommon": "显示常用字段"
+      },
       "actions": {
         "edit": "修改订单"
       },
@@ -1182,6 +1212,10 @@
         "notGenerated": "未产生"
       },
       "summary": {
+        "currentRange": "当前筛选概览：{from}—{to}",
+        "allTime": "全期查单概览",
+        "expand": "（展开）",
+        "collapse": "（收起）",
         "orderCount": "订单",
         "customerPaymentRmb": "客户实付",
         "grossProfit": "毛利",
@@ -1562,6 +1596,21 @@
     }
   },
   "DashboardHome": {
+    "roleTasks": {
+      "title": "常用工作",
+      "description": "选择一项工作直接进入对应页面。",
+      "accounts": "处理账号",
+      "companyExpenses": "查看公司费用",
+      "creditOrders": "处理库存订单",
+      "exchangeRates": "查看汇率",
+      "leads": "跟进线索",
+      "mail": "处理邮件",
+      "my": "查看个人资料",
+      "orders": "查看批发订单",
+      "referrals": "查看推荐关系",
+      "reimbursements": "登记报销",
+      "settlements": "处理结汇发布"
+    },
     "title": "欢迎回来，{name}",
     "subtitle": "这里汇总当前工作台的最新公告和关键提醒，便于你先了解系统内的重要消息。",
     "unnamedUser": "同事",
@@ -3902,7 +3951,8 @@
       "nextCity": "城市",
       "cityPlaceholder": "填写城市，留空表示暂不填写",
       "note": "备注",
-      "notePlaceholder": "填写本次调整原因，方便后续核对"
+      "notePlaceholder": "填写本次调整原因，方便后续核对",
+      "retryAuthSync": "重试更新登录信息"
     },
     "details": {
       "basicTitle": "账号信息",
@@ -3965,13 +4015,17 @@
       "noTeam": "未加入团队"
     },
     "feedback": {
-      "saved": "账号信息已保存。对方下次登录或刷新页面后会看到新的身份、状态和资料。"
+      "saved": "账号信息已保存。对方下次登录或刷新页面后会看到新的身份、状态和资料。",
+      "authSyncPending": "账号已调整，登录信息尚未更新。请打开该账号并重试更新登录信息。",
+      "authSyncComplete": "登录信息已更新。",
+      "authSyncRetryFailed": "登录信息仍未更新，请稍后重试。"
     },
     "errors": {
       "forbidden": "当前账号不能调整人员账号。",
       "invalidInput": "请选择有效的身份、账号状态和城市。",
       "lastAdmin": "系统必须保留至少一个正常启用的管理员账号。",
       "noChange": "账号身份、状态和城市没有变化。",
+      "conflict": "这位人员的资料刚被其他人修改，请刷新后再调整。",
       "notFound": "没有找到要调整的人员账号。",
       "selfChange": "不能在这里调整自己的账号信息。",
       "serviceUnavailable": "账号调整暂时没有保存成功，请稍后再试。",
@@ -4214,6 +4268,7 @@
     },
     "rules": {
       "title": "认领与跟进规则",
+      "mobileSummary": "首次联系 3 天内，之后每 7 天跟进",
       "firstContact": {
         "title": "3 天内首次联系",
         "description": "认领后 3 天内没有记录首次联系，线索会自动退回大厅。"
@@ -4384,6 +4439,10 @@
     "states": {
       "emptyTitle": "当前没有符合条件的线索",
       "emptyDescription": "可以更换分类或搜索条件后再查看。",
+      "firstUseTitle": "还没有认领线索",
+      "firstUseDescription": "去线索大厅看看可以跟进的客户。",
+      "openHall": "去线索大厅",
+      "clearSearch": "清除搜索条件",
       "noPermissionTitle": "无法查看线索",
       "noPermissionDescription": "线索大厅只向管理员和业务员开放。"
     },
@@ -4701,6 +4760,7 @@
     "components_dashboard_wholesale_wholesale_order_edit_dialog": {
       "title": "修改批发订单",
       "description": "保存后会记录本次修改。结汇请回到订单列表登记每一笔结汇记录。",
+      "discardDraftConfirm": "还有没保存的修改。确定放弃并关闭吗？",
       "saveAction": "保存修改",
       "attribute001": "客户名",
       "text001": "选择客户",
@@ -4737,15 +4797,16 @@
       "text006": "部分结汇"
     },
     "components_dashboard_wholesale_wholesale_order_form_dialog": {
+      "discardDraftConfirm": "这笔订单还没有保存，确定要放弃当前填写的内容吗？",
       "attribute003": "客户名",
       "text001": "选择客户",
       "attribute004": "关联业务员",
       "text002": "暂不分配",
       "attribute005": "小单数量",
-      "attribute006": "产品采购金额",
-      "attribute007": "国际运费",
-      "attribute008": "其他费用",
-      "attribute009": "推荐佣金费用",
+      "attribute006": "产品采购金额（人民币）",
+      "attribute007": "国际运费（人民币）",
+      "attribute008": "其他费用（人民币）",
+      "attribute009": "推荐佣金费用（人民币）",
       "attribute010": "快递公司",
       "attribute011": "客户支付币种",
       "text003": "选择币种",
@@ -4780,9 +4841,6 @@
       "attribute006": "填写本次结汇金额",
       "attribute007": "结汇日期",
       "attribute001": "确认结汇"
-    },
-    "components_dashboard_wholesale_wholesale_order_summary": {
-      "text001": " 本月概览（点击展开） "
     },
     "components_dashboard_wholesale_wholesale_orders_mobile_list": {
       "attribute003": "业务员",
@@ -4918,6 +4976,7 @@
       "text001": " 新增推荐关系 "
     },
     "components_dashboard_wholesale_wholesale_settlement_release_dialogs": {
+      "selectCurrency": "请选择实际收款币种",
       "attribute003": "选择客户",
       "attribute010": "备注",
       "attribute004": "客户名称",
@@ -5121,6 +5180,9 @@
     "blockSender": "屏蔽发件人",
     "blockDomain": "屏蔽整个域名",
     "refreshMail": "刷新邮件",
+    "loadMoreThreads": "加载更多邮件",
+    "unsavedDraftTitle": "这封邮件还没有发送",
+    "unsavedDraftDescription": "离开后当前输入会丢失。确定要离开吗？",
     "emptyTitle": "当前范围没有邮件",
     "emptyDescription": "新邮件到达后会显示在这里。",
     "newTitle": "新建邮件",
@@ -5145,6 +5207,7 @@
     "suggestReply": "生成回复建议",
     "confirmingSend": "正在确认发送",
     "sendMail": "发送邮件",
+    "continueCheckingSend": "继续核对发送结果",
     "senderUnavailable": "当前账号还没有启用发件资料，请联系管理员配置后再发送。",
     "editableSuggestion": "这是一份可编辑建议，不会自动发送。",
     "companyMailbox": "公司邮箱",
@@ -5267,7 +5330,8 @@
     },
     "viewer": {
       "guideTitle": "模板使用指南",
-      "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。"
+      "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。",
+      "desktopOnly": "公司模板请在电脑上填写和打印。"
     },
     "errors": {
       "company_template_forbidden": "当前账号不能管理公司模板。",

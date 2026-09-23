@@ -18,6 +18,7 @@ export function MailComposer(props: {
    * 但只有已经启用发件资料的业务员才能真正提交发送任务。
    */
   canSend: boolean;
+  pendingSend: boolean;
   aiDraft: string;
   onChange: (value: ComposerState) => void;
   onFiles: (files: File[]) => void;
@@ -40,8 +41,8 @@ export function MailComposer(props: {
       <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <DashboardFilePicker disabled={props.busy !== null || !props.canSend} label={t("addAttachment")} multiple onFiles={props.onFiles} />
         {props.canSuggest ? <Button disabled={props.busy !== null} onClick={props.onSuggest} type="button" variant="outline">{props.busy === "ai-reply" ? <LoaderCircle className="size-4 animate-spin" /> : <Bot className="size-4" />}{t("suggestReply")}</Button> : null}
-        <Button className="sm:ml-auto" disabled={!props.canSend || props.busy !== null || hasUnsafeAttachment || !props.value.to.trim() || !props.value.subject.trim() || !props.value.body.trim()} onClick={props.onSend} type="button">
-          {props.busy === "send" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}{props.busy === "send" ? t("confirmingSend") : t("sendMail")}
+        <Button className="sm:ml-auto" disabled={!props.canSend || props.busy !== null || (!props.pendingSend && (hasUnsafeAttachment || !props.value.to.trim() || !props.value.subject.trim() || !props.value.body.trim()))} onClick={props.onSend} type="button">
+          {props.busy === "send" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}{props.busy === "send" ? t("confirmingSend") : props.pendingSend ? t("continueCheckingSend") : t("sendMail")}
         </Button>
       </div>
       {!props.canSend ? <p className="mt-3 text-xs leading-5 text-content-muted" data-testid="mail-sender-unavailable">{t("senderUnavailable")}</p> : null}

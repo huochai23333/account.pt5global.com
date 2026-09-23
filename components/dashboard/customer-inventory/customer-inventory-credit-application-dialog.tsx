@@ -3,6 +3,7 @@
 import * as FormControls from "@/components/ui/form-controls";
 
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,19 @@ export function CustomerInventoryCreditApplicationDialog({
   order,
   pendingKey,
   runAction,
+  usdToCurrencyRates,
 }: {
   credits: CustomerInventoryCreditApplication[];
   onClose: () => void;
   order: CustomerInventoryOrder;
   pendingKey: string | null;
   runAction: RunInventoryAction;
+  usdToCurrencyRates: Record<string, number | null>;
 }) {
   const t = useTranslations("CustomerInventory");
   const actionKey = `apply:${order.id}`;
   const formId = `inventory-credit-apply-${order.id}`;
+  const [selectedTiers, setSelectedTiers] = useState<Set<string>>(() => new Set());
   const customerCredits = credits.filter(
     (credit) => credit.customer_id === order.customer_id,
   );
@@ -56,6 +60,12 @@ export function CustomerInventoryCreditApplicationDialog({
     (tier) => !(tier === "fixed_200_usd" && fixedQualified) &&
       !openTiers.has(tier),
   );
+  const usdRate = order.currency === "USD" ? 1 : usdToCurrencyRates[order.currency];
+  const halfOrderUsd = usdRate && usdRate > 0 ? Math.round(Number(order.purchase_amount) / usdRate * 50) / 100 : null;
+  const estimatedUsd = (selectedTiers.has("fixed_200_usd") ? 200 : 0)
+    + (selectedTiers.has("single_order_50") && halfOrderUsd !== null ? halfOrderUsd : 0);
+  const estimateIncomplete = selectedTiers.has("all_orders_5")
+    || (selectedTiers.has("single_order_50") && halfOrderUsd === null);
 
   async function handleSubmit(formData: FormData) {
     const tiers = availableTiers.filter(
@@ -137,6 +147,7 @@ export function CustomerInventoryCreditApplicationDialog({
           const unavailable = openTiers.has(tier);
           return (
             <FormControls.ChoiceField
+              checked={selectedTiers.has(tier)}
               description={
                 unavailable
                   ? `${t(`tierDescriptions.${tier}`)} ${t("creditDialogs.tierAlreadyOpen")}`
@@ -146,9 +157,25 @@ export function CustomerInventoryCreditApplicationDialog({
               key={tier}
               label={t(`tiers.${tier}`)}
               name={`tier:${tier}`}
+              onChange={(event) => setSelectedTiers((current) => {
+                const next = new Set(current);
+                if (event.target.checked) next.add(tier); else next.delete(tier);
+                return next;
+              })}
             />
           );
         })}
+
+        <div className="rounded-record-card border border-border-subtle bg-surface-inset px-4 py-3 text-sm leading-6 text-content-strong" aria-live="polite">
+          <p className="font-semibold">{t("creditDialogs.estimateTitle")}</p>
+          {selectedTiers.size === 0 ? <p className="text-content-muted">{t("creditDialogs.estimateChoose")}</p> : <>
+            {selectedTiers.has("fixed_200_usd") ? <p>{t("creditDialogs.estimateFixed", { amount: formatInventoryMoney(200, "USD") })}</p> : null}
+            {selectedTiers.has("single_order_50") ? <p>{halfOrderUsd === null ? t("creditDialogs.estimateExchangeMissing") : t("creditDialogs.estimateHalf", { amount: formatInventoryMoney(halfOrderUsd, "USD") })}</p> : null}
+            {selectedTiers.has("all_orders_5") ? <p>{t("creditDialogs.estimateAllOrders")}</p> : null}
+            {estimateIncomplete ? <p>{t("creditDialogs.estimateIncomplete")}</p> : <p className="font-semibold">{t("creditDialogs.estimateTotal", { amount: formatInventoryMoney(estimatedUsd, "USD") })}</p>}
+          </>}
+          <p className="mt-2 text-content-muted">{t("creditDialogs.estimateImpact")}</p>
+        </div>
 
         <FormControls.Field label={t("fields.notes")}>
           <FormControls.Textarea className="min-h-28 py-3" name="notes" />

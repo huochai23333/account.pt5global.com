@@ -143,15 +143,11 @@ export function WholesaleOrdersTable({
               <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text016" />
             </WholesaleTh>
           ) : null}
-          <WholesaleTh>
-            <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text017" />
-          </WholesaleTh>
-          <WholesaleTh>
-            <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text018" />
-          </WholesaleTh>
-          <WholesaleTh>
-            <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text019" />
-          </WholesaleTh>
+          {canViewInternalFields ? <>
+            <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text017" /></WholesaleTh>
+            <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text018" /></WholesaleTh>
+            <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text019" /></WholesaleTh>
+          </> : null}
           {canViewInternalFields ? (
             <WholesaleTh>
               <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text020" />
@@ -315,24 +311,11 @@ export function WholesaleOrdersTable({
                     {order.payment_platform ?? t("fallbacks.notRecorded")}
                   </WholesaleTd>
                 ) : null}
-                <WholesaleTd>
-                  {formatOptionalCurrency(
-                    order.gross_profit,
-                    t("fallbacks.afterSettlement"),
-                  )}
-                </WholesaleTd>
-                <WholesaleTd>
-                  {formatPercent(
-                    order.gross_margin,
-                    t("fallbacks.notGenerated"),
-                  )}
-                </WholesaleTd>
-                <WholesaleTd>
-                  {formatOptionalCurrency(
-                    order.unit_gross_profit,
-                    t("fallbacks.afterSettlement"),
-                  )}
-                </WholesaleTd>
+                {canViewInternalFields ? <>
+                  <WholesaleTd>{formatOptionalCurrency(order.gross_profit, t("fallbacks.afterSettlement"))}</WholesaleTd>
+                  <WholesaleTd>{formatPercent(order.gross_margin, t("fallbacks.notGenerated"))}</WholesaleTd>
+                  <WholesaleTd>{formatOptionalCurrency(order.unit_gross_profit, t("fallbacks.afterSettlement"))}</WholesaleTd>
+                </> : null}
                 {canViewInternalFields ? (
                   <WholesaleTd>{formatDate(order.order_month)}</WholesaleTd>
                 ) : null}

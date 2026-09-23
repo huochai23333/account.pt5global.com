@@ -5,8 +5,9 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { Surface } from "@/components/ui/surface";
 import type { CompanyTemplateSummary } from "@/lib/company-templates/model";
 import { cn } from "@/lib/utils";
+import { CompanyTemplateDesktopFrame } from "./company-template-desktop-frame";
 
-/** 查看器不解析或改写上传的 HTML，只提供受限 iframe；手机端用横向视口保证原始宽表和工具栏都能完整操作。 */
+/** 公司模板需要宽屏连续录入；查看器只负责页面组装，实际窗口由桌面限定组件控制。 */
 export function CompanyTemplateViewer({ guide, template, text, workspace }: {
   guide: boolean;
   template: CompanyTemplateSummary;
@@ -25,14 +26,8 @@ export function CompanyTemplateViewer({ guide, template, text, workspace }: {
         {!guide && template.currentVersion.guide_sha256 ? <Link className={cn(buttonVariants({ variant: "secondary", size: "compact" }))} href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
       </div>
     </Surface>
-    <Surface as="div" className="overflow-x-auto" padding={null}>
-      <iframe
-        className="h-[calc(100vh-13rem)] min-h-[680px] w-full min-w-[760px] bg-surface-panel lg:min-w-0"
-        referrerPolicy="no-referrer"
-        sandbox="allow-scripts allow-forms allow-modals allow-downloads allow-popups allow-popups-to-escape-sandbox"
-        src={src}
-        title={guide ? text("viewer.guideTitle") : template.name}
-      />
+    <Surface as="div" className="overflow-hidden" padding={null}>
+      <CompanyTemplateDesktopFrame notice={text("viewer.desktopOnly")} src={src} title={guide ? text("viewer.guideTitle") : template.name} />
     </Surface>
   </section>;
 }

@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 
-import { InteractiveButton as DesignButton } from "@/components/ui/button";
+import { Button, InteractiveButton as DesignButton } from "@/components/ui/button";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
 import { UserCog, UsersRound } from "lucide-react";
@@ -71,12 +71,20 @@ export function WholesaleCustomerDirectory({
                 <tbody>
                   {customers.map((customer) => (
                     <tr
-                      className="cursor-pointer transition-colors hover:bg-surface-inset"
+                      className="transition-colors hover:bg-surface-inset"
                       key={customer.id}
-                      onClick={() => onSelect(customer)}
                     >
                       <WholesaleTd className="whitespace-normal">
-                        <p className="font-semibold">{customer.unique_name}</p>
+                        {/* 客户名称是真正的键盘入口，弹窗关闭时可回到触发按钮。 */}
+                        <Button
+                          onClick={() => onSelect(customer)}
+                          size="compact"
+                          type="button"
+                          variant="ghost"
+                          wrap
+                        >
+                          {customer.unique_name}
+                        </Button>
                         <p className="mt-1 text-xs text-content-muted">
                           {customer.other_names.length > 0
                             ? customer.other_names.join("、")

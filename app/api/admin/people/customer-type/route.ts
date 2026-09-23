@@ -16,6 +16,7 @@ const STATUS_BY_ERROR_CODE = {
   invalidInput: 400,
   lastAdmin: 409,
   noChange: 409,
+  conflict: 409,
   notFound: 404,
   selfChange: 409,
   serviceUnavailable: 503,
