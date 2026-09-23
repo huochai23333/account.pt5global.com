@@ -21,7 +21,7 @@ type AdminShellMobileNavProps = {
   groups: readonly AdminShellNavGroup[];
 };
 
-/** 移动导航保持完整菜单下拉，不参与桌面业务分组偏好的读取和保存。 */
+/** 移动导航保留顶部菜单，展开时展示当前账号可访问的完整板块清单。 */
 export function AdminShellMobileNav({
   emptyGroupsLabel,
   globalItems,

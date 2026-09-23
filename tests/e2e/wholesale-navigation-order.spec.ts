@@ -17,12 +17,14 @@ for (const role of ["administrator", "salesman"] as const) {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(`${prefix}leads`);
       const aside = page.locator("aside").first();
-      const group = aside.getByRole("button", { name: locale === "zh" ? "批发业务" : "Wholesale Business", exact: true });
-      await expect(group).toBeVisible();
-      if (await group.getAttribute("aria-expanded") !== "true") await group.click();
+      // 桌面侧栏直接展示全部板块，标题不再控制收起或展开。
+      await expect(aside.getByText(locale === "zh" ? "批发业务" : "Wholesale Business", { exact: true })).toBeVisible();
+      await expect(aside.getByRole("button", { name: locale === "zh" ? "批发业务" : "Wholesale Business", exact: true })).toHaveCount(0);
 
       const desktopLinks = aside.locator(`a[href^="${prefix}"]`);
       await expect(desktopLinks).toHaveCount(expected.length);
+      await expect(desktopLinks.first()).toBeVisible();
+      await expect(desktopLinks.last()).toBeVisible();
       expect(await desktopLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href")?.split("/").pop()))).toEqual(expected);
       await expect(desktopLinks.nth(0)).toHaveText(locale === "zh" ? "线索" : "Leads");
       await expect(desktopLinks.nth(1)).toHaveText(locale === "zh" ? "客户管理" : "Customer Management");

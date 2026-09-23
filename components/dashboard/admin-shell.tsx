@@ -34,7 +34,6 @@ import {
   EMPTY_WORKSPACE_ANNOUNCEMENTS_STATE,
   getWorkspaceAnnouncementsState,
 } from "@/lib/workspace-announcements";
-import { getCurrentWorkspaceNavigationPreference } from "@/lib/workspace-navigation-preferences";
 
 type WorkspaceConfig = {
   accountLabel: string;
@@ -65,13 +64,11 @@ export async function AdminShell({
   const [
     t,
     initialAnnouncementsState,
-    initialNavigationPreference,
     systemAttentionCount,
     locale,
   ] = await Promise.all([
     getTranslations("DashboardShell"),
     getInitialWorkspaceAnnouncementsState(),
-    getInitialWorkspaceNavigationPreference(),
     getInitialSystemAttentionCount(config),
     getLocale(),
   ]);
@@ -114,10 +111,6 @@ export async function AdminShell({
                         emptyGroupsLabel={t("business.noAccess")}
                         globalItems={workspace.globalNavItems}
                         groups={workspace.navGroups}
-                        initialOpenGroupKeys={
-                          initialNavigationPreference?.open_business_keys ??
-                          null
-                        }
                         mode="desktop"
                       />
 
@@ -163,10 +156,6 @@ export async function AdminShell({
                         emptyGroupsLabel={t("business.noAccess")}
                         globalItems={workspace.globalNavItems}
                         groups={workspace.navGroups}
-                        initialOpenGroupKeys={
-                          initialNavigationPreference?.open_business_keys ??
-                          null
-                        }
                         mode="mobile"
                       />
                     </div>
@@ -193,17 +182,6 @@ async function getInitialWorkspaceAnnouncementsState() {
     return await getWorkspaceAnnouncementsState(supabase);
   } catch {
     return EMPTY_WORKSPACE_ANNOUNCEMENTS_STATE;
-  }
-}
-
-async function getInitialWorkspaceNavigationPreference() {
-  try {
-    const supabase = await getServerSupabaseClient();
-
-    return await getCurrentWorkspaceNavigationPreference(supabase);
-  } catch {
-    // 新账号没有偏好或云端暂时不可用时，导航组件会继续使用原来的默认展开规则。
-    return null;
   }
 }
 

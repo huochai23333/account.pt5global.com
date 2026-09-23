@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
-import {
-  restoreDefaultAdminBusinessGroups,
-  setDesktopBusinessGroupExpanded,
-} from "./helpers/workspace-navigation";
 
 test.describe("global review center entrypoint", () => {
   test("administrator review center is a global desktop navigation item", async ({
@@ -19,25 +15,22 @@ test.describe("global review center entrypoint", () => {
       name: "审核中心",
       exact: true,
     });
-    const wholesaleGroupButton = sidebar.getByRole("button", {
-      name: "批发业务",
-      exact: true,
-    });
+    const wholesaleGroupLabel = sidebar.getByText("批发业务", { exact: true });
 
     await expect(reviewLink).toHaveAttribute("href", "/admin/reviews");
     await expect(reviewLink).toHaveCount(1);
 
-    // 顶层导航的前两个入口必须固定为首页和审核中心，避免以后又把审核中心塞回业务分组。
+    // 审核中心属于全局入口，应位于业务板块标题之前。
     const topLevelLabels = await navigation
-      .locator(":scope > a, :scope > div > button")
+      .locator(":scope > a, :scope > div > p")
       .allTextContents();
-    expect(topLevelLabels.slice(0, 2).map((label) => label.trim())).toEqual([
-      "首页",
-      "审核中心",
-    ]);
+    const labels = topLevelLabels.map((label) => label.trim());
+    expect(labels[0]).toBe("首页");
+    expect(labels.indexOf("审核中心")).toBeGreaterThan(0);
+    expect(labels.indexOf("审核中心")).toBeLessThan(labels.indexOf("批发业务"));
 
-    await setDesktopBusinessGroupExpanded(page, "批发业务", false);
-    await expect(wholesaleGroupButton).toHaveAttribute("aria-expanded", "false");
+    await expect(wholesaleGroupLabel).toBeVisible();
+    await expect(sidebar.getByRole("button", { name: "批发业务", exact: true })).toHaveCount(0);
     await expect(reviewLink).toBeVisible();
 
     // 页面总宽度不能超过浏览器可视宽度，否则侧栏或新版系统名称会造成横向滚动。
@@ -46,7 +39,6 @@ test.describe("global review center entrypoint", () => {
     );
     expect(desktopHasHorizontalOverflow).toBe(false);
 
-    await restoreDefaultAdminBusinessGroups(page);
   });
 
   test("administrator review center stays global in mobile navigation", async ({

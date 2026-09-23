@@ -12,10 +12,6 @@ import {
   fillDateControl,
 } from "./helpers/date-control";
 import { expectSelectValue } from "./helpers/select-control";
-import {
-  restoreDefaultAdminBusinessGroups,
-  setDesktopBusinessGroupExpanded,
-} from "./helpers/workspace-navigation";
 
 type WorkspaceEntry = {
   paths: readonly string[];
@@ -84,7 +80,7 @@ test.describe("workspace entrypoint regression", () => {
     });
   }
 
-  test("desktop business group can collapse while the current section is active", async ({
+  test("desktop wholesale sections remain available after navigation", async ({
     page,
   }) => {
     await loginAs(page, "administrator");
@@ -93,37 +89,16 @@ test.describe("workspace entrypoint regression", () => {
     await expectNotForbiddenPage(page);
 
     const sidebar = page.locator("aside").first();
-    const wholesaleGroupButton = sidebar.getByRole("button", {
-      name: "批发业务",
-    });
+    const wholesaleGroupLabel = sidebar.getByText("批发业务", { exact: true });
     const wholesaleOrdersLink = sidebar.getByRole("link", {
       name: "批发订单",
     });
 
-    await expect(wholesaleGroupButton).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    await expect(wholesaleGroupLabel).toBeVisible();
+    await expect(sidebar.getByRole("button", { name: "批发业务" })).toHaveCount(0);
     await expect(wholesaleOrdersLink).toBeVisible();
-
-    await setDesktopBusinessGroupExpanded(page, "批发业务", false);
-
-    await expect(wholesaleGroupButton).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    await expect(wholesaleOrdersLink).toBeHidden();
-
-    await setDesktopBusinessGroupExpanded(page, "批发业务", true);
-
-    await expect(wholesaleGroupButton).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    await expect(wholesaleOrdersLink).toBeVisible();
-
     await page.goto("/admin/home");
-    await restoreDefaultAdminBusinessGroups(page);
+    await expect(wholesaleOrdersLink).toBeVisible();
   });
 
   for (const entry of [{ role: "salesman" as const }]) {

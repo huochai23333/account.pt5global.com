@@ -38,10 +38,10 @@ test.describe("finance business access", () => {
 
     const desktopSidebar = page.locator("aside").first();
     await expect(
-      desktopSidebar.getByRole("button", { name: "旅游业务" }),
+      desktopSidebar.getByText("旅游业务", { exact: true }),
     ).toHaveCount(0);
     await expect(
-      desktopSidebar.getByRole("button", { name: "批发业务" }),
+      desktopSidebar.getByText("批发业务", { exact: true }),
     ).toBeVisible();
     await expect(
       desktopSidebar.getByRole("link", { name: "公司费用" }),

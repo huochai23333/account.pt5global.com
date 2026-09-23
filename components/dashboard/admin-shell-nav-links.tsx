@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import type { AdminShellNavLink } from "./admin-shell-nav-types";
 import { useAdminShellNavigation } from "./use-admin-shell-navigation";
 
-// 图标与链接外观放在独立模块，主导航组件只处理分组展开和移动菜单状态。
+// 图标与链接外观放在独立模块，桌面侧栏和手机菜单共用同一套入口。
 export const ADMIN_NAV_ICONS: Record<WorkspaceNavSegment, LucideIcon> = {
   accounts: UserCog,
   announcements: Megaphone,

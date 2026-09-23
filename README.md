@@ -201,7 +201,7 @@ npm run supabase:admin -- summary
 
 - `/[role]` 自动重定向到 `/[role]/home`。
 - `/[role]/home` 和 `/[role]/my` 是全局页面，不归属于单个业务。
-- `/admin/reviews`、`/admin/accounts`、`/admin/announcements`、`/admin/company-expenses` 和 `/admin/feedback` 是管理员全局管理页面，不归属于单个业务；审核中心在全局导航中紧跟首页。
+- `/admin/reviews`、`/admin/accounts`、`/admin/announcements`、`/admin/company-expenses` 和 `/admin/feedback` 是管理员全局管理页面，不归属于单个业务；审核中心显示在批发板块之前的全局导航中。
 - `/finance/company-expenses` 是财务全局公司费用页面，不归属于旅游业务或批发业务。
 - `/operator/reimbursements` 是运营全局报销记录页面，不归属于旅游业务或批发业务。
 - `/[internal-role]/settings` 是内部账号的全局汇率页面，不归属于旅游业务或批发业务；管理员可以维护、立即获取和按日期补充，其他已激活内部角色只读查看。客户不显示该入口，`/client/settings` 保持不可访问。
@@ -212,7 +212,7 @@ npm run supabase:admin -- summary
 - 有效账号访问工作范围之外的页面时保留登录状态，显示“这个页面不在你的工作范围内”并提供返回当前角色首页的按钮；只有没有会话、会话失效或账号已停用时才通过服务端退出入口清理 Cookie 并回到登录页。
 - 左侧导航先按账号当前可见业务过滤，再展示当前角色在该业务下可用的模块。
 - 管理员和业务员的批发业务菜单依次以“线索、客户、批发订单”开头，其余入口保持原有相对顺序。桌面侧栏与手机下拉菜单共用 `lib/workspace-wholesale-module.ts`，其他岗位的入口和权限不受此顺序调整影响；`tests/e2e/wholesale-navigation-order.spec.ts` 验证中英文及桌面、手机显示顺序。
-- 桌面端左侧导航只展示启用且账号有权访问的批发分组，并按账号记住展开或收起状态；历史偏好中的旅游值在读取和下一次保存时被过滤。移动端顶部菜单展示同一份有效业务清单。
+- 桌面端左侧导航以静态业务标题分组，直接列出账号有权访问的全部批发板块；内容较长时侧栏可以独立滚动。移动端顶部菜单展示同一份有效业务清单。
 - 当前阶段批发业务允许管理员、财务、业务员、明确分配批发业务的运营账号，以及拥有批发业务标记的客户访问。运营账号只进入批发订单工作区，不获得客户、物流、结汇、库存信贷或业务设置能力。财务和业务员都能跨业务员协作处理全部批发订单、客户、附件、VIP、推荐关系、1688 认领、物流归属、库存订单及信贷；财务还可发布、确认和分配结汇收款，取消仍只允许尚未分配的收款。人员管理、业务设置、佣金结算和删除原始采购数据继续仅限管理员。
 - 佣金和提成页面对财务使用业务员视角，只显示本人相关记录，不因此获得管理员结算能力。页面入口统一读取 `WholesaleRoleCapabilities`，数据库 RPC 与 RLS 仍是最终授权边界。
 - 人员管理不提供恢复旅游业务的入口。客户只能注册或由管理员追加当前启用的批发业务。
@@ -299,10 +299,9 @@ app/
 - `components/dashboard/operator-reimbursements/`：运营报销记录页面的页头、筛选、汇总、列表、表单弹窗、状态 hook 和显示工具。
 - `components/dashboard/admin-shell.tsx`：工作台服务端壳层。
 - `components/dashboard/admin-shell-client.tsx`：工作台登出等客户端动作。
-- `components/dashboard/admin-shell-nav.tsx`：工作台导航模式调度；桌面折叠展示、移动端下拉展示和账号偏好状态分别拆在 `admin-shell-desktop-nav.tsx`、`admin-shell-mobile-nav.tsx` 与 `use-workspace-navigation-preference.ts`，链接外观和图标映射位于 `admin-shell-nav-links.tsx`。
+- `components/dashboard/admin-shell-nav.tsx`：工作台导航模式调度；桌面直接展示业务板块，移动端使用顶部菜单，分别由 `admin-shell-desktop-nav.tsx` 和 `admin-shell-mobile-nav.tsx` 渲染；链接外观和图标映射位于 `admin-shell-nav-links.tsx`。
 - `components/dashboard/admin-shell-nav-types.ts`：工作台导航展示类型。
 - `components/dashboard/use-admin-shell-navigation.ts`：工作台导航点击、按悬停或聚焦意图预取，以及页面长时间闲置后的整页跳转兜底；禁止在工作台打开时一次性预取全部登录后板块。
-- `lib/workspace-navigation-preferences.ts`：读取和保存当前账号的桌面业务分组展开偏好，并统一整理业务键顺序。
 - `lib/request-timeout.ts`：登录后页面共享的 Supabase 读取超时为 30 秒，避免本地并发或云端短暂变慢时误进入错误页；确实耗时的上传、审核等操作在对应 mutation 中单独设置更长时间。
 - `lib/use-stale-focus-recovery.ts`：页面持续可见但长时间未操作、页面隐藏、窗口失焦或浏览器从页面缓存恢复后的跳转/刷新兜底判断。
 
@@ -511,7 +510,6 @@ PT5-dropshipping-web/
 - 批发物流由 Supabase `wholesale-logistics-sync` Edge Function 归档：每小时分别增量读取新增订单、物流状态更新和运费更新，每天从头核对来源当前窗口。页面打开后先显示已有档案，最近一小时没有成功更新时才请求一次刷新，并用数据库租约避免多人重复执行；失败时三路安全位置都不前进。首次上线配置来源接口后应手动执行一次完整同步。
 - 服务端先通过 Supabase Auth 验证令牌，再从数据库读取账号角色和状态；数据库上下文读取失败时不使用 Auth 元数据、Cookie 内容或客户端会话兜底放行。
 - 账号可见业务是数据库权限与 Web 启用清单的交集。RPC 成功返回空数组表示账号当前没有可用业务，Web 不得用角色默认值覆盖；只有 RPC 失败时才使用同样经过启用清单过滤的本地默认值。
-- 桌面业务分组偏好保存在 `user_workspace_navigation_preferences`，只能由 active 登录账号读取自己的记录，并通过 `save_user_workspace_navigation_preference` 保存完整展开组合；空数组明确表示全部收起，读取失败时 Web 使用默认展开规则，不阻塞工作台。
 - Supabase 上传完成后，再提交和推送 Web 仓库。
 - Function secrets、供应商密钥和真实服务凭据只放在 Supabase secrets 或本机 `.env.local`，不能写入仓库。
 
@@ -530,7 +528,7 @@ PT5-dropshipping-web/
 - 更新 `README.md` 中相关说明。
 - 使用 Playwright 在真实浏览器环境验证受影响页面。
 - 使用测试账号验证登录、跳转和权限链路；本地 Supabase 验证时 e2e 默认优先读取 `local.*@bs.test` 本地账号，环境变量仍可覆盖。
-- `tests/e2e/workspace-navigation-preferences.spec.ts` 使用两个互不共享浏览器存储的上下文验证桌面导航偏好跟随账号，并覆盖单组展开、两组展开、全部收起及移动端完整菜单。
+- `tests/e2e/workspace-navigation-visible.spec.ts` 验证桌面批发板块直接显示、页面跳转及刷新后仍可访问，并检查移动端菜单。
 - 检查桌面和移动宽度下是否有文字竖排、遮挡、溢出或按钮/表格压缩。
 - 运行与改动风险匹配的命令，通常至少包括 `npm run lint`、`npm run typecheck`，重要改动再跑 `npm run build`。
 - 工作台结构调整还要运行 `npm run check:dashboard-ui`，确保新页面没有绕开共享外壳、确认、表单和文件选择结构。
@@ -615,3 +613,5 @@ Supabase Auth 建议：
 ## 相关文档
 
 - `PT5-dropshipping-supabase/README.md`
+
+\r\n
