@@ -84,9 +84,13 @@ test.describe("公司模板", () => {
     const account = await loginAs(page, "salesman");
     await page.goto(`${account.workspacePath}/company-templates`);
     await page.getByRole("link", { name: "开始使用" }).click();
+    const listResponse = await page.request.get(`${account.workspacePath}/company-templates`);
+    expect(listResponse.headers()["x-frame-options"]).toBe("DENY");
     const contentResponse = await page.request.get(`/api/company-templates/${SEEDED_TEMPLATE_ID}/content`);
     expect(contentResponse.headers()["cache-control"]).toContain("no-store");
     expect(contentResponse.headers()["content-security-policy"]).toContain("connect-src 'none'");
+    // 正文要能装入本站 iframe；其他页面仍由全站规则拒绝嵌入。
+    expect(contentResponse.headers()["x-frame-options"]).toBe("SAMEORIGIN");
     expect(contentResponse.headers()["x-template-sha256"]).toBe(SEEDED_HTML_HASH);
     const sandbox = await page.locator("iframe").getAttribute("sandbox");
     expect(sandbox).toContain("allow-scripts");
@@ -132,6 +136,10 @@ test.describe("公司模板", () => {
 
     await frame.getByRole("button", { name: "Print all" }).click();
     await expect(frame.locator("html")).toHaveAttribute("data-print-called", "yes");
+
+    // 整页刷新会重新载入模板，防止仅首次客户端跳转正常而直接进入时再次被浏览器拦截。
+    await page.reload();
+    await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
 
     await page.setViewportSize({ height: 844, width: 390 });
     await expectNoPageOverflow(page);

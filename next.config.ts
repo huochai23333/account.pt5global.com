@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
         source: "/:path*",
       },
+      {
+        // 报价单正文只允许本站嵌入；此规则必须排在全站 DENY 后面，才能覆盖同名响应头。
+        // 正文接口仍会用 frame-ancestors 和 iframe 沙箱限制来源与脚本权限。
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+        source: "/api/company-templates/:templateId/content",
+      },
     ];
   },
   images: {
