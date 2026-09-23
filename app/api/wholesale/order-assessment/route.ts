@@ -105,6 +105,7 @@ export async function POST(request: Request) {
     const data = await getWholesalePageData(supabase, "orders", {
       orderFilters: {
         customerId: filters.customerId === "all" ? "" : filters.customerId,
+        orderMonth: filters.orderMonth,
         orderedFromDate: filters.orderedFromDate,
         orderedToDate: filters.orderedToDate,
         salesUserId: filters.salesUserId === "all" ? "" : filters.salesUserId,

@@ -23,6 +23,7 @@ type WholesaleOrderFiltersProps = {
   filters: WholesaleOrderFilters;
   hasActiveFilters: boolean;
   hideCustomerFilter: boolean;
+  hideOrderMonthFilter: boolean;
   onClear: () => void;
   onExactSearch: () => void;
   onExitExactSearch: () => void;
@@ -41,6 +42,7 @@ export function WholesaleOrderFiltersPanel({
   filters,
   hasActiveFilters,
   hideCustomerFilter,
+  hideOrderMonthFilter,
   onClear,
   onExactSearch,
   onExitExactSearch,
@@ -62,6 +64,8 @@ export function WholesaleOrderFiltersPanel({
         // 也容易让客户误以为可以查询其他客户，因此客户视角不计入这一条件。
         !hideCustomerFilter && Boolean(filters.customerId),
         Boolean(filters.salesUserId),
+        // “计入月份”属于内部经营字段，客户页面既不展示字段本身，也不把它计入筛选状态。
+        !hideOrderMonthFilter && Boolean(filters.orderMonth),
         filters.orderedFromDate !== defaultRange.fromDate ||
           filters.orderedToDate !== defaultRange.toDate,
         filters.searchMode !== "date_range",
@@ -76,12 +80,12 @@ export function WholesaleOrderFiltersPanel({
           ? filters.searchText.trim()
           : null
       }
-      // 订单页桌面内容较多，五项常用条件并排后可以少占一整行，
-      // 同时每一列仍使用 minmax(0, 1fr)，避免窄列把日期或下拉框撑出容器。
+      // 内部账号共有六项条件：普通桌面分成两行，超宽屏再并排展示，
+      // 避免月份和日期控件在较窄桌面被压缩；客户视角仍维持四项紧凑布局。
       gridClassName={
         hideCustomerFilter
           ? "md:grid-cols-2 xl:grid-cols-4"
-          : "md:grid-cols-2 xl:grid-cols-5"
+          : "md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
       }
       onExitExactSearch={onExitExactSearch}
       onPresetChange={onSelectDatePreset}
@@ -193,6 +197,16 @@ export function WholesaleOrderFiltersPanel({
           value={filters.salesUserId}
         />
       </DashboardFilterField>
+      {!hideOrderMonthFilter ? (
+        <DashboardFilterField label={uiText("attribute008")}>
+          <DatePicker
+            aria-label={uiText("attribute008")}
+            mode="month"
+            onValueChange={(nextMonth) => onUpdate("orderMonth", nextMonth)}
+            value={filters.orderMonth}
+          />
+        </DashboardFilterField>
+      ) : null}
       <DashboardFilterField
         controlId="wholesale-order-date-from"
         label={uiText("attribute006")}

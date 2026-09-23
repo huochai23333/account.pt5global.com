@@ -15,6 +15,7 @@ export function createDefaultWholesaleOrderFilters(): WholesaleOrderFilters {
 
   return {
     customerId: "",
+    orderMonth: "",
     orderedFromDate: range.fromDate,
     orderedToDate: range.toDate,
     salesUserId: "",

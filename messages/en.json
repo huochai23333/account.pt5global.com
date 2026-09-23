@@ -4729,6 +4729,7 @@
       "attribute003": "Order status",
       "text008": "All customers",
       "attribute002": "Order number, customer, or 1688 order number",
+      "attribute008": "Included month",
       "attribute007": "Order date arrives",
       "attribute006": "Order date from",
       "text007": "Exchange settled",

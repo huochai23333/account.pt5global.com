@@ -6,6 +6,7 @@ import {
   getDefaultWholesaleLogisticsFilters,
   getWholesaleLogisticsPage,
 } from "../../lib/wholesale-logistics-page";
+import { normalizeWholesaleOrderAssessmentPayload } from "../../lib/wholesale-order-assessment-filters";
 import { getWholesaleOrderPage } from "../../lib/wholesale-order-page";
 
 test("wholesale order RPC receives normalized dates and explicit search mode", async () => {
@@ -28,6 +29,7 @@ test("wholesale order RPC receives normalized dates and explicit search mode", a
 
   await getWholesaleOrderPage(supabase, {
     customerId: "",
+    orderMonth: "2026-09",
     orderedFromDate: "",
     orderedToDate: "invalid",
     salesUserId: "",
@@ -40,9 +42,31 @@ test("wholesale order RPC receives normalized dates and explicit search mode", a
   expect((rpcArguments as unknown as { p_filters: unknown }).p_filters).toMatchObject({
     orderedFromDate: getDefaultOrderDateRange().fromDate,
     orderedToDate: getDefaultOrderDateRange().toDate,
+    orderMonth: "2026-09",
     searchMode: "exact_all_time",
     searchText: "WH-1001",
   });
+});
+
+test("wholesale order assessment accepts the same included month", () => {
+  const filters = normalizeWholesaleOrderAssessmentPayload({
+    filters: {
+      customerId: "",
+      orderMonth: "2026-09",
+      orderedFromDate: "2026-09-01",
+      orderedToDate: "2026-09-30",
+      salesUserId: "",
+      searchText: "",
+      status: "all",
+    },
+  });
+
+  expect(filters.orderMonth).toBe("2026-09");
+  expect(() =>
+    normalizeWholesaleOrderAssessmentPayload({
+      filters: { ...filters, orderMonth: "2026-13" },
+    }),
+  ).toThrow("invalid order month");
 });
 
 test("wholesale logistics defaults and RPC use the mandatory rolling range", async () => {

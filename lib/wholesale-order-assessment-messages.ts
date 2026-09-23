@@ -207,6 +207,7 @@ function buildFilterDescription(
 ) {
   const parts = [
     `下单日期：${formatDateRange(filters.orderedFromDate, filters.orderedToDate)}`,
+    `计入月份：${filters.orderMonth || "全部月份"}`,
     `状态：${formatStatusFilter(filters.status)}`,
     `客户：${formatCustomerFilter(filters.customerId, customersById)}`,
     `业务员：${formatSalesFilter(filters.salesUserId, profilesById)}`,

@@ -5,6 +5,7 @@ import { readAssistantEventStream } from "@/lib/ai-assistant/assistant-event-str
 
 export type WholesaleOrderAssessmentFilters = {
   customerId: string;
+  orderMonth: string;
   orderedFromDate: string;
   orderedToDate: string;
   salesUserId: string;

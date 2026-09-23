@@ -22,6 +22,7 @@ export function normalizeWholesaleOrderAssessmentPayload(
   const filters = value.filters;
   return {
     customerId: normalizeIdFilter(filters.customerId),
+    orderMonth: normalizeMonthFilter(filters.orderMonth),
     orderedFromDate: normalizeDateFilter(filters.orderedFromDate),
     orderedToDate: normalizeDateFilter(filters.orderedToDate),
     salesUserId: normalizeIdFilter(filters.salesUserId),
@@ -49,6 +50,9 @@ export function filterWholesaleOrdersForAssessment(
   const orderedToTime = getDateBoundaryTime(filters.orderedToDate, "end");
 
   return data.orders.filter((order) => {
+    if (filters.orderMonth && order.order_month.slice(0, 7) !== filters.orderMonth) {
+      return false;
+    }
     if (filters.status !== ALL && order.status !== filters.status) return false;
     if (filters.customerId !== ALL && order.customer_id !== filters.customerId) {
       return false;
@@ -138,6 +142,15 @@ function normalizeStatusFilter(value: unknown) {
 function normalizeDateFilter(value: unknown) {
   const normalized = normalizeString(value, 10);
   return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : "";
+}
+
+function normalizeMonthFilter(value: unknown) {
+  const normalized = normalizeString(value, 7);
+  if (!normalized) return "";
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) {
+    throw new Error("invalid order month");
+  }
+  return normalized;
 }
 
 function normalizeString(value: unknown, maxLength: number) {

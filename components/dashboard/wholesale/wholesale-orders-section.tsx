@@ -60,6 +60,7 @@ export function WholesaleOrdersSection({
   const assessmentFilters = useMemo(
     () => ({
       customerId: filterState.queryFilters.customerId,
+      orderMonth: filterState.queryFilters.orderMonth,
       orderedFromDate: filterState.queryFilters.orderedFromDate,
       orderedToDate: filterState.queryFilters.orderedToDate,
       salesUserId: filterState.queryFilters.salesUserId,
@@ -149,6 +150,8 @@ export function WholesaleOrdersSection({
         hasActiveFilters={filterState.hasActiveFilters}
         // 客户的订单数据已经由数据库限制为本人范围，所以前端隐藏无意义的客户筛选框。
         hideCustomerFilter={currentRole === "client"}
+        // 计入月份属于内部经营字段，客户响应会裁掉该字段，因此客户页面也不提供此筛选。
+        hideOrderMonthFilter={currentRole === "client"}
         onClear={filterState.clearFilters}
         onExactSearch={filterState.activateExactSearch}
         onExitExactSearch={filterState.exitExactSearch}

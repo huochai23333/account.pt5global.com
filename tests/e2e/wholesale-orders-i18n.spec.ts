@@ -27,6 +27,8 @@ test("wholesale orders remain usable in English at mobile width", async ({
       .filter({ visible: true })
       .first(),
   ).toBeVisible();
+  await page.getByRole("button", { name: /More filters/ }).click();
+  await expect(page.getByLabel("Included month")).toBeVisible();
   await expect(page.getByText("结汇后计算", { exact: true })).toHaveCount(0);
 
   const overflowPixels = await page.evaluate(

@@ -28,6 +28,7 @@ import {
 
 export type WholesaleOrderFilters = {
   customerId: string;
+  orderMonth: string;
   orderedFromDate: string;
   orderedToDate: string;
   salesUserId: string;

@@ -366,6 +366,7 @@ function getInitialWholesaleOrderFilters(): WholesaleOrderFilters {
 
   return {
     customerId: "",
+    orderMonth: "",
     orderedFromDate: range.fromDate,
     orderedToDate: range.toDate,
     salesUserId: "",
