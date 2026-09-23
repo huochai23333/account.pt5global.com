@@ -6,6 +6,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 import { getMailEnv } from "./mail-env";
 import { getSharedAccessToken, sendRawMessage, verifySentMessage } from "./mail-google";
 import { createBlindIndex, decryptMailValue, encryptMailValue } from "./mail-security";
+import { recordSuccessfulOutboundRecipients } from "./mail-recipient-service";
 import { downloadEncryptedObject } from "./mail-storage";
 import type { OutboundMessageInput } from "./mail-types";
 
@@ -148,10 +149,21 @@ async function buildMime(job: JobRow, payload: OutboundMessageInput, context: Co
 
 async function finalizeSentJob(job: JobRow, payload: OutboundMessageInput, context: Context, mime: Awaited<ReturnType<typeof buildMime>>, providerMessageId: string, providerThreadId: string) {
   const supabase = getSupabaseServiceRoleClient();
-  const existing = await supabase.from("mail_messages").select("id,thread_id")
+  const existing = await supabase.from("mail_messages").select("id,thread_id,occurred_at")
     .eq("mailbox_id", job.mailbox_id).eq("provider_message_id", providerMessageId).maybeSingle();
   if (existing.error) throw new Error("已发送邮件状态暂时无法确认。", { cause: existing.error });
   if (existing.data) {
+    await recordSuccessfulOutboundRecipients({
+      mailboxId: job.mailbox_id,
+      messageId: existing.data.id as string,
+      threadId: existing.data.thread_id as string,
+      actorUserId: job.actor_user_id,
+      mailboxEmail: context.mailboxEmail,
+      to: payload.to,
+      cc: payload.cc,
+      bcc: payload.bcc,
+      occurredAt: String(existing.data.occurred_at),
+    });
     const done = await supabase.from("mail_outbound_jobs").update({ status: "sent", sent_message_id: existing.data.id, completed_at: new Date().toISOString(), locked_at: null, last_error: null }).eq("id", job.id).select("id,status").single();
     if (done.error || done.data?.status !== "sent") throw new Error("发送任务没有确认完成。", { cause: done.error });
     return;
@@ -214,7 +226,7 @@ async function finalizeSentJob(job: JobRow, payload: OutboundMessageInput, conte
     html_body_enc: encryptMailValue(mime.html, getMailEnv().contentKey),
     raw_headers_enc: encryptMailValue(JSON.stringify({ "message-id": mime.rfcMessageId }), getMailEnv().contentKey),
     occurred_at: now,
-  }).select("id").single();
+  }).select("id,occurred_at").single();
   if (savedError || !savedData) throw new Error("已发送邮件没有确认保存。", { cause: savedError });
   for (const attachment of mime.attachments) {
     const { data: archivedData, error: archivedError } = await supabase.from("mail_attachments").insert({
@@ -230,6 +242,17 @@ async function finalizeSentJob(job: JobRow, payload: OutboundMessageInput, conte
     const { data: consumedData, error: consumedError } = await supabase.from("mail_uploads").update({ consumed_at: now }).eq("id", attachment.id).is("consumed_at", null).select("id").single();
     if (consumedError || consumedData?.id !== attachment.id) throw new Error("附件上传记录没有确认归档。", { cause: consumedError });
   }
+  await recordSuccessfulOutboundRecipients({
+    mailboxId: job.mailbox_id,
+    messageId: savedData.id as string,
+    threadId,
+    actorUserId: job.actor_user_id,
+    mailboxEmail: context.mailboxEmail,
+    to: payload.to,
+    cc: payload.cc,
+    bcc: payload.bcc,
+    occurredAt: String(savedData.occurred_at),
+  });
   const { data: completedData, error: completedError } = await supabase.from("mail_outbound_jobs").update({
     status: "sent",
     sent_message_id: savedData.id,

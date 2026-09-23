@@ -17,6 +17,8 @@ import {
 } from "./mail-google";
 import { decideMailIntake } from "./mail-intake";
 import { loadDecryptedMailIntakeRules, recordMailIntakeRuleHit } from "./mail-intake-service";
+import { extractEmailAddresses } from "./mail-recipient-addresses";
+import { loadInboundRecipientHistory, recordIgnoredUnknownInbound } from "./mail-recipient-service";
 import { decideMailRouting } from "./mail-routing";
 import { createUniqueMailRef, loadMailRoutingAgents } from "./mail-routing-service";
 import { createBlindIndex, encryptMailValue } from "./mail-security";
@@ -34,10 +36,6 @@ type ParsedAttachment = { filename: string; contentType: string; bytes: Buffer }
 
 function decodeBody(value?: string) {
   return value ? Buffer.from(value, "base64url").toString("utf8") : "";
-}
-
-function extractAddresses(value: string) {
-  return [...value.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map((match) => match[0].toLowerCase());
 }
 
 async function collectParts(
@@ -63,8 +61,24 @@ async function collectParts(
   }
 }
 
-async function parseMessage(accessToken: string, message: GmailFullMessage) {
+function parseEnvelope(message: GmailFullMessage) {
   const headers = new Map((message.payload?.headers ?? []).map((header) => [header.name.toLowerCase(), header.value]));
+  return {
+    from: headers.get("from") ?? "",
+    to: extractEmailAddresses(headers.get("to") ?? ""),
+    cc: extractEmailAddresses(headers.get("cc") ?? ""),
+    bcc: extractEmailAddresses(headers.get("bcc") ?? ""),
+    deliveredTo: extractEmailAddresses(headers.get("delivered-to") ?? ""),
+    subject: headers.get("subject") ?? "（无主题）",
+    messageIdHeader: headers.get("message-id") ?? "",
+    headers: Object.fromEntries([...headers].filter(([name]) => [
+      "message-id", "in-reply-to", "references", "reply-to", "delivered-to",
+      "list-unsubscribe", "list-id", "precedence", "auto-submitted",
+    ].includes(name))),
+  };
+}
+
+async function parseMessage(accessToken: string, message: GmailFullMessage, envelope: ReturnType<typeof parseEnvelope>) {
   const output: { texts: string[]; html: string[]; attachments: ParsedAttachment[] } = { texts: [], html: [], attachments: [] };
   await collectParts(accessToken, message.id, message.payload, output);
   if (output.attachments.length > 10) throw new Error("收到的附件数量超过 10 个，已停止处理此邮件。");
@@ -78,19 +92,9 @@ async function parseMessage(accessToken: string, message: GmailFullMessage) {
     transformTags: { a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer nofollow", target: "_blank" }) },
   });
   return {
-    from: headers.get("from") ?? "",
-    to: extractAddresses(headers.get("to") ?? ""),
-    cc: extractAddresses(headers.get("cc") ?? ""),
-    bcc: extractAddresses(headers.get("bcc") ?? ""),
-    deliveredTo: extractAddresses(headers.get("delivered-to") ?? ""),
-    subject: headers.get("subject") ?? "（无主题）",
+    ...envelope,
     textBody: output.texts.join("\n").trim(),
     htmlBody,
-    messageIdHeader: headers.get("message-id") ?? "",
-    headers: Object.fromEntries([...headers].filter(([name]) => [
-      "message-id", "in-reply-to", "references", "reply-to", "delivered-to",
-      "list-unsubscribe", "list-id", "precedence", "auto-submitted",
-    ].includes(name))),
     attachments: output.attachments,
   };
 }
@@ -114,13 +118,21 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   const duplicate = await supabase.from("mail_messages").select("id").eq("mailbox_id", mailboxId).eq("provider_message_id", message.id).maybeSingle();
   if (duplicate.error) throw new Error("来信重复状态暂时无法确认。", { cause: duplicate.error });
   if (duplicate.data) return;
-  const parsed = await parseMessage(accessToken, message);
-  const customerEmail = extractAddresses(parsed.from)[0];
+  const envelope = parseEnvelope(message);
+  const customerEmail = extractEmailAddresses(envelope.from)[0];
   if (!customerEmail) throw new Error("客户来信没有可识别的发件邮箱。");
+  const occurredAt = new Date(Number(message.internalDate ?? Date.now())).toISOString();
+  const recipientHistory = await loadInboundRecipientHistory(mailboxId, customerEmail);
+  if (!recipientHistory.known) {
+    // 陌生来信到这里立即结束：不解析正文、不下载附件，也不创建业务会话。
+    await recordIgnoredUnknownInbound({ mailboxId, providerMessageId: message.id, occurredAt });
+    return;
+  }
   const existing = await supabase.from("mail_threads")
     .select("id,assigned_user_id,ref_code,intake_status,quarantine_reason,intake_rule_id")
     .eq("mailbox_id", mailboxId).eq("provider_thread_id", message.threadId).is("deleted_at", null).maybeSingle();
   if (existing.error) throw new Error("邮件会话暂时无法确认。", { cause: existing.error });
+  const parsed = await parseMessage(accessToken, message, envelope);
   const intake = existing.data?.intake_status === "quarantined"
     ? {
         status: "quarantined" as const,
@@ -136,6 +148,7 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   const agents = await loadMailRoutingAgents();
   const routing = decideMailRouting({
     knownAssignedMemberId: intake.status === "active" ? existing.data?.assigned_user_id as string | null | undefined : null,
+    recipientHistoryMemberIds: recipientHistory.assignedMemberIds,
     deliveredTo: parsed.deliveredTo,
     to: parsed.to,
     cc: parsed.cc,
@@ -146,7 +159,6 @@ async function persistInboundMessage(mailboxId: string, accessToken: string, mes
   const assignedAgent = agents.find((agent) => agent.memberId === routing.assignedMemberId);
   const refCode = (existing.data?.ref_code as string | null | undefined)
     ?? (intake.status === "active" ? await createUniqueMailRef(assignedAgent?.refPrefix ?? "GENERAL") : null);
-  const occurredAt = new Date(Number(message.internalDate ?? Date.now())).toISOString();
   const stagedPaths: string[] = [];
   const staged = [] as Array<ParsedAttachment & { path: string; hash: string; status: "clean" | "quarantined"; error: string | null }>;
   try {

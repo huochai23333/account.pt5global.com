@@ -8,10 +8,14 @@ export type RoutingAgent = {
 
 export type RoutingDecision = {
   assignedMemberId: string | null;
-  source: "thread" | "alias" | "ref" | "unassigned";
+  source: "thread" | "recipient_history" | "alias" | "ref" | "unassigned";
   conflicting: boolean;
   nameHintMemberIds: string[];
-  evidence: { aliasMemberId: string | null; refMemberId: string | null };
+  evidence: {
+    historyMemberIds: string[];
+    aliasMemberId: string | null;
+    refMemberId: string | null;
+  };
 };
 
 function findAliasMember(addresses: string[], agents: RoutingAgent[]) {
@@ -30,9 +34,10 @@ function findRefMember(content: string, agents: RoutingAgent[]) {
   return ids.size === 1 ? [...ids][0] ?? null : null;
 }
 
-/** 已有会话、收件别名和 Ref 是自动指派依据；姓名只作为管理员提示。 */
+/** 已有会话、已联系邮箱、收件别名和 Ref 是自动指派依据；姓名只作为管理员提示。 */
 export function decideMailRouting(input: {
   knownAssignedMemberId?: string | null;
+  recipientHistoryMemberIds?: string[];
   deliveredTo: string[];
   to: string[];
   cc: string[];
@@ -45,13 +50,29 @@ export function decideMailRouting(input: {
     .filter((agent) => agent.enabled && agent.displayName.trim() && searchable.toLowerCase().includes(agent.displayName.trim().toLowerCase()))
     .map((agent) => agent.memberId);
   if (input.knownAssignedMemberId) {
-    return { assignedMemberId: input.knownAssignedMemberId, source: "thread", conflicting: false, nameHintMemberIds, evidence: { aliasMemberId: null, refMemberId: null } };
+    return { assignedMemberId: input.knownAssignedMemberId, source: "thread", conflicting: false, nameHintMemberIds, evidence: { historyMemberIds: [], aliasMemberId: null, refMemberId: null } };
+  }
+  const historyMemberIds = [...new Set(input.recipientHistoryMemberIds ?? [])];
+  if (historyMemberIds.length > 1) {
+    return { assignedMemberId: null, source: "unassigned", conflicting: true, nameHintMemberIds, evidence: { historyMemberIds, aliasMemberId: null, refMemberId: null } };
+  }
+  if (historyMemberIds.length === 1) {
+    const historyMemberId = historyMemberIds[0] ?? null;
+    const enabled = agents.some((agent) => agent.enabled && agent.memberId === historyMemberId);
+    return {
+      assignedMemberId: enabled ? historyMemberId : null,
+      source: enabled ? "recipient_history" : "unassigned",
+      conflicting: false,
+      nameHintMemberIds,
+      evidence: { historyMemberIds, aliasMemberId: null, refMemberId: null },
+    };
   }
   const aliasMemberId = findAliasMember([...input.deliveredTo, ...input.to, ...input.cc], agents);
   const refMemberId = findRefMember(searchable, agents);
   const conflicting = Boolean(aliasMemberId && refMemberId && aliasMemberId !== refMemberId);
-  if (conflicting) return { assignedMemberId: null, source: "unassigned", conflicting, nameHintMemberIds, evidence: { aliasMemberId, refMemberId } };
-  if (aliasMemberId) return { assignedMemberId: aliasMemberId, source: "alias", conflicting, nameHintMemberIds, evidence: { aliasMemberId, refMemberId } };
-  if (refMemberId) return { assignedMemberId: refMemberId, source: "ref", conflicting, nameHintMemberIds, evidence: { aliasMemberId, refMemberId } };
-  return { assignedMemberId: null, source: "unassigned", conflicting, nameHintMemberIds, evidence: { aliasMemberId, refMemberId } };
+  const evidence = { historyMemberIds, aliasMemberId, refMemberId };
+  if (conflicting) return { assignedMemberId: null, source: "unassigned", conflicting, nameHintMemberIds, evidence };
+  if (aliasMemberId) return { assignedMemberId: aliasMemberId, source: "alias", conflicting, nameHintMemberIds, evidence };
+  if (refMemberId) return { assignedMemberId: refMemberId, source: "ref", conflicting, nameHintMemberIds, evidence };
+  return { assignedMemberId: null, source: "unassigned", conflicting, nameHintMemberIds, evidence };
 }

@@ -8,6 +8,8 @@ import {
   createSuggestedRefPrefix,
 } from "../lib/mail/mail-agent-identifiers.ts";
 import { decideMailIntake, normalizeMailIntakePattern } from "../lib/mail/mail-intake.ts";
+import { buildOutboundRecipientAddresses } from "../lib/mail/mail-recipient-addresses.ts";
+import { decideMailRouting } from "../lib/mail/mail-routing.ts";
 
 const USER_ID = "12345678-90ab-4cde-8f01-234567890abc";
 
@@ -76,4 +78,53 @@ test("自动回复标记与普通来信不会单独触发隔离", () => {
     existingActiveThread: false,
   }, []);
   assert.deepEqual(decision, { status: "active", reason: null, ruleId: null });
+});
+
+test("成功收件地址覆盖主送抄送密送并排除公司邮箱", () => {
+  assert.deepEqual(buildOutboundRecipientAddresses({
+    to: ["Buyer@Example.com", "chinapt5@gmail.com"],
+    cc: ["buyer@example.com", "finance@example.com", "chinapt5+alice@gmail.com"],
+    bcc: ["hidden@example.com"],
+    mailboxEmail: "chinapt5@gmail.com",
+  }), [
+    { email: "buyer@example.com", kind: "to" },
+    { email: "finance@example.com", kind: "cc" },
+    { email: "hidden@example.com", kind: "bcc" },
+  ]);
+});
+
+const ROUTING_AGENTS = [
+  { memberId: "alice", aliasLocalPart: "alice", refPrefix: "ALICE", displayName: "Alice", enabled: true },
+  { memberId: "bob", aliasLocalPart: "bob", refPrefix: "BOB", displayName: "Bob", enabled: true },
+];
+
+function routeWithHistory(recipientHistoryMemberIds) {
+  return decideMailRouting({
+    recipientHistoryMemberIds,
+    deliveredTo: [],
+    to: ["chinapt5@gmail.com"],
+    cc: [],
+    subject: "Direct inquiry",
+    textBody: "Hello",
+    htmlBody: "",
+  }, ROUTING_AGENTS);
+}
+
+test("已联系邮箱只有一个有效负责人时直接分配", () => {
+  const decision = routeWithHistory(["alice", "alice"]);
+  assert.equal(decision.assignedMemberId, "alice");
+  assert.equal(decision.source, "recipient_history");
+});
+
+test("已联系邮箱存在多个负责人时保持待指派", () => {
+  const decision = routeWithHistory(["alice", "bob"]);
+  assert.equal(decision.assignedMemberId, null);
+  assert.equal(decision.source, "unassigned");
+  assert.equal(decision.conflicting, true);
+});
+
+test("历史负责人已停用时不会自动改派", () => {
+  const decision = routeWithHistory(["disabled-user"]);
+  assert.equal(decision.assignedMemberId, null);
+  assert.equal(decision.source, "unassigned");
 });

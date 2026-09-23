@@ -69,7 +69,7 @@ export type MailMessageView = {
 };
 
 export type MailThreadDetail = MailThreadListItem & {
-  routingSource: "thread" | "alias" | "ref" | "unassigned" | "manual" | "quarantine";
+  routingSource: "thread" | "recipient_history" | "alias" | "ref" | "unassigned" | "manual" | "quarantine";
   nameHintMemberIds: string[];
   messages: MailMessageView[];
 };

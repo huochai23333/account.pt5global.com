@@ -8,8 +8,8 @@ import { createClient } from "@supabase/supabase-js";
  * 这个客户端只在 Playwright 的 Node.js 测试进程中创建，并且只接受本地 Supabase 地址。
  */
 export function getLocalSupabaseAdminClient() {
-  const supabaseUrl = readEnvValue("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey = readEnvValue("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = readLocalEnvValue("SUPABASE_SERVICE_ROLE_KEY");
 
   if (
     !supabaseUrl ||
@@ -27,7 +27,7 @@ export function getLocalSupabaseAdminClient() {
   });
 }
 
-function readEnvValue(key: string) {
+export function readLocalEnvValue(key: string) {
   const processValue = process.env[key]?.trim();
 
   if (processValue) {

@@ -6,6 +6,8 @@ import {
   normalizeMailIntakePattern,
   type DecryptedMailIntakeRule,
 } from "./mail-intake";
+import { extractEmailAddresses } from "./mail-recipient-addresses";
+import { loadInboundRecipientHistory } from "./mail-recipient-service";
 import { decideMailRouting } from "./mail-routing";
 import { createUniqueMailRef, loadMailRoutingAgents } from "./mail-routing-service";
 import { createBlindIndex, decryptMailValue, encryptMailValue } from "./mail-security";
@@ -243,10 +245,10 @@ export async function restoreMailThread(identity: MailIdentity, threadId: string
   const supabase = getSupabaseServiceRoleClient();
   const [threadResult, messageResult] = await Promise.all([
     supabase.from("mail_threads")
-      .select("id,assigned_user_id,ref_code,provider_thread_id,version")
+      .select("id,mailbox_id,assigned_user_id,ref_code,provider_thread_id,version")
       .eq("id", threadId).eq("intake_status", "quarantined").is("deleted_at", null).maybeSingle(),
     supabase.from("mail_messages")
-      .select("to_enc,cc_enc,subject_enc,text_body_enc,html_body_enc,raw_headers_enc")
+      .select("from_enc,to_enc,cc_enc,subject_enc,text_body_enc,html_body_enc,raw_headers_enc")
       .eq("thread_id", threadId).eq("direction", "inbound").order("occurred_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (threadResult.error || messageResult.error) databaseError("隔离邮件暂时无法恢复。", threadResult.error ?? messageResult.error);
@@ -255,9 +257,17 @@ export async function restoreMailThread(identity: MailIdentity, threadId: string
 
   const message = messageResult.data;
   const headers = JSON.parse(decryptContent(String(message.raw_headers_enc))) as Record<string, string>;
+  const senderEmail = extractEmailAddresses(decryptContent(String(message.from_enc)))[0];
+  if (!senderEmail) throw new Error("隔离邮件没有可识别的发件邮箱。");
+  const recipientHistory = await loadInboundRecipientHistory(
+    String(threadResult.data.mailbox_id),
+    senderEmail,
+  );
+  if (!recipientHistory.known) throw new Error("该发件邮箱不在系统已联系名单中，不能恢复到工作台。");
   const agents = await loadMailRoutingAgents();
   const routing = decideMailRouting({
     knownAssignedMemberId: threadResult.data.assigned_user_id as string | null,
+    recipientHistoryMemberIds: recipientHistory.assignedMemberIds,
     deliveredTo: headers["delivered-to"] ? [headers["delivered-to"]] : [],
     to: JSON.parse(decryptContent(String(message.to_enc))) as string[],
     cc: JSON.parse(decryptContent(String(message.cc_enc))) as string[],
