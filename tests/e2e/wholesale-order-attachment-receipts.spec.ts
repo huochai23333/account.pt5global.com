@@ -189,6 +189,10 @@ async function findOrderRow(page: Page) {
   await page.getByRole("button", { name: "跨日期查此单号" }).click();
   const row = page.getByTestId(`wholesale-order-row-${ORDER_ID}`);
   await expect(row).toBeVisible();
+  // 管理附件入口在完整字段视图中，先按真实用户操作展开。
+  const showAll = page.getByRole("button", { name: "查看全部字段" });
+  if (await showAll.isVisible()) await showAll.click();
+  await expect(row.getByRole("button", { name: "管理附件" })).toBeVisible();
   return row;
 }
 

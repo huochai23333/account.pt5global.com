@@ -20,11 +20,13 @@ import {
   getProfileName,
 } from "./wholesale-display";
 import { WholesaleOrderDetailsDialog } from "./wholesale-order-details-dialog";
+import { getClientOrderContactName } from "./wholesale-client-contact";
 import type { WholesaleOrderEditAction } from "./wholesale-orders-table";
 type WholesaleOrdersMobileListProps = {
   canMarkOrderSettled: (order: WholesaleOrderListItem) => boolean;
   canManageOrderListAttachments: (order: WholesaleOrderListItem) => boolean;
   canViewInternalFields: boolean;
+  clientContactsByOrderId: Record<string, string>;
   customersById: Map<string, WholesaleCustomer>;
   getOrderEditAction: (
     order: WholesaleOrderListItem,
@@ -49,6 +51,7 @@ export function WholesaleOrdersMobileList({
   canMarkOrderSettled,
   canManageOrderListAttachments,
   canViewInternalFields,
+  clientContactsByOrderId,
   customersById,
   getOrderEditAction,
   onDeleteOrderListAttachment,
@@ -117,7 +120,7 @@ export function WholesaleOrdersMobileList({
               />}
               <MobileOrderValue
                 label={uiText("attribute003")}
-                value={getProfileName(profilesById, order.sales_user_id)}
+                value={canViewInternalFields ? getProfileName(profilesById, order.sales_user_id) : getClientOrderContactName(order, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}
               />
               <MobileOrderValue
                 label={uiText("attribute004")}
@@ -160,7 +163,7 @@ export function WholesaleOrdersMobileList({
           }
           pendingKey={pendingKey}
           purchaseOrders={purchaseOrdersByOrderId.get(selectedOrder.id) ?? []}
-          salesName={getProfileName(profilesById, selectedOrder.sales_user_id)}
+          salesName={canViewInternalFields ? getProfileName(profilesById, selectedOrder.sales_user_id) : getClientOrderContactName(selectedOrder, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}
           settlements={orderSettlementsByOrderId.get(selectedOrder.id) ?? []}
         />
       ) : null}

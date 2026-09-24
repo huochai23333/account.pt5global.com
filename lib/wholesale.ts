@@ -163,6 +163,8 @@ export async function getWholesalePageData(
     commissionRuleSettings: rows.commissionRuleSettings,
     exchangeRates: rows.exchangeRates,
     ...scopedRows,
+    // 推荐佣金的 RPC 已按调用者 RLS 裁剪；页面必须拿到查询结果，不能回落为空数组。
+    referralCommissionRows: rows.referralCommissionRows,
   };
 }
 

@@ -80,9 +80,8 @@ test.describe("批发订单创建防重复", () => {
     await expect(page.getByText("批发订单已保存。")).toBeVisible();
 
     await page.getByLabel("搜索订单").fill(note);
-    const createdRows = page
-      .locator('[data-testid^="wholesale-order-row-"]')
-      .filter({ hasText: note });
+    // 备注仍参与搜索，但常用列不展示备注；结果应只剩刚创建的订单。
+    const createdRows = page.locator('[data-testid^="wholesale-order-row-"]');
     await expect(createdRows).toHaveCount(1);
 
     // 同一个弹窗在手机宽度仍需保持正常表单布局和可触控按钮尺寸。

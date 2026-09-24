@@ -4,7 +4,7 @@ import { requireMailIdentity } from "@/lib/mail/mail-identity";
 import { getMailAgentProfile, listMailAgents, updateMailAgentProfile } from "@/lib/mail/mail-service";
 import type { MailAgentProfile } from "@/lib/mail/mail-types";
 
-import { mailApiError } from "../_shared";
+import { mailApiError, readAuthenticatedMailJson } from "../_shared";
 
 export async function GET() {
   try {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const profile = await request.json() as Omit<MailAgentProfile, "displayName" | "role" | "feishuBound" | "suggestedAliasLocalPart" | "suggestedRefPrefix"> & { resetToGenerated?: boolean };
-    return NextResponse.json(await updateMailAgentProfile(await requireMailIdentity(), profile));
+    const { identity, body: profile } = await readAuthenticatedMailJson<Omit<MailAgentProfile, "displayName" | "role" | "feishuBound" | "suggestedAliasLocalPart" | "suggestedRefPrefix"> & { resetToGenerated?: boolean }>(request);
+    return NextResponse.json(await updateMailAgentProfile(identity, profile));
   } catch (error) { return mailApiError(error, "人员配置暂时无法保存。"); }
 }

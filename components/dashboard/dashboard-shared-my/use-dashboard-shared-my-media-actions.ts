@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
@@ -39,12 +39,17 @@ export function useDashboardSharedMyMediaActions({
   sharedCopy: DashboardSharedCopy;
   supabase: ReturnType<typeof getBrowserSupabaseClient>;
 }) {
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [pendingVideoFiles, setPendingVideoFiles] = useState<File[]>([]);
   const uploadPhotos = async (files: File[]) => {
     if (!supabase || !authUser) return;
+    // 原生文件控件会清空值；保存 File 对象，网络失败后可直接重试同一批文件。
+    setPendingPhotoFiles(files);
     setBusyKey("photos-upload");
     setDialogNotice(null);
     try {
       await uploadUserMedia(supabase, { files, kind: "image", userId: authUser.id });
+      setPendingPhotoFiles([]);
       await refreshBundle({ dialogMessage: copy.photosUploaded, quiet: true });
     } catch (error) {
       setDialogNotice({ tone: "error", message: toErrorMessage(error, sharedCopy) });
@@ -55,10 +60,12 @@ export function useDashboardSharedMyMediaActions({
 
   const uploadVideos = async (files: File[]) => {
     if (!supabase || !authUser) return;
+    setPendingVideoFiles(files);
     setBusyKey("videos-upload");
     setDialogNotice(null);
     try {
       await uploadUserMedia(supabase, { files, kind: "video", userId: authUser.id });
+      setPendingVideoFiles([]);
       await refreshBundle({ dialogMessage: copy.videosUploaded, quiet: true });
     } catch (error) {
       setDialogNotice({ tone: "error", message: toErrorMessage(error, sharedCopy) });
@@ -95,5 +102,14 @@ export function useDashboardSharedMyMediaActions({
     }
   };
 
-  return { deletePhotoAssets, deleteVideoAssets, uploadPhotos, uploadVideos };
+  return {
+    deletePhotoAssets,
+    deleteVideoAssets,
+    pendingPhotoFiles,
+    pendingVideoFiles,
+    retryPhotos: () => uploadPhotos(pendingPhotoFiles),
+    retryVideos: () => uploadVideos(pendingVideoFiles),
+    uploadPhotos,
+    uploadVideos,
+  };
 }

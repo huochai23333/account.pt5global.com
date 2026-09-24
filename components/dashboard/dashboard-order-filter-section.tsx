@@ -37,6 +37,7 @@ const ORDER_DATE_PRESET_MESSAGE_KEYS = {
 export function DashboardOrderFilterSection({
   activeFilterCount,
   children,
+  collapseDesktop = false,
   customInputId,
   dateRange,
   exactOrderNumber,
@@ -49,6 +50,7 @@ export function DashboardOrderFilterSection({
 }: {
   activeFilterCount: number;
   children: ReactNode;
+  collapseDesktop?: boolean;
   customInputId: string;
   dateRange: OrderDateRange;
   exactOrderNumber?: string | null;
@@ -64,6 +66,7 @@ export function DashboardOrderFilterSection({
   return (
     <DashboardResourceFilterSection
       activeFilterCount={activeFilterCount}
+      collapseDesktop={collapseDesktop}
       footer={
         <>
           <DashboardOrderDateToolbar

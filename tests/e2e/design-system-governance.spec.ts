@@ -270,9 +270,8 @@ test.describe("设计系统治理守卫", () => {
     const amount = dialog.getByLabel("报销金额");
     await amount.fill("12.50");
     await dialog.getByRole("button", { name: "保存记录" }).click();
-    await expect(
-      dialog.locator('[data-slot="feedback-notice"][data-tone="error"]'),
-    ).toBeVisible();
+    // 缺少报销内容时错误贴在对应字段旁，保留已经输入的金额。
+    await expect(dialog.getByText("请填写报销内容。")).toBeVisible();
     await expect(amount).toHaveValue("12.50");
   });
 

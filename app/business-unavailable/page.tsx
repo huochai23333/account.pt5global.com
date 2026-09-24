@@ -6,11 +6,14 @@ import { getLocale } from "next-intl/server";
 import { PageReveal } from "@/components/motion/page-reveal";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { PublicStateCard } from "@/components/ui/public-state-card";
+import { PostActionForm } from "@/components/ui/post-action-form";
 import { getDefaultWorkspaceBasePath } from "@/lib/auth-routing";
 import { companyConfig } from "@/lib/company-config";
 import { normalizeLocale } from "@/lib/locale";
 import { getServerAuthContext } from "@/lib/server-auth";
 import { cn } from "@/lib/utils";
+
+import styles from "./business-unavailable.module.css";
 
 const SIGN_OUT_TO_LOGIN_PATH = "/auth/sign-out?next=%2Flogin";
 
@@ -52,7 +55,7 @@ export default async function BusinessUnavailablePage({
               {role && role !== "client" ? (
                 <>
                   {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}
-                  <span className="hidden md:inline-flex">
+                  <span className={styles.desktopAction}>
                     <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
                       href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
                   </span>
@@ -76,15 +79,10 @@ export default async function BusinessUnavailablePage({
               >
                 {copy.help}
               </a>
-              <Link
-                className={cn(
-                  buttonVariants({ size: "default", variant: "secondary" }),
-                  "min-w-0 whitespace-normal text-center",
-                )}
-                href={SIGN_OUT_TO_LOGIN_PATH}
-              >
+              {/* 退出是写操作，表单不会被 Next 的链接预加载触发。 */}
+              <PostActionForm action={SIGN_OUT_TO_LOGIN_PATH} buttonClassName={cn(buttonVariants({ size: "default", variant: "secondary" }), "min-w-0 whitespace-normal text-center")}>
                 {copy.signOut}
-              </Link>
+              </PostActionForm>
             </div>
           }
           badge={copy.badge}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
@@ -13,34 +13,14 @@ import type {
   MailThreadQuery,
   MailThreadState,
   MailWorkspaceSummary,
-  OutboundMessageInput,
 } from "@/lib/mail/mail-types";
 
-import { readNdjsonText } from "./mail-display";
-import { readMailSendIntent, writeMailSendIntent, type MailSendIntent } from "./mail-send-intent";
-import { runMailSendFlow } from "./mail-send-flow";
 import { requestMailJson as requestJson } from "./mail-workspace-request";
 import { useMailDraftGuard } from "./use-mail-draft-guard";
+import { useMailWorkspaceServices } from "./use-mail-workspace-services";
+import { EMPTY_COMPOSER, useMailWorkspaceComposer } from "./use-mail-workspace-composer";
 
-export type ComposerState = {
-  mode: "new" | "reply";
-  to: string; cc: string; bcc: string; subject: string; body: string;
-  attachmentIds: string[]; attachments: Array<{ id: string; name: string; status: string }>;
-};
-
-const EMPTY_COMPOSER: ComposerState = { mode: "new", to: "", cc: "", bcc: "", subject: "", body: "", attachmentIds: [], attachments: [] };
-
-function fileToBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("附件内容无法读取。"));
-    reader.onload = () => {
-      const value = typeof reader.result === "string" ? reader.result : "";
-      resolve(value.includes(",") ? value.slice(value.indexOf(",") + 1) : value);
-    };
-    reader.readAsDataURL(file);
-  });
-}
+export type { ComposerState } from "./use-mail-workspace-composer";
 
 export function useMailWorkspace(input: {
   initialSummary: MailWorkspaceSummary | null;
@@ -66,25 +46,10 @@ export function useMailWorkspace(input: {
   const [metrics, setMetrics] = useState(input.initialMetrics);
   const [selected, setSelected] = useState<MailThreadDetail | null>(null);
   const [filters, setFilters] = useState<MailThreadQuery>({ scope: input.isAdmin ? "all" : "mine", limit: 40 });
-  const [composer, setComposer] = useState<ComposerState>(EMPTY_COMPOSER);
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(input.initialError);
   const [aiDraft, setAiDraft] = useState("");
   const [report, setReport] = useState("");
-  const [pendingSend, setPendingSend] = useState(false);
-  const pendingIntentRef = useRef<MailSendIntent | null>(null);
-
-  useEffect(() => {
-    // 刷新后继续查询同一个任务；不会把邮件正文存入浏览器存储。
-    pendingIntentRef.current = readMailSendIntent(input.viewerId);
-    setPendingSend(Boolean(pendingIntentRef.current));
-  }, [input.viewerId]);
-
-  const saveSendIntent = useCallback((intent: MailSendIntent | null) => {
-    pendingIntentRef.current = intent;
-    writeMailSendIntent(input.viewerId, intent);
-    setPendingSend(Boolean(intent));
-  }, [input.viewerId]);
 
   const refreshSummary = useCallback(async () => {
     const [nextSummary, nextMetrics] = await Promise.all([
@@ -138,6 +103,18 @@ export function useMailWorkspace(input: {
     finally { if (requestVersion === threadRequestVersion.current) setBusy(null); }
   }, [busy, filters]);
 
+  const { composer, pendingSend, send, setComposer, startNew, updateComposer, uploadFiles } = useMailWorkspaceComposer({
+    viewerId: input.viewerId,
+    selected,
+    setSelected,
+    filters,
+    loadThreads,
+    draftGuard,
+    setBusy,
+    setFeedback,
+    setAiDraft,
+  });
+
   const openThread = useCallback(async (threadId: string) => {
     if (!await draftGuard.canDiscard()) return;
     setBusy(`thread:${threadId}`); setFeedback(null);
@@ -153,7 +130,7 @@ export function useMailWorkspace(input: {
       }
     } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件详情暂时无法读取。"); }
     finally { setBusy(null); }
-  }, [draftGuard]);
+  }, [draftGuard, setComposer]);
 
   const updateState = useCallback(async (state: MailThreadState) => {
     if (!selected) return;
@@ -186,132 +163,19 @@ export function useMailWorkspace(input: {
     finally { setBusy(null); }
   }, [agents, selected]);
 
-  const uploadFiles = useCallback(async (files: File[]) => {
-    if (!files) return;
-    if (composer.attachments.length + files.length > 10) { setFeedback("一封邮件最多添加 10 个附件。"); return; }
-    setBusy("attachment"); setFeedback(null);
-    try {
-      const uploaded = [] as ComposerState["attachments"];
-      for (const file of Array.from(files)) {
-        const base64 = await fileToBase64(file);
-        const receipt = await requestJson<{ attachmentId: string; filename: string; status: string }>("/api/mail/attachments", {
-          method: "POST", body: JSON.stringify({ filename: file.name, contentType: file.type, base64 }),
-        });
-        uploaded.push({ id: receipt.attachmentId, name: receipt.filename, status: receipt.status });
-      }
-      setComposer((current) => ({ ...current, attachments: [...current.attachments, ...uploaded], attachmentIds: [...current.attachmentIds, ...uploaded.map((item) => item.id)] }));
-      if (uploaded.length > 0) draftGuard.setDirty(true);
-      if (uploaded.some((item) => item.status !== "clean")) setFeedback("附件已保存，正在等待安全检查，暂时不能发送。");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "附件没有上传完成。"); }
-    finally { setBusy(null); }
-  }, [composer.attachments.length, draftGuard]);
-
-  const send = useCallback(async () => {
-    setBusy("send"); setFeedback("邮件正在发送，请稍候…");
-    try {
-      const draft: Omit<OutboundMessageInput, "idempotencyKey"> = {
-        threadId: composer.mode === "reply" ? selected?.id : undefined,
-        to: composer.to.split(/[;,\n]/).map((item) => item.trim()).filter(Boolean),
-        cc: composer.cc.split(/[;,\n]/).map((item) => item.trim()).filter(Boolean),
-        bcc: composer.bcc.split(/[;,\n]/).map((item) => item.trim()).filter(Boolean),
-        subject: composer.subject,
-        textBody: composer.body,
-        htmlBody: "",
-        attachmentIds: composer.attachmentIds,
-      };
-      const result = await runMailSendFlow({
-        draft,
-        pendingIntent: pendingIntentRef.current,
-        saveIntent: saveSendIntent,
-        viewerId: input.viewerId,
-      });
-      if (result === "sent") {
-        draftGuard.setDirty(false);
-        setComposer(EMPTY_COMPOSER); setAiDraft("");
-        await loadThreads(filters, { skipDraftGuard: true });
-        setFeedback("邮件已在公司邮箱的“已发送”中确认。");
-      } else if (result === "partial_failed") {
-        setFeedback("公司邮箱的发送结果需要人工核对，请勿再次发送这封邮件。");
-      } else {
-        setFeedback("发送结果仍在确认中，点击“继续核对”可查看原任务。");
-      }
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件没有发送完成。"); }
-    finally { setBusy(null); }
-  }, [composer, draftGuard, filters, input.viewerId, loadThreads, saveSendIntent, selected]);
-
-  const generateReply = useCallback(async () => {
-    if (!selected) return;
-    setBusy("ai-reply"); setFeedback(null); setAiDraft("");
-    try {
-      const response = await fetch("/api/mail/ai/reply", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ threadId: selected.id, requestId: crypto.randomUUID() }),
-      });
-      if (!response.ok) throw new Error("回复建议没有生成完成。");
-      const draft = await readNdjsonText(response);
-      setAiDraft(draft); setComposer((current) => ({ ...current, body: draft }));
-      draftGuard.setDirty(true);
-      setFeedback("回复建议已生成，可以继续修改后再发送。");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "回复建议没有生成完成。"); }
-    finally { setBusy(null); }
-  }, [draftGuard, selected]);
-
-  const generateReport = useCallback(async (start: string, end: string) => {
-    setBusy("ai-report"); setFeedback(null); setReport("");
-    try {
-      const response = await fetch("/api/mail/ai/report", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ start: new Date(`${start}T00:00:00+08:00`).toISOString(), end: new Date(`${end}T23:59:59.999+08:00`).toISOString(), requestId: crypto.randomUUID() }),
-      });
-      if (!response.ok) throw new Error("邮件分析报告没有生成完成。");
-      setReport(await readNdjsonText(response)); setFeedback("邮件分析报告已生成。");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件分析报告没有生成完成。"); }
-    finally { setBusy(null); }
-  }, []);
-
-  const saveAgent = useCallback(async (profile: MailAgentProfile, resetToGenerated = false) => {
-    setBusy(`agent:${profile.memberId}`); setFeedback(null);
-    try {
-      const receipt = await requestJson<{ memberId: string; aliasLocalPart: string; refPrefix: string; version: number }>("/api/mail/agents", { method: "PUT", body: JSON.stringify({
-        memberId: profile.memberId, aliasLocalPart: profile.aliasLocalPart, refPrefix: profile.refPrefix,
-        senderDisplayName: profile.senderDisplayName, signatureHtml: profile.signatureHtml, enabled: profile.enabled,
-        version: profile.version, resetToGenerated,
-      }) });
-      const expectedAlias = resetToGenerated ? profile.suggestedAliasLocalPart : profile.aliasLocalPart.trim().toLowerCase();
-      const expectedRef = resetToGenerated ? profile.suggestedRefPrefix : profile.refPrefix.trim().toUpperCase();
-      if (receipt.memberId !== profile.memberId || receipt.aliasLocalPart !== expectedAlias || receipt.refPrefix !== expectedRef || receipt.version <= profile.version) {
-        throw new Error("发件人配置保存结果没有确认完整。");
-      }
-      const result = await requestJson<{ agents: MailAgentProfile[] }>("/api/mail/agents");
-      if (input.isAdmin) setAgents(result.agents);
-      else setOwnProfile(result.agents[0] ?? null);
-      await refreshSummary(); setFeedback("发件人配置已保存。");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "发件人配置没有保存。"); }
-    finally { setBusy(null); }
-  }, [input.isAdmin, refreshSummary]);
-
-  const connectMailbox = useCallback(async () => {
-    setBusy("connect"); setFeedback(null);
-    try {
-      const result = await requestJson<{ connectUrl: string }>("/api/mail/mailbox-connect", { method: "POST", body: "{}" });
-      window.location.assign(result.connectUrl);
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "暂时无法连接公司邮箱。"); setBusy(null); }
-  }, []);
-
-  const connectFeishu = useCallback(async () => {
-    setBusy("feishu"); setFeedback(null);
-    try {
-      const result = await requestJson<{ connectUrl: string }>("/api/mail/feishu-connect", { method: "POST", body: "{}" });
-      window.location.assign(result.connectUrl);
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "暂时无法绑定飞书。"); setBusy(null); }
-  }, []);
-
-  const startNew = useCallback(async () => {
-    if (!await draftGuard.canDiscard()) return false;
-    draftGuard.setDirty(false);
-    setSelected(null); setComposer(EMPTY_COMPOSER); setAiDraft("");
-    return true;
-  }, [draftGuard]);
+  const { connectFeishu, connectMailbox, generateReply, generateReport, saveAgent } = useMailWorkspaceServices({
+    isAdmin: input.isAdmin,
+    selected,
+    setAgents,
+    setOwnProfile,
+    setComposer,
+    setBusy,
+    setFeedback,
+    setAiDraft,
+    setReport,
+    markDraftDirty: () => draftGuard.setDirty(true),
+    refreshSummary,
+  });
   const deleteSelected = useCallback(async () => {
     if (!selected || !await confirm({
       description: t("deleteConfirmDescription"),
@@ -329,10 +193,6 @@ export function useMailWorkspace(input: {
     } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件副本没有删除完成。"); }
     finally { setBusy(null); }
   }, [confirm, draftGuard, refreshSummary, selected, t]);
-  const updateComposer = useCallback((next: ComposerState) => {
-    draftGuard.setDirty(true);
-    setComposer(next);
-  }, [draftGuard]);
   // 发件设置包含管理员，但客户会话仍只允许转交给启用的业务员。
   const enabledAgents = useMemo(() => agents.filter((agent) => agent.enabled && agent.role === "salesman"), [agents]);
   const removeThreads = useCallback((threadIds: string[]) => {

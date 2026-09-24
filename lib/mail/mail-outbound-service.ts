@@ -1,6 +1,7 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
+import { MailConfirmedRejection } from "./mail-confirmed-rejection";
 import { encryptMailValue } from "./mail-security";
 import { assertThreadAccess, databaseError } from "./mail-service";
 import type { MailIdentity, OutboundJobReceipt, OutboundMessageInput } from "./mail-types";
@@ -10,7 +11,7 @@ import type { MailIdentity, OutboundJobReceipt, OutboundMessageInput } from "./m
 function normalizeAddressList(values: string[]) {
   const result = [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
   if (result.some((value) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))) {
-    throw new Error("请检查收件人邮箱地址。");
+    throw new MailConfirmedRejection("请检查收件人邮箱地址。");
   }
   return result;
 }
@@ -19,9 +20,9 @@ export async function createOutboundMessage(identity: MailIdentity, message: Out
   const to = normalizeAddressList(message.to);
   const cc = normalizeAddressList(message.cc);
   const bcc = normalizeAddressList(message.bcc);
-  if (to.length === 0) throw new Error("请至少填写一个收件人。");
-  if (message.attachmentIds.length > 10) throw new Error("每封邮件最多添加 10 个附件。");
-  if (!message.idempotencyKey.trim()) throw new Error("发送标识不能为空。");
+  if (to.length === 0) throw new MailConfirmedRejection("请至少填写一个收件人。");
+  if (message.attachmentIds.length > 10) throw new MailConfirmedRejection("每封邮件最多添加 10 个附件。");
+  if (!message.idempotencyKey.trim()) throw new MailConfirmedRejection("发送标识不能为空。");
   if (message.threadId) await assertThreadAccess(identity, message.threadId);
 
   const supabase = getSupabaseServiceRoleClient();
@@ -43,12 +44,12 @@ export async function createOutboundMessage(identity: MailIdentity, message: Out
       .eq("user_id", identity.userId)
       .in("id", message.attachmentIds);
     if (error) databaseError("附件状态暂时无法确认。", error);
-    if ((uploads ?? []).length !== message.attachmentIds.length) throw new Error("部分附件不存在，请重新上传。");
+    if ((uploads ?? []).length !== message.attachmentIds.length) throw new MailConfirmedRejection("部分附件不存在，请重新上传。");
     if ((uploads ?? []).some((upload) => upload.scan_status !== "clean" || upload.consumed_at || new Date(upload.expires_at as string) <= new Date())) {
-      throw new Error("部分附件未通过安全检查或已经过期。");
+      throw new MailConfirmedRejection("部分附件未通过安全检查或已经过期。");
     }
     totalBytes = (uploads ?? []).reduce((sum, upload) => sum + Number(upload.byte_size), 0);
-    if (totalBytes > 20 * 1024 * 1024) throw new Error("附件合计不能超过 20 MiB。");
+    if (totalBytes > 20 * 1024 * 1024) throw new MailConfirmedRejection("附件合计不能超过 20 MiB。");
   }
 
   const payload = { ...message, to, cc, bcc };

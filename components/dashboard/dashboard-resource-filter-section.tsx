@@ -20,6 +20,7 @@ export function DashboardResourceFilterSection({
   activeFilterCount = 0,
   activeFilterSummary,
   defaultMobileExpanded = false,
+  collapseDesktop = false,
   footer,
   gridClassName,
   onReset,
@@ -32,6 +33,7 @@ export function DashboardResourceFilterSection({
   activeFilterCount?: number;
   activeFilterSummary?: ReactNode;
   defaultMobileExpanded?: boolean;
+  collapseDesktop?: boolean;
   footer?: ReactNode;
   gridClassName?: string;
   onReset?: () => void;
@@ -42,6 +44,8 @@ export function DashboardResourceFilterSection({
 }) {
   const t = useTranslations("DashboardFramework.filters");
   const [mobileExpanded, setMobileExpanded] = useState(defaultMobileExpanded);
+  const [desktopExpanded, setDesktopExpanded] = useState(activeFilterCount > 0);
+  const showDesktopFilters = !collapseDesktop || desktopExpanded;
   const hasSecondaryFilters = Boolean(children);
   const resolvedActiveSummary =
     activeFilterSummary ??
@@ -61,6 +65,12 @@ export function DashboardResourceFilterSection({
       {primary || onReset ? (
         <div className="flex min-w-0 items-end gap-2">
           {primary ? <div className="min-w-0 flex-1">{primary}</div> : null}
+          {collapseDesktop && hasSecondaryFilters ? (
+            <Button aria-expanded={showDesktopFilters} className="hidden shrink-0 sm:inline-flex" onClick={() => setDesktopExpanded((current) => !current)} size="compact" type="button" variant="outline">
+              {showDesktopFilters ? t("collapse") : t("expand")}
+              <ChevronDown className={`size-4 transition-transform ${showDesktopFilters ? "rotate-180" : ""}`} />
+            </Button>
+          ) : null}
           {onReset ? (
             <Button
               className="hidden shrink-0 sm:inline-flex"
@@ -138,7 +148,9 @@ export function DashboardResourceFilterSection({
       ) : null}
 
       <div
-        className={hasSecondaryFilters && !mobileExpanded ? "hidden sm:block" : "block"}
+        className={mobileExpanded
+          ? showDesktopFilters ? "block" : "block sm:hidden"
+          : showDesktopFilters ? "hidden sm:block" : "hidden"}
         data-mobile-filter-expanded={mobileExpanded ? "true" : "false"}
       >
         {hasSecondaryFilters || resolvedFooter ? (

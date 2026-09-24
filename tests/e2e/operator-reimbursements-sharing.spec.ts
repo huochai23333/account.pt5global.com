@@ -184,13 +184,20 @@ test.describe("operator reimbursement sharing and historical periods", () => {
     test.setTimeout(150_000);
     await loginAs(page, "operator");
     await page.goto("/operator/reimbursements");
+    // 搜索有 300ms 防抖；先订阅本次查询，再录入，避免沿用上一页的旧列表。
+    const searchedPage = page.waitForResponse((response) =>
+      response.url().includes("/rpc/get_operator_reimbursements_page") &&
+      (response.request().postData() ?? "").includes(`${marker} 历史费用`) && response.ok());
     await page.getByRole("searchbox").fill(`${marker} 历史费用`);
+    await searchedPage;
     await waitForRecords(page);
+    await expect(page.getByText("第 1 页，共 11 页")).toBeVisible();
     await expect(page.locator("article")).toHaveCount(20);
     // 搜索不应压缩确认范围；翻页后依旧按完整周期报销 205 条。
     for (let i = 0; i < 10; i++) {
       await page.getByRole("button", { name: "下一页", exact: true }).click();
-      await waitForRecords(page);
+      // 加载提示可能在断言开始前尚未出现；等待目标页码才能确认本次翻页已落地。
+      await expect(page.getByText(`第 ${i + 2} 页，共 11 页`)).toBeVisible();
     }
     await expect(page.locator("article")).toHaveCount(5);
     await expect(

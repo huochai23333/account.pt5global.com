@@ -6,6 +6,7 @@ import {
   loginAs,
 } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 import {
   chooseSelectOption,
   expectSelectValue,
@@ -47,8 +48,6 @@ test.describe("wholesale settlement releases", () => {
     const receivedDate = getShanghaiDateInputValue();
     const createdRateId = await ensureLocalUsdRate(receivedDate);
     if (createdRateId) createdRateIds.add(createdRateId);
-    const currentMonth = receivedDate.slice(0, 7).replace("-", "");
-    const firstOrderNumber = `WH-LOCAL-${currentMonth}-001`;
 
     const financePage = await browser.newPage();
     await financePage.setViewportSize({ height: 900, width: 1440 });
@@ -123,47 +122,19 @@ test.describe("wholesale settlement releases", () => {
     await expect(fixedCustomerSelect).toBeDisabled();
     expect(await getSelectValue(fixedCustomerSelect)).not.toBe("");
 
-    const firstOrderInput = getAllocationInput(
-      allocationDialog,
-      firstOrderNumber,
-    );
-    // 第一次打开已经按最早订单优先生成完整建议：先填满第一笔，再分到第二笔。
-    await expect(firstOrderInput).toHaveValue("1800.00");
-    await expect
-      .poll(async () => {
-        const values = await allocationDialog
-          .locator('input[type="number"]')
-          .evaluateAll((inputs) =>
-            inputs.map((input) => (input as HTMLInputElement).value),
-          );
-        return values.filter((value) => value === "1200.00").length;
-      })
-      .toBe(1);
-    const secondSuggestion = await allocationDialog
-      .locator('input[type="number"]')
-      .evaluateAll((inputs) =>
-        inputs
-          .map((input) => ({
-            // 控件名称由 Field 的 <label for> 提供，不一定直接写在 aria-label 属性上。
-            label:
-              (input as HTMLInputElement).labels?.[0]?.textContent?.trim() ??
-              input.getAttribute("aria-label") ??
-              "",
-            value: (input as HTMLInputElement).value,
-          }))
-          .find((input) => input.value === "1200.00"),
-      );
-    const secondOrderNumber = secondSuggestion?.label.match(
-      /^订单 (.+) 的分配金额$/,
-    )?.[1];
-    if (!secondOrderNumber) {
-      throw new Error("没有找到承接第二段建议金额的订单。");
-    }
+    // 预期只从数据库订单日期与已结汇余额计算，不能用页面建议反过来证明建议正确。
+    const expectedAllocations = await getExpectedInitialAllocations("Wholesale Alpha", 3000);
+    expect(expectedAllocations).toHaveLength(2);
+    const [firstSuggestion, secondSuggestion] = expectedAllocations;
+    const firstOrderNumber = firstSuggestion.orderNumber;
+    const secondOrderNumber = secondSuggestion.orderNumber;
+    const firstOrderInput = getAllocationInput(allocationDialog, firstOrderNumber);
     const secondOrderInput = getAllocationInput(
       allocationDialog,
       secondOrderNumber,
     );
-    await expect(secondOrderInput).toHaveValue("1200.00");
+    await expect(firstOrderInput).toHaveValue(firstSuggestion.amount);
+    await expect(secondOrderInput).toHaveValue(secondSuggestion.amount);
 
     await firstOrderInput.fill("1000");
     await secondOrderInput.fill("500");
@@ -204,10 +175,10 @@ test.describe("wholesale settlement releases", () => {
       .click();
     await expect(
       getAllocationInput(continueDialog, firstOrderNumber),
-    ).toHaveValue("1800.00");
+    ).toHaveValue(firstSuggestion.amount);
     await expect(
       getAllocationInput(continueDialog, secondOrderNumber),
-    ).toHaveValue("1200.00");
+    ).toHaveValue(secondSuggestion.amount);
     await continueDialog
       .getByRole("button", { name: "保存全部分配" })
       .click();
@@ -396,4 +367,38 @@ async function expectTouchTargets(scope: Locator) {
   );
 
   expect(tooSmallTargets).toEqual([]);
+}
+
+async function getExpectedInitialAllocations(customerName: string, releaseAmount: number) {
+  const admin = getLocalSupabaseAdminClient();
+  if (!admin) throw new Error("结汇建议回归需要本地数据库连接。");
+  const { data: customer, error: customerError } = await admin.from("wholesale_customers")
+    .select("id").eq("unique_name", customerName).single();
+  if (customerError || !customer) throw customerError ?? new Error("测试客户不存在。");
+  const { data: orders, error: orderError } = await admin.from("wholesale_orders")
+    .select("id,order_number,ordered_at,customer_payment_amount")
+    .eq("customer_id", customer.id).eq("customer_payment_currency", "USD");
+  if (orderError || !orders) throw orderError ?? new Error("无法读取客户订单。");
+  const { data: settlements, error: settlementError } = await admin.from("wholesale_order_settlements")
+    .select("order_id,settlement_amount").in("order_id", orders.map((order) => order.id));
+  if (settlementError) throw settlementError;
+  const paidByOrderId = new Map<string, number>();
+  for (const settlement of settlements ?? []) {
+    paidByOrderId.set(settlement.order_id,
+      (paidByOrderId.get(settlement.order_id) ?? 0) + Number(settlement.settlement_amount));
+  }
+  let unallocated = releaseAmount;
+  const expected: Array<{ orderNumber: string; amount: string }> = [];
+  // 按原始订单事实独立算出最早订单与逐笔可用余额，避免测试与页面共用同一计算结果。
+  for (const order of [...orders].sort((left, right) =>
+    Date.parse(left.ordered_at) - Date.parse(right.ordered_at) || left.order_number.localeCompare(right.order_number))) {
+    const available = Math.max(Number(order.customer_payment_amount) - (paidByOrderId.get(order.id) ?? 0), 0);
+    const amount = Math.min(available, unallocated);
+    if (amount <= 0) continue;
+    expected.push({ orderNumber: order.order_number, amount: amount.toFixed(2) });
+    unallocated = Math.round((unallocated - amount) * 100) / 100;
+    if (unallocated <= 0) break;
+  }
+  expect(unallocated).toBe(0);
+  return expected;
 }

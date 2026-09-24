@@ -43,7 +43,7 @@ export type WholesaleOrderCursor = {
 };
 
 export type WholesaleOrderPageWarning = {
-  area: "attachments" | "changes" | "purchases" | "settlements";
+  area: "attachments" | "changes" | "contacts" | "purchases" | "settlements";
   message: string;
 };
 
@@ -64,6 +64,7 @@ export type WholesaleOrderPageSummary = {
 
 export type WholesaleOrderPage = {
   canViewInternalFields: boolean;
+  clientContactsByOrderId: Record<string, string>;
   nextCursor: WholesaleOrderCursor | null;
   orderChangeLogs: WholesaleOrderChangeLog[];
   orderListAttachments: WholesaleOrderListAttachment[];
@@ -122,6 +123,7 @@ export async function getWholesaleOrderPage(
   if (orderIds.length === 0) {
     return {
       canViewInternalFields,
+      clientContactsByOrderId: {},
       nextCursor: readWholesaleOrderCursor(core.nextCursor),
       orderChangeLogs: [],
       orderListAttachments: [],
@@ -139,6 +141,7 @@ export async function getWholesaleOrderPage(
     purchaseOrdersResult,
     changeLogsResult,
     attachmentsResult,
+    contactsResult,
   ] = await Promise.all([
     // 客户页面只需订单、物流和附件；结汇及关联采购属于后台处理资料。
     canViewInternalFields
@@ -164,10 +167,22 @@ export async function getWholesaleOrderPage(
       .select("*")
       .in("order_id", orderIds)
       .order("created_at", { ascending: true }),
+    // 函数只返回当前客户本人订单的负责人姓名，不开放员工资料表。
+    !canViewInternalFields
+      ? supabase.rpc("get_wholesale_order_client_contacts", { p_order_ids: orderIds })
+      : Promise.resolve({ data: [], error: null }),
   ]);
+
+  if (contactsResult.error) warnings.push({ area: "contacts", message: "订单负责人暂时无法读取，请稍后刷新。" });
+  const clientContactsByOrderId = Object.fromEntries(
+    ((contactsResult.data ?? []) as Array<{ order_id: string; display_name: string | null }>)
+      .filter((contact) => contact.order_id && contact.display_name)
+      .map((contact) => [contact.order_id, contact.display_name as string]),
+  );
 
   return {
     canViewInternalFields,
+    clientContactsByOrderId,
     nextCursor: readWholesaleOrderCursor(core.nextCursor),
     orderChangeLogs: readWholesaleRelatedRows<WholesaleOrderChangeLog>(
       changeLogsResult,

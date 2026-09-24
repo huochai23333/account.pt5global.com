@@ -155,15 +155,20 @@ export function DashboardHomeClient({ initialData }: DashboardHomeClientProps) {
   const todoCopy = useMemo(() => createHomeTodoCopy(t), [t]);
 
   return (
-    <div className="space-y-4">
-      <DashboardHomeRoleTasks role={initialData.role} workspaceBusinessAccess={initialData.workspaceBusinessAccess} />
-      <DashboardHomeCustomizer
+    <div className="flex flex-col gap-4">
+      {/* 窄屏先显示用户自选组件与公告；宽屏将真实待处理工作置顶。 */}
+      <div className="order-2 xl:order-1">
+        <DashboardHomeRoleTasks role={initialData.role} roleTaskCounts={initialData.roleTaskCounts} workspaceBusinessAccess={initialData.workspaceBusinessAccess} />
+      </div>
+      <div className="order-1 xl:order-2">
+        <DashboardHomeCustomizer
       copy={widgetCopy}
       customizerCopy={customizerCopy}
       initialData={initialData}
       locale={locale}
       todoCopy={todoCopy}
-      />
+        />
+      </div>
     </div>
   );
 }

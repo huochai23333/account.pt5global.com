@@ -5,6 +5,7 @@ import { loginAs } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
 import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 import { chooseSelectOption } from "./helpers/select-control";
+import { cleanupRateFixtures, ensureLocalUsdRate } from "./helpers/wholesale-settlement-fixtures";
 
 const SALESMAN_CODE = "wholesale_order_salesman_tier";
 const MONTHLY_CODE = "wholesale_referral_waybill_bonus";
@@ -15,6 +16,8 @@ test.describe("批发业务参数版本与订单", () => {
   }) => {
     test.setTimeout(180_000);
     const admin = requireLocalAdminClient();
+    // 新旧订单同日结汇需要当天精确汇率；仅清理本次插入的测试报价。
+    const createdRateId = await ensureLocalUsdRate(shanghaiDate());
     const firstNote = `参数版本旧单 ${Date.now()}`;
     const secondNote = `参数版本新单 ${Date.now()}`;
     await resetParameter(admin, SALESMAN_CODE);
@@ -74,6 +77,7 @@ test.describe("批发业务参数版本与订单", () => {
     } finally {
       await deleteOrdersByNotes(admin, [firstNote, secondNote]);
       await resetParameter(admin, SALESMAN_CODE);
+      if (createdRateId) await cleanupRateFixtures([createdRateId]);
       await adminContext.close();
       await salesmanContext.close();
     }
@@ -159,6 +163,8 @@ async function createWholesaleOrder(page: Page, note: string) {
 async function settleOrderFromPage(page: Page, note: string) {
   await page.goto("/admin/wholesale/orders");
   await page.getByLabel("搜索订单").fill(note);
+  // 备注属于完整字段；展开后再用该唯一备注定位新建的订单。
+  await page.getByRole("button", { name: "查看全部字段" }).click();
   const row = page.getByRole("row").filter({ hasText: note });
   await expect(row).toBeVisible();
   await row.getByRole("button", { name: "登记结汇" }).click();

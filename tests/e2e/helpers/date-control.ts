@@ -37,5 +37,6 @@ export async function openDateControl(input: Locator, buttonName: RegExp) {
     'xpath=ancestor::*[@data-slot="date-picker-root"][1]',
   );
   await root.getByRole("button", { name: buttonName }).click();
-  await expect(input.page().locator('[data-slot="date-picker-popup"]')).toBeVisible();
+  // 关闭动效会短暂保留旧弹层，只等待当前仍打开的那一层。
+  await expect(input.page().locator('[data-slot="date-picker-popup"]:not([data-closed])')).toBeVisible();
 }

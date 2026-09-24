@@ -2,22 +2,23 @@
 
 import { useTranslations } from "next-intl";
 
-import type { WholesaleOrderListItem, WholesaleProfile } from "@/lib/wholesale";
+import type { WholesaleOrderListItem } from "@/lib/wholesale";
 import type { WholesaleOrderListAttachment } from "@/lib/wholesale-order-list-attachments";
 
-import { formatCurrency, formatDateTime, getProfileName } from "./wholesale-display";
+import { formatCurrency, formatDateTime } from "./wholesale-display";
+import { getClientOrderContactName } from "./wholesale-client-contact";
 import { WholesaleOrderListAttachments } from "./wholesale-order-list-attachments";
 import { WholesaleTable, WholesaleTd, WholesaleTh } from "./wholesale-ui";
 
 /** 客户只看到履约所需的订单资料；内部结汇和采购列由独立的后台表格展示。 */
 export function ClientWholesaleOrdersTable({
   orders,
+  clientContactsByOrderId,
   orderListAttachmentsByOrderId,
-  profilesById,
 }: {
   orders: WholesaleOrderListItem[];
+  clientContactsByOrderId: Record<string, string>;
   orderListAttachmentsByOrderId: Map<string, WholesaleOrderListAttachment[]>;
-  profilesById: Map<string, WholesaleProfile>;
 }) {
   const t = useTranslations("WholesaleBusiness.ordersUi");
   return (
@@ -41,7 +42,7 @@ export function ClientWholesaleOrdersTable({
               {formatCurrency(order.customer_payment_amount, order.customer_payment_currency)}
             </WholesaleTd>
             <WholesaleTd>{order.courier_company ?? t("fallbacks.notRecorded")}</WholesaleTd>
-            <WholesaleTd>{getProfileName(profilesById, order.sales_user_id)}</WholesaleTd>
+            <WholesaleTd>{getClientOrderContactName(order, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}</WholesaleTd>
             <WholesaleTd className="min-w-[220px] whitespace-normal">
               <WholesaleOrderListAttachments
                 attachments={orderListAttachmentsByOrderId.get(order.id) ?? []}

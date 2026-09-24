@@ -25,6 +25,7 @@ import {
   type DashboardHomeWidgetLayoutItem,
 } from "./dashboard-home-layouts";
 import { getUserTodos, type UserTodoItemRow } from "./user-todos";
+import { getDashboardHomeRoleTaskCounts, type HomeRoleTaskCounts } from "./dashboard-home-role-task-counts";
 
 export type DashboardHomeGreetingPeriod =
   | "morning"
@@ -41,6 +42,7 @@ export type DashboardHomePageData = {
   layoutScope: string;
   referralCode: string | null;
   role: AppRole | null;
+  roleTaskCounts: HomeRoleTaskCounts;
   status: UserStatus | null;
   todos: UserTodoItemRow[];
   workspaceBusinessAccess: WorkspaceBusinessKey[];
@@ -67,7 +69,7 @@ export async function getDashboardHomePageData(
     isSalesStaffRole(role) && status === "active"
       ? getVisibleHomeBusinessBoards(supabase, role)
       : Promise.resolve([]);
-  const [profile, announcements, todos, homeLayout, businessBoards, workspaceBusinessAccess] =
+  const [profile, announcements, todos, homeLayout, businessBoards, workspaceBusinessAccess, roleTaskCounts] =
     await Promise.all([
       getHomeProfile(supabase, user.id),
       getVisibleAnnouncements(supabase, undefined, { role, status }),
@@ -79,6 +81,7 @@ export async function getDashboardHomePageData(
       }),
       businessBoardsPromise,
       getCurrentWorkspaceBusinessAccess(supabase),
+      getDashboardHomeRoleTaskCounts(supabase, { role, status, userId: user.id }),
     ]);
 
   return {
@@ -96,6 +99,7 @@ export async function getDashboardHomePageData(
     layoutScope,
     referralCode: profile?.referral_code?.trim().toUpperCase() || null,
     role,
+    roleTaskCounts,
     status,
     todos,
     workspaceBusinessAccess,

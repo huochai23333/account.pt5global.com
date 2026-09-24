@@ -7,8 +7,14 @@ import {
 } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
 import { chooseSelectOption } from "./helpers/select-control";
+import { cleanupRateFixtures, ensureLocalUsdRate } from "./helpers/wholesale-settlement-fixtures";
 
 test.describe("wholesale order settlements", () => {
+  const createdRateIds = new Set<string>();
+  test.afterEach(async () => {
+    await cleanupRateFixtures([...createdRateIds]);
+    createdRateIds.clear();
+  });
   test("admin can record multiple settlements with a selected date", async ({
     page,
   }) => {
@@ -20,6 +26,11 @@ test.describe("wholesale order settlements", () => {
     const uniqueNote = `分批结汇测试 ${Date.now()}`;
     const currentMonth = getShanghaiDateInputValue().slice(0, 7);
     const settlementDate = getShanghaiDateInputValue();
+    // 测试汇率只针对本次日期创建，并在用例结束清理；不依赖昨日种子报价。
+    const rateId = await ensureLocalUsdRate(settlementDate, 7.18);
+    if (rateId) createdRateIds.add(rateId);
+    // 汇率在页面服务端首读时加载；夹具创建后刷新，才能用新日期结汇。
+    await page.reload();
 
     await page.getByRole("button", { name: "新建订单" }).click();
 
@@ -49,8 +60,12 @@ test.describe("wholesale order settlements", () => {
 
     await expect(page.getByText("批发订单已保存。")).toBeVisible();
     await page.getByLabel("搜索订单").fill(uniqueNote);
+    await page.getByRole("button", { name: "查看全部字段" }).click();
 
-    const orderRow = page.getByRole("row").filter({ hasText: uniqueNote });
+    // 用唯一备注查单后，通过列表结果定位；常用列不直接展示备注。
+    const orderRows = page.locator('[data-testid^="wholesale-order-row-"]');
+    await expect(orderRows).toHaveCount(1);
+    const orderRow = orderRows.first();
     await expect(orderRow).toBeVisible();
     await expect(orderRow).toContainText("未结汇");
 
@@ -86,6 +101,7 @@ test.describe("wholesale order settlements", () => {
         hasText: `WH-LOCAL-${getShanghaiDateInputValue().slice(0, 7).replace("-", "")}-001`,
       }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "查看全部字段" }).click();
     await expectLinkedPurchaseOrderDetailsDialog(page);
     await expectNoDocumentHorizontalOverflow(page);
 

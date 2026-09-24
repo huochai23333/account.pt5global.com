@@ -1207,6 +1207,8 @@
       },
       "fallbacks": {
         "notRecorded": "未记录",
+        "unassigned": "未分配",
+        "assignedNameUnavailable": "已分配负责人，姓名暂不可用",
         "unsettled": "未结汇",
         "afterSettlement": "结汇后计算",
         "notGenerated": "未产生"
@@ -1599,6 +1601,7 @@
     "roleTasks": {
       "title": "常用工作",
       "description": "选择一项工作直接进入对应页面。",
+      "pendingCount": "待处理 {count}",
       "accounts": "处理账号",
       "companyExpenses": "查看公司费用",
       "creditOrders": "处理库存订单",
@@ -2095,6 +2098,8 @@
     "mediaDescription": "上传后会进入待审核，审核通过后会展示在你的个人资料中。图片需小于 5 MB，视频需小于 30 MB。",
     "deletePhotos": "删除照片",
     "uploadPhotos": "上传照片",
+    "retryUpload": "重试上传",
+    "selectedUploadFiles": "已选文件",
     "deleteVideos": "删除视频",
     "uploadVideos": "上传视频",
     "profileChangeSubmitted": "资料修改已提交，管理员确认后会更新展示。",

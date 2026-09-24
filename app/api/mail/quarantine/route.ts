@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
 import { quarantineMailThreads, queryMailQuarantine } from "@/lib/mail/mail-service";
 
-import { mailApiError } from "../_shared";
+import { mailApiError, readAuthenticatedMailJson } from "../_shared";
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const input = await request.json() as Parameters<typeof quarantineMailThreads>[1];
-    return NextResponse.json(await quarantineMailThreads(await requireMailIdentity(), input));
+    const { identity, body: input } = await readAuthenticatedMailJson<Parameters<typeof quarantineMailThreads>[1]>(request);
+    return NextResponse.json(await quarantineMailThreads(identity, input));
   } catch (error) { return mailApiError(error, "邮件暂时无法移入隔离区。"); }
 }

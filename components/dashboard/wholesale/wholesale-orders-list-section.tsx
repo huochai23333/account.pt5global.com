@@ -79,8 +79,6 @@ export function WholesaleOrdersListSection({
           : null
       }
     >
-      {assessmentPanel ? <div className="mb-5">{assessmentPanel}</div> : null}
-
       {loadError ? (
         <div className="mb-4 space-y-3">
           <FeedbackNotice tone="error">{loadError}</FeedbackNotice>
@@ -107,16 +105,21 @@ export function WholesaleOrdersListSection({
           <UiMessage id="components_dashboard_wholesale_wholesale_orders_section.text003" />
         </div>
       ) : page && page.orders.length === 0 ? (
-        <WholesaleEmptyState
-          description={uiText("attribute005")}
-          icon={<ReceiptText className="size-5" />}
-          title={uiText("attribute006")}
-        />
+        <>
+          <WholesaleEmptyState
+            description={uiText("attribute005")}
+            icon={<ReceiptText className="size-5" />}
+            title={uiText("attribute006")}
+          />
+          {/* 空结果仍给出评估入口的禁用原因，恢复筛选后同一入口可继续使用。 */}
+          {assessmentPanel ? <div className="mt-3">{assessmentPanel}</div> : null}
+        </>
       ) : page ? (
         <ResponsiveDataView
           desktop={
             page.canViewInternalFields ? <div>
-              <div className="mb-3 flex justify-end">
+              <div className="mb-3 flex flex-wrap items-start justify-end gap-2">
+                {assessmentPanel ? <div className="min-w-0 flex-1">{assessmentPanel}</div> : null}
                 <Button onClick={() => setShowAllColumns((current) => !current)} size="compact" type="button" variant="outline">
                   {showAllColumns ? t("compactColumns.showCommon") : t("compactColumns.showAll")}
                 </Button>
@@ -132,14 +135,15 @@ export function WholesaleOrdersListSection({
               />}
             </div> : <ClientWholesaleOrdersTable
               orders={page.orders}
+              clientContactsByOrderId={page.clientContactsByOrderId}
               orderListAttachmentsByOrderId={renderProps.orderListAttachmentsByOrderId}
-              profilesById={renderProps.profilesById}
             />
           }
           mobile={
             <WholesaleOrdersMobileList
               {...renderProps}
               canViewInternalFields={page.canViewInternalFields}
+              clientContactsByOrderId={page.clientContactsByOrderId}
               orders={page.orders}
             />
           }

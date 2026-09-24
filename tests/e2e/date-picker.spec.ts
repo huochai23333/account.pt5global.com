@@ -11,6 +11,7 @@ import {
   fillDateControl,
   openDateControl,
 } from "./helpers/date-control";
+import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 test.describe("全站日期选择控件", () => {
   test("日期和月份支持键盘输入、错误恢复与日历点选", async ({ page }) => {
@@ -68,6 +69,7 @@ test.describe("全站日期选择控件", () => {
 
     // 日期范围仍由两个字段维护；结束日期早于开始日期时不得污染原有筛选值。
     await page.goto("/admin/wholesale/orders");
+    await expandOrderFilters(page);
     const fromInput = page.getByLabel("下单日期从");
     const toInput = page.getByLabel("下单日期到");
     const previousTo = await toInput.getAttribute("data-value");
@@ -93,7 +95,7 @@ test.describe("全站日期选择控件", () => {
     });
     const dateInput = dialog.getByRole("textbox", {
       exact: true,
-      name: "Paid Date",
+      name: "Paid date (optional; can be added later)",
     });
     await fillDateControl(monthInput, "02/2024");
     await fillDateControl(dateInput, "02/29/2024");

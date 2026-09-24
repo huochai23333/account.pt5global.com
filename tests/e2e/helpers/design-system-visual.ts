@@ -1,42 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 export async function stabilizeVisualPage(page: Page) {
-  // 固定时间并关闭动效，避免时钟、光标和过渡过程让同一页面产生无意义差异。
-  await page.addInitScript(() => {
-    const fixedNow = new Date("2026-07-16T09:30:00+08:00").valueOf();
-    const OriginalDate = Date;
-    class FixedDate extends OriginalDate {
-      constructor(...values: unknown[]) {
-        if (values.length === 0) {
-          super(fixedNow);
-          return;
-        }
-        if (values.length === 1) {
-          super(values[0] as string | number | Date);
-          return;
-        }
-
-        // 日历库会使用 new Date(年, 月, 日, 时, 分...) 构造网格日期。
-        // 冻结“当前时间”不能破坏这种标准重载，否则十二个月会被错误压成同一个月。
-        super(0);
-        this.setFullYear(
-          Number(values[0]),
-          Number(values[1]),
-          Number(values[2] ?? 1),
-        );
-        this.setHours(
-          Number(values[3] ?? 0),
-          Number(values[4] ?? 0),
-          Number(values[5] ?? 0),
-          Number(values[6] ?? 0),
-        );
-      }
-      static now() {
-        return fixedNow;
-      }
-    }
-    window.Date = FixedDate as DateConstructor;
-  });
+  // 服务端先生成日期，浏览器预先改写 Date 会让两侧首屏不一致并触发水合错误。
+  // 只请求减少动效；截图时另行冻结动画与光标，不改动业务日期。
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page
     .addStyleTag({
       content: `
@@ -55,12 +22,15 @@ export async function capture(page: Page, name: string) {
   });
   await expect(page).toHaveScreenshot(name, {
     animations: "disabled",
+    // Playwright 默认截图会临时给输入框写入 caret-color，撞上 React 水合时会产生假告警。
+    caret: "initial",
     maxDiffPixelRatio: 0.015,
   });
 }
 
 export async function signOut(page: Page) {
   await page.goto("/auth/sign-out?next=%2Flogin");
+  await page.getByRole("button", { name: /退出登录|Sign out/ }).click();
   await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
 }
 
@@ -78,7 +48,8 @@ export async function expectDocumentInsideViewport(page: Page) {
  * 可以同时发现 390px、768px 和桌面宽度下的碰撞翻转、横向越界与弹层过高问题。
  */
 export async function expectAnchoredPopupInsideViewport(page: Page) {
-  const popup = page.locator('[data-slot="date-picker-popup"]');
+  // 从日期切到月份时，关闭动画可能短暂保留上一层弹窗；最后挂载的是当前弹窗。
+  const popup = page.locator('[data-slot="date-picker-popup"]:not([data-closed])').last();
   await expect(popup).toBeVisible();
   const box = await popup.boundingBox();
   const viewport = page.viewportSize();
@@ -307,9 +278,12 @@ export async function expectSoftFilterControlHierarchy(page: Page) {
   const mobileDisclosure = page.getByRole("button", {
     name: /更多筛选条件/,
   });
-  // 不能用一次性的 isVisible() 判断移动折叠按钮：页面刚完成路由切换时，React 可能仍在挂载筛选区，
-  // 此时按钮会暂时不存在。直接依据当前视口判断，并用 Playwright 自动等待按钮出现，测试才不会产生竞态。
-  const restoreCollapsedState = (page.viewportSize()?.width ?? 1440) < 640;
+  // 桌面和手机都可能默认收起筛选项；先等折叠按钮挂载，再按页面实际状态判断，
+  // 检查完成后恢复原状态，保证后续截图仍记录用户进入页面时的构图。
+  await expect(
+    page.getByRole("button", { name: /更多筛选条件|收起筛选条件/ }),
+  ).toBeVisible();
+  const restoreCollapsedState = await mobileDisclosure.isVisible();
 
   if (restoreCollapsedState) {
     await expect(mobileDisclosure).toBeVisible();

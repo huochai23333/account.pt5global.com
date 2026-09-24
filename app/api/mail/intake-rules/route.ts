@@ -9,7 +9,7 @@ import {
 } from "@/lib/mail/mail-service";
 import type { MailIntakeRuleAction, MailIntakeRuleMatcher } from "@/lib/mail/mail-types";
 
-import { mailApiError } from "../_shared";
+import { mailApiError, readAuthenticatedMailJson } from "../_shared";
 
 export async function GET() {
   try { return NextResponse.json(await listMailIntakeRules(await requireMailIdentity())); }
@@ -18,28 +18,28 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const input = await request.json() as { matchType: MailIntakeRuleMatcher; action: MailIntakeRuleAction; pattern: string; enabled?: boolean };
-    return NextResponse.json(await createMailIntakeRule(await requireMailIdentity(), input));
+    const { identity, body: input } = await readAuthenticatedMailJson<{ matchType: MailIntakeRuleMatcher; action: MailIntakeRuleAction; pattern: string; enabled?: boolean }>(request);
+    return NextResponse.json(await createMailIntakeRule(identity, input));
   } catch (error) { return mailApiError(error, "收件规则暂时无法创建。"); }
 }
 
 export async function PUT(request: Request) {
   try {
-    const input = await request.json() as {
+    const { identity, body: input } = await readAuthenticatedMailJson<{
       ruleId: string;
       matchType: MailIntakeRuleMatcher;
       action: MailIntakeRuleAction;
       pattern: string;
       enabled: boolean;
       expectedVersion: number;
-    };
-    return NextResponse.json(await updateMailIntakeRule(await requireMailIdentity(), input));
+    }>(request);
+    return NextResponse.json(await updateMailIntakeRule(identity, input));
   } catch (error) { return mailApiError(error, "收件规则暂时无法保存。"); }
 }
 
 export async function DELETE(request: Request) {
   try {
-    const input = await request.json() as { ruleId: string; expectedVersion: number };
-    return NextResponse.json(await deleteMailIntakeRule(await requireMailIdentity(), input.ruleId, input.expectedVersion));
+    const { identity, body: input } = await readAuthenticatedMailJson<{ ruleId: string; expectedVersion: number }>(request);
+    return NextResponse.json(await deleteMailIntakeRule(identity, input.ruleId, input.expectedVersion));
   } catch (error) { return mailApiError(error, "收件规则暂时无法删除。"); }
 }

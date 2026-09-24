@@ -298,6 +298,10 @@ export function useDashboardSharedMyState(
         deleteVideoAssets={mediaActions.deleteVideoAssets}
         photoAssets={photoAssets}
         photoInputRef={photoInputRef}
+        pendingPhotoFiles={mediaActions.pendingPhotoFiles}
+        pendingVideoFiles={mediaActions.pendingVideoFiles}
+        retryPhotos={mediaActions.retryPhotos}
+        retryVideos={mediaActions.retryVideos}
         videoAssets={videoAssets}
         videoInputRef={videoInputRef}
       />

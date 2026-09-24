@@ -100,11 +100,10 @@ function createIncompleteMutationError(result: Record<string, unknown>) {
   if (result.status === "queued" || result.status === "running") {
     return new Error("操作结果仍在确认中，请稍后刷新页面查看，暂时不要重复提交。");
   }
-  return new Error(
-    typeof result.message === "string"
-      ? result.message
-      : "媒体操作没有全部完成，请稍后重试或联系管理员。",
-  );
+  const message = typeof result.message === "string" ? result.message : "";
+  return new Error(isUserFacingMediaMessage(message)
+    ? message
+    : "照片或视频暂时无法保存，请稍后重试。", { cause: result });
 }
 
 async function buildUploadIdempotencyKey(options: {
@@ -147,14 +146,17 @@ async function toUserMediaMutationError(error: unknown) {
       const message =
         normalizeOptionalString(payload.message) ??
         normalizeOptionalString(payload.error);
-      if (message) return new Error(message);
+      if (message && isUserFacingMediaMessage(message)) return new Error(message);
     } catch {
       // 响应不是 JSON 时保留 Supabase 客户端原始错误，便于调用方统一记录。
     }
   }
-  return error instanceof Error
-    ? error
-    : new Error("当前服务暂时不可用，请稍后再试。");
+  // 网络、DNS 和平台异常只保留在 cause 中，不直接显示给用户。
+  return new Error("照片或视频暂时无法上传，请检查网络后重试。", { cause: error });
+}
+
+function isUserFacingMediaMessage(message: string) {
+  return /[\u3400-\u9fff]/u.test(message) && !/\b(?:status|rpc|queue|error|failed)\b/iu.test(message);
 }
 
 function getFunctionErrorResponse(error: unknown) {

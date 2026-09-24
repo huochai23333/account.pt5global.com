@@ -2,12 +2,15 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { getPeerSalesmanRegressionAccount } from "./helpers/accounts";
 import { expectForbiddenPage, loginAs, loginWithAccount } from "./helpers/auth";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 test.describe.serial("sales lead hall", () => {
   test.setTimeout(120_000);
   test("two salespeople compete for one lead and keep the full history", async ({ browser }) => {
     const peerAccount = getPeerSalesmanRegressionAccount();
-    test.skip(!peerAccount, "The second local salesperson fixture is required.");
+    const admin = getLocalSupabaseAdminClient();
+    test.skip(!peerAccount || !admin, "需要第二名本地业务员及数据库查询来核对竞争结果。");
+    if (!peerAccount || !admin) return;
 
     const firstContext = await browser.newContext();
     const peerContext = await browser.newContext();
@@ -27,10 +30,25 @@ test.describe.serial("sales lead hall", () => {
     const leadCard = firstPage.locator('[data-testid^="sales-lead-row-"]').filter({ has: firstPage.locator(`[data-testid="${claimTestId}"]`) });
     const leadName = (await leadCard.getByRole("heading").innerText()).trim();
 
+    // 两个页面首屏列表可能因各自请求完成时间不同而不重合；先按名称把同一线索加载到第二个页面。
+    const peerSearchResponse = peerPage.waitForResponse((response) =>
+      response.url().includes("/rest/v1/rpc/get_sales_lead_page") &&
+      response.request().postDataJSON()?.p_search === leadName,
+    );
+    await peerPage.getByLabel("搜索线索").fill(leadName);
+    await peerSearchResponse;
+    // 搜索有防抖；必须等对应结果替换旧列表，再提交稍后的竞争认领。
+    await expect(peerPage.locator('[data-testid^="sales-lead-row-"]')).toHaveCount(1);
+    await expect(peerPage.getByTestId(claimTestId!)).toBeVisible();
+
     // 第一位业务员必须先看到权威的“我的线索”结果，第二位业务员再提交其已经打开的旧页面。
     // 这样既覆盖竞争失败，也避免测试自己留下未等待的写请求，在线索退回后产生迟到认领。
     await firstPage.getByTestId(claimTestId!).click();
     await expect(firstPage.getByRole("heading", { name: leadName })).toBeVisible();
+    const { data: claimedLead, error: claimedLeadError } = await admin.from("sales_leads")
+      .select("current_assignee_user_id").eq("id", leadId).single();
+    expect(claimedLeadError).toBeNull();
+    expect(claimedLead?.current_assignee_user_id).toEqual(expect.any(String));
     const rejectedClaimResponse = peerPage.waitForResponse((response) =>
       response.url().includes("/rest/v1/rpc/claim_sales_lead"),
     );
@@ -39,6 +57,10 @@ test.describe.serial("sales lead hall", () => {
     await expect(
       peerPage.getByText("这条线索刚刚已被其他业务员认领。"),
     ).toBeVisible();
+    const { data: afterRejectedClaim, error: afterRejectedClaimError } = await admin.from("sales_leads")
+      .select("current_assignee_user_id").eq("id", leadId).single();
+    expect(afterRejectedClaimError).toBeNull();
+    expect(afterRejectedClaim?.current_assignee_user_id).toBe(claimedLead?.current_assignee_user_id);
 
     const winnerPage = firstPage;
     const nextOwnerPage = peerPage;

@@ -41,7 +41,7 @@ export async function cleanupSettlementReleaseFixtures(notes: string[]) {
   }
 }
 
-export async function ensureLocalUsdRate(rateDate: string) {
+export async function ensureLocalUsdRate(rateDate: string, rate = 7.2) {
   const admin = getLocalSupabaseAdminClient();
   if (!admin) throw new Error("结汇测试需要本地数据库连接。");
   const { data: existing, error: readError } = await admin
@@ -58,7 +58,7 @@ export async function ensureLocalUsdRate(rateDate: string) {
   const { data: inserted, error: insertError } = await admin
     .from("exchange_rate")
     .insert({
-      daily_exchange_rate: 7.2,
+      daily_exchange_rate: rate,
       original_currency: "USD",
       rate_date: rateDate,
       target_currency: "CNY",

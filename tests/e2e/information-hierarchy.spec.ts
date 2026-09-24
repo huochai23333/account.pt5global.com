@@ -165,6 +165,7 @@ test.describe("全站信息层级与内容减负", () => {
       ),
     ).toHaveCount(4);
     await expectCompactMetricContentFits(page);
+    await expect(page.locator("tbody tr").first()).toBeInViewport();
     await expectNoHorizontalOverflow(page);
 
     await page.setViewportSize({ height: 900, width: 1440 });

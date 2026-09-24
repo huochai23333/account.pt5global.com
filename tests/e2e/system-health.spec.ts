@@ -65,7 +65,9 @@ async function createState(
   const operationId = readOperationId(data);
   if (!outcome) return;
 
-  const { error: finishError } = await supabase.rpc("finish_operation_attempt", {
+  // 服务端任务从第 1 次运行开始；夹具也使用带尝试编号的正式回写接口。
+  const { error: finishError } = await supabase.rpc("finish_operation_attempt_checked", {
+    p_attempt_number: 1,
     p_error_code: outcome === "succeeded" ? null : "injected_failure",
     p_error_message: outcome === "succeeded" ? null : "本地故障注入",
     p_expected_count: 2,

@@ -4,6 +4,21 @@ import { getRegressionAccount } from "./helpers/accounts";
 import { loginAs, setTestLocale } from "./helpers/auth";
 
 test.describe("legacy tourism business shutdown", () => {
+  for (const role of ["manager", "recruiter", "promoter"] as const) {
+    test(`${role} 停留说明页后保持登录，主动退出才清除会话`, async ({ page }) => {
+      await loginAs(page, role);
+      await expect(page.getByRole("button", { name: "退出登录" })).toBeVisible();
+      await page.waitForTimeout(1200);
+      expect((await page.context().cookies()).filter((cookie) => /sb-.*-auth-token/.test(cookie.name)).length).toBeGreaterThan(0);
+      await page.getByRole("link", { name: "公司模板" }).click();
+      await expect(page).toHaveURL(new RegExp(`/${role}/company-templates`));
+      await page.goBack();
+      await page.getByRole("button", { name: "退出登录" }).click();
+      await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
+      expect((await page.context().cookies()).filter((cookie) => /sb-.*-auth-token/.test(cookie.name))).toHaveLength(0);
+    });
+  }
+
   test("tourism-only account signs in to the service notice and can sign out", async ({
     page,
   }) => {
@@ -25,12 +40,12 @@ test.describe("legacy tourism business shutdown", () => {
       "href",
       "mailto:support@pt5global.com",
     );
-    await expect(page.getByRole("link", { name: "退出登录" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "退出登录" })).toBeVisible();
     await expect(page.locator("aside")).toHaveCount(0);
     await expect(page.getByTestId("ai-assistant-launcher")).toHaveCount(0);
     await expectNoDocumentHorizontalOverflow(page);
 
-    await page.getByRole("link", { name: "退出登录" }).click();
+    await page.getByRole("button", { name: "退出登录" }).click();
     await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
   });
 
@@ -66,6 +81,7 @@ test.describe("legacy tourism business shutdown", () => {
     await expect(sidebar.getByText("批发业务", { exact: true })).toBeVisible();
 
     await page.goto("/auth/sign-out?next=%2Flogin");
+    await page.getByRole("button", { name: "退出登录" }).click();
     await loginAs(page, "salesman");
     await page.goto("/salesman/home");
     await expect(page.getByText("旅游业务", { exact: true })).toHaveCount(0);
@@ -135,7 +151,7 @@ test.describe("legacy tourism business shutdown", () => {
     );
     await expectNoDocumentHorizontalOverflow(page);
 
-    await page.getByRole("link", { name: "退出登录" }).click();
+    await page.getByRole("button", { name: "退出登录" }).click();
     await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
     await page.goto("/register");
     await page.getByRole("button", { name: "下一步" }).click();

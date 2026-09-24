@@ -12,7 +12,13 @@ export function signOutCurrentBrowserSession(
   clearSupabaseBrowserSession();
 
   if (typeof window !== "undefined") {
-    window.location.replace(buildServerSignOutPath(destination));
+    // 原生 POST 只在用户点击退出后提交，路由预加载不会触发 Cookie 清理。
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = buildServerSignOutPath(destination);
+    form.hidden = true;
+    document.body.appendChild(form);
+    form.submit();
   }
 }
 

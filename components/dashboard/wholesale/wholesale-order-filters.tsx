@@ -57,6 +57,7 @@ export function WholesaleOrderFiltersPanel({
   const defaultRange = getDefaultOrderDateRange();
   return (
     <DashboardOrderFilterSection
+      collapseDesktop
       activeFilterCount={[
         Boolean(filters.searchText),
         filters.status !== "all",

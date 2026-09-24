@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { getRegressionAccount } from "./helpers/accounts";
 import { loginAs } from "./helpers/auth";
-import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import { getLocalSupabaseAdminClient, readLocalEnvValue } from "./helpers/local-supabase-admin";
 
 const BUCKET_NAME = "user-media";
 
@@ -16,6 +16,34 @@ type MediaReceipt = {
 };
 
 test.describe("个人媒体最终业务凭证", () => {
+  test("上传失败保留文件、提供重试，并把网络和大小错误说清楚", async ({ page }) => {
+    await loginAs(page, "operator");
+    await page.goto("/operator/my");
+    await page.getByRole("button", { name: /个人照片/ }).click();
+    const dialog = page.getByRole("dialog", { name: "个人照片" });
+    const uploadKeys: string[] = [];
+    await page.route("**/functions/v1/user-media-mutate", async (route) => {
+      const body = route.request().postData() ?? "";
+      uploadKeys.push(body.match(/upload:[0-9a-f-]{36}/)?.[0] ?? "");
+      if (uploadKeys.length === 1) {
+        await route.abort("failed");
+      } else {
+        await route.fulfill({ status: 413, contentType: "application/json", body: JSON.stringify({ message: "图片超过大小限制，请选择更小的文件。" }) });
+      }
+    });
+    const fileName = "retry-photo.png";
+    await page.locator('input[type="file"][accept="image/*"]').setInputFiles({ buffer: buildTinyPng(), mimeType: "image/png", name: fileName });
+    await expect(dialog.getByText("照片或视频暂时无法上传，请检查网络后重试。")).toBeVisible();
+    await expect(dialog.getByText(fileName)).toBeVisible();
+    await dialog.getByRole("button", { name: "重试上传" }).click();
+    await expect(dialog.getByText("图片超过大小限制，请选择更小的文件。")).toBeVisible();
+    await expect(dialog.getByText(fileName)).toBeVisible();
+    expect(uploadKeys).toHaveLength(2);
+    expect(uploadKeys[0]).toBeTruthy();
+    expect(uploadKeys[1]).toBe(uploadKeys[0]);
+    await expect(dialog.getByText("个人照片已上传，当前状态为待审核。")).toHaveCount(0);
+  });
+
   test("页面拒绝伪造成功，并在真实删除后核对数据库和 Storage", async ({
     page,
   }) => {
@@ -147,10 +175,11 @@ async function expectSucceededOperationRun(
   deletedAssetId: string,
 ) {
   expect(operationId).toEqual(expect.any(String));
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // Playwright 测试进程不自动加载 Next 的 .env.local，使用现有本地读取器保持与页面同一服务。
+  const supabaseUrl = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL");
   const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    readLocalEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ??
+    readLocalEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   if (!supabaseUrl || !publishableKey) {
     throw new Error("local_supabase_public_credentials_required");
   }

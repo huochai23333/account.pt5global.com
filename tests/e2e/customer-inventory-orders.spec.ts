@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { chooseSelectOption } from "./helpers/select-control";
+import { runLocalSupabaseSql } from "./helpers/local-supabase";
 import {
   expectNotForbiddenPage,
   expectWorkspaceShell,
@@ -10,6 +11,23 @@ import {
 test.describe.configure({ mode: "serial" });
 
 test.describe("库存订单与专属信贷", () => {
+  const fixtureMarker = `库存信贷回归-${Date.now()}`;
+  test.afterAll(() => {
+    // 只清理本轮标记的订单及其信贷凭证，避免重跑时固定 200 美元资格残留。
+    runLocalSupabaseSql(`begin;
+      create temporary table test_order_ids as
+        select id from public.customer_inventory_orders where notes like '${fixtureMarker}%';
+      create temporary table test_credit_ids as
+        select id from public.customer_inventory_credit_applications where order_id in (select id from test_order_ids);
+      delete from public.customer_inventory_order_audit_logs where order_id in (select id from test_order_ids);
+      delete from public.customer_inventory_credit_repayments where credit_application_id in (select id from test_credit_ids);
+      delete from public.customer_inventory_credit_extension_requests where credit_application_id in (select id from test_credit_ids);
+      delete from public.customer_inventory_credit_applications where id in (select id from test_credit_ids);
+      delete from public.customer_inventory_order_list_attachments where order_id in (select id from test_order_ids);
+      delete from public.customer_inventory_order_items where order_id in (select id from test_order_ids);
+      delete from public.customer_inventory_orders where id in (select id from test_order_ids);
+      commit;`);
+  });
   test("管理员通过页面创建一笔待支付库存订单", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
@@ -76,7 +94,7 @@ test.describe("库存订单与专属信贷", () => {
     await dialog.getByRole("button", { name: "增加产品" }).click();
     await dialog.getByLabel("第 2 件商品名称").fill("浏览器测试标签");
     await dialog.getByLabel("产品数量").nth(1).fill("30");
-    await dialog.getByLabel("备注或说明").fill("浏览器库存信贷回归订单");
+    await dialog.getByLabel("备注或说明").fill(`${fixtureMarker}-申请`);
     await dialog.getByRole("button", { name: "创建订单" }).click();
 
     await expect(dialog).toHaveCount(0);
@@ -287,6 +305,7 @@ test.describe("库存订单与专属信贷", () => {
     await createDialog
       .getByLabel("第 1 件商品名称")
       .fill("固定额度复用商品");
+    await createDialog.getByLabel("备注或说明").fill(`${fixtureMarker}-复用`);
     await createDialog.getByLabel("产品数量").fill("6");
     await createDialog.getByRole("button", { name: "创建订单" }).click();
     await expect(salesmanPage.getByText("库存订单已创建。")).toBeVisible();

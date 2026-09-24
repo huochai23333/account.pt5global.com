@@ -1,0 +1,10 @@
+.desktopAction {
+  display: none;
+}
+
+/* 停用说明页单独加载样式；明确声明断点，避免全局隐藏类覆盖模板入口。 */
+@media (min-width: 48rem) {
+  .desktopAction {
+    display: inline-flex;
+  }
+}

@@ -26,14 +26,17 @@ test.describe("lead rules and administrator claims", () => {
         await expect(rules.locator("p")).toContainText(locale === "zh" ? "管理员和业务员遵循相同规则" : "The same rules apply to administrators and salespeople");
         for (const width of [1440, 375]) {
           await page.setViewportSize({ width, height: 900 });
-          await rules.scrollIntoViewIfNeeded();
+          // 手机规则默认折叠，先按用户实际操作展开后再检查完整内容。
+          const visibleRules = width < 768 ? rules : page.getByTestId("sales-lead-rules-desktop");
+          if (width < 768) await visibleRules.locator("summary").click();
+          await visibleRules.scrollIntoViewIfNeeded();
           const board = page.getByRole("button", { name: locale === "zh" ? "我的线索" : "My Leads" });
-          const rulesBox = await rules.boundingBox();
+          const rulesBox = await visibleRules.boundingBox();
           const boardBox = await board.boundingBox();
           expect(rulesBox!.y + rulesBox!.height).toBeLessThanOrEqual(boardBox!.y);
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
           // 检查提示内每段文字，而非仅检查页面外框，防止三列在手机上挤成竖排。
-          expect(await rules.locator("dt, dd, p").evaluateAll((elements) => elements.every((element) => {
+          expect(await visibleRules.locator("dt, dd, p").evaluateAll((elements) => elements.every((element) => {
             const rect = element.getBoundingClientRect();
             return rect.width >= 100 && element.scrollWidth <= element.clientWidth + 1;
           }))).toBe(true);

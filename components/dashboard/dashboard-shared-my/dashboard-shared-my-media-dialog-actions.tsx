@@ -17,6 +17,10 @@ export function DashboardSharedMyMediaDialogActions({
   deleteVideoAssets,
   photoAssets,
   photoInputRef,
+  pendingPhotoFiles,
+  pendingVideoFiles,
+  retryPhotos,
+  retryVideos,
   videoAssets,
   videoInputRef,
 }: {
@@ -31,6 +35,10 @@ export function DashboardSharedMyMediaDialogActions({
   ) => Promise<void>;
   photoAssets: CurrentUserBundle["mediaAssets"];
   photoInputRef: RefObject<HTMLInputElement | null>;
+  pendingPhotoFiles: File[];
+  pendingVideoFiles: File[];
+  retryPhotos: () => Promise<void>;
+  retryVideos: () => Promise<void>;
   videoAssets: CurrentUserBundle["mediaAssets"];
   videoInputRef: RefObject<HTMLInputElement | null>;
 }) {
@@ -44,9 +52,19 @@ export function DashboardSharedMyMediaDialogActions({
   const uploadLabel = isPhotos ? copy.uploadPhotos : copy.uploadVideos;
   const inputRef = isPhotos ? photoInputRef : videoInputRef;
   const handleDelete = isPhotos ? deletePhotoAssets : deleteVideoAssets;
+  const pendingFiles = isPhotos ? pendingPhotoFiles : pendingVideoFiles;
+  const retry = isPhotos ? retryPhotos : retryVideos;
 
   return (
     <>
+      {pendingFiles.length > 0 ? (
+        <div className="w-full text-sm text-content-muted">
+          <p>{copy.selectedUploadFiles}: {pendingFiles.map((file) => file.name).join("、")}</p>
+          <Button disabled={busyKey !== null} onClick={() => void retry()} size="compact" type="button" variant="outline">
+            {copy.retryUpload}
+          </Button>
+        </div>
+      ) : null}
       <Button
         size="default"
         disabled={!assets.length || busyKey !== null}

@@ -5,6 +5,7 @@ import {
   expectWorkspaceShell,
   loginAs,
 } from "./helpers/auth";
+import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 const LOCAL_ORDER_NUMBER_2 = buildCurrentLocalOrderNumber(2);
 
@@ -17,6 +18,7 @@ test.describe("wholesale order pagination", () => {
     await page.goto("/admin/wholesale/orders");
     await expectWorkspaceShell(page);
     await expectNotForbiddenPage(page);
+    await expandOrderFilters(page);
     await expect(page.getByLabel("客户", { exact: true })).toBeVisible();
     await expectNoDocumentHorizontalOverflow(page);
     // 日常默认表格只保留常用列；完整采购关联仍可按需切换查看。
@@ -262,6 +264,8 @@ test.describe("wholesale order pagination", () => {
       const clientRow = clientPage.locator(
         '[data-testid="wholesale-order-row-c2000000-0000-4000-8000-000000000002"]',
       );
+      await expect(clientRow).toContainText("本地业务员");
+      await expect(clientRow).not.toContainText("未分配");
       await expect(clientRow.getByRole("button", { name: fileName })).toBeVisible();
       await expect(clientRow.getByRole("button", { name: secondFileName })).toBeVisible();
       await expect(clientRow.getByRole("button", { name: "管理附件" })).toHaveCount(0);
@@ -286,6 +290,7 @@ test.describe("wholesale order pagination", () => {
       const mobileDialog = clientPage.getByRole("dialog", {
         name: `订单 ${LOCAL_ORDER_NUMBER_2}`,
       });
+      await expect(mobileDialog).toContainText("本地业务员");
       await expect(mobileDialog.getByRole("button", { name: fileName })).toBeVisible();
       await expect(mobileDialog.getByRole("button", { name: secondFileName })).toBeVisible();
       await expect(mobileDialog.getByText("收款平台", { exact: true })).toHaveCount(0);

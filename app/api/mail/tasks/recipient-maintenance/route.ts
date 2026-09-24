@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readLimitedJsonBody, RequestBodyTooLargeError } from "@/lib/server-request-body";
 
 import {
   backfillOutboundRecipientHistory,
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "后台任务身份无效。" }, { status: 401 });
   }
   try {
-    const body = await request.json() as { action?: unknown; confirmationToken?: unknown };
+    const body = await readLimitedJsonBody(request, 16 * 1024) as { action?: unknown; confirmationToken?: unknown };
     if (body.action === "prepare") {
       const backfill = await backfillOutboundRecipientHistory();
       const preview = await previewUnknownHistoricalThreads();
@@ -30,8 +31,10 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: "请选择正确的历史邮件维护操作。" }, { status: 400 });
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: "提交内容太大，请缩小后重试。" }, { status: 413 });
+    if (error instanceof SyntaxError) return NextResponse.json({ error: "提交内容无法读取，请检查后重试。" }, { status: 400 });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "历史邮件维护暂时无法完成。" },
+      { error: "历史邮件维护暂时无法完成。" },
       { status: 500 },
     );
   }

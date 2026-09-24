@@ -148,6 +148,7 @@ function mergeWholesaleOrderPages(
 ): WholesaleOrderPage {
   return {
     ...next,
+    clientContactsByOrderId: { ...current.clientContactsByOrderId, ...next.clientContactsByOrderId },
     orderChangeLogs: mergeRows(current.orderChangeLogs, next.orderChangeLogs),
     orderListAttachments: mergeRows(
       current.orderListAttachments,

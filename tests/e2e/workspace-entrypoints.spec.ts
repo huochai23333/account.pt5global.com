@@ -133,6 +133,7 @@ test.describe("workspace entrypoint regression", () => {
     await page.goto("/admin/wholesale/orders");
     await expectWorkspaceShell(page);
     await expectNotForbiddenPage(page);
+    await page.getByRole("button", { name: /更多筛选条件/ }).click();
 
     const orderedFromInput = page.getByLabel("下单日期从");
     const orderedToInput = page.getByLabel("下单日期到");

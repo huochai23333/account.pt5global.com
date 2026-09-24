@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireMailIdentity, requireMailAdministrator } from "@/lib/mail/mail-identity";
 import { getMailThread, restoreMailThread } from "@/lib/mail/mail-service";
 
-import { mailApiError } from "../../_shared";
+import { mailApiError, readAuthenticatedMailJson } from "../../_shared";
 
 export async function GET(_request: Request, context: { params: Promise<{ threadId: string }> }) {
   try {
@@ -17,7 +17,7 @@ export async function GET(_request: Request, context: { params: Promise<{ thread
 export async function PATCH(request: Request, context: { params: Promise<{ threadId: string }> }) {
   try {
     const { threadId } = await context.params;
-    const input = await request.json() as { expectedVersion: number };
-    return NextResponse.json(await restoreMailThread(await requireMailIdentity(), threadId, input.expectedVersion));
+    const { identity, body: input } = await readAuthenticatedMailJson<{ expectedVersion: number }>(request);
+    return NextResponse.json(await restoreMailThread(identity, threadId, input.expectedVersion));
   } catch (error) { return mailApiError(error, "隔离邮件暂时无法恢复。"); }
 }

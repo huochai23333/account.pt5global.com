@@ -1207,6 +1207,8 @@
       },
       "fallbacks": {
         "notRecorded": "Not recorded",
+        "unassigned": "Unassigned",
+        "assignedNameUnavailable": "Assigned contact; name unavailable",
         "unsettled": "Unsettled",
         "afterSettlement": "Calculated after settlement",
         "notGenerated": "Not available"
@@ -1599,6 +1601,7 @@
     "roleTasks": {
       "title": "Common tasks",
       "description": "Choose a task to open its page.",
+      "pendingCount": "{count} to handle",
       "accounts": "Manage accounts",
       "companyExpenses": "Review company expenses",
       "creditOrders": "Manage inventory orders",
@@ -2095,6 +2098,8 @@
     "mediaDescription": "Uploads enter review first and appear in your profile after approval. Images must stay below 5 MB, and videos must stay below 30 MB.",
     "deletePhotos": "Delete Photos",
     "uploadPhotos": "Upload Photos",
+    "retryUpload": "Retry upload",
+    "selectedUploadFiles": "Selected files",
     "deleteVideos": "Delete Videos",
     "uploadVideos": "Upload Videos",
     "profileChangeSubmitted": "Profile changes submitted. They will update after admin confirmation.",

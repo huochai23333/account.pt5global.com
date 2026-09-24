@@ -10,6 +10,7 @@ import {
   loginAs,
 } from "./helpers/auth";
 import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 test("filters wholesale orders by included month across pagination and responsive layouts", async ({
   browser,
@@ -117,6 +118,7 @@ test("filters wholesale orders by included month across pagination and responsiv
 });
 
 async function applyIncludedMonth(page: Page, month: string) {
+  await expandOrderFilters(page);
   const monthInput = page.getByLabel("计入月份");
   await monthInput.fill(month);
   await monthInput.press("Enter");

@@ -49,6 +49,8 @@ export function useDashboardSharedMyStateCopy() {
       mediaDescription: t("mediaDescription"),
       deletePhotos: t("deletePhotos"),
       uploadPhotos: t("uploadPhotos"),
+      retryUpload: t("retryUpload"),
+      selectedUploadFiles: t("selectedUploadFiles"),
       deleteVideos: t("deleteVideos"),
       uploadVideos: t("uploadVideos"),
     },

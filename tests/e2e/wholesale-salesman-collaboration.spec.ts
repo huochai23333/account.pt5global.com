@@ -55,6 +55,7 @@ test.describe("批发业务员全员协作", () => {
 
     await page.goto("/salesman/wholesale/orders");
     await page.getByLabel("搜索订单").fill(PEER_ORDER_NUMBER);
+    await page.getByRole("button", { name: "查看全部字段" }).click();
     const peerOrderRow = page.getByTestId(`wholesale-order-row-${PEER_ORDER_ID}`);
     await expect(peerOrderRow).toBeVisible();
     await expect(peerOrderRow).toContainText("本地协作业务员");

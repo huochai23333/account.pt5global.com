@@ -6,6 +6,7 @@ import {
   loginAs,
 } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
+import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 const ORDER_PAGES = [
   "/admin/wholesale/orders",
@@ -29,6 +30,7 @@ test.describe("三类批发订单列表统一框架", () => {
 
     for (const path of ORDER_PAGES) {
       await page.goto(path);
+      await expandOrderFilters(page);
       await expectWorkspaceShell(page);
       await expectNotForbiddenPage(page);
 
@@ -72,6 +74,7 @@ test.describe("三类批发订单列表统一框架", () => {
   test("日期快捷范围可恢复默认值并识别自定义范围", async ({ page }) => {
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/orders");
+    await expandOrderFilters(page);
 
     const dateToolbar = page.getByRole("group", { name: "日期快捷范围" });
     const reset = page.getByRole("button", { name: "恢复默认范围" });

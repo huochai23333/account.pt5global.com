@@ -18,6 +18,8 @@ test("各首页组件在最小尺寸仍保留完整功能", async ({ page }) => 
 
   await expectDefaultWidgetSizes(page);
   await page.getByTestId("home-edit-button").click();
+  // 本用例检查最小尺寸的功能；暂停循环摇动，避免持续动画干扰真实按钮点击。
+  await page.addStyleTag({ content: ".dashboard-home-wiggle { animation: none !important; }" });
   await expectMinimumButtonsDisabled(page);
   await verifyInviteCanOnlyShrinkToMinimum(page);
   await verifyGreetingCanOnlyShrinkToMinimum(page);
@@ -111,17 +113,7 @@ async function verifyGreetingCanOnlyShrinkToMinimum(page: Page) {
 
 async function openAdjustDialog(page: Page, card: Locator) {
   const button = card.getByTestId("home-widget-adjust-button");
-  const buttonBox = await requiredBox(button);
-
-  /*
-   * 真人会先把鼠标移到按钮上，卡片随即停稳，然后再按下。
-   * Playwright 默认会等待动画元素自行稳定，因此这里明确还原这一步鼠标移动。
-   */
-  await page.mouse.move(
-    buttonBox.x + buttonBox.width / 2,
-    buttonBox.y + buttonBox.height / 2,
-  );
-  await expect(card).toHaveAttribute("data-home-widget-wiggling", "false");
+  // 循环动画已在本用例暂停，直接验证调整按钮是否可点击。
   await button.click();
 
   const dialog = page.getByRole("dialog", { name: /调整组件/ });

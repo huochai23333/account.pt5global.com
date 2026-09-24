@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 
 import {
   expectForbiddenPage,
@@ -6,6 +7,40 @@ import {
   expectWorkspaceShell,
   loginAs,
 } from "./helpers/auth";
+import { getRegressionAccount } from "./helpers/accounts";
+import { readLocalEnvValue } from "./helpers/local-supabase-admin";
+import { getWholesaleReferralCommissionRows } from "@/lib/wholesale-referral-commissions";
+
+test("财务和管理员看到的推荐佣金与数据库一致，刷新后仍一致", async ({ page }) => {
+  const supabaseUrl = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL");
+  const anonKey = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  test.skip(!supabaseUrl || !anonKey || !/^http:\/\/(?:127\.0\.0\.1|localhost)(?::|\/)/i.test(supabaseUrl), "需要本地数据库核对推荐佣金。");
+  if (!supabaseUrl || !anonKey) return;
+
+  for (const role of ["finance", "administrator"] as const) {
+    // 佣金函数按当前账号权限计算，独立查询也必须使用与页面相同的身份。
+    const db = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const account = getRegressionAccount(role);
+    const { error } = await db.auth.signInWithPassword({ email: account.email, password: account.password });
+    expect(error).toBeNull();
+    const rows = await getWholesaleReferralCommissionRows(db);
+    expect(rows.length).toBeGreaterThan(0);
+    const total = rows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    const amount = new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total);
+    await loginAs(page, role);
+    await page.goto(`/${role === "administrator" ? "admin" : role}/wholesale/commission`);
+    const totalCard = page.locator('[data-slot="metric-card"]').filter({ hasText: "佣金合计" });
+    const countCard = page.locator('[data-slot="metric-card"]').filter({ hasText: "月度记录" });
+    await expect(totalCard).toContainText(amount);
+    await expect(countCard).toContainText(String(rows.length));
+    for (const row of rows) await expect(page.getByText(row.monthKey, { exact: true }).first()).toBeVisible();
+    await page.reload();
+    await expect(totalCard).toContainText(amount);
+    await expect(countCard).toContainText(String(rows.length));
+    await page.goto("/auth/sign-out?next=%2Flogin");
+    await page.getByRole("button", { name: "退出登录" }).click();
+  }
+});
 
 test.describe("finance business access", () => {
   test("finance can open salesman-like wholesale sections", async ({ page }) => {

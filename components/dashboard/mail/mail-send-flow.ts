@@ -1,7 +1,7 @@
 import type { OutboundMessageInput } from "@/lib/mail/mail-types";
 
 import { fingerprintMailMessage, readMailSendIntent, type MailSendIntent } from "./mail-send-intent";
-import { requestMailJson } from "./mail-workspace-request";
+import { MailWorkspaceRequestError, requestMailJson } from "./mail-workspace-request";
 
 export type MailSendFlowResult = "sent" | "partial_failed" | "pending";
 
@@ -34,10 +34,17 @@ export async function runMailSendFlow({
         throw new Error("上一封邮件的发送结果尚未确认，请恢复原稿后继续核对。");
       }
       const message: OutboundMessageInput = { ...draft, idempotencyKey: intent.key };
-      const queued = await requestMailJson<{ jobId: string }>("/api/mail/outbound", {
-        method: "POST",
-        body: JSON.stringify(message),
-      });
+      let queued: { jobId: string };
+      try {
+        queued = await requestMailJson<{ jobId: string }>("/api/mail/outbound", {
+          method: "POST",
+          body: JSON.stringify(message),
+        });
+      } catch (error) {
+        // 只有服务端明确确认任务未创建，才能允许用户修改草稿后重新发送。
+        if (error instanceof MailWorkspaceRequestError && error.code === "confirmed_rejection") saveIntent(null);
+        throw error;
+      }
       intent = { ...intent, jobId: queued.jobId };
       saveIntent(intent);
     }

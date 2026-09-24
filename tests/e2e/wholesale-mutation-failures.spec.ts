@@ -77,6 +77,18 @@ test.describe("批发写入失败保留表单", () => {
     await settlementDialog.getByRole("button", { name: "保存结汇记录" }).click();
     await expectFailureNotice(page);
     await expect(settlementDialog).toBeVisible();
+    // toBeVisible 只检查节点样式；这里确认失败提示在弹窗打开时真正位于屏幕最上层。
+    const failureNotice = page.getByText(FORCED_ERROR_MESSAGE).last();
+    await expect.poll(() => failureNotice.evaluate((node) => {
+      const overlay = node.closest<HTMLElement>(".pointer-events-none");
+      if (!overlay) return false;
+      const rect = node.getBoundingClientRect();
+      // 提示允许鼠标穿透；命中测试期间临时启用命中，才能检查它实际绘制在遮罩上方。
+      overlay.style.pointerEvents = "auto";
+      const visibleAtCenter = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      overlay.style.pointerEvents = "";
+      return Boolean(visibleAtCenter && overlay.contains(visibleAtCenter));
+    })).toBe(true);
     await expect(settlementDialog.getByLabel("本次结汇金额")).toHaveValue(
       "12.34",
     );
@@ -293,6 +305,7 @@ test.describe("批发写入失败保留表单", () => {
     const dialog = page.getByRole("dialog", { name: "发布结汇收款" });
     await dialog.getByLabel("客户名称").fill("失败后保留的结汇客户");
     await dialog.getByLabel("结汇金额").fill("88.66");
+    await chooseSelectOption(dialog.getByLabel("币种", { exact: true }), { value: "USD" });
     await dialog.getByLabel("备注").fill("失败后保留的结汇备注");
     await dialog.getByRole("button", { name: "发布收款" }).click();
     await expectFailureNotice(page);

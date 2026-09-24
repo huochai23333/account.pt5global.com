@@ -71,7 +71,11 @@ test.describe("forgot password page", () => {
       headers,
       maxRedirects: 0,
     });
-    const signOutResponse = await request.get("/auth/sign-out", {
+    const signOutResponse = await request.post("/auth/sign-out", {
+      headers,
+      maxRedirects: 0,
+    });
+    const unsafeSignOutResponse = await request.post("/auth/sign-out?next=%2F%5Coutside.example", {
       headers,
       maxRedirects: 0,
     });
@@ -80,10 +84,12 @@ test.describe("forgot password page", () => {
     expect(confirmResponse.headers().location).toBe(
       "https://account.pt5global.com/login",
     );
-    expect(signOutResponse.status()).toBe(307);
+    expect(signOutResponse.status()).toBe(303);
     expect(signOutResponse.headers().location).toBe(
       "https://account.pt5global.com/login",
     );
+    expect(unsafeSignOutResponse.status()).toBe(303);
+    expect(unsafeSignOutResponse.headers().location).toBe("https://account.pt5global.com/login");
   });
 
   test("announces a rate-limit error immediately", async ({ page }) => {
@@ -160,7 +166,7 @@ test.describe("forgot password page", () => {
     await expect(page).toHaveURL(
       /\/forgot-password\?type=recovery&error=invalid$/,
     );
-    await expect(page.getByRole("alert")).toHaveText(
+    await expect(page.locator('[data-slot="feedback-notice"][role="alert"]')).toHaveText(
       "重置链接已失效，请重新发送一封重置邮件。",
     );
     await expect(page.getByLabel("电子邮箱")).toBeVisible();
