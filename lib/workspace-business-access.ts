@@ -87,15 +87,14 @@ export function getDefaultWorkspaceBusinessAccessForRole(
 export async function getCurrentWorkspaceBusinessAccess(
   supabase: SupabaseClient,
 ): Promise<EnabledWorkspaceBusinessKey[]> {
-  const fallbackAccess = await getFallbackWorkspaceBusinessAccess(supabase);
-
   try {
     const { data, error } = await withRequestTimeout(
       supabase.rpc("get_current_workspace_business_access"),
     );
 
     if (error || !Array.isArray(data)) {
-      return fallbackAccess;
+      // 正常结果不需要读取备用会话；只有业务权限查询失败时才承担这段额外等待。
+      return getFallbackWorkspaceBusinessAccess(supabase);
     }
 
     const normalizedAccess = normalizeWorkspaceBusinessAccess(
@@ -109,7 +108,7 @@ export async function getCurrentWorkspaceBusinessAccess(
     // RPC 成功返回空数组是“账号没有已启用业务”的有效结果，不能再使用角色默认值覆盖。
     return normalizedAccess;
   } catch {
-    return fallbackAccess;
+    return getFallbackWorkspaceBusinessAccess(supabase);
   }
 }
 

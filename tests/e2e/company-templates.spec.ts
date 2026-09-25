@@ -72,6 +72,27 @@ test.describe("公司模板", () => {
     expect(await countTemplates(admin, templateId)).toBe(0);
   });
 
+  test("模板正文等待失败后可从页面重试", async ({ page }) => {
+    await loginAs(page, "administrator");
+    const contentPath = `**/api/company-templates/${SEEDED_TEMPLATE_ID}/content`;
+    await page.route(contentPath, (route) => route.abort("timedout"));
+    await page.goto(`/admin/company-templates/${SEEDED_TEMPLATE_ID}`);
+    await expect(page.getByRole("status").getByText("模板暂时没有打开，请重试。")).toBeVisible();
+    const retry = page.getByRole("button", { name: "重新打开" });
+    await expect(retry).toBeVisible({ timeout: 20_000 });
+    await page.unroute(contentPath);
+    await retry.click();
+    await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
+    await expect(page.getByRole("status").getByText("正在打开模板，请稍候…")).toHaveCount(0);
+    await page.reload();
+    await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
+    // 手机切换回电脑会重新挂载 iframe，仍要等实际正文出现后才结束等待。
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator("iframe")).toHaveCount(0);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
+  });
+
   test("v32 可增加目的地和产品、上传图片、计算金额并触发打印", async ({ page }) => {
     test.setTimeout(120_000);
     await page.addInitScript(() => {

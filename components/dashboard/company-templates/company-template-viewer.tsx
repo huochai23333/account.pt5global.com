@@ -27,7 +27,7 @@ export function CompanyTemplateViewer({ guide, template, text, workspace }: {
       </div>
     </Surface>
     <Surface as="div" className="overflow-hidden" padding={null}>
-      <CompanyTemplateDesktopFrame notice={text("viewer.desktopOnly")} src={src} title={guide ? text("viewer.guideTitle") : template.name} />
+      <CompanyTemplateDesktopFrame notice={text("viewer.desktopOnly")} src={src} title={guide ? text("viewer.guideTitle") : template.name} loading={text("viewer.loading")} failed={text("viewer.loadFailed")} retry={text("viewer.retry")} />
     </Surface>
   </section>;
 }

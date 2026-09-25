@@ -5336,7 +5336,10 @@
     "viewer": {
       "guideTitle": "Template guide",
       "refreshNotice": "Refreshing reloads the current template and clears entries on this page.",
-      "desktopOnly": "Please fill in and print company templates on a computer."
+      "desktopOnly": "Please fill in and print company templates on a computer.",
+      "loading": "Opening template…",
+      "loadFailed": "The template did not open. Please try again.",
+      "retry": "Try again"
     },
     "errors": {
       "company_template_forbidden": "This account cannot manage company templates.",

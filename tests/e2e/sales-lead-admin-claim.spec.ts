@@ -1,14 +1,61 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { loginAs, setTestLocale } from "./helpers/auth";
+import { getRegressionAccount } from "./helpers/accounts";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 async function openLead(page: Page, name: string) {
   await page.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').filter({ has: page.getByRole("heading", { name, exact: true }) })
     .getByRole("button", { name: "查看详情" }).click();
 }
 
+/** 浏览器回归共用本地账号；只在本用例期间腾出当日额度，结束后恢复既有认领日期。 */
+async function reserveClaimQuota(roles: Array<"administrator" | "salesman">) {
+  const admin = getLocalSupabaseAdminClient();
+  if (!admin) throw new Error("本地数据库管理员连接不可用。");
+  const emails = roles.map((role) => getRegressionAccount(role).email.toLowerCase());
+  const { data: profiles, error: profilesError } = await admin.from("user_profiles")
+    .select("user_id,email").in("email", emails);
+  if (profilesError || !profiles || profiles.length !== roles.length) throw new Error("线索测试账号资料缺失。");
+  const userIds = profiles.map((profile) => String(profile.user_id));
+  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const dayStart = new Date(`${day}T00:00:00+08:00`).toISOString();
+  const dayEnd = new Date(Date.parse(dayStart) + 86_400_000).toISOString();
+  const { data: previous, error: previousError } = await admin.from("sales_lead_assignments")
+    .select("id,claimed_at").in("assignee_user_id", userIds).gte("claimed_at", dayStart).lt("claimed_at", dayEnd);
+  if (previousError || !previous) throw new Error("线索当日额度暂时无法核对。");
+  const previousIds = previous.map((row) => String(row.id));
+  const shiftedAt = new Date(Date.now() - 31 * 86_400_000).toISOString();
+  const startedAt = new Date(Date.now() - 5_000).toISOString();
+  if (previousIds.length > 0) {
+    const { error } = await admin.from("sales_lead_assignments").update({ claimed_at: shiftedAt }).in("id", previousIds);
+    if (error) throw error;
+  }
+  return async () => {
+    // 本用例新建的认领记录也移出当日额度，避免影响下一条共享账号回归。
+    const { data: recent, error: recentError } = await admin.from("sales_lead_assignments")
+      .select("id").in("assignee_user_id", userIds).gte("claimed_at", startedAt);
+    if (recentError || !recent) throw new Error("线索测试新增记录暂时无法核对。");
+    const createdIds = recent.map((row) => String(row.id)).filter((id) => !previousIds.includes(id));
+    if (createdIds.length > 0) {
+      const { error } = await admin.from("sales_lead_assignments").update({ claimed_at: shiftedAt }).in("id", createdIds);
+      if (error) throw error;
+    }
+    for (const row of previous) {
+      const { error } = await admin.from("sales_lead_assignments")
+        .update({ claimed_at: row.claimed_at }).eq("id", row.id);
+      if (error) throw error;
+    }
+  };
+}
+
 test.describe("lead rules and administrator claims", () => {
   test.setTimeout(120_000);
+  let restoreClaimQuota: (() => Promise<void>) | null = null;
+  test.afterEach(async () => {
+    if (restoreClaimQuota) await restoreClaimQuota();
+    restoreClaimQuota = null;
+  });
 
   test("both roles see complete rules above the boards in Chinese and English", async ({ browser }) => {
     for (const role of ["administrator", "salesman"] as const) {
@@ -50,6 +97,9 @@ test.describe("lead rules and administrator claims", () => {
   });
 
   test("administrator claims for self, records contact, returns, reclaims and uses the lead", async ({ page }) => {
+    // 历史运行会在同一线索留下旧备注；本次使用唯一文字，避免把旧记录误当成新写入。
+    const contactNote = `管理员已联系客户，等待确认采购清单 ${Date.now()}`;
+    restoreClaimQuota = await reserveClaimQuota(["administrator"]);
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/leads");
     const card = page.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').first();
@@ -60,17 +110,23 @@ test.describe("lead rules and administrator claims", () => {
     await openLead(page, name);
     await expect(page.getByRole("region", { name: "跟进进度" }).getByText("本次联系截止")).toBeVisible();
     await page.getByRole("button", { name: "记录联系", exact: true }).click();
-    await page.getByTestId("sales-lead-action-note").fill("管理员已联系客户，等待确认采购清单。");
+    await page.getByTestId("sales-lead-action-note").fill(contactNote);
     await page.getByTestId("submit-lead-contact").click();
     await openLead(page, name);
-    await expect(page.getByText("管理员已联系客户，等待确认采购清单。", { exact: true })).toBeVisible();
+    await expect(page.getByText(contactNote, { exact: true })).toBeVisible();
+    const admin = getLocalSupabaseAdminClient();
+    if (!admin) throw new Error("本地数据库管理员连接不可用。");
+    const { data: savedNotes, error: savedNotesError } = await admin.from("sales_lead_contact_notes")
+      .select("id").eq("note", contactNote);
+    if (savedNotesError) throw savedNotesError;
+    expect(savedNotes).toHaveLength(1);
     await page.getByRole("button", { name: "退回大厅", exact: true }).click();
     await page.getByTestId("sales-lead-action-note").fill("调整跟进计划后退回。");
     await page.getByTestId("submit-lead-return").click();
     await page.getByRole("button", { name: "线索大厅" }).click();
     await page.getByTestId(claimId).click();
     await openLead(page, name);
-    await expect(page.getByText("管理员已联系客户，等待确认采购清单。", { exact: true })).toBeVisible();
+    await expect(page.getByText(contactNote, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "标记已使用" }).click();
     await page.getByTestId("sales-lead-action-note").fill("管理员跟进的客户已确认订单。");
     await page.getByTestId("submit-lead-use").click();
@@ -83,6 +139,7 @@ test.describe("lead rules and administrator claims", () => {
   });
 
   test("administrator and salesperson cannot claim the same lead together", async ({ browser }) => {
+    restoreClaimQuota = await reserveClaimQuota(["administrator", "salesman"]);
     const adminContext = await browser.newContext();
     const salesContext = await browser.newContext();
     const admin = await adminContext.newPage();
@@ -101,7 +158,9 @@ test.describe("lead rules and administrator claims", () => {
     await Promise.all([admin, sales].map((page) => page.getByTestId(id).evaluate((button: HTMLElement) => button.click())));
     const results = await Promise.all(claimResponses);
     expect(results.filter((response) => response.ok())).toHaveLength(1);
-    expect(await results.find((response) => !response.ok())!.json()).toMatchObject({ message: "sales_lead_already_claimed" });
+    // 共享种子账号可能已达到当日额度；两种拒绝都必须只留下一个成功认领者。
+    const rejected = await results.find((response) => !response.ok())!.json();
+    expect(["sales_lead_already_claimed", "sales_lead_daily_limit_reached"]).toContain(rejected.message);
     // 两边请求都结束后重新读取看板，避免把切换中的大厅卡片误当作“我的线索”。
     await Promise.all([admin, sales].map((page) => page.reload()));
     await Promise.all([admin, sales].map((page) => page.getByRole("button", { name: "我的线索" }).click()));

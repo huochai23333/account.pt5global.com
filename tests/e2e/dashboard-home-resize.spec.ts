@@ -51,6 +51,8 @@ test("桌面首页缩放稳定且保留键盘调整方式", async ({ page }) => 
   });
 
   const clockCard = widgetCard(page, "clock");
+  // 常用工作区增加后时钟可能落在首屏下方；先滚入视口再按真实位置悬停。
+  await clockCard.scrollIntoViewIfNeeded();
   const clockCardBox = await requiredBox(clockCard);
 
   await page.mouse.move(
@@ -65,9 +67,11 @@ test("桌面首页缩放稳定且保留键盘调整方式", async ({ page }) => 
   );
 
   // 离开边缘后提示应及时消失，避免一直遮住编辑内容。
+  await todoCard.scrollIntoViewIfNeeded();
+  const todoCardAfterScroll = await requiredBox(todoCard);
   await page.mouse.move(
-    todoCardBox.x + todoCardBox.width / 2,
-    todoCardBox.y + todoCardBox.height / 2,
+    todoCardAfterScroll.x + todoCardAfterScroll.width / 2,
+    todoCardAfterScroll.y + todoCardAfterScroll.height / 2,
   );
   await expect(page.getByTestId("home-widget-resize-handle-active")).toHaveCount(
     0,

@@ -5,6 +5,7 @@ import {
   fillDateControl,
 } from "./helpers/date-control";
 import { expectNotForbiddenPage, expectWorkspaceShell, loginAs } from "./helpers/auth";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 test.describe("汇率按日期补充", () => {
   test("管理员可校验并提交历史范围，结果和输入保留在弹窗内", async ({
@@ -177,7 +178,13 @@ test.describe("汇率按日期补充", () => {
     await expect(latestUsdCard).toContainText("7.18");
     await expect(latestUsdCard).not.toContainText("6.99");
 
-    const yesterday = addDays(getShanghaiDate(), -1);
+    // 历史卡片验证的是固定种子，不是运行当天；多日复用本地库后应以种子实际日期为准。
+    const admin = getLocalSupabaseAdminClient();
+    if (!admin) throw new Error("本地数据库管理员连接不可用。");
+    const { data: historicalRate, error: historicalRateError } = await admin.from("exchange_rate")
+      .select("rate_date").eq("id", "e1000000-0000-4000-8000-000000000005").single();
+    if (historicalRateError || !historicalRate?.rate_date) throw new Error("历史汇率种子缺失。");
+    const historicalRateDate = String(historicalRate.rate_date);
     const desktopHistoryRow = page
       .locator("table:visible tbody tr")
       // 历史获取回归可能留下其他币种记录，这里只定位本用例固定验证的 USD 夹具。
@@ -186,7 +193,7 @@ test.describe("汇率按日期补充", () => {
     await expect(desktopHistoryRow).toHaveCount(1);
     await expect(desktopHistoryRow).toContainText("USD");
     await expect(desktopHistoryRow).toContainText("6.99");
-    await expect(desktopHistoryRow).toContainText(toChineseDate(yesterday));
+    await expect(desktopHistoryRow).toContainText(toChineseDate(historicalRateDate));
     await expectNoHorizontalOverflow(page);
 
     await page.reload();
@@ -202,7 +209,7 @@ test.describe("汇率按日期补充", () => {
     await expect(mobileHistoryCard).toHaveCount(1);
     await expect(mobileHistoryCard).toContainText("USD/CNY");
     await expect(mobileHistoryCard).toContainText("汇率日期");
-    await expect(mobileHistoryCard).toContainText(toChineseDate(yesterday));
+    await expect(mobileHistoryCard).toContainText(toChineseDate(historicalRateDate));
     await expect(mobileHistoryCard).toContainText("获取方式");
     await expect(mobileHistoryCard.getByRole("button", { name: "编辑" }))
       .toBeVisible();

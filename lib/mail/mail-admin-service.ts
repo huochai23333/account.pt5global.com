@@ -69,8 +69,18 @@ async function generatedIdentifiers(sender: ActiveMailSender) {
   const supabase = getSupabaseServiceRoleClient();
   const { data, error } = await supabase.from("mail_agent_profiles").select("user_id,alias_local_part,ref_prefix").neq("user_id", sender.userId);
   if (error) databaseError("发件人员邮件标识暂时无法生成。", error);
-  const usedAliases = new Set((data ?? []).map((row) => String(row.alias_local_part).toLowerCase()));
-  const usedRefs = new Set((data ?? []).map((row) => String(row.ref_prefix).toUpperCase()));
+  return suggestIdentifiersFromProfiles(sender, data ?? []);
+}
+
+/** 列表页复用同一份配置计算建议值；排除自己的标识，保持与单人编辑时的规则一致。 */
+function suggestIdentifiersFromProfiles(sender: ActiveMailSender, profiles: {
+  user_id: string;
+  alias_local_part: string;
+  ref_prefix: string;
+}[]) {
+  const others = profiles.filter((row) => row.user_id !== sender.userId);
+  const usedAliases = new Set(others.map((row) => String(row.alias_local_part).toLowerCase()));
+  const usedRefs = new Set(others.map((row) => String(row.ref_prefix).toUpperCase()));
   const baseAlias = createSuggestedMailAlias({ userId: sender.userId, name: sender.name, email: sender.email });
   const aliasLocalPart = usedAliases.has(baseAlias) ? addStableAliasSuffix(baseAlias, sender.userId) : baseAlias;
   const baseRef = createSuggestedRefPrefix(aliasLocalPart, sender.userId);
@@ -122,20 +132,28 @@ export async function listMailAgents(identity: MailIdentity) {
   const supabase = getSupabaseServiceRoleClient();
   const senders = await listActiveMailSenders();
   if (senders.length === 0) return { agents: [] as MailAgentProfile[] };
-  for (const sender of senders) await ensureMailAgentProfile(sender);
   const ids = senders.map((agent) => agent.userId);
-  const [profilesResult, bindingsResult] = await Promise.all([
+  const [existingProfiles, bindingsResult] = await Promise.all([
     supabase.from("mail_agent_profiles")
-      .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version").in("user_id", ids),
+      .select("user_id,alias_local_part,ref_prefix,sender_display_name_enc,signature_html_enc,enabled,version"),
     supabase.from("mail_feishu_bindings").select("user_id").in("user_id", ids),
   ]);
-  if (profilesResult.error || bindingsResult.error) databaseError("邮件人员设置暂时无法读取。", profilesResult.error ?? bindingsResult.error);
-  const profiles = new Map((profilesResult.data ?? []).map((row) => [row.user_id as string, row]));
+  if (existingProfiles.error || bindingsResult.error) databaseError("邮件人员设置暂时无法读取。", existingProfiles.error ?? bindingsResult.error);
+  const allProfiles = [...(existingProfiles.data ?? [])];
+  const knownIds = new Set(allProfiles.map((row) => String(row.user_id)));
+  // 旧账号已有配置时不再逐人查询；首次建档仍逐个执行，避免多人同名时并发生成重复标识。
+  for (const sender of senders) {
+    if (knownIds.has(sender.userId)) continue;
+    const created = await ensureMailAgentProfile(sender);
+    allProfiles.push(created);
+    knownIds.add(sender.userId);
+  }
+  const profiles = new Map(allProfiles.map((row) => [row.user_id as string, row]));
   const bound = new Set((bindingsResult.data ?? []).map((row) => row.user_id as string));
-  const agents = await Promise.all(senders.map(async (sender) => {
+  const agents = senders.map((sender) => {
       const profile = profiles.get(sender.userId);
       if (!profile) throw new Error("发件人员资料没有确认创建。");
-      const suggested = await generatedIdentifiers(sender);
+      const suggested = suggestIdentifiersFromProfiles(sender, allProfiles);
       return {
         memberId: sender.userId,
         displayName: sender.displayName,
@@ -150,7 +168,7 @@ export async function listMailAgents(identity: MailIdentity) {
         suggestedAliasLocalPart: suggested.aliasLocalPart,
         suggestedRefPrefix: suggested.refPrefix,
       } satisfies MailAgentProfile;
-    }));
+    });
   return { agents };
 }
 

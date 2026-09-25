@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import {
   canAccessWorkspaceBasePath,
@@ -21,7 +22,8 @@ type ServerAuthContext = {
   userId: string | null;
 };
 
-export async function getServerAuthContext(): Promise<ServerAuthContext> {
+// 同一次渲染中的布局和业务页面复用已验证身份；新请求仍会重新验证账号状态。
+export const getServerAuthContext = cache(async (): Promise<ServerAuthContext> => {
   const cookieStore = await cookies();
   const hasAuthCookie = cookieStore.getAll().some((cookie) =>
     isSupabaseAuthCookieName(cookie.name),
@@ -61,7 +63,7 @@ export async function getServerAuthContext(): Promise<ServerAuthContext> {
     status: accessContext.status,
     userId: user.id,
   };
-}
+});
 
 function isSupabaseAuthCookieName(name: string) {
   return /^sb-.*-auth-token(?:\.\d+)?$/.test(name);

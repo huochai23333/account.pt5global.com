@@ -55,3 +55,9 @@ export async function GET(request: Request, context: { params: Promise<{ templat
     });
   }
 }
+
+/** iframe 的 load 事件在错误页也会触发；HEAD 让外层能核对正文响应是否真的可用。 */
+export async function HEAD(request: Request, context: { params: Promise<{ templateId: string }> }) {
+  const response = await GET(request, context);
+  return new Response(null, { status: response.status, headers: response.headers });
+}

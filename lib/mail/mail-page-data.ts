@@ -13,6 +13,15 @@ import type { MailIdentity } from "./mail-types";
 /** 页面只组合首屏查询；筛选、写操作和弹窗状态分别由对应模块负责。 */
 export async function getMailPageData(identity: MailIdentity) {
   try {
+    // 会话与管理栏目不依赖发件配置，可先查询；概况里的可发送状态则必须等首次建档完成。
+    const listPromise = queryMailThreads(identity, {
+      scope: identity.role === "administrator" ? "all" : "mine", limit: 40,
+    }).then((value) => ({ value }), (error: unknown) => ({ error }));
+    const adminPromise = identity.role === "administrator" ? Promise.allSettled([
+      getAdminMailMetrics(identity),
+      queryMailQuarantine(identity, { limit: 40 }),
+      listMailIntakeRules(identity),
+    ]) : null;
     let currentProfile: Awaited<ReturnType<typeof getMailAgentProfile>> | null = null;
     let preparedAgents: Awaited<ReturnType<typeof listMailAgents>>["agents"] = [];
     let profileError: string | null = null;
@@ -28,10 +37,9 @@ export async function getMailPageData(identity: MailIdentity) {
     } catch (error) {
       profileError = error instanceof Error ? error.message : "发件设置暂时无法读取。";
     }
-    const [summary, list] = await Promise.all([
-      getMailWorkspace(identity),
-      queryMailThreads(identity, { scope: identity.role === "administrator" ? "all" : "mine", limit: 40 }),
-    ]);
+    const [summary, listResult] = await Promise.all([getMailWorkspace(identity), listPromise]);
+    if ("error" in listResult) throw listResult.error;
+    const list = listResult.value;
     let agents: Awaited<ReturnType<typeof listMailAgents>>["agents"] = preparedAgents;
     let metrics: Awaited<ReturnType<typeof getAdminMailMetrics>> | null = null;
     const ownProfile: Awaited<ReturnType<typeof getMailAgentProfile>> | null = identity.role === "administrator" ? null : currentProfile;
@@ -41,14 +49,14 @@ export async function getMailPageData(identity: MailIdentity) {
     try {
       // 管理指标或人员配置偶发不可用时仍要保留核心会话，避免整个工作台显示为空。
       if (identity.role === "administrator") {
-        const admin = await Promise.all([
-          getAdminMailMetrics(identity),
-          queryMailQuarantine(identity, { limit: 40 }),
-          listMailIntakeRules(identity),
-        ]);
-        metrics = admin[0];
-        quarantine = admin[1].items;
-        intakeRules = admin[2].rules;
+        const admin = await adminPromise;
+        if (!admin) throw new Error("邮件管理资料暂时无法读取。");
+        if (admin[0].status === "rejected") throw admin[0].reason;
+        if (admin[1].status === "rejected") throw admin[1].reason;
+        if (admin[2].status === "rejected") throw admin[2].reason;
+        metrics = admin[0].value;
+        quarantine = admin[1].value.items;
+        intakeRules = admin[2].value.rules;
       } else {
         const result = await listAssignableMailAgents(identity);
         agents = result.agents.map((agent) => ({

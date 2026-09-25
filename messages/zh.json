@@ -5336,7 +5336,10 @@
     "viewer": {
       "guideTitle": "模板使用指南",
       "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。",
-      "desktopOnly": "公司模板请在电脑上填写和打印。"
+      "desktopOnly": "公司模板请在电脑上填写和打印。",
+      "loading": "正在打开模板，请稍候…",
+      "loadFailed": "模板暂时没有打开，请重试。",
+      "retry": "重新打开"
     },
     "errors": {
       "company_template_forbidden": "当前账号不能管理公司模板。",
