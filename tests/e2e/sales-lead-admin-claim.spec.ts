@@ -1,3 +1,4 @@
+import { saveOpenLeadAsCustomer, cleanupSalesLeadConversion } from "./helpers/sales-lead-conversion";
 import { expect, test, type Page } from "@playwright/test";
 
 import { loginAs, setTestLocale } from "./helpers/auth";
@@ -74,10 +75,10 @@ test.describe("lead rules and administrator claims", () => {
         await page.goto(`/${role === "administrator" ? "admin" : role}/wholesale/leads`);
         const rules = page.getByTestId("sales-lead-rules");
         await expect(rules.locator("dt")).toHaveText(locale === "zh"
-          ? ["3 天内首次联系", "每 7 天持续跟进", "每次认领最多 30 天"]
-          : ["First contact within 3 days", "Keep in touch every 7 days", "Up to 30 days per claim"]);
-        await expect(rules.locator("dd").last()).toContainText(locale === "zh" ? "即使持续联系" : "even if contact continues");
-        await expect(rules.locator("p")).toContainText(locale === "zh" ? "管理员和业务员遵循相同规则" : "The same rules apply to administrators and salespeople");
+          ? ["30天内成为客户"]
+          : ["Convert within 30 days"]);
+        await expect(rules.locator("dd").last()).toContainText(locale === "zh" ? "记录联系不会延长期限" : "Contact records do not extend");
+        await expect(rules.locator("p")).toContainText(locale === "zh" ? "管理员和业务员遵循相同规则" : "Administrators and salespeople follow the same rules");
         for (const width of [1440, 375]) {
           await page.setViewportSize({ width, height: 900 });
           // 手机规则默认折叠，先按用户实际操作展开后再检查完整内容。
@@ -97,13 +98,13 @@ test.describe("lead rules and administrator claims", () => {
           await page.screenshot({ path: `output/lead-rules-${role}-${locale}-${width}.png` });
         }
         await page.getByRole("button", { name: locale === "zh" ? "我的线索" : "My Leads" }).click();
-        await expect(rules).toBeVisible();
+        await expect(page.getByTestId("sales-lead-rules")).toBeVisible();
       }
       await context.close();
     }
   });
 
-  test("administrator claims for self, records contact, returns, reclaims and uses the lead", async ({ page }) => {
+  test("administrator claims for self, records contact, returns, reclaims and converts the lead", async ({ page }) => {
     // 历史运行会在同一线索留下旧备注；本次使用唯一文字，避免把旧记录误当成新写入。
     const contactNote = `管理员已联系客户，等待确认采购清单 ${Date.now()}`;
     restoreClaimQuota = await reserveClaimQuota(["administrator"]);
@@ -115,7 +116,7 @@ test.describe("lead rules and administrator claims", () => {
     await page.getByTestId(claimId).click();
     await expect(page.getByRole("button", { name: "我的线索" })).toHaveAttribute("aria-pressed", "true");
     await openLead(page, name);
-    await expect(page.getByRole("region", { name: "跟进进度" }).getByText("本次联系截止")).toBeVisible();
+    await expect(page.getByRole("region", { name: "跟进进度" }).getByText("成为客户截止时间")).toBeVisible();
     await page.getByRole("button", { name: "记录联系", exact: true }).click();
     await page.getByTestId("sales-lead-action-note").fill(contactNote);
     await page.getByTestId("submit-lead-contact").click();
@@ -134,15 +135,16 @@ test.describe("lead rules and administrator claims", () => {
     await page.getByTestId(claimId).click();
     await openLead(page, name);
     await expect(page.getByText(contactNote, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "标记已使用" }).click();
-    await page.getByTestId("sales-lead-action-note").fill("管理员跟进的客户已确认订单。");
-    await page.getByTestId("submit-lead-use").click();
-    await page.getByRole("button", { name: "我已使用" }).click();
-    await openLead(page, name);
-    await expect(page.getByRole("region", { name: "跟进进度" }).getByText("管理员跟进的客户已确认订单。", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "重新开放" }).click();
-    await page.getByTestId("sales-lead-action-note").fill("恢复本地测试线索。");
-    await page.getByTestId("submit-lead-reopen").click();
+    const leadId = claimId.replace("claim-lead-", "");
+    try {
+      const proof = await saveOpenLeadAsCustomer(page, leadId, "管理员跟进的客户已确认合作。");
+      expect(proof.owner).toBe("11111111-1111-4111-8111-111111111111");
+      await page.reload();
+      await page.getByRole("button", { name: /^已成为客户/ }).click();
+      await openLead(page, name);
+      await expect(page.getByRole("region", { name: "跟进进度" }).getByText(proof.customer_id!, { exact: true })).toBeVisible();
+    } finally { cleanupSalesLeadConversion(leadId); }
+
   });
 
   test("administrator and salesperson cannot claim the same lead together", async ({ browser }) => {

@@ -13,6 +13,7 @@ import { SalesLeadValue } from "./sales-lead-value";
 export type SalesLeadPresentationProps = {
   canManage: boolean; now: number; pending: string | null;
   onClaim: (id: string) => void; onOpen: (lead: SalesLead) => void;
+  onConvert: (lead: SalesLead) => void;
 };
 
 function Cell({ label, children }: { label?: string; children: ReactNode }) {
@@ -23,7 +24,7 @@ function Cell({ label, children }: { label?: string; children: ReactNode }) {
 }
 
 // 行内展开只使用已读取的公开字段，不请求联系历史；认领和详情复用页面回调。
-export function SalesLeadListRow({ lead, canManage, now, pending, onClaim, onOpen }: SalesLeadPresentationProps & { lead: SalesLead }) {
+export function SalesLeadListRow({ lead, canManage, now, pending, onClaim, onOpen, onConvert }: SalesLeadPresentationProps & { lead: SalesLead }) {
   const t = useTranslations("SalesLeads");
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
@@ -45,7 +46,7 @@ export function SalesLeadListRow({ lead, canManage, now, pending, onClaim, onOpe
       <Cell label={t("list.location")}><p className="break-words [overflow-wrap:anywhere]">{lead.country}</p><SalesLeadValue value={lead.region_timezone} /></Cell>
       <Cell label={t("list.priorityStatus")}><div className="flex flex-wrap gap-2">
         <StatusBadge tone={lead.priority === "A" ? "danger" : lead.priority === "B" ? "warning" : "neutral"}>{t("priority", { priority: lead.priority })}</StatusBadge>
-        <StatusBadge tone={lead.status === "used" ? "success" : lead.status === "claimed" ? "info" : "neutral"}>{t(`status.${lead.status}`)}</StatusBadge>
+        <StatusBadge tone={lead.status === "converted" ? "success" : lead.status === "claimed" ? "info" : "neutral"}>{t(`status.${lead.status}`)}</StatusBadge>
       </div></Cell>
       <Cell label={t("list.contacts")}>
         <dl className="space-y-2">{contacts.map(({ label, value, kind }) => <div className="min-w-0" key={kind}>
@@ -66,6 +67,7 @@ export function SalesLeadListRow({ lead, canManage, now, pending, onClaim, onOpe
         <div><dt className="text-xs text-content-muted">{t("fields.sourceDate")}</dt><dd>{lead.latest_source_date}</dd></div>
       </dl></Cell>
       <Cell label={t("list.actions")}><div className="flex min-w-0 flex-wrap gap-2 xl:flex-col xl:items-stretch">
+        {lead.status === "claimed" ? <Button data-testid={`convert-lead-${lead.id}`} disabled={pending === lead.id || !lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} size="compact" wrap>{t("actions.addCustomer")}</Button> : null}
         {lead.status === "hall" ? <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>{t(canManage ? "actions.claimForMe" : "actions.claim")}</Button> : null}
         <Button disabled={pending === lead.id} onClick={() => onOpen(lead)} size="compact" variant="outline" wrap>{t("actions.details")}</Button>
         <Button aria-controls={`${id}-public`} aria-expanded={expanded} onClick={() => setExpanded(!expanded)} size="compact" variant="outline" wrap>{expanded ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}{t(expanded ? "view.collapse" : "view.expand")}</Button>

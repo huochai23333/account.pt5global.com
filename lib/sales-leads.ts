@@ -10,7 +10,7 @@ import type {
   SalesLeadPageData,
 } from "./sales-leads-types";
 
-const EMPTY_COUNTS = { hall: 0, mine: 0, used: 0, allClaimed: 0 };
+const EMPTY_COUNTS = { hall: 0, mine: 0, converted: 0, allClaimed: 0 };
 
 /** 服务端首次加载只读取当前账号能看到的数据，页面不会先闪出越权内容再隐藏。 */
 export async function getSalesLeadPageData(
@@ -119,17 +119,6 @@ export async function returnSalesLead(
   });
 }
 
-export async function markSalesLeadUsed(
-  supabase: SupabaseClient,
-  leadId: string,
-  summary: string,
-) {
-  return runLeadRpc(supabase, "mark_sales_lead_used", {
-    p_lead_id: leadId,
-    p_summary: summary,
-  });
-}
-
 export async function assignSalesLead(
   supabase: SupabaseClient,
   leadId: string,
@@ -139,17 +128,6 @@ export async function assignSalesLead(
   return runLeadRpc(supabase, "assign_sales_lead", {
     p_lead_id: leadId,
     p_assignee_user_id: assigneeUserId,
-    p_reason: reason,
-  });
-}
-
-export async function reopenSalesLead(
-  supabase: SupabaseClient,
-  leadId: string,
-  reason: string,
-) {
-  return runLeadRpc(supabase, "reopen_sales_lead", {
-    p_lead_id: leadId,
     p_reason: reason,
   });
 }

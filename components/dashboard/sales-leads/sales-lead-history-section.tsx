@@ -36,7 +36,6 @@ export function SalesLeadHistorySection({ detail }: { detail: SalesLeadDetail })
             {assignment.first_contact_at ? <p className="mt-2 text-sm text-content-muted">{t("fields.firstContact")}: {formatLeadDate(assignment.first_contact_at, locale)}</p> : null}
             {assignment.last_contact_at ? <p className="mt-2 text-sm text-content-muted">{t("fields.lastContact")}: {formatLeadDate(assignment.last_contact_at, locale)}</p> : null}
             {assignment.ended_reason ? <p className="mt-2 text-sm text-content-muted">{t(`endReasons.${assignment.ended_reason}`)}{assignment.end_note ? ` · ${assignment.end_note}` : ""}</p> : null}
-            {assignment.reopened_at ? <p className="mt-2 text-sm text-content-muted">{t("endReasons.reopened")} · {formatLeadDate(assignment.reopened_at, locale)}{assignment.reopen_note ? ` · ${assignment.reopen_note}` : ""}</p> : null}
           </RecordCard>
         )) : <p className="text-sm text-content-muted">{t("detail.noAssignments")}</p>}
       </div>

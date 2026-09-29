@@ -41,7 +41,7 @@ export function useSalesLeadsDisplay(data: SalesLeadPageData) {
     const options: Array<{ key: SalesLeadBoard; label: string; badge: number }> = [
       { key: "hall", label: t("boards.hall"), badge: data.boardCounts.hall },
       { key: "mine", label: t("boards.mine"), badge: data.boardCounts.mine },
-      { key: "used", label: t("boards.used"), badge: data.boardCounts.used },
+      { key: "converted", label: t("boards.converted"), badge: data.boardCounts.converted },
     ];
     if (data.canManage) options.push({ key: "all_claimed", label: t("boards.allClaimed"), badge: data.boardCounts.allClaimed });
     return options;

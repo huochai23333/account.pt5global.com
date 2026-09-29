@@ -19,6 +19,7 @@ export function SalesLeadCards({
   now,
   onClaim,
   onOpen,
+  onConvert,
   pending,
 }: {
   canManage: boolean;
@@ -26,6 +27,7 @@ export function SalesLeadCards({
   now: number;
   onClaim: (leadId: string) => void;
   onOpen: (lead: SalesLead) => void;
+  onConvert: (lead: SalesLead) => void;
   pending: string | null;
 }) {
   const t = useTranslations("SalesLeads");
@@ -41,7 +43,7 @@ export function SalesLeadCards({
                 <StatusBadge tone={lead.priority === "A" ? "danger" : lead.priority === "B" ? "warning" : "neutral"}>
                   {t("priority", { priority: lead.priority })}
                 </StatusBadge>
-                <StatusBadge tone={lead.status === "used" ? "success" : lead.status === "claimed" ? "info" : "neutral"}>
+                <StatusBadge tone={lead.status === "converted" ? "success" : lead.status === "claimed" ? "info" : "neutral"}>
                   {t(`status.${lead.status}`)}
                 </StatusBadge>
               </div>
@@ -53,6 +55,7 @@ export function SalesLeadCards({
               </p>
             </div>
             <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:max-w-[52%] sm:justify-end">
+              {lead.status === "claimed" ? <Button data-testid={`convert-lead-${lead.id}`} disabled={pending === lead.id || !lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} size="compact" wrap>{t("actions.addCustomer")}</Button> : null}
               {lead.status === "hall" ? (
                 <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>
                   {t(canManage ? "actions.claimForMe" : "actions.claim")}

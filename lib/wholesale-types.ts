@@ -27,6 +27,8 @@ export type WholesaleCustomer = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  /** 当前账号可见的来源线索编号，用于提示关联客户需要保留档案。 */
+  source_sales_lead_id?: string | null;
 };
 
 export type WholesaleOrder = {

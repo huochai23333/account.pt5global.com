@@ -64,6 +64,12 @@ export function WholesaleCustomerPeopleTab({
     "UiText.components_dashboard_wholesale_wholesale_people_tabs",
   );
   const t = useTranslations("WholesaleBusiness.directoryUi");
+  // 客户可能由管理员认领线索后建档，筛选补入实际负责人；业务员账户及订单候选范围保持独立。
+  const ownerOptions = [...salesAccounts];
+  for (const customer of customers) {
+    const owner = customer.assigned_sales_user_id ? profilesById.get(customer.assigned_sales_user_id) : undefined;
+    if (owner?.role === "administrator" && !ownerOptions.some((profile) => profile.user_id === owner.user_id)) ownerOptions.push(owner);
+  }
   return (
     <DashboardListSection
       actions={
@@ -132,7 +138,7 @@ export function WholesaleCustomerPeopleTab({
                 ),
                 value: ALL,
               },
-              ...salesAccounts.map((profile) => ({
+              ...ownerOptions.map((profile) => ({
                 label: profile.name || profile.email,
                 value: profile.user_id,
               })),

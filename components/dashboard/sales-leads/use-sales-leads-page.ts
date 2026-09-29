@@ -10,8 +10,6 @@ import {
   claimSalesLead,
   fetchSalesLeadDetail,
   fetchSalesLeadPage,
-  markSalesLeadUsed,
-  reopenSalesLead,
   requestSalesLeadSync,
   returnSalesLead,
 } from "@/lib/sales-leads";
@@ -23,7 +21,7 @@ import type {
   SalesLeadPageData,
 } from "@/lib/sales-leads-types";
 
-export type LeadAction = "contact" | "return" | "use" | "assign" | "reopen";
+export type LeadAction = "contact" | "return" | "assign";
 
 export function useSalesLeadsPage(initialData: SalesLeadPageData) {
   const [data, setData] = useState(initialData);
@@ -119,12 +117,11 @@ export function useSalesLeadsPage(initialData: SalesLeadPageData) {
         await addSalesLeadContact(supabase, { leadId: input.leadId, ...input.contact });
       } else if (input.action === "return") {
         await returnSalesLead(supabase, input.leadId, input.reason);
-      } else if (input.action === "use") {
-        await markSalesLeadUsed(supabase, input.leadId, input.reason);
       } else if (input.action === "assign" && input.assigneeUserId) {
         await assignSalesLead(supabase, input.leadId, input.assigneeUserId, input.reason);
-      } else if (input.action === "reopen") {
-        await reopenSalesLead(supabase, input.leadId, input.reason);
+      } else {
+        // 不完整或未知的操作不能直接关闭弹窗，必须先阻止没有产生业务记录的空提交。
+        throw new Error("sales_lead_action_invalid");
       }
       setAction(null);
       setDetail(null);

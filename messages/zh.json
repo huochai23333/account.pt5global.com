@@ -1111,7 +1111,7 @@
       },
       "customers": {
         "title": "客户管理",
-        "description": "单独管理批发客户档案、联系方式、来源、关联业务员和注册账号合并状态。"
+        "description": "单独管理批发客户档案、联系方式、来源、客户负责人和注册账号合并状态。"
       },
       "people": {
         "title": "人员管理",
@@ -4321,20 +4321,12 @@
     },
     "rules": {
       "title": "认领与跟进规则",
-      "mobileSummary": "首次联系 3 天内，之后每 7 天跟进",
-      "firstContact": {
-        "title": "3 天内首次联系",
-        "description": "认领后 3 天内没有记录首次联系，线索会自动退回大厅。"
-      },
-      "followUp": {
-        "title": "每 7 天持续跟进",
-        "description": "首次联系后，连续 7 天没有新的联系记录，线索会自动退回大厅。"
-      },
+      "mobileSummary": "认领后30天内添加为客户",
       "claimPeriod": {
-        "title": "每次认领最多 30 天",
-        "description": "认领满 30 天仍未标记已使用，即使持续联系，也会自动退回大厅。"
+        "title": "30天内成为客户",
+        "description": "本次认领满30天仍未添加为客户，线索会自动退回大厅。记录联系不会延长期限。"
       },
-      "shared": "管理员和业务员遵循相同规则。每人每天最多领取 5 条；管理员安排或转派、退回后重新领取都会计入当天数量。重新领取后开始新的周期，负责人可查看此前联系记录。"
+      "shared": "管理员和业务员遵循相同规则。每人每天最多领取5条；管理员安排或转派、退回后重新领取都会计入当天数量，并开始新的30天周期。负责人可查看此前联系记录。"
     },
     "header": {
       "badge": "客户线索",
@@ -4344,14 +4336,14 @@
     "boards": {
       "hall": "线索大厅",
       "mine": "我的线索",
-      "used": "我已使用",
-      "allClaimed": "全部认领"
+      "allClaimed": "全部认领",
+      "converted": "已成为客户"
     },
     "priority": "{priority} 级",
     "status": {
       "hall": "大厅",
       "claimed": "已认领",
-      "used": "已使用"
+      "converted": "已成为客户"
     },
     "actions": {
       "claimForMe": "认领给自己",
@@ -4359,11 +4351,10 @@
       "details": "查看详情",
       "addContact": "记录联系",
       "return": "退回大厅",
-      "markUsed": "标记已使用",
       "assign": "安排业务员",
-      "reopen": "重新开放",
       "syncNow": "立即同步",
-      "cancel": "取消"
+      "cancel": "取消",
+      "addCustomer": "添加为客户"
     },
     "filters": {
       "searchLabel": "搜索线索",
@@ -4379,7 +4370,7 @@
       "website": "网站",
       "publicContact": "公开联系方式",
       "recommendedApproach": "建议联系方法",
-      "timeRemaining": "剩余联系时间",
+      "timeRemaining": "剩余转客户时间",
       "assignee": "当前负责人",
       "nextFollowUp": "下次跟进",
       "sourceDate": "线索日期",
@@ -4402,10 +4393,9 @@
       "claimedAt": "认领时间",
       "firstContact": "首次联系",
       "lastContact": "最近联系",
-      "expiresAt": "本次联系截止",
-      "hardDeadline": "认领周期截止",
-      "usedAt": "使用时间",
-      "usedSummary": "使用结果"
+      "expiresAt": "成为客户截止时间",
+      "convertedAt": "成为客户时间",
+      "customerId": "客户编号"
     },
     "countdown": {
       "expired": "已到期",
@@ -4451,9 +4441,8 @@
       "reassigned": "管理员转派",
       "initial_timeout": "首次联系超时",
       "follow_up_timeout": "跟进超时",
-      "hard_deadline": "认领周期结束",
-      "used": "已确认使用",
-      "reopened": "管理员重新开放"
+      "hard_deadline": "30天内未成为客户",
+      "converted": "已添加为客户"
     },
     "dialogs": {
       "contact": {
@@ -4470,13 +4459,6 @@
         "notePlaceholder": "说明为什么退回这条线索",
         "submit": "确认退回"
       },
-      "use": {
-        "title": "标记为已使用",
-        "description": "确认这条线索已经带来实际业务结果。",
-        "reasonLabel": "结果说明",
-        "notePlaceholder": "说明客户已产生的业务结果",
-        "submit": "确认已使用"
-      },
       "assign": {
         "title": "安排业务员",
         "description": "管理员可以安排或更换负责这条线索的业务员。",
@@ -4484,13 +4466,6 @@
         "notePlaceholder": "说明本次安排或转派原因",
         "personPlaceholder": "选择业务员",
         "submit": "确认安排"
-      },
-      "reopen": {
-        "title": "重新开放线索",
-        "description": "线索会回到大厅，等待业务员重新认领。",
-        "reasonLabel": "重新开放原因",
-        "notePlaceholder": "说明为什么需要重新开放",
-        "submit": "确认重新开放"
       }
     },
     "states": {
@@ -4539,12 +4514,36 @@
       "sales_lead_not_active": "这条线索已过期或不再由当前账号处理。",
       "sales_lead_contact_not_owned": "只能为自己当前认领的线索记录联系。",
       "sales_lead_return_not_owned": "只能退回自己当前认领的线索。",
-      "sales_lead_use_not_owned": "只能确认自己当前认领的线索。",
       "sales_lead_follow_up_must_be_future": "下次跟进时间必须晚于当前时间。",
       "sales_lead_reason_required": "请填写至少两个字的说明。",
-      "sales_lead_used_locked": "已使用的线索需要先由管理员重新开放。",
       "sales_lead_assignee_invalid": "请选择仍在职的业务员。",
-      "sales_lead_read_not_allowed": "当前账号不能查看这条线索。"
+      "sales_lead_read_not_allowed": "当前账号不能查看这条线索。",
+      "sales_lead_convert_not_allowed": "当前账号不能将线索添加为客户。",
+      "sales_lead_convert_not_owned": "只能将自己当前认领的线索添加为客户。",
+      "sales_lead_assignment_changed": "这条线索的负责人或认领周期已改变，请关闭弹窗并刷新后查看。",
+      "sales_lead_customer_name_required": "请填写客户名称，最多200个字。",
+      "sales_lead_customer_contact_required": "请填写客户联系方式。",
+      "sales_lead_customer_input_invalid": "客户资料过长，请精简后再保存。",
+      "sales_lead_customer_name_exists": "这个客户名称已经存在，请核对后调整名称。",
+      "sales_lead_save_unconfirmed": "保存结果待确认，请刷新页面查看真实记录。",
+      "sales_lead_converted_locked": "这条线索已成为客户，请到批发客户中查看。",
+      "sales_lead_not_found": "没有找到这条线索，请刷新后查看。",
+      "sales_lead_action_invalid": "当前线索操作信息不完整，请刷新后再试。"
+    },
+    "customer": {
+      "title": "添加为客户",
+      "description": "确认客户资料后保存，客户将由线索当前负责人继续负责。",
+      "name": "客户名称",
+      "owner": "客户负责人",
+      "contacts": "联系方式",
+      "otherNames": "其他名称",
+      "otherNamesHint": "每行填写一个名称，最多50个。",
+      "source": "客户来源",
+      "sourcePrefix": "线索大厅",
+      "notes": "备注",
+      "submit": "保存并确认",
+      "saved": "客户已保存，线索已成为客户。",
+      "confirming": "保存结果待确认，请刷新页面查看真实记录。"
     }
   },
   "UiText": {
@@ -4756,12 +4755,14 @@
       "text004": " 关联合并注册账号 ",
       "text001": " 编辑客户 ",
       "text007": " 合并后，这个注册账号会承接当前客户名下已有和后续的批发订单及佣金。 ",
-      "attribute002": "当前没有未合并的客户注册账号。客户完成注册后，就可以在这里选择并合并。"
+      "attribute002": "当前没有未合并的客户注册账号。客户完成注册后，就可以在这里选择并合并。",
+      "linkedLeadNotice": "这个客户由线索添加，需要保留客户档案，可以继续修改资料。",
+      "ownerLabel": "客户负责人"
     },
     "components_dashboard_wholesale_wholesale_customer_dialogs": {
       "attribute002": "新增批发客户",
       "attribute004": "编辑批发客户",
-      "attribute003": "修改客户唯一名称、联系方式、来源、其他名称、关联业务员和备注。",
+      "attribute003": "修改客户唯一名称、联系方式、来源、其他名称、客户负责人和备注。",
       "attribute001": "客户唯一标识名称用于认领 1688 订单，其他名称可填写客户常用昵称或店铺名。"
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
@@ -4769,9 +4770,9 @@
       "attribute006": "客户来源",
       "attribute007": "备注",
       "attribute003": "客户其他名称",
-      "attribute002": "关联业务员",
+      "attribute002": "客户负责人",
       "text001": "暂不分配",
-      "text002": "关联业务员",
+      "text002": "客户负责人",
       "attribute001": "客户唯一标识名称",
       "attribute004": "可一次填写多个，用逗号或换行分开"
     },
@@ -4952,8 +4953,8 @@
     "components_dashboard_wholesale_wholesale_people_directories": {
       "text001": "客户",
       "text002": "联系方式",
-      "text003": "关联业务员",
-      "text006": " 业务员：",
+      "text003": "客户负责人",
+      "text006": " 客户负责人：",
       "text009": "联系方式",
       "text010": "城市",
       "text012": "状态",
@@ -4976,8 +4977,8 @@
     "components_dashboard_wholesale_wholesale_people_tabs": {
       "text001": " 清空筛选 ",
       "attribute004": "客户类型",
-      "attribute005": "关联业务员",
-      "text005": "全部业务员",
+      "attribute005": "客户负责人",
+      "text005": "全部负责人",
       "text006": " 清空筛选 ",
       "attribute006": "业务员账户",
       "text008": "业务员",

@@ -1,3 +1,4 @@
+import { saveOpenLeadAsCustomer, cleanupSalesLeadConversion } from "./helpers/sales-lead-conversion";
 import { expect, test, type Page } from "@playwright/test";
 
 import { getPeerSalesmanRegressionAccount } from "./helpers/accounts";
@@ -92,49 +93,39 @@ test.describe.serial("sales lead hall", () => {
     await openLead(nextOwnerPage, leadName);
     await expect(nextOwnerPage.getByRole("region", { name: "联系记录", exact: true }).getByText(contactNote, { exact: true })).toBeVisible();
     await expect(nextOwnerPage.getByRole("region", { name: "认领记录", exact: true }).getByText(`业务员主动退回 · ${returnNote}`, { exact: true })).toBeVisible();
-    await nextOwnerPage.getByRole("button", { name: "标记已使用" }).click();
-    await nextOwnerPage.getByTestId("sales-lead-action-note").fill("客户已经提交首笔批发订单。");
-    await nextOwnerPage.getByTestId("submit-lead-use").click();
-    await nextOwnerPage.getByRole("button", { name: "我已使用" }).click();
-    await expect(nextOwnerPage.getByRole("heading", { name: leadName })).toBeVisible();
-    // 使用结果除了保留在历史里，也要在详情的当前进度中完整展示。
+    await saveOpenLeadAsCustomer(nextOwnerPage, leadId, "客户已确认合作资料。");
+    await nextOwnerPage.reload();
+    await nextOwnerPage.getByRole("button", { name: /^已成为客户/ }).click();
     await openLead(nextOwnerPage, leadName);
-    await expect(nextOwnerPage.getByRole("region", { name: "跟进进度" }).getByText("客户已经提交首笔批发订单。", { exact: true })).toBeVisible();
+    await expect(nextOwnerPage.getByRole("region", { name: "跟进进度" }).getByText("客户编号")).toBeVisible();
+    cleanupSalesLeadConversion(leadId);
 
     await firstContext.close();
     await peerContext.close();
   });
 
-  test("administrator can reopen used leads and the page fits desktop and mobile", async ({ page }) => {
+  test("administrator can assign hall leads and the page fits desktop and mobile", async ({ page }) => {
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/leads");
     await expect(page.getByRole("button", { name: "立即同步" })).toBeVisible();
-    await page.getByRole("button", { name: "我已使用" }).click();
-    await expect(page.locator('[data-testid^="sales-lead-row-"]').getByText("已使用", { exact: true }).first()).toBeVisible();
-    const usedCard = page.locator('[data-testid^="sales-lead-row-"]').first();
-    const usedLeadName = (await usedCard.getByRole("heading").innerText()).trim();
-    await usedCard.getByRole("button", { name: "查看详情" }).click();
-    await page.getByRole("button", { name: "重新开放" }).click();
-    await page.getByTestId("sales-lead-action-note").fill("客户进入新的跟进周期。");
-    await page.getByTestId("submit-lead-reopen").click();
-    await page.getByRole("button", { name: "线索大厅" }).click();
-    await page.getByLabel("搜索线索").fill(usedLeadName);
-    await expect(page.getByRole("heading", { name: usedLeadName })).toBeVisible();
-
+    const leadRow = page.locator('[data-testid^="sales-lead-row-"]').first();
+    const leadName = (await leadRow.getByRole("heading").innerText()).trim();
     for (const width of [1440, 375]) {
-      await page.setViewportSize({ width, height: width === 375 ? 812 : 900 });
+      await page.setViewportSize({ width, height: 900 });
       await expectNoHorizontalOverflow(page);
-      await expect(page.getByRole("heading", { name: usedLeadName })).toBeVisible();
+      await expect(page.getByRole("heading", { name: leadName })).toBeVisible();
     }
-
     await page.setViewportSize({ width: 1440, height: 900 });
-    await openLead(page, usedLeadName);
+    await openLead(page, leadName);
     await page.getByRole("button", { name: "安排业务员" }).click();
     await page.getByTestId("sales-lead-action-note").fill("安排业务员继续新的联系周期。");
     await page.getByTestId("submit-lead-assign").click();
     await page.getByRole("button", { name: "全部认领" }).click();
-    await page.getByLabel("搜索线索").fill(usedLeadName);
-    await expect(page.getByRole("heading", { name: usedLeadName })).toBeVisible();
+    await page.getByLabel("搜索线索").fill(leadName);
+    await openLead(page, leadName);
+    await page.getByRole("button", { name: "退回大厅", exact: true }).click();
+    await page.getByTestId("sales-lead-action-note").fill("测试结束后退回大厅。");
+    await page.getByTestId("submit-lead-return").click();
   });
 
   test("finance and client cannot open lead pages", async ({ browser }) => {

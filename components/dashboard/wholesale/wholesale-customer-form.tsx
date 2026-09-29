@@ -45,6 +45,11 @@ export function WholesaleCustomerForm({
   const fixedSalesUserName = fixedSalesUserId
     ? getProfileName(profilesById, fixedSalesUserId)
     : "暂不分配";
+  // 管理员自领线索生成的客户继续由管理员负责，编辑表单必须保留这一真实选项。
+  // 此处只补入该客户现有的负责人，不修改订单和提成使用的业务员候选列表。
+  const currentOwner = customer?.assigned_sales_user_id ? profilesById.get(customer.assigned_sales_user_id) : undefined;
+  const ownerOptions = currentOwner?.role === "administrator" && !salesAccounts.some((account) => account.user_id === currentOwner.user_id)
+    ? [currentOwner, ...salesAccounts] : salesAccounts;
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -85,7 +90,7 @@ export function WholesaleCustomerForm({
                 ),
                 value: "",
               },
-              ...salesAccounts.map((profile) => ({
+              ...ownerOptions.map((profile) => ({
                 label: profile.name || profile.email,
                 value: profile.user_id,
               })),

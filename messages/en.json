@@ -1111,7 +1111,7 @@
       },
       "customers": {
         "title": "Customer Management",
-        "description": "Manage wholesale customer profiles, contact details, source, assigned sales account, and linked sign-in account status separately."
+        "description": "Manage wholesale customer profiles, contact details, source, customer owner, and linked sign-in account status separately."
       },
       "people": {
         "title": "People Management",
@@ -4321,20 +4321,12 @@
     },
     "rules": {
       "title": "Claim and follow-up rules",
-      "mobileSummary": "First contact in 3 days, then follow up every 7 days",
-      "firstContact": {
-        "title": "First contact within 3 days",
-        "description": "Record your first contact within 3 days of claiming, or the lead returns to the hall automatically."
-      },
-      "followUp": {
-        "title": "Keep in touch every 7 days",
-        "description": "After the first contact, 7 days without a new contact record sends the lead back to the hall automatically."
-      },
+      "mobileSummary": "Convert within 30 days of claiming",
       "claimPeriod": {
-        "title": "Up to 30 days per claim",
-        "description": "After 30 days, a lead not marked as used returns to the hall, even if contact continues."
+        "title": "Convert within 30 days",
+        "description": "Leads return to the hall if not added as customers within 30 days of the current claim. Contact records do not extend this deadline."
       },
-      "shared": "The same rules apply to administrators and salespeople. Each person can receive up to 5 leads per day. Administrator assignments, transfers, and reclaimed leads all count toward that day's total. Reclaiming starts a new period with access to earlier contact records."
+      "shared": "Administrators and salespeople follow the same rules: up to 5 claims per person each day. Assignment, reassignment and reclaiming count towards the daily limit and start a new 30-day period. The owner can view previous contact records."
     },
     "header": {
       "badge": "Customer leads",
@@ -4344,14 +4336,14 @@
     "boards": {
       "hall": "Lead Hall",
       "mine": "My Leads",
-      "used": "My Used Leads",
-      "allClaimed": "All Claimed"
+      "allClaimed": "All Claimed",
+      "converted": "Converted to customers"
     },
     "priority": "Priority {priority}",
     "status": {
       "hall": "In hall",
       "claimed": "Claimed",
-      "used": "Used"
+      "converted": "Converted to customer"
     },
     "actions": {
       "claimForMe": "Claim for myself",
@@ -4359,11 +4351,10 @@
       "details": "View details",
       "addContact": "Record contact",
       "return": "Return to hall",
-      "markUsed": "Mark as used",
       "assign": "Assign salesperson",
-      "reopen": "Reopen",
       "syncNow": "Sync now",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "addCustomer": "Add as customer"
     },
     "filters": {
       "searchLabel": "Search leads",
@@ -4379,7 +4370,7 @@
       "website": "Website",
       "publicContact": "Public contact details",
       "recommendedApproach": "Suggested approach",
-      "timeRemaining": "Time remaining",
+      "timeRemaining": "Time remaining to convert",
       "assignee": "Current owner",
       "nextFollowUp": "Next follow-up",
       "sourceDate": "Lead date",
@@ -4402,10 +4393,9 @@
       "claimedAt": "Claimed on",
       "firstContact": "First contact",
       "lastContact": "Latest contact",
-      "expiresAt": "Contact deadline",
-      "hardDeadline": "Claim period ends",
-      "usedAt": "Used on",
-      "usedSummary": "Business result"
+      "expiresAt": "Conversion deadline",
+      "convertedAt": "Converted at",
+      "customerId": "Customer ID"
     },
     "countdown": {
       "expired": "Expired",
@@ -4451,9 +4441,8 @@
       "reassigned": "Reassigned",
       "initial_timeout": "First contact overdue",
       "follow_up_timeout": "Follow-up overdue",
-      "hard_deadline": "Claim period ended",
-      "used": "Confirmed as used",
-      "reopened": "Reopened by administrator"
+      "hard_deadline": "Not converted within 30 days",
+      "converted": "Added as customer"
     },
     "dialogs": {
       "contact": {
@@ -4470,13 +4459,6 @@
         "notePlaceholder": "Explain why this lead is being returned",
         "submit": "Confirm return"
       },
-      "use": {
-        "title": "Mark as used",
-        "description": "Confirm that this lead has produced a real business result.",
-        "reasonLabel": "Result summary",
-        "notePlaceholder": "Describe the business result from this lead",
-        "submit": "Confirm used"
-      },
       "assign": {
         "title": "Assign salesperson",
         "description": "Administrators can assign or change the salesperson responsible for this lead.",
@@ -4484,13 +4466,6 @@
         "notePlaceholder": "Explain this assignment or reassignment",
         "personPlaceholder": "Choose a salesperson",
         "submit": "Confirm assignment"
-      },
-      "reopen": {
-        "title": "Reopen lead",
-        "description": "The lead will return to the hall for a new claim.",
-        "reasonLabel": "Reason for reopening",
-        "notePlaceholder": "Explain why this lead should be reopened",
-        "submit": "Confirm reopening"
       }
     },
     "states": {
@@ -4539,12 +4514,36 @@
       "sales_lead_not_active": "This lead has expired or is no longer assigned to this account.",
       "sales_lead_contact_not_owned": "You can record contact only for your current leads.",
       "sales_lead_return_not_owned": "You can return only your current leads.",
-      "sales_lead_use_not_owned": "You can confirm only your current leads.",
       "sales_lead_follow_up_must_be_future": "The next follow-up must be in the future.",
       "sales_lead_reason_required": "Enter a note of at least two characters.",
-      "sales_lead_used_locked": "An administrator must reopen this used lead first.",
       "sales_lead_assignee_invalid": "Choose an active salesperson.",
-      "sales_lead_read_not_allowed": "This account cannot view the lead."
+      "sales_lead_read_not_allowed": "This account cannot view the lead.",
+      "sales_lead_convert_not_allowed": "Your account cannot add leads as customers.",
+      "sales_lead_convert_not_owned": "You can only convert leads currently assigned to you.",
+      "sales_lead_assignment_changed": "The owner or claim period has changed. Close this dialog and refresh.",
+      "sales_lead_customer_name_required": "Enter a customer name of up to 200 characters.",
+      "sales_lead_customer_contact_required": "Enter the customer contact details.",
+      "sales_lead_customer_input_invalid": "The customer details are too long. Shorten them before saving.",
+      "sales_lead_customer_name_exists": "This customer name already exists. Check the details and adjust the name.",
+      "sales_lead_save_unconfirmed": "The save result is awaiting confirmation. Refresh to check the saved records.",
+      "sales_lead_converted_locked": "This lead is already a customer. View it in wholesale customers.",
+      "sales_lead_not_found": "This lead was not found. Refresh to check again.",
+      "sales_lead_action_invalid": "The lead action is incomplete. Refresh and try again."
+    },
+    "customer": {
+      "title": "Add as customer",
+      "description": "Confirm the customer details. The current lead owner will remain responsible.",
+      "name": "Customer name",
+      "owner": "Customer owner",
+      "contacts": "Contact details",
+      "otherNames": "Other names",
+      "otherNamesHint": "One name per line, up to 50.",
+      "source": "Customer source",
+      "sourcePrefix": "Lead hall",
+      "notes": "Notes",
+      "submit": "Save and confirm",
+      "saved": "Customer saved. The lead has been converted.",
+      "confirming": "The save result is awaiting confirmation. Refresh to check the saved records."
     }
   },
   "UiText": {
@@ -4756,12 +4755,14 @@
       "text004": " Associate and merge registered accounts ",
       "text001": " Edit customer ",
       "text007": " After the merge, this registered account will receive the customer's existing and future wholesale orders and commissions. ",
-      "attribute002": "There are currently no unmerged customer registration accounts. Once the customer has completed registration, they can select and merge here."
+      "attribute002": "There are currently no unmerged customer registration accounts. Once the customer has completed registration, they can select and merge here.",
+      "linkedLeadNotice": "This customer was added from a lead. Keep this record; customer details can still be edited.",
+      "ownerLabel": "Customer owner"
     },
     "components_dashboard_wholesale_wholesale_customer_dialogs": {
       "attribute002": "Add new wholesale customers",
       "attribute004": "Edit wholesale customers",
-      "attribute003": "Modify the customer's unique name, contact information, source, other names, associated salesperson and remarks.",
+      "attribute003": "Modify the customer's unique name, contact information, source, other names, customer owner and remarks.",
       "attribute001": "The customer's unique name is used to claim 1688 orders. Other names can contain common nicknames or store names."
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
@@ -4769,9 +4770,9 @@
       "attribute006": "Customer source",
       "attribute007": "Remark",
       "attribute003": "Other names of customers",
-      "attribute002": "Related salesperson",
+      "attribute002": "Customer owner",
       "text001": "Not allocated yet",
-      "text002": "Related salesperson",
+      "text002": "Customer owner",
       "attribute001": "Customer unique identification name",
       "attribute004": "Multiple entries can be entered at one time, separated by commas or newlines."
     },
@@ -4952,8 +4953,8 @@
     "components_dashboard_wholesale_wholesale_people_directories": {
       "text001": "Client",
       "text002": "Contact information",
-      "text003": "Related salesperson",
-      "text006": " Salesperson:",
+      "text003": "Customer owner",
+      "text006": " Customer owner:",
       "text009": "Contact information",
       "text010": "City",
       "text012": "State",
@@ -4976,8 +4977,8 @@
     "components_dashboard_wholesale_wholesale_people_tabs": {
       "text001": " Clear filter ",
       "attribute004": "Customer type",
-      "attribute005": "Related salesperson",
-      "text005": "All salesmen",
+      "attribute005": "Customer owner",
+      "text005": "All owners",
       "text006": " Clear filter ",
       "attribute006": "Salesperson account",
       "text008": "Salesman",

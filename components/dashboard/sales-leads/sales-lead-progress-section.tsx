@@ -23,10 +23,9 @@ export function SalesLeadProgressSection({ detail }: { detail: SalesLeadDetail }
       {lead.next_follow_up_at ? <MetaItem label={t("fields.nextFollowUp")}>{formatLeadDate(lead.next_follow_up_at, locale)}</MetaItem> : null}
       {lead.status === "claimed" ? <>
         <MetaItem label={t("fields.expiresAt")}>{formatLeadDate(lead.expires_at, locale)}</MetaItem>
-        <MetaItem label={t("fields.hardDeadline")}>{formatLeadDate(lead.hard_deadline_at, locale)}</MetaItem>
       </> : null}
-      {lead.used_at ? <MetaItem label={t("fields.usedAt")}>{formatLeadDate(lead.used_at, locale)}</MetaItem> : null}
-      {lead.used_summary ? <MetaItem className="md:col-span-2" label={t("fields.usedSummary")}><SalesLeadValue value={lead.used_summary} /></MetaItem> : null}
+      {lead.converted_at ? <MetaItem label={t("fields.convertedAt")}>{formatLeadDate(lead.converted_at, locale)}</MetaItem> : null}
+      {lead.customer_id ? <MetaItem className="md:col-span-2" label={t("fields.customerId")}><SalesLeadValue value={lead.customer_id} /></MetaItem> : null}
     </MetaGrid>
   </section>;
 }

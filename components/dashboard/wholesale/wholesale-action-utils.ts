@@ -235,6 +235,9 @@ export function toWholesaleActionErrorMessage(error: unknown) {
   if (normalized.includes("wholesale_customer_delete_has_orders")) {
     return "这个客户已经有批发订单，不能删除。";
   }
+  if (normalized.includes("wholesale_customer_delete_has_sales_lead")) {
+    return "这个客户由线索添加，需要保留客户档案，可以继续修改资料。";
+  }
 
   if (normalized.includes("wholesale_customer_not_found")) {
     return "没有找到这个客户，请刷新后再试。";

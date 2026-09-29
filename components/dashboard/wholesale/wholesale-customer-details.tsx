@@ -58,7 +58,7 @@ export function WholesaleCustomerDetails({
     { label: "联系方式", value: customer.contact_details ?? "未记录" },
     { label: "客户来源", value: customer.source ?? "未记录" },
     {
-      label: "关联业务员",
+      label: uiText("ownerLabel"),
       value: getProfileName(profilesById, customer.assigned_sales_user_id),
     },
     {
@@ -94,6 +94,7 @@ export function WholesaleCustomerDetails({
           <Button
             size="compact"
             onClick={onDeleteCustomer}
+            disabled={Boolean(customer.source_sales_lead_id)}
             type="button"
             variant="danger"
           >
@@ -103,6 +104,7 @@ export function WholesaleCustomerDetails({
         </div>
       ) : null}
       <WholesaleDetailGrid rows={rows} />
+      {customer.source_sales_lead_id ? <p className="text-sm leading-6 text-content-muted"><UiMessage id="components_dashboard_wholesale_wholesale_customer_details.linkedLeadNotice" /></p> : null}
       <WholesaleCustomerOtherNames
         canEdit={canEdit}
         customer={customer}

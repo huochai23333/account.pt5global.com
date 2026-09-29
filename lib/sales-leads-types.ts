@@ -1,5 +1,5 @@
-export type SalesLeadBoard = "hall" | "mine" | "used" | "all_claimed";
-export type SalesLeadStatus = "hall" | "claimed" | "used";
+export type SalesLeadBoard = "hall" | "mine" | "converted" | "all_claimed";
+export type SalesLeadStatus = "hall" | "claimed" | "converted";
 
 export type SalesLead = {
   id: string;
@@ -33,8 +33,9 @@ export type SalesLead = {
   next_follow_up_at: string | null;
   expires_at: string | null;
   hard_deadline_at: string | null;
-  used_at: string | null;
-  used_summary: string | null;
+  converted_at: string | null;
+  customer_id: string | null;
+  converted_by_user_id: string | null;
   assignee_name?: string | null;
   contact_count?: number;
 };
@@ -72,7 +73,7 @@ export type SalesLeadPerson = { user_id: string; name: string };
 
 export type SalesLeadPageData = {
   board: SalesLeadBoard;
-  boardCounts: { hall: number; mine: number; used: number; allClaimed: number };
+  boardCounts: { hall: number; mine: number; converted: number; allClaimed: number };
   items: SalesLead[];
   limit: number;
   offset: number;
@@ -102,4 +103,17 @@ export type SalesLeadContactInput = {
   outcome: string;
   note: string;
   nextFollowUpAt: string | null;
+};
+
+/** 客户负责人与建档人由数据库确定，表单不能自行选择或伪造。 */
+export type SalesLeadCustomerInput = {
+  leadId: string; assignmentId: string; uniqueName: string; contactDetails: string;
+  otherNames: string[]; source: string | null; notes: string | null;
+};
+export type SalesLeadConversionResult = {
+  lead: SalesLead;
+  customer: {
+    id: string; unique_name: string; contact_details: string; assigned_sales_user_id: string;
+    created_by_user_id: string; updated_at: string;
+  };
 };

@@ -28,7 +28,7 @@ test.describe("sales lead daily claim limit", () => {
       await page.goto("/salesman/wholesale/leads");
 
       const rules = page.getByTestId("sales-lead-rules");
-      await expect(rules).toContainText("每人每天最多领取 5 条");
+      await expect(rules).toContainText("每人每天最多领取5条");
       await expectNoHorizontalOverflow(page);
 
       // 前四个周期由数据库夹具准备，第五次必须从真实页面发起并取得 RPC 最终响应。
@@ -85,7 +85,7 @@ test.describe("sales lead daily claim limit", () => {
       await page.setViewportSize({ width: 375, height: 900 });
       await page.reload();
       await expect(page.getByTestId("sales-lead-rules")).toContainText(
-        "Each person can receive up to 5 leads per day",
+        "up to 5 claims per person each day",
       );
       await page.getByRole("button", { name: "Lead Hall" }).click();
       await page.getByLabel("Search leads").fill("每日限额页面测试 6");
@@ -130,7 +130,7 @@ function prepareDailyLimitFixture() {
     set status = 'hall', current_assignee_user_id = null, current_assignment_id = null,
         claimed_at = null, first_contact_at = null, last_contact_at = null,
         next_follow_up_at = null, expires_at = null, hard_deadline_at = null,
-        used_at = null, used_by_user_id = null, used_summary = null
+        converted_at = null, converted_by_user_id = null, customer_id = null
     where current_assignment_id in (
       select id
       from public.sales_lead_assignments
@@ -205,7 +205,7 @@ function cleanupDailyLimitFixture() {
     set status = 'hall', current_assignee_user_id = null, current_assignment_id = null,
         claimed_at = null, first_contact_at = null, last_contact_at = null,
         next_follow_up_at = null, expires_at = null, hard_deadline_at = null,
-        used_at = null, used_by_user_id = null, used_summary = null
+        converted_at = null, converted_by_user_id = null, customer_id = null
     where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%';
     delete from public.sales_lead_assignments
     where lead_id in (select id from public.sales_leads where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%');
