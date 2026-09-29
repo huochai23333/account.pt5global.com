@@ -5,15 +5,9 @@ import { OAuth2Client } from "google-auth-library";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
-import { createBlindIndex, decryptMailValue, encryptMailValue, maskEmail, randomToken, sha256 } from "./mail-security";
+import { MailConnectionError } from "./mail-connection-feedback";
+import { createBlindIndex, decryptMailValue, encryptMailValue, randomToken, sha256 } from "./mail-security";
 import type { MailIdentity } from "./mail-types";
-
-type GoogleTokens = {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: Date | null;
-  scope: string[];
-};
 
 function requireEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -75,7 +69,9 @@ export async function consumeOAuthTransaction(input: {
     .gt("expires_at", now)
     .select("purpose,return_url,pkce_verifier_enc")
     .maybeSingle();
-  if (error || !data) throw new Error("授权状态已使用或已经过期。", { cause: error });
+  // 同一个授权链接只能领取一次；后续步骤失败也必须从页面重新发起，不能重放旧链接。
+  if (error) throw new MailConnectionError("unavailable");
+  if (!data) throw new MailConnectionError("state");
   return {
     purpose: data.purpose as "shared_mailbox" | "member_feishu",
     returnUrl: safeReturnUrl(data.return_url as string),
@@ -86,7 +82,9 @@ export async function consumeOAuthTransaction(input: {
 }
 
 export function createGoogleAuthorizationUrl(state: string, challenge: string) {
-  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  // 本地回归的同意页与令牌交换共用外部边界；线上未配置覆盖地址时使用官方入口。
+  const oauthBase = process.env.MAIL_GOOGLE_OAUTH_BASE_URL?.replace(/\/$/, "");
+  const url = new URL(oauthBase ? `${oauthBase}/authorize` : "https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", requireEnv("GOOGLE_CLIENT_ID"));
   url.searchParams.set("redirect_uri", `${getMailEnv().siteUrl}/api/mail/oauth/google/callback`);
   url.searchParams.set("response_type", "code");
@@ -97,90 +95,6 @@ export function createGoogleAuthorizationUrl(state: string, challenge: string) {
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");
   return url;
-}
-
-export async function exchangeGoogleCode(code: string, verifier: string) {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: requireEnv("GOOGLE_CLIENT_ID"),
-      client_secret: requireEnv("GOOGLE_CLIENT_SECRET"),
-      code,
-      code_verifier: verifier,
-      grant_type: "authorization_code",
-      redirect_uri: `${getMailEnv().siteUrl}/api/mail/oauth/google/callback`,
-    }),
-    cache: "no-store",
-  });
-  const data = (await response.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-    scope?: string;
-    error_description?: string;
-  };
-  if (!response.ok || !data.access_token || !data.refresh_token) {
-    throw new Error(data.error_description ?? "Google 授权交换失败，请重新授权并允许离线访问。");
-  }
-  return {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
-    scope: data.scope?.split(" ").filter(Boolean) ?? [],
-  } satisfies GoogleTokens;
-}
-
-export async function getGoogleProfile(accessToken: string) {
-  const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-    headers: { authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
-  const profile = (await response.json()) as { sub?: string; email?: string; email_verified?: boolean };
-  if (!response.ok || !profile.sub || !profile.email || !profile.email_verified) throw new Error("无法确认 Google 邮箱身份。");
-  return { subject: profile.sub, email: profile.email.toLowerCase() };
-}
-
-export async function startGmailWatch(accessToken: string) {
-  const topicName = requireEnv("GOOGLE_PUBSUB_TOPIC");
-  const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/watch", {
-    method: "POST",
-    headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
-    body: JSON.stringify({ topicName }),
-    cache: "no-store",
-  });
-  const watch = (await response.json()) as { historyId?: string; expiration?: string; error?: { message?: string } };
-  if (!response.ok || !watch.historyId || !watch.expiration) throw new Error(watch.error?.message ?? "无法启动 Gmail 新邮件通知。");
-  return { historyId: watch.historyId, expiration: new Date(Number(watch.expiration)), topicName };
-}
-
-export async function saveSharedMailbox(input: {
-  subject: string;
-  email: string;
-  tokens: GoogleTokens;
-  watch: { historyId: string; expiration: Date; topicName: string };
-}) {
-  const env = getMailEnv();
-  if (input.email.toLowerCase() !== env.sharedMailboxEmail) throw new Error(`请授权公司邮箱 ${env.sharedMailboxEmail}。`);
-  if (!input.tokens.scope.includes("https://www.googleapis.com/auth/gmail.modify")) throw new Error("公司邮箱没有授予完整的收发权限。");
-  const { data, error } = await getSupabaseServiceRoleClient().rpc("save_mail_shared_mailbox", {
-    p_provider_subject: input.subject,
-    p_email_enc: encryptMailValue(input.email, env.contentKey),
-    p_email_hash: createBlindIndex(input.email, env.emailHashSecret),
-    p_email_masked: maskEmail(input.email),
-    p_access_token_enc: encryptMailValue(input.tokens.accessToken, env.credentialKey),
-    p_refresh_token_enc: encryptMailValue(input.tokens.refreshToken, env.credentialKey),
-    p_access_token_expires_at: input.tokens.expiresAt?.toISOString() ?? null,
-    p_scopes: input.tokens.scope,
-    p_history_id: input.watch.historyId,
-    p_expiration: input.watch.expiration.toISOString(),
-    p_topic_name: input.watch.topicName,
-  });
-  const saved = Array.isArray(data) ? data[0] : null;
-  if (error || !saved?.mailbox_id || saved.history_id !== input.watch.historyId) {
-    throw new Error("公司邮箱授权没有完整保存。", { cause: error });
-  }
-  return saved.mailbox_id as string;
 }
 
 export function createFeishuAuthorizationUrl(state: string) {

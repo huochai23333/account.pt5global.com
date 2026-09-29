@@ -1,3 +1,5 @@
+import { getConfiguredPublicOrigin } from "@/lib/public-site-origin";
+
 type MailEnv = {
   credentialKey: string;
   contentKey: string;
@@ -18,7 +20,6 @@ function requireHexKey(name: string) {
 export function getMailEnv(): MailEnv {
   const emailHashSecret = process.env.MAIL_EMAIL_HASH_SECRET?.trim() ?? "";
   if (emailHashSecret.length < 32) throw new Error("MAIL_EMAIL_HASH_SECRET 至少需要 32 个字符。");
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
   return {
     credentialKey: requireHexKey("MAIL_CREDENTIAL_ENCRYPTION_KEY"),
     contentKey: requireHexKey("MAIL_CONTENT_ENCRYPTION_KEY"),
@@ -26,6 +27,6 @@ export function getMailEnv(): MailEnv {
     sharedMailboxEmail: process.env.MAIL_SHARED_MAILBOX_EMAIL?.trim().toLowerCase() || "chinapt5@gmail.com",
     attachmentBucket: process.env.MAIL_ATTACHMENT_BUCKET?.trim() || "pt5-mail-attachments",
     attachmentScannerUrl: process.env.MAIL_ATTACHMENT_SCANNER_URL?.trim() || null,
-    siteUrl: new URL(siteUrl).origin,
+    siteUrl: getConfiguredPublicOrigin(),
   };
 }

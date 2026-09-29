@@ -5279,6 +5279,21 @@
       "disconnected": "Disconnected",
       "not_connected": "Not connected",
       "feishu_only": "Feishu only"
+    },
+    "connection": {
+      "success": "Company mailbox connected. Authorization and new-mail notifications have been saved.",
+      "cancelled": "You cancelled Google authorization. Select Connect company mailbox to start again.",
+      "incomplete": "Authorization information is incomplete. Please start a new connection.",
+      "state": "This authorization link has already been used or has expired. Start a new connection instead of refreshing the old authorization page.",
+      "tokens": "Complete Google authorization was not received. Reconnect and allow the listed mailbox permissions.",
+      "profile": "The Google mailbox identity could not be confirmed. Please reconnect later.",
+      "account": "The selected account is not the company mailbox. Reconnect and choose the company mailbox account.",
+      "scope": "Full send and receive permissions were not granted. Reconnect and allow the listed permissions.",
+      "watch": "Google new-mail notifications could not be enabled. Reconnect later; contact your administrator if this continues.",
+      "save": "The company mailbox connection was not fully saved. Reconnect; contact your administrator if this continues.",
+      "unconfirmed": "This connection result cannot currently be confirmed. Check the company mailbox status below and reconnect if needed.",
+      "unavailable": "The company mailbox cannot be connected right now. Try again later or contact your administrator.",
+      "partialFailed": "The connection is only partly complete and mailbox availability cannot be confirmed. Check its status below and reconnect; contact your administrator if this continues."
     }
   },
   "CompanyTemplates": {

@@ -13,6 +13,8 @@ import type { AdminMailMetrics, MailAgentProfile, MailIntakeRule, MailQuarantine
 import { cn } from "@/lib/utils";
 
 import { MailAdminPanel } from "./mail-admin-panel";
+import { MailConnectionNotice } from "./mail-connection-notice";
+import type { MailConnectionFeedback } from "@/lib/mail/mail-connection-feedback";
 import { MailIntakeRulesPanel } from "./mail-intake-rules-panel";
 import { MailOwnSettingsPanel } from "./mail-own-settings-panel";
 import { MailQuarantinePanel } from "./mail-quarantine-panel";
@@ -25,6 +27,7 @@ import { useMailSecondaryData } from "./use-mail-secondary-data";
 
 export function MailWorkspaceClient(props: {
   backHref: string;
+  connectionFeedback: MailConnectionFeedback | null;
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
   initialNextCursor: string | null;
@@ -39,7 +42,7 @@ export function MailWorkspaceClient(props: {
 }) {
   const t = useTranslations("MailWorkspace");
   const state = useMailWorkspace(props);
-  const [view, setView] = useState<MailWorkspaceView>("inbox");
+  const [view, setView] = useState<MailWorkspaceView>(props.connectionFeedback ? "settings" : "inbox");
   const [bulkRuleOption, setBulkRuleOption] = useState<"none" | "sender" | "domain">("none");
   const intake = useMailIntake({
     isAdmin: props.isAdmin,
@@ -78,6 +81,7 @@ export function MailWorkspaceClient(props: {
         title={t("title")}
       />}
     >
+      <MailConnectionNotice feedback={props.connectionFeedback} />
       <MailWorkspaceTabs isAdmin={props.isAdmin} onChange={setView} quarantineCount={state.summary?.counts.quarantined ?? 0} value={view} />
       {secondary.panelState !== "ready" ? <div className="space-y-3 rounded-surface border border-border-subtle bg-surface-panel p-4" role="status" data-testid="mail-secondary-status">
         <p className="text-sm text-content-muted">{t(secondary.panelState === "loading" ? "secondaryLoading" : "secondaryFailed")}</p>

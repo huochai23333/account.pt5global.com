@@ -9,7 +9,7 @@ import { mailApiError } from "../_shared";
 export async function POST(request: NextRequest) {
   try {
     const identity = await requireMailIdentity();
-    const returnUrl = new URL("/admin/mail?connected=1", getRequestPublicOrigin(request)).toString();
+    const returnUrl = new URL("/admin/mail", getRequestPublicOrigin(request)).toString();
     return NextResponse.json(await createSharedMailboxConnectSession(identity, returnUrl), { status: 201 });
   } catch (error) { return mailApiError(error, "暂时无法连接公司邮箱。"); }
 }
