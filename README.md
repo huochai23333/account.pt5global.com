@@ -570,6 +570,8 @@ PT5-dropshipping-web/
 
 ## 构建与本地产物
 
+`npm run build` 使用 Next.js 支持的 `next build --webpack` 完成生产构建。Hostinger 的 Turbopack 在处理样式时曾两次出现 Node 子进程启动后提前退出，显式使用 Webpack 可使本地与主机按同一方式构建。开发命令仍为 `npm run dev`；生产运行命令仍为 `npm run start`。
+
 仓库已忽略：
 
 - `.next/`
