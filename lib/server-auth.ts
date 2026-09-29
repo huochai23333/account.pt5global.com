@@ -7,7 +7,7 @@ import {
   type AppRole,
 } from "./auth-routing";
 import type { UserStatus } from "./auth-metadata";
-import { getCurrentAppAccessContext } from "./current-app-access-context";
+import { getVerifiedSessionContext } from "./verified-session-context";
 import { getServerSupabaseClient } from "./supabase-server";
 import { getCurrentWorkspaceBusinessAccess } from "./workspace-business-access";
 import {
@@ -39,13 +39,10 @@ export const getServerAuthContext = cache(async (): Promise<ServerAuthContext> =
   }
 
   const supabase = await getServerSupabaseClient();
-  // getUser 会向 Supabase Auth 验证令牌，不能用浏览器 Cookie 中未经验证的会话直接放行。
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  // 业务页也使用这份身份，避免绕过请求内复用再次验证用户和读取角色。
+  const { user, role, status } = await getVerifiedSessionContext(supabase);
 
-  if (userError || !user) {
+  if (!user) {
     return {
       hasAuthCookie: true,
       role: null,
@@ -54,13 +51,10 @@ export const getServerAuthContext = cache(async (): Promise<ServerAuthContext> =
     };
   }
 
-  // 角色和状态统一从数据库读取，入口跳转和工作台权限校验因此使用同一份可信结果。
-  const accessContext = await getCurrentAppAccessContext(supabase);
-
   return {
     hasAuthCookie: true,
-    role: accessContext.role,
-    status: accessContext.status,
+    role,
+    status,
     userId: user.id,
   };
 });

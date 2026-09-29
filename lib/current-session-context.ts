@@ -13,6 +13,7 @@ import {
   getCurrentSession,
   getCurrentUser,
 } from "./current-session-auth";
+import { getVerifiedSessionContext } from "./verified-session-context";
 
 export { resetCurrentAuthContextCache } from "./current-session-cache";
 
@@ -40,6 +41,13 @@ export async function getCurrentSessionContext(
   role: AppRole | null;
   status: UserStatus | null;
 }> {
+  if (typeof window === "undefined") {
+    // 服务端统一使用数据库权限；浏览器会话同步仍由下面的客户端读取模块维护。
+    const [verified, { data: { session } }] = await Promise.all([
+      getVerifiedSessionContext(supabase), supabase.auth.getSession(),
+    ]);
+    return { session, ...verified };
+  }
   const [session, user, claims] = await Promise.all([
     getCurrentSession(supabase),
     getCurrentUser(supabase),

@@ -156,6 +156,6 @@ export function useMailIntake(input: {
 
   return {
     quarantine, rules, selectedQuarantine, selectedActiveIds, busy, feedback,
-    setRules, reloadQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
+    setQuarantine, setRules, reloadQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
   };
 }

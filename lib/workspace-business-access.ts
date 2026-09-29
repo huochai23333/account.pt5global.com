@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
+import { measureServerStage } from "./server-performance";
 
 import { getCurrentSessionContext } from "./current-session-context";
 import {
@@ -84,9 +86,10 @@ export function getDefaultWorkspaceBusinessAccessForRole(
   return uniqueWorkspaceBusinessAccess(registeredDefaults);
 }
 
-export async function getCurrentWorkspaceBusinessAccess(
+// 布局和业务页只在同一次渲染内共享查询；客户端 React cache 不会持久缓存权限。
+export const getCurrentWorkspaceBusinessAccess = cache(async (
   supabase: SupabaseClient,
-): Promise<EnabledWorkspaceBusinessKey[]> {
+): Promise<EnabledWorkspaceBusinessKey[]> => measureServerStage("access.businesses", async () => {
   try {
     const { data, error } = await withRequestTimeout(
       supabase.rpc("get_current_workspace_business_access"),
@@ -110,7 +113,7 @@ export async function getCurrentWorkspaceBusinessAccess(
   } catch {
     return getFallbackWorkspaceBusinessAccess(supabase);
   }
-}
+}));
 
 async function getFallbackWorkspaceBusinessAccess(
   supabase: SupabaseClient,

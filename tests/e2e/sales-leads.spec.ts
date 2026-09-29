@@ -7,6 +7,9 @@ import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 test.describe.serial("sales lead hall", () => {
   test.setTimeout(120_000);
   test("two salespeople compete for one lead and keep the full history", async ({ browser }) => {
+    // 联系历史会保留旧记录；本次备注必须唯一，才能确认本次写入而非匹配往日记录。
+    const contactNote = `客户希望下周收到完整报价单 ${Date.now()}`;
+    const returnNote = `交给更熟悉该市场的同事继续联系 ${Date.now()}`;
     const peerAccount = getPeerSalesmanRegressionAccount();
     const admin = getLocalSupabaseAdminClient();
     test.skip(!peerAccount || !admin, "需要第二名本地业务员及数据库查询来核对竞争结果。");
@@ -68,12 +71,16 @@ test.describe.serial("sales lead hall", () => {
     await expect(winnerPage.getByRole("heading", { name: leadName })).toBeVisible();
     await openLead(winnerPage, leadName);
     await winnerPage.getByRole("button", { name: "记录联系" }).click();
-    await winnerPage.getByTestId("sales-lead-action-note").fill("客户希望下周收到完整报价单。");
+    await winnerPage.getByTestId("sales-lead-action-note").fill(contactNote);
     await winnerPage.getByTestId("submit-lead-contact").click();
     await openLead(winnerPage, leadName);
-    await expect(winnerPage.getByText("客户希望下周收到完整报价单。")).toBeVisible();
+    await expect(winnerPage.getByRole("region", { name: "联系记录", exact: true }).getByText(contactNote, { exact: true })).toBeVisible();
+    const { data: savedNotes, error: savedNotesError } = await admin.from("sales_lead_contact_notes")
+      .select("id").eq("lead_id", leadId).eq("note", contactNote);
+    expect(savedNotesError).toBeNull();
+    expect(savedNotes).toHaveLength(1);
     await winnerPage.getByRole("button", { name: "退回大厅" }).click();
-    await winnerPage.getByTestId("sales-lead-action-note").fill("交给更熟悉该市场的同事继续联系。");
+    await winnerPage.getByTestId("sales-lead-action-note").fill(returnNote);
     await winnerPage.getByTestId("submit-lead-return").click();
 
     await nextOwnerPage.reload();
@@ -83,8 +90,8 @@ test.describe.serial("sales lead hall", () => {
     await nextOwnerPage.getByTestId(`claim-lead-${leadId}`).click();
     await nextOwnerPage.getByRole("button", { name: "我的线索" }).click();
     await openLead(nextOwnerPage, leadName);
-    await expect(nextOwnerPage.getByText("客户希望下周收到完整报价单。")).toBeVisible();
-    await expect(nextOwnerPage.getByText("业务员主动退回")).toBeVisible();
+    await expect(nextOwnerPage.getByRole("region", { name: "联系记录", exact: true }).getByText(contactNote, { exact: true })).toBeVisible();
+    await expect(nextOwnerPage.getByRole("region", { name: "认领记录", exact: true }).getByText(`业务员主动退回 · ${returnNote}`, { exact: true })).toBeVisible();
     await nextOwnerPage.getByRole("button", { name: "标记已使用" }).click();
     await nextOwnerPage.getByTestId("sales-lead-action-note").fill("客户已经提交首笔批发订单。");
     await nextOwnerPage.getByTestId("submit-lead-use").click();

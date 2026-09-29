@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { getSupabaseEnv } from "./supabase";
+import { timedSupabaseFetch } from "./server-performance";
 
 export function getSupabaseServiceRoleClient() {
   const { supabaseUrl } = getSupabaseEnv();
@@ -11,6 +12,7 @@ export function getSupabaseServiceRoleClient() {
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
+    global: { fetch: timedSupabaseFetch },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

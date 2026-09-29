@@ -10,6 +10,7 @@ import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { redirectToWorkspaceAccessLimited } from "@/lib/server-auth";
 import { getWholesalePageData } from "@/lib/wholesale";
 import { getWholesaleSettlementReleasePageData } from "@/lib/wholesale-settlement-releases";
+import { measureServerStage } from "@/lib/server-performance";
 import {
   isWorkspaceWholesaleSectionKey,
   type WorkspaceRouteConfig,
@@ -142,7 +143,7 @@ export const renderWholesaleSectionPage: WorkspaceSectionRenderer = async ({
     );
   }
 
-  const initialData = await getWholesalePageData(supabase, wholesaleSection);
+  const initialData = await measureServerStage(`page.wholesale.${wholesaleSection}`, () => getWholesalePageData(supabase, wholesaleSection));
 
   return (
     <ScopedIntlProvider

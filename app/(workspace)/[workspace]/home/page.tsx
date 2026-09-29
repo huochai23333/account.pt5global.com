@@ -5,6 +5,7 @@ import { ScopedIntlProvider } from "@/components/i18n/scoped-intl-provider";
 import { getDashboardHomePageData } from "@/lib/dashboard-home";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { getWorkspaceConfigByRouteSegment } from "@/lib/workspace-config";
+import { measureServerStage } from "@/lib/server-performance";
 
 type WorkspaceHomePageProps = {
   params: Promise<{ workspace: string }>;
@@ -20,7 +21,7 @@ export default async function WorkspaceHomePage({
   }
 
   const supabase = await getServerSupabaseClient();
-  const initialData = await getDashboardHomePageData(supabase);
+  const initialData = await measureServerStage("page.home", () => getDashboardHomePageData(supabase));
 
   if (!initialData) {
     redirect("/login");

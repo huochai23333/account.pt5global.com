@@ -19,12 +19,12 @@ export default async function WorkspaceMailPage({ params }: { params: Promise<{ 
       <DashboardConfirmProvider>
         <MailWorkspaceClient
           backHref={`${config.basePath}/home`}
-          initialAgents={data.agents}
+          initialAgents={[]}
           initialError={data.loadError}
-          initialMetrics={data.metrics}
+          initialMetrics={null}
           initialOwnProfile={data.ownProfile}
-          initialQuarantine={data.quarantine}
-          initialRules={data.intakeRules}
+          initialQuarantine={[]}
+          initialRules={[]}
           initialSummary={data.summary}
           initialThreads={data.threads}
           initialNextCursor={data.nextCursor}

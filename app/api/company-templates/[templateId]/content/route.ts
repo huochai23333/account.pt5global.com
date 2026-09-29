@@ -1,6 +1,8 @@
 import { getCompanyTemplateDocument } from "@/lib/company-templates/repository";
 import { requireCompanyTemplateApiAccess } from "@/lib/company-templates/access";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
+import { addCompanyTemplateReadySignal } from "@/lib/company-templates/frame-document";
+import { COMPANY_TEMPLATE_LOAD_TOKEN } from "@/lib/company-templates/frame-protocol";
 
 const CONTENT_SECURITY_POLICY = [
   // 正文地址可能被员工直接打开；响应本身也必须成为不带本站来源的沙箱。
@@ -37,7 +39,7 @@ export async function GET(request: Request, context: { params: Promise<{ templat
       { guide, versionId },
     );
     if (!document) return new Response("Template not found", { status: 404 });
-    return new Response(document.content, {
+    return new Response(addCompanyTemplateReadySignal(document.content, url.searchParams.get(COMPANY_TEMPLATE_LOAD_TOKEN)), {
       headers: {
         "Cache-Control": "private, no-store, max-age=0",
         "Content-Security-Policy": CONTENT_SECURITY_POLICY,
@@ -56,8 +58,5 @@ export async function GET(request: Request, context: { params: Promise<{ templat
   }
 }
 
-/** iframe 的 load 事件在错误页也会触发；HEAD 让外层能核对正文响应是否真的可用。 */
-export async function HEAD(request: Request, context: { params: Promise<{ templateId: string }> }) {
-  const response = await GET(request, context);
-  return new Response(null, { status: response.status, headers: response.headers });
-}
+/** 查看器只使用真实 GET 文档的就绪通知；HEAD 不再读取或验证完整 HTML。 */
+export function HEAD() { return new Response(null, { status: 405, headers: { Allow: "GET" } }); }

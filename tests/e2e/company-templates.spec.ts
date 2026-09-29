@@ -1,10 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { loginAs, type RegressionRole } from "./helpers/auth";
-import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import { fillQuotationRow, fillPublishDialog, htmlFile, publishMultipart, requireLocalAdminClient, readTemplateBySlug, readVersion, countTemplates, countVersions, deleteTemplate, sha256, clickStableTemplateButton, expectNoPageOverflow } from "./helpers/company-template-actions";
 
 const SEEDED_TEMPLATE_ID = "a3200000-0000-4000-8000-000000000001";
 const SEEDED_VERSION_ID = "a3200000-0000-4000-8000-000000000002";
@@ -74,10 +73,10 @@ test.describe("公司模板", () => {
 
   test("模板正文等待失败后可从页面重试", async ({ page }) => {
     await loginAs(page, "administrator");
-    const contentPath = `**/api/company-templates/${SEEDED_TEMPLATE_ID}/content`;
+    const contentPath = `**/api/company-templates/${SEEDED_TEMPLATE_ID}/content*`;
     await page.route(contentPath, (route) => route.abort("timedout"));
     await page.goto(`/admin/company-templates/${SEEDED_TEMPLATE_ID}`);
-    await expect(page.getByRole("status").getByText("模板暂时没有打开，请重试。")).toBeVisible();
+    await expect(page.getByRole("status").getByText("模板暂时没有打开，请重试。")).toBeVisible({ timeout: 20_000 });
     const retry = page.getByRole("button", { name: "重新打开" });
     await expect(retry).toBeVisible({ timeout: 20_000 });
     await page.unroute(contentPath);
@@ -93,8 +92,50 @@ test.describe("公司模板", () => {
     await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
   });
 
+  for (const getFails of [true, false]) {
+    test(`正文 GET ${getFails ? "失败" : "成功"}时不依赖相反结果的 HEAD`, async ({ page }) => {
+      await loginAs(page, "administrator");
+      let getCount = 0;
+      let headCount = 0;
+      const contentPath = `**/api/company-templates/${SEEDED_TEMPLATE_ID}/content*`;
+      await page.route(contentPath, async (route) => {
+        if (route.request().method() === "HEAD") {
+          headCount += 1;
+          await route.fulfill({ status: getFails ? 200 : 503 });
+        } else {
+          getCount += 1;
+          if (getFails) await route.fulfill({ status: 503, contentType: "text/html", body: "<p>Unavailable</p>" });
+          else await route.continue();
+        }
+      });
+      await page.goto(`/admin/company-templates/${SEEDED_TEMPLATE_ID}`);
+      if (getFails) {
+        // 来自父窗口的伪造通知不能让错误正文消除遮罩。
+        const token = new URL((await page.locator("iframe").getAttribute("src"))!).searchParams.get("loadToken");
+        await page.evaluate((token) => window.postMessage({ type: "pt5.company-template.ready", token }, "*"), token);
+        await expect(page.getByText("正在打开模板，请稍候…")).toBeVisible();
+        await expect(page.getByRole("button", { name: "重新打开" })).toBeVisible({ timeout: 20_000 });
+        await page.unroute(contentPath);
+        await page.getByRole("button", { name: "重新打开" }).click();
+      }
+      await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();
+      await expect(page.getByRole("status")).toHaveCount(0);
+      expect(getCount).toBe(1);
+      expect(headCount).toBe(0);
+      const head = await page.request.head(`/api/company-templates/${SEEDED_TEMPLATE_ID}/content`);
+      expect(head.status()).toBe(405);
+      await expectNoPageOverflow(page);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.locator("iframe")).toHaveCount(0);
+      await expectNoPageOverflow(page);
+    });
+  }
+
   test("v32 可增加目的地和产品、上传图片、计算金额并触发打印", async ({ page }) => {
     test.setTimeout(120_000);
+    // 使用产品已有的“减少动态效果”偏好，让跨 iframe 滚动即时完成。
+    // Chrome 的滚动动画期间命中区域可能滞后于 DOM 坐标；真实按钮与业务断言保持原样。
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.addInitScript(() => {
       // 浏览器自动化不能打开系统打印窗口，因此用页面内标记核对模板确实调用了 window.print。
       Object.defineProperty(window, "print", {
@@ -124,10 +165,10 @@ test.describe("公司模板", () => {
     await frame.locator("#quoter").fill("Local Sales");
     await frame.locator("#lhMail").fill("sales@example.test");
     await expect(frame.locator("tr.prow")).toHaveCount(1);
-    await frame.getByRole("button", { name: "+ Add product" }).first().click();
+    await clickStableTemplateButton(page, frame, "+ Add product");
     // 等模板同步插入第二行后再新增目的地，避免两个 DOM 操作紧挨时把行数变化合并成不稳定断言。
     await expect(frame.locator("tr.prow")).toHaveCount(2);
-    await frame.getByRole("button", { name: "+ Add destination" }).click();
+    await clickStableTemplateButton(page, frame, "+ Add destination");
     await expect(frame.locator("section.page")).toHaveCount(2);
     await expect(frame.locator("tr.prow")).toHaveCount(3);
     await frame.locator(".f-dest").nth(1).fill("DE");
@@ -155,7 +196,7 @@ test.describe("公司模板", () => {
       await expect(total).not.toHaveText("—");
     }
 
-    await frame.getByRole("button", { name: "Print all" }).click();
+    await clickStableTemplateButton(page, frame, "Print all");
     await expect(frame.locator("html")).toHaveAttribute("data-print-called", "yes");
 
     // 整页刷新会重新载入模板，防止仅首次客户端跳转正常而直接进入时再次被浏览器拦截。
@@ -178,6 +219,38 @@ test.describe("公司模板", () => {
     await page.goto(`${account.workspacePath}/company-templates`);
     await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
     await expect(page.getByRole("link", { name: "开始使用" })).toHaveCount(0);
+  });
+
+  test("模板脚本中的 HTML 片段不影响实际正文就绪和交互", async ({ page }) => {
+    const admin = requireLocalAdminClient();
+    const slug = `template-html-fragment-${Date.now()}`;
+    const name = `脚本片段模板 ${Date.now()}`;
+    // 报价单的打印脚本可能包含结束标签字符串，不能把它当成文档的真正结束标签。
+    const html = '<!doctype html><html><body><script>const printableEnd = "</body>";</script><h1>Fragment quotation</h1><button onclick="document.getElementById(\'result\').textContent=printableEnd">Use</button><p id="result"></p></body></html>';
+    let templateId: string | null = null;
+    try {
+      await loginAs(page, "administrator");
+      await page.goto("/admin/company-templates");
+      await page.getByRole("button", { name: "新建模板" }).click();
+      const dialog = page.getByRole("dialog", { name: "新建公司模板" });
+      await fillPublishDialog(dialog, { html, name, slug });
+      await dialog.getByRole("button", { name: "上传并启用" }).click();
+      await expect(page.getByText("模板已创建并启用。")).toBeVisible();
+      const saved = await readTemplateBySlug(admin, slug);
+      templateId = saved.id;
+      expect(saved).toMatchObject({ revision: 1, status: "active" });
+      expect((await readVersion(admin, saved.current_version_id)).html_sha256).toBe(sha256(html));
+      await page.locator("article").filter({ hasText: name }).getByRole("link", { name: "开始使用" }).click();
+      const frame = page.frameLocator("iframe");
+      await expect(frame.getByRole("heading", { name: "Fragment quotation" })).toBeVisible();
+      await expect(page.getByRole("status")).toHaveCount(0);
+      await frame.getByRole("button", { name: "Use", exact: true }).click();
+      await expect(frame.locator("#result")).toHaveText("</body>");
+      await page.reload();
+      await expect(page.getByRole("status")).toHaveCount(0);
+      await frame.getByRole("button", { name: "Use", exact: true }).click();
+      await expect(frame.locator("#result")).toHaveText("</body>");
+    } finally { if (templateId) await deleteTemplate(admin, templateId); }
   });
 
   test("管理员从页面完成新建、更新、指南、回退和停用，并核对数据库最终记录", async ({ page }) => {
@@ -378,124 +451,4 @@ test.describe("公司模板", () => {
 async function dismissAnnouncement(page: Page) {
   const button = page.getByRole("button", { name: "我知道了" });
   if (await button.isVisible().catch(() => false)) await button.click();
-}
-
-async function fillQuotationRow(frame: FrameLocator, index: number) {
-  const row = frame.locator("tr.prow").nth(index);
-  await row.locator('input[placeholder="Product name / SKU"]').fill(`Product ${index + 1}`);
-  await row.locator('input[placeholder^="detail.1688.com"]').fill(`https://example.com/product-${index + 1}`);
-  await row.locator(".f-imgurl").fill("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==");
-  await row.locator(".f-cny").fill(String(100 + index));
-  await row.locator(".f-kg").fill("1.2");
-  await row.locator(".f-l").fill("20");
-  await row.locator(".f-w").fill("15");
-  await row.locator(".f-h").fill("10");
-  await row.locator(".f-pack").fill("0.5");
-  await row.locator(".f-rkg2").fill("42");
-  await row.locator(".f-rpar2").fill("8");
-  await row.locator(".f-tax").fill("2");
-  await row.locator(".f-pdp").fill("7-10 working days");
-}
-
-async function fillPublishDialog(
-  dialog: ReturnType<Page["getByRole"]>,
-  input: { guide?: string; html: string; name: string; slug: string },
-) {
-  await dialog.getByLabel("模板名称").fill(input.name);
-  await dialog.getByLabel("模板标识").fill(input.slug);
-  await dialog.getByLabel("模板说明").fill("Playwright 公司模板回归");
-  await dialog.getByLabel("互动 HTML").setInputFiles(htmlFile("template.html", input.html));
-  if (input.guide) await dialog.getByLabel("使用指南 HTML（可选）").setInputFiles(htmlFile("guide.html", input.guide));
-}
-
-function htmlFile(name: string, content: string | Buffer) {
-  return {
-    buffer: Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8"),
-    mimeType: "text/html",
-    name,
-  };
-}
-
-function publishMultipart(input: {
-  expectedRevision?: string;
-  guideFileValue?: ReturnType<typeof htmlFile>;
-  html?: string;
-  htmlFileValue?: ReturnType<typeof htmlFile>;
-  slug: string;
-  templateId: string;
-  versionId: string;
-}) {
-  const multipart: Record<string, string | ReturnType<typeof htmlFile>> = {
-    description: "Playwright API 回归",
-    expectedRevision: input.expectedRevision ?? "",
-    name: "Playwright API template",
-    slug: input.slug,
-    templateId: input.templateId,
-    versionId: input.versionId,
-  };
-  const html = input.htmlFileValue ?? (input.html ? htmlFile("template.html", input.html) : undefined);
-  if (html) multipart.htmlFile = html;
-  if (input.guideFileValue) multipart.guideFile = input.guideFileValue;
-  return multipart;
-}
-
-function requireLocalAdminClient() {
-  const admin = getLocalSupabaseAdminClient();
-  test.skip(!admin, "必须连接本地 Docker Supabase 才能核对最终业务凭证。");
-  if (!admin) throw new Error("local_supabase_admin_required");
-  return admin;
-}
-
-async function readTemplateBySlug(admin: SupabaseClient, slug: string) {
-  const { data, error } = await admin.from("company_templates")
-    .select("id,current_version_id,revision,status").eq("slug", slug).single();
-  if (error) throw error;
-  return data as { current_version_id: string; id: string; revision: number; status: string };
-}
-
-async function readVersion(admin: SupabaseClient, id: string) {
-  const { data, error } = await admin.from("company_template_versions")
-    .select("id,version_number,html_sha256,guide_sha256").eq("id", id).single();
-  if (error) throw error;
-  return data as { guide_sha256: string | null; html_sha256: string; id: string; version_number: number };
-}
-
-async function countTemplates(admin: SupabaseClient, templateId: string) {
-  const { count, error } = await admin.from("company_templates")
-    .select("id", { count: "exact", head: true }).eq("id", templateId);
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function countVersions(admin: SupabaseClient, templateId: string) {
-  const { count, error } = await admin.from("company_template_versions")
-    .select("id", { count: "exact", head: true }).eq("template_id", templateId);
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function deleteTemplate(admin: SupabaseClient, templateId: string) {
-  const { error: clearError } = await admin.from("company_templates")
-    .update({ current_version_id: null }).eq("id", templateId);
-  if (clearError) throw clearError;
-  const { error } = await admin.from("company_templates").delete().eq("id", templateId);
-  if (error) throw error;
-  if (await countTemplates(admin, templateId)) throw new Error("company_template_test_cleanup_failed");
-}
-
-function sha256(value: string) {
-  return createHash("sha256").update(value, "utf8").digest("hex");
-}
-
-async function expectNoPageOverflow(page: Page) {
-  const layout = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-    verticalText: Array.from(document.querySelectorAll<HTMLElement>("body *")).some((element) => {
-      const style = getComputedStyle(element);
-      return style.writingMode !== "horizontal-tb" && element.offsetParent !== null;
-    }),
-  }));
-  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
-  expect(layout.verticalText).toBe(false);
 }

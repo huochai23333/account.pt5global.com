@@ -2,9 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
 import {
-  getCommissionRuleSettings,
   type CommissionRuleSetting,
 } from "./commission-settings";
+import { getWholesaleCommissionPageRows } from "./wholesale-commission-page";
+import { getWholesaleCustomers, queryWholesaleRows as queryRows } from "./wholesale-row-queries";
 import { getCurrentSessionContext } from "./current-session-context";
 import { getExchangeRates, type ExchangeRateRow } from "./exchange-rates";
 import { getDefaultOrderDateRange } from "./order-date-range";
@@ -15,12 +16,10 @@ import {
 import {
   getDefaultWholesaleLogisticsFilters,
   getInitialWholesaleLogisticsData,
-  getWholesaleReferralWaybillCounts,
   type WholesaleReferralWaybillCount,
 } from "./wholesale-logistics-page";
 import { scopeWholesaleRows } from "./wholesale-scope";
 import {
-  getWholesaleReferralCommissionRows,
   type WholesaleReferralCommissionRow,
 } from "./wholesale-referral-commissions";
 import {
@@ -48,11 +47,6 @@ import type {
 } from "./wholesale-types";
 
 export * from "./wholesale-types";
-
-type QueryResult<T> = {
-  data: T[] | null;
-  error: { message: string } | null;
-};
 
 export async function getWholesalePageData(
   supabase: SupabaseClient,
@@ -224,52 +218,7 @@ async function getWholesaleSectionRows(
   }
 
   if (section === "commission" || section === "incentives") {
-    const [
-      customers,
-      orders,
-      referralWaybillCounts,
-      commissions,
-      referrals,
-      profiles,
-      exchangeRates,
-      commissionRuleSettings,
-      referralCommissionRows,
-    ] = await Promise.all([
-      getWholesaleCustomers(supabase),
-      getAllWholesaleOrders(supabase, canViewInternalFields),
-      getWholesaleReferralWaybillCounts(supabase),
-      queryRows<WholesaleCommission>(
-        supabase
-          .from("wholesale_commissions")
-          .select("*")
-          .order("calculated_at", { ascending: false }),
-        "批发提成",
-      ),
-      queryRows<WholesaleReferral>(
-        supabase
-          .from("wholesale_referrals")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        "批发推荐关系",
-      ),
-      getWholesaleProfiles(supabase, false),
-      getExchangeRates(supabase),
-      getCommissionRuleSettings(supabase),
-      getWholesaleReferralCommissionRows(supabase),
-    ]);
-
-    return {
-      ...rows,
-      commissionRuleSettings,
-      commissions,
-      customers,
-      exchangeRates,
-      referralWaybillCounts,
-      referralCommissionRows,
-      orders,
-      profiles,
-      referrals,
-    };
+    return { ...rows, ...await getWholesaleCommissionPageRows(supabase, section, canViewInternalFields) };
   }
 
   return rows;
@@ -318,49 +267,6 @@ function createEmptyWholesaleSectionRows(): WholesaleSectionRows {
     referrals: [],
     registeredCandidates: [],
   };
-}
-
-async function getWholesaleCustomers(supabase: SupabaseClient) {
-  return queryRows<WholesaleCustomer>(
-    supabase
-      .from("wholesale_customers")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    "批发客户",
-  );
-}
-
-async function getAllWholesaleOrders(
-  supabase: SupabaseClient,
-  canViewInternalFields: boolean,
-) {
-  const columns = canViewInternalFields
-    ? "*"
-    : "id,order_number,customer_id,sales_user_id,small_order_count,packing_fee,courier_company,settlement_exchange_rate,customer_payment_currency,customer_payment_amount,customer_payment_rmb_amount,gross_profit,gross_margin,unit_gross_profit,commission_rate,salesman_commission_parameter_version_id,referral_amount_parameter_version_id,notes,order_month,status,ordered_at,settled_at,created_by_user_id,created_at,updated_at";
-
-  return queryRows<WholesaleOrder>(
-    supabase
-      .from("wholesale_orders")
-      .select(columns as "*")
-      .order("ordered_at", { ascending: false })
-      .order("id", { ascending: false }),
-    "批发订单",
-  );
-}
-
-async function queryRows<T>(
-  query: PromiseLike<QueryResult<T>>,
-  label: string,
-): Promise<T[]> {
-  const result = await query;
-
-  if (result.error) {
-    throw new Error(`${label}暂时没有加载成功，请稍后重试。`, {
-      cause: result.error,
-    });
-  }
-
-  return result.data ?? [];
 }
 
 function getInitialWholesaleOrderFilters(): WholesaleOrderFilters {

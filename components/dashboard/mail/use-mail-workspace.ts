@@ -202,7 +202,7 @@ export function useMailWorkspace(input: {
 
   return {
     summary, threads, nextCursor, agents, ownProfile, enabledAgents, metrics, selected, filters, composer, busy, feedback, aiDraft, report, pendingSend,
-    setComposer: updateComposer, setAgents, setOwnProfile, loadThreads, loadMoreThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
+    setComposer: updateComposer, setAgents, setOwnProfile, setMetrics, loadThreads, loadMoreThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
     generateReport, saveAgent, connectMailbox, connectFeishu, startNew, deleteSelected, refreshSummary, removeThreads,
   };
 }

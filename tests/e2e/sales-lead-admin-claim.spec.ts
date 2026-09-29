@@ -31,6 +31,13 @@ async function reserveClaimQuota(roles: Array<"administrator" | "salesman">) {
     const { error } = await admin.from("sales_lead_assignments").update({ claimed_at: shiftedAt }).in("id", previousIds);
     if (error) throw error;
   }
+  // 先独立核对双方本日领取次数均为 0，竞争测试才能排除额度拦截这个替代原因。
+  for (const userId of userIds) {
+    const { count, error } = await admin.from("sales_lead_assignments").select("id", { count: "exact", head: true })
+      .eq("assignee_user_id", userId).gte("claimed_at", dayStart).lt("claimed_at", dayEnd);
+    if (error) throw error;
+    expect(count).toBe(0);
+  }
   return async () => {
     // 本用例新建的认领记录也移出当日额度，避免影响下一条共享账号回归。
     const { data: recent, error: recentError } = await admin.from("sales_lead_assignments")
@@ -158,9 +165,20 @@ test.describe("lead rules and administrator claims", () => {
     await Promise.all([admin, sales].map((page) => page.getByTestId(id).evaluate((button: HTMLElement) => button.click())));
     const results = await Promise.all(claimResponses);
     expect(results.filter((response) => response.ok())).toHaveLength(1);
-    // 共享种子账号可能已达到当日额度；两种拒绝都必须只留下一个成功认领者。
+    // 双方额度已通过独立查询确认充足，败方只能因为另一人已经认领而失败。
     const rejected = await results.find((response) => !response.ok())!.json();
-    expect(["sales_lead_already_claimed", "sales_lead_daily_limit_reached"]).toContain(rejected.message);
+    expect(rejected.message).toBe("sales_lead_already_claimed");
+    const database = getLocalSupabaseAdminClient();
+    if (!database) throw new Error("本地数据库管理员连接不可用。");
+    const { data: assignments, error: assignmentError } = await database.from("sales_lead_assignments")
+      .select("id,assignee_user_id,ended_at").eq("lead_id", id.replace("claim-lead-", "")).is("ended_at", null);
+    if (assignmentError) throw assignmentError;
+    expect(assignments).toHaveLength(1);
+    const winnerAccount = getRegressionAccount(results[0].ok() ? "administrator" : "salesman");
+    const { data: winnerProfile, error: winnerError } = await database.from("user_profiles")
+      .select("user_id").eq("email", winnerAccount.email).single();
+    if (winnerError) throw winnerError;
+    expect(assignments![0].assignee_user_id).toBe(winnerProfile.user_id);
     // 两边请求都结束后重新读取看板，避免把切换中的大厅卡片误当作“我的线索”。
     await Promise.all([admin, sales].map((page) => page.reload()));
     await Promise.all([admin, sales].map((page) => page.getByRole("button", { name: "我的线索" }).click()));

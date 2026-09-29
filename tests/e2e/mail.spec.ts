@@ -134,6 +134,8 @@ for (const role of ["client", "finance", "manager", "operator", "promoter", "rec
     await expect(page.getByRole("link", { name: "邮件工作台" })).toHaveCount(0);
     const response = await page.request.get("/api/mail/workspace", { maxRedirects: 0 });
     expect([302, 307, 400, 401, 403]).toContain(response.status());
+    const agentsResponse = await page.request.get("/api/mail/assignable-agents", { maxRedirects: 0 });
+    expect([302, 307, 400, 401, 403]).toContain(agentsResponse.status());
     const rulesResponse = await page.request.get("/api/mail/intake-rules", { maxRedirects: 0 });
     const quarantineResponse = await page.request.get("/api/mail/quarantine", { maxRedirects: 0 });
     expect([302, 307, 400, 401, 403]).toContain(rulesResponse.status());

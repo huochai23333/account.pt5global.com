@@ -15,8 +15,7 @@ export type CurrentAppAccessContext = {
 /**
  * 从数据库读取当前账号真正生效的角色和状态。
  *
- * Auth 元数据只是一份为了兼容旧流程而保留的缓存，管理员修改账号后，
- * 这份缓存可能因为网络或服务凭据问题没有及时更新。工作台跳转和权限判断
+ * 管理员修改账号后，Auth 元数据可能因为网络或服务凭据问题没有及时更新。工作台跳转和权限判断
  * 必须使用数据库里的最新结果，不能在查询失败时退回旧元数据继续放行。
  */
 export async function getCurrentAppAccessContext(
