@@ -5337,6 +5337,12 @@
       "not_connected": "尚未连接",
       "feishu_only": "只绑定了飞书"
     },
+    "feishuConnection": {
+      "cancelled": "你取消了飞书授权。请点击“绑定飞书”重新开始。",
+      "incomplete": "这次授权信息不完整。请重新绑定飞书。",
+      "state": "这个授权链接已使用或已过期。请重新绑定飞书，不要刷新旧的授权页面。",
+      "unavailable": "暂时无法绑定飞书。请稍后重试；仍失败时请联系管理员。"
+    },
     "connection": {
       "success": "公司邮箱已连接，授权和新邮件通知已保存。",
       "cancelled": "你取消了 Google 授权。请点击“连接公司邮箱”重新开始。",

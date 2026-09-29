@@ -1,4 +1,5 @@
 import type { Locale } from "./locale";
+import { resolveConfiguredPublicOrigin } from "./public-site-origin-policy";
 
 export const companyConfig = {
   defaultPublicOrigin: "https://account.pt5global.com",
@@ -44,30 +45,15 @@ export function getCompanyText(locale: Locale): CompanyText {
   return companyConfig.text[locale];
 }
 
+const reportedOriginReasons = new Set<string>();
+
+/** 配置错误时保持认证入口可用；告警按原因去重，绝不输出原始环境变量。 */
 export function getCompanyPublicOrigin() {
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-
-  if (!configuredOrigin) {
-    return companyConfig.defaultPublicOrigin;
+  const production = process.env.NODE_ENV === "production";
+  const result = resolveConfiguredPublicOrigin(process.env.NEXT_PUBLIC_SITE_URL, companyConfig.defaultPublicOrigin, production);
+  if (production && typeof window === "undefined" && result.reason && !reportedOriginReasons.has(result.reason)) {
+    reportedOriginReasons.add(result.reason);
+    console.warn("[public-site-origin]", { variable: "NEXT_PUBLIC_SITE_URL", reason: result.reason });
   }
-
-  try {
-    const url = new URL(configuredOrigin.trim());
-
-    if (
-      (url.protocol !== "https:" && url.protocol !== "http:") ||
-      url.username ||
-      url.password ||
-      url.pathname !== "/" ||
-      url.search ||
-      url.hash
-    ) {
-      return companyConfig.defaultPublicOrigin;
-    }
-
-    return url.origin;
-  } catch {
-    // 部署平台中的地址即使填写错误，也不能让登录、邮件确认等入口整体返回 500。
-    return companyConfig.defaultPublicOrigin;
-  }
+  return result.origin;
 }

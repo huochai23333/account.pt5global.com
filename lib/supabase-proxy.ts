@@ -6,6 +6,7 @@ import {
   getWorkspaceBasePath,
 } from "./auth-routing";
 import { getSupabaseEnv } from "./supabase";
+import { getRequestPublicOrigin } from "./public-site-origin";
 import { getCurrentWorkspaceBusinessAccess } from "./workspace-business-access";
 import { getSignedInWorkspaceDestination } from "./workspace-business-availability";
 
@@ -129,8 +130,9 @@ function createRedirectResponse(
     search?: string;
   },
 ) {
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = destinationPath;
+  // 只继承查询参数，域名必须来自公共地址策略，不能继承 Node.js 内部监听地址。
+  const redirectUrl = new URL(destinationPath, getRequestPublicOrigin(request));
+  redirectUrl.search = request.nextUrl.search;
 
   if (options?.search !== undefined) {
     redirectUrl.search = options.search;

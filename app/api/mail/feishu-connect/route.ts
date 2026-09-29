@@ -10,7 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     const identity = await requireMailIdentity();
     const workspace = identity.role === "administrator" ? "admin" : "salesman";
-    const returnUrl = new URL(`/${workspace}/mail?feishu=connected`, getRequestPublicOrigin(request)).toString();
+    // 成功状态从绑定记录读取，连接网址只负责把用户送回本人的邮件页。
+    const returnUrl = new URL(`/${workspace}/mail`, getRequestPublicOrigin(request)).toString();
     return NextResponse.json(await createFeishuConnectSession(identity, returnUrl), { status: 201 });
   } catch (error) { return mailApiError(error, "暂时无法绑定飞书。"); }
 }

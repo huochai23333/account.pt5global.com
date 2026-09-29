@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 
 import { MailAdminPanel } from "./mail-admin-panel";
 import { MailConnectionNotice } from "./mail-connection-notice";
+import { MailFeishuNotice } from "./mail-feishu-notice";
+import { MailFeishuStatus } from "./mail-feishu-status";
+import type { FeishuConnectionReason } from "@/lib/mail/mail-feishu-feedback";
 import type { MailConnectionFeedback } from "@/lib/mail/mail-connection-feedback";
 import { MailIntakeRulesPanel } from "./mail-intake-rules-panel";
 import { MailOwnSettingsPanel } from "./mail-own-settings-panel";
@@ -28,6 +31,7 @@ import { useMailSecondaryData } from "./use-mail-secondary-data";
 export function MailWorkspaceClient(props: {
   backHref: string;
   connectionFeedback: MailConnectionFeedback | null;
+  feishuFeedback: FeishuConnectionReason | null;
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
   initialNextCursor: string | null;
@@ -73,7 +77,7 @@ export function MailWorkspaceClient(props: {
     <DashboardPageShell
       feedback={feedback ? { message: feedback, tone: /已|正常|完成/.test(feedback) && !/没有|未全部/.test(feedback) ? "success" : "info" } : null}
       header={<DashboardSectionHeader
-        actions={<><Link className={cn(buttonVariants({ variant: "outline", wrap: true }), "w-full sm:w-auto")} href={props.backHref}><ArrowLeft className="size-4" />{t("backToMy")}</Link>{state.summary && !state.summary.feishuBound ? <Button disabled={state.busy !== null} onClick={() => void state.connectFeishu()} type="button">{t("bindFeishu")}</Button> : null}</>}
+        actions={<><Link className={cn(buttonVariants({ variant: "outline", wrap: true }), "w-full sm:w-auto")} href={props.backHref}><ArrowLeft className="size-4" />{t("backToMy")}</Link><MailFeishuStatus bound={state.summary?.feishuBound} busy={state.busy !== null} onConnect={() => void state.connectFeishu()} /></>}
         badge={t("sharedMailbox")}
         badgeIcon={<Mail className="size-4" />}
         description={t("workspaceDescription")}
@@ -82,6 +86,7 @@ export function MailWorkspaceClient(props: {
       />}
     >
       <MailConnectionNotice feedback={props.connectionFeedback} />
+      <MailFeishuNotice reason={props.feishuFeedback} />
       <MailWorkspaceTabs isAdmin={props.isAdmin} onChange={setView} quarantineCount={state.summary?.counts.quarantined ?? 0} value={view} />
       {secondary.panelState !== "ready" ? <div className="space-y-3 rounded-surface border border-border-subtle bg-surface-panel p-4" role="status" data-testid="mail-secondary-status">
         <p className="text-sm text-content-muted">{t(secondary.panelState === "loading" ? "secondaryLoading" : "secondaryFailed")}</p>

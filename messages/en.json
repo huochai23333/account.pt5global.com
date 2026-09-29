@@ -5337,6 +5337,12 @@
       "not_connected": "Not connected",
       "feishu_only": "Feishu only"
     },
+    "feishuConnection": {
+      "cancelled": "You cancelled Feishu authorization. Select Bind Feishu to start again.",
+      "incomplete": "Authorization information is incomplete. Please start a new Feishu connection.",
+      "state": "This authorization link has already been used or has expired. Start a new Feishu connection instead of refreshing the old page.",
+      "unavailable": "Feishu cannot be connected right now. Try again later or contact your administrator."
+    },
     "connection": {
       "success": "Company mailbox connected. Authorization and new-mail notifications have been saved.",
       "cancelled": "You cancelled Google authorization. Select Connect company mailbox to start again.",

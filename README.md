@@ -141,11 +141,12 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 说明：
 
 - `NEXT_PUBLIC_*` 用于浏览器端和 SSR 访问 Supabase。
-- `NEXT_PUBLIC_SITE_URL` 用于邮箱确认等服务端回跳地址，线上必须填写包含 `https://` 的完整站点根地址，并与 Supabase Auth 的 Site URL 保持一致；未配置或格式无效时自动使用默认线上域名，避免确认邮件和退出登录入口返回 500。
+- `NEXT_PUBLIC_SITE_URL` 用于邮箱确认等服务端回跳地址，线上必须填写包含 `https://` 的完整站点根地址，并与 Supabase Auth 的 Site URL 保持一致；生产环境只接受 HTTPS 完整域名及标准端口，拒绝所有 IP、本机地址、本地域名和带路径的地址；缺失或无效时使用默认正式域名，并记录按原因去重的配置告警。告警不包含配置值。
 - `SUPABASE_SERVICE_ROLE_KEY` 只允许服务端脚本或受控管理任务使用，不能暴露到前端。
 - `MAIL_CREDENTIAL_ENCRYPTION_KEY` 与 `MAIL_CONTENT_ENCRYPTION_KEY` 分别加密授权凭据和邮件内容；`MAIL_EMAIL_HASH_SECRET` 生成客户邮箱盲索引，三者只能配置在 Next.js 服务端。`MAIL_TASK_SECRET` 保护后台补偿任务入口。
 - Google 变量用于管理员连接公司邮箱和续订 Gmail Watch；飞书变量用于员工绑定与应用私聊。附件扫描服务必须明确返回安全结果，文件才可进入发信队列。所有这些变量都不能使用 `NEXT_PUBLIC_*` 前缀。
-- Google 授权入口、回调与返回邮件页统一使用 `NEXT_PUBLIC_SITE_URL` 对应的公开地址，不能填写 `0.0.0.0`。仅本地外部边界测试配置 `MAIL_GOOGLE_OAUTH_BASE_URL`（提供 `/authorize`、`/token`、`/userinfo`）及 `MAIL_GOOGLE_API_BASE_URL`（Gmail 用户接口根地址）；线上应移除测试覆盖变量。Google 授权交换、身份确认与通知开通各等待最多 10 秒。
+- Google 和飞书授权入口、回调与返回邮件页统一使用 `NEXT_PUBLIC_SITE_URL` 对应的公开地址，不能填写 `0.0.0.0`。仅本地外部边界测试配置 `MAIL_GOOGLE_OAUTH_BASE_URL`（提供 `/authorize`、`/token`、`/userinfo`）及 `MAIL_GOOGLE_API_BASE_URL`（Gmail 用户接口根地址）；线上应移除测试覆盖变量。Google 授权交换、身份确认与通知开通各等待最多 10 秒。
+- 飞书授权返回管理员或业务员本人的邮件页，授权记录只保存该页公开地址；失败使用固定原因显示可读提示，成功状态从实际绑定记录读取。仅开发环境的服务端令牌及身份接口复用 `MAIL_FEISHU_API_BASE_URL` 本地边界，分别等待最多 10 秒，生产固定访问官方接口。
 - 汇率凭据 `NOWAPI_APP_KEY`、`NOWAPI_SIGN` 只配置在 Supabase 服务端，具体位置见下方汇率说明。
 - `LOGISTICS_SOURCE_ARCHIVE_API_URL` 和 `LOGISTICS_SOURCE_ARCHIVE_API_TOKEN` 只配置为 Supabase Edge Function secrets，用于把店小秘必要物流字段归档到主系统，不暴露到浏览器端；同步只调用来源项目的受控接口。
 - `USER_MEDIA_IMAGE_REVIEW_PROVIDER` 和真实内容安全供应商密钥只配置为 Supabase Function secrets，默认 provider 为 `disabled`。
@@ -569,6 +570,7 @@ PT5-dropshipping-web/
 - 权限回归会检查有效越权账号仍可直接返回自己的首页；开发服务器输出不应出现 `Forbidden` 性能测量异常。当前使用 Next.js 最新稳定补丁，不采用 canary 或 preview 版本。
 - 本地运营报销回归使用两名种子运营账号，运行 `operator-reimbursements.spec.ts` 与 `operator-reimbursements-sharing.spec.ts`；协作套件要求 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`。批量写入回归固定使用专用协作运营和保留的历史周期，执行前确认该周期没有非测试记录，结束后只删除本次标识数据，不能改动结算共享账号的其他费用。套件覆盖真实创建和报销凭证、HTTP 200 但影响 0 行时拒绝成功、历史补报、205 条分页、相互查阅、本人写入边界、搜索 300ms 防抖、删除期间切换运营的查询竞态、上海跨日时间显示、查询失败重试及 1440/390/320px 排版。
 - `scripts/mail-intake.test.mjs` 覆盖自动别名、Ref、规则规范化、To/Cc/Bcc 去重、公司地址排除和历史负责人冲突；`tests/e2e/mail.spec.ts` 直接使用本地 PT5 Supabase，并只模拟 Gmail、飞书、附件扫描和 DeepSeek 外部边界。页面用例覆盖成功发信收件人凭证、同线程回复、已知邮箱独立来信、陌生邮箱忽略、放行规则不能绕过、附件不下载、重复 Push 审计幂等，以及原有的权限、隔离、AI、附件、转交和最终 `SENT` 失败。`tests/e2e/mail-recipient-maintenance.spec.ts` 验证历史回填、预览令牌、权限拒绝、陌生会话删除、已知会话保留和 `partial_failed`。邮件页继续在 1440/390/320px 检查横向溢出。 `tests/e2e/mail-oauth.spec.ts` 从页面连接按钮验证授权、凭据与通知的真实落库，覆盖重复回调、过期、取消、权限、选错账号、缺少权限、通知失败、等待超时、部分保存失败、回程中断及伪造成功参数；仅模拟 Google 外部边界，保存失败注入只作用于本地 Docker 并在每例后删除。真实 Google OAuth、真实收发可见性和真实飞书到达需要在生产切换前单独验收。
+- 跳转地址回归运行 `node --experimental-strip-types --test scripts/public-site-origin.test.mjs`，覆盖生产配置、伪造转发头及角色返回边界；`mail-feishu-oauth.spec.ts` 从页面绑定按钮核对本地授权记录与飞书绑定凭证，`public-redirects.spec.ts` 检查认证、授权及八类工作台入口。发布后以正式域名复核完整跳转链，再单独验收真实外部授权。
 - 测试账号优先读取 `E2E_*` 环境变量；未设置时，若当前 `.env.local` 指向本地 Supabase，则优先从同级 `supabase/local-test-data.sql`、`supabase/supabase/local-test-data.sql` 或 `PT5-dropshipping-supabase/supabase/local-test-data.sql` 读取 `local.*@bs.test` 账号，再读取本机测试账号文件。
 - 本地 Supabase 测试数据会生成 100 条最近 30 天内的批发订单，订单列表默认范围应能直接看到足够的订单样本；协作订单 `WH-PEER-LOCAL-001` 用于验证管理员、财务和两名业务员都只使用直接修改入口。当天汇率按上海业务日期写入，午夜后运行结汇回归也必须能匹配当天汇率。
 - 批发浏览器回归会拦截真实写请求，验证订单、附件、客户别名、账号合并、1688 导入、单条与批量认领组、物流店铺归属、推荐、结汇发布和结汇分配失败时表单保持打开、字段不丢失、反馈可见；订单列表框架只覆盖当前三类批发订单页面，推荐树只覆盖当前启用的批发业务，不再把已停用的旅游页面当作可用入口。`tests/e2e/wholesale-order-month-filter.spec.ts` 从管理员页面验证计入月份、空结果、分页、恢复默认、刷新和 1440/390px 排版，并通过独立本地数据库读取核对完整数量；客户页面不提供该内部筛选。结汇发布用例还覆盖同一收款分到多笔订单、部分分配、最早订单优先建议、整组重配、临时名称选择正式客户、清空二次确认，以及桌面和移动排版。`tests/e2e/settlement-rate-repair-receipts.spec.ts` 的真实链路从页面发布缺少精确日期汇率的收款，等待专用后台任务终态，再独立核对运行记录、汇率记录 ID、收款分配和刷新后页面；故障链路故意让任务以 `partial_failed` 结束，确认页面不重试分配、不显示成功，并核对数据库仍为待分配。`tests/e2e/wholesale-order-attachment-receipts.spec.ts` 另用真实页面、独立服务端数据库连接和 Storage 查询验证上传、删除、整页刷新后的最终一致性，并故意把登记接口改成 HTTP 200 但只返回一半记录，确认页面拒绝成功且不会留下孤立对象；该用例同时检查 390px 页面横向溢出。1688 用例覆盖收货人和采购日期筛选、当前结果全选、多订单选择、认领组调整与撤销、刷新后持久化、四类角色权限以及桌面和移动排版。订单关联用例检查客户联动、编号金额、日期倒序、详情展示和关联单号搜索，物流用例单独检查永久档案统计与响应式布局。
@@ -615,7 +617,7 @@ Git 推送约定：
 Supabase Auth 建议：
 
 - Site URL：线上站点根地址，当前线上为 `https://account.pt5global.com`；默认值集中在 `lib/company-config.ts`。
-- `NEXT_PUBLIC_SITE_URL` 应与线上 Site URL 保持一致；邮箱确认和退出登录路由只接受该域名、公司配置默认线上域名和本地开发域名作为回跳来源。
+- `NEXT_PUBLIC_SITE_URL` 应与线上 Site URL 保持一致；生产环境的邮箱确认、退出登录、登录拦截和邮件授权统一使用已校验的配置域名，不依据 Host、转发头或服务器监听地址生成跳转；开发环境才允许 localhost 与 127.0.0.1。
 - Redirect URLs：线上根地址、`/login`、`/auth/confirm`、`/forgot-password`，以及本地开发地址 `http://localhost:3000`、`http://localhost:3000/auth/confirm`、`http://localhost:3000/forgot-password`。
 - 账号邮件通过 Resend 自定义 SMTP 发送；发信域名为已验证的 `pt5global.com`，发件人为 `PT5global <support@pt5global.com>`，该地址同时用于用户联系与邮件回复。注册确认、邀请、登录验证、邮箱变更、密码重置和身份验证模板统一使用 PT5 品牌。
 - `/auth/confirm` 统一处理注册确认和密码重置确认：`type=email` 成功后进入 `next` 指向的登录页；`type=recovery` 成功后进入 `/forgot-password?type=recovery` 设置新密码。

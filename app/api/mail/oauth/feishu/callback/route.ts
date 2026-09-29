@@ -1,22 +1,35 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { bindFeishuIdentity, consumeOAuthTransaction, getFeishuIdentity } from "@/lib/mail/mail-integrations";
+import { consumeOAuthTransaction } from "@/lib/mail/mail-integrations";
+import { bindFeishuIdentity, getFeishuIdentity } from "@/lib/mail/mail-feishu-provider";
+import { FeishuConnectionError } from "@/lib/mail/mail-feishu-feedback";
+import { feishuFailureRedirect } from "@/lib/mail/mail-feishu-navigation";
+import { MailConnectionError } from "@/lib/mail/mail-connection-feedback";
+import type { MailIdentity } from "@/lib/mail/mail-types";
 
 export async function GET(request: Request) {
+  let identity: MailIdentity | null = null;
   try {
-    const identity = await requireMailIdentity();
+    identity = await requireMailIdentity();
     const url = new URL(request.url);
+    if (url.searchParams.has("error")) throw new FeishuConnectionError("cancelled");
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
-    if (!code || !state) throw new Error("飞书授权信息不完整。");
+    if (!code || !state) throw new FeishuConnectionError("incomplete");
     const transaction = await consumeOAuthTransaction({ state, provider: "feishu", identity });
-    if (transaction.purpose !== "member_feishu") throw new Error("本次授权不是飞书绑定。");
+    if (transaction.purpose !== "member_feishu") throw new FeishuConnectionError("state");
     const feishu = await getFeishuIdentity(code);
     await bindFeishuIdentity(identity, feishu.openId, feishu.displayName);
-    return NextResponse.redirect(transaction.returnUrl);
+    // 写入回执已确认 user_id 与 open_id；页面刷新再从数据库展示真实绑定状态。
+    const response = NextResponse.redirect(transaction.returnUrl);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "飞书绑定失败。";
-    return NextResponse.redirect(new URL(`/salesman/mail?connectionError=${encodeURIComponent(message)}`, request.url));
+    unstable_rethrow(error);
+    const reason = error instanceof FeishuConnectionError ? error.reason
+      : error instanceof MailConnectionError && error.reason === "state" ? "state" : "unavailable";
+    return feishuFailureRedirect(identity, reason);
   }
 }

@@ -5,6 +5,7 @@ import { OAuth2Client } from "google-auth-library";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import { getMailEnv } from "./mail-env";
+import { getSafeMailReturnUrl } from "./mail-return-url";
 import { MailConnectionError } from "./mail-connection-feedback";
 import { createBlindIndex, decryptMailValue, encryptMailValue, randomToken, sha256 } from "./mail-security";
 import type { MailIdentity } from "./mail-types";
@@ -13,17 +14,6 @@ function requireEnv(name: string) {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} 尚未配置。`);
   return value;
-}
-
-function safeReturnUrl(value: string | null) {
-  const fallback = new URL("/admin/mail", getMailEnv().siteUrl);
-  if (!value) return fallback.toString();
-  try {
-    const candidate = new URL(value, getMailEnv().siteUrl);
-    return candidate.origin === fallback.origin ? candidate.toString() : fallback.toString();
-  } catch {
-    return fallback.toString();
-  }
 }
 
 export function createPkcePair() {
@@ -46,7 +36,7 @@ export async function createOAuthTransaction(input: {
     user_id: input.identity.userId,
     provider: input.provider,
     purpose: input.purpose,
-    return_url: safeReturnUrl(input.returnUrl),
+    return_url: getSafeMailReturnUrl(input.returnUrl, env.siteUrl, input.provider, input.identity.role),
     pkce_verifier_enc: input.pkceVerifier ? encryptMailValue(input.pkceVerifier, env.credentialKey) : null,
     expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
   }).select("state_hash").single();
@@ -74,7 +64,7 @@ export async function consumeOAuthTransaction(input: {
   if (!data) throw new MailConnectionError("state");
   return {
     purpose: data.purpose as "shared_mailbox" | "member_feishu",
-    returnUrl: safeReturnUrl(data.return_url as string),
+    returnUrl: getSafeMailReturnUrl(data.return_url as string, getMailEnv().siteUrl, input.provider, input.identity.role),
     pkceVerifier: data.pkce_verifier_enc
       ? decryptMailValue(data.pkce_verifier_enc as string, getMailEnv().credentialKey)
       : null,
@@ -105,47 +95,6 @@ export function createFeishuAuthorizationUrl(state: string) {
   url.searchParams.set("redirect_uri", `${getMailEnv().siteUrl}/api/mail/oauth/feishu/callback`);
   url.searchParams.set("state", state);
   return url;
-}
-
-export async function getFeishuIdentity(code: string) {
-  const redirectUri = `${getMailEnv().siteUrl}/api/mail/oauth/feishu/callback`;
-  const tokenResponse = await fetch("https://open.feishu.cn/open-apis/authen/v2/oauth/token", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "authorization_code",
-      client_id: requireEnv("FEISHU_APP_ID"),
-      client_secret: requireEnv("FEISHU_APP_SECRET"),
-      code,
-      redirect_uri: redirectUri,
-    }),
-    cache: "no-store",
-  });
-  const token = (await tokenResponse.json()) as { access_token?: string; error_description?: string };
-  if (!tokenResponse.ok || !token.access_token) throw new Error(token.error_description ?? "飞书授权交换失败。");
-  const profileResponse = await fetch("https://open.feishu.cn/open-apis/authen/v1/user_info", {
-    headers: { authorization: `Bearer ${token.access_token}` },
-    cache: "no-store",
-  });
-  const profile = (await profileResponse.json()) as {
-    code?: number;
-    msg?: string;
-    data?: { open_id?: string; name?: string; en_name?: string };
-  };
-  if (!profileResponse.ok || profile.code !== 0 || !profile.data?.open_id) throw new Error(profile.msg ?? "无法读取飞书人员身份。");
-  return { openId: profile.data.open_id, displayName: profile.data.name ?? profile.data.en_name ?? "飞书用户" };
-}
-
-export async function bindFeishuIdentity(identity: MailIdentity, openId: string, displayName: string) {
-  const { data, error } = await getSupabaseServiceRoleClient().from("mail_feishu_bindings").upsert({
-    user_id: identity.userId,
-    open_id: openId,
-    display_name_enc: encryptMailValue(displayName, getMailEnv().contentKey),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" }).select("user_id,open_id").single();
-  if (error || data?.user_id !== identity.userId || data.open_id !== openId) {
-    throw new Error("飞书身份没有确认绑定，可能已经属于其他账号。", { cause: error });
-  }
 }
 
 type GooglePushEnvelope = {
