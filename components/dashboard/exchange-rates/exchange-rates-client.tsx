@@ -19,6 +19,7 @@ import {
   ExchangeRatesLatestSection,
 } from "./exchange-rates-sections";
 import { useExchangeRatesViewModel } from "./use-exchange-rates-view-model";
+import { ExchangeRateRecalculationSection } from "./exchange-rate-recalculation-section";
 
 type ExchangeRatesClientProps = {
   embedded?: boolean;
@@ -149,6 +150,7 @@ export function ExchangeRatesClient({
             totalLatestRows={latestRows.length}
             totalRates={rates.length}
           />
+          {canManage ? <ExchangeRateRecalculationSection /> : null}
           <ExchangeRatesHistorySection
             canManage={canManage}
             deletePendingId={deletePendingId}

@@ -7,6 +7,7 @@ import {
 } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
 import { chooseSelectOption } from "./helpers/select-control";
+import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 import { cleanupRateFixtures, ensureLocalUsdRate } from "./helpers/wholesale-settlement-fixtures";
 
 test.describe("wholesale order settlements", () => {
@@ -31,6 +32,8 @@ test.describe("wholesale order settlements", () => {
     if (rateId) createdRateIds.add(rateId);
     // 汇率在页面服务端首读时加载；夹具创建后刷新，才能用新日期结汇。
     await page.reload();
+    const { data: quote } = await getLocalSupabaseAdminClient()!.from("exchange_rate").select("daily_exchange_rate").eq("original_currency","USD").eq("rate_date",settlementDate).single();
+    const expectedCompanyRate = String(Number((Number(quote!.daily_exchange_rate)*0.99).toFixed(6)));
 
     await page.getByRole("button", { name: "新建订单" }).click();
 
@@ -69,13 +72,13 @@ test.describe("wholesale order settlements", () => {
     await expect(orderRow).toBeVisible();
     await expect(orderRow).toContainText("未结汇");
 
-    await recordSettlement(page, orderRow, "100", settlementDate);
+    await recordSettlement(page, orderRow, "100", settlementDate, expectedCompanyRate);
     await expect(page.getByText("结汇记录已保存。")).toBeVisible();
     await expect(orderRow).toContainText("已结 US$100.00");
     await expect(orderRow).toContainText("剩余 US$200.00");
-    await expect(orderRow).toContainText("7.18");
+    await expect(orderRow).toContainText(expectedCompanyRate);
 
-    await recordSettlement(page, orderRow, "200", settlementDate);
+    await recordSettlement(page, orderRow, "200", settlementDate, expectedCompanyRate);
     await expect(page.getByText("结汇记录已保存。")).toBeVisible();
     await expect(orderRow).toContainText("已结 US$300.00");
     await expect(orderRow).toContainText("剩余 US$0.00");
@@ -125,6 +128,7 @@ async function recordSettlement(
   orderRow: ReturnType<Page["getByRole"]>,
   amount: string,
   settlementDate: string,
+  expectedCompanyRate: string,
 ) {
   await orderRow.getByRole("button", { name: "登记结汇" }).click();
 
@@ -135,7 +139,7 @@ async function recordSettlement(
     settlementDialog.getByLabel("结汇日期"),
     settlementDate,
   );
-  await expect(settlementDialog.getByText("7.18", { exact: true }).first()).toBeVisible();
+  await expect(settlementDialog.getByText(expectedCompanyRate, { exact: true }).first()).toBeVisible();
   await settlementDialog.getByRole("button", { name: "保存结汇记录" }).click();
 }
 
@@ -187,6 +191,8 @@ async function expectLinkedPurchaseOrderDetailsDialog(page: Page) {
 
 async function expectLocalSeededWholesaleOrders(page: Page) {
   await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(20);
+  // 真实写入回归会产生更新的订单；明确筛选种子，不能假定它仍在最新一页。
+  await page.getByLabel("搜索订单").fill("WH-LOCAL-");
   await expect(
     page
       .locator('[data-testid^="wholesale-order-row-"]')

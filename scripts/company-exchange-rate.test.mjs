@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { companyExchangeRate, multiplyRoundedDecimal } from "../lib/company-exchange-rate.ts";
+test("700 bank quote becomes raw 7 then company 6.93",()=>assert.equal(companyExchangeRate("USD",7),6.93));
+test("100 USD converts to 693 CNY after one discount",()=>assert.equal(multiplyRoundedDecimal("100",String(companyExchangeRate("USD",7)),2),"693.00"));
+test("CNY is always 1",()=>assert.equal(companyExchangeRate("CNY",1),1));
+test("missing foreign quote is not a usable rate",()=>assert.equal(companyExchangeRate("EUR",null),null));
+test("company rate rounds to six decimal places",()=>assert.equal(companyExchangeRate("EUR","7.123456"),7.052221));
+test("money rounds half up exactly",()=>assert.equal(multiplyRoundedDecimal("1","1.005",2),"1.01"));
+test("negative money rounds away from zero",()=>assert.equal(multiplyRoundedDecimal("-1","1.005",2),"-1.01"));
+test("binary rounding boundary",()=>assert.equal(multiplyRoundedDecimal("100.5","6.93",2),"696.47"));
+test("zero amount is preserved",()=>assert.equal(multiplyRoundedDecimal("0","6.93",2),"0.00"));

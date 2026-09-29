@@ -62,16 +62,8 @@ export function WholesaleOrderFormDialog({
     const options = dedupeWholesaleCurrencyOptions(
       buildOrderCurrencyOptions(exchangeRates),
     );
-    return options.some((option) => option.currency === "CNY")
-      ? options
-      : [
-          ...options,
-          {
-            currency: "CNY",
-            dailyExchangeRate: "1",
-            transactionRate: "0.99",
-          },
-        ];
+    // 公共币种构造函数已经提供 CNY 固定汇率 1，创建页直接复用同一规则。
+    return options;
   }, [exchangeRates]);
   const defaultCurrency =
     currencyOptions.find((option) => option.currency === "USD")?.currency ??

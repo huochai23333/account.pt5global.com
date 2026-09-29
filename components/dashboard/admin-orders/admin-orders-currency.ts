@@ -1,5 +1,5 @@
 import {
-  findLatestCnyExchangeRate,
+  findTodayCnyExchangeRate,
   normalizeCurrencyCode,
   sortExchangeRateRows,
   type ExchangeRateRow,
@@ -10,6 +10,7 @@ import {
   formatEditableNumericValue,
   parseNumericValue,
 } from "./admin-orders-display";
+import { companyExchangeRate, multiplyRoundedDecimal } from "@/lib/company-exchange-rate";
 
 export type OrderCurrencyOption = {
   currency: string;
@@ -39,6 +40,12 @@ export function buildOrderCurrencyOptions(
   }
 
   const orderedCurrencies = getOrderedCurrencyCodes(rateByCurrency, syncPairs);
+  // 人民币无需供应商报价，币种选项和金额计算必须共同保留固定汇率 1。
+  if (!orderedCurrencies.includes("CNY")) {
+    const cny = findTodayCnyExchangeRate([], "CNY");
+    if (cny) rateByCurrency.set("CNY", cny);
+    orderedCurrencies.push("CNY");
+  }
 
   return orderedCurrencies.map((currency) => {
     const dailyExchangeRate = formatEditableNumericValue(
@@ -48,7 +55,7 @@ export function buildOrderCurrencyOptions(
     return {
       currency,
       dailyExchangeRate,
-      transactionRate: deriveTransactionRateValue(dailyExchangeRate),
+      transactionRate: deriveTransactionRateValue(dailyExchangeRate, currency),
     };
   });
 }
@@ -72,7 +79,7 @@ export function applyOrderExchangeRateToOrderForm<
     rmbAmount: string;
   },
 >(formState: FormState, orderCurrencyRates: ExchangeRateRow[]): FormState {
-  const rate = findLatestCnyExchangeRate(
+  const rate = findTodayCnyExchangeRate(
     orderCurrencyRates,
     formState.originalCurrency,
   );
@@ -81,13 +88,14 @@ export function applyOrderExchangeRateToOrderForm<
   return {
     ...formState,
     dailyExchangeRate,
-    transactionRate: deriveTransactionRateValue(dailyExchangeRate),
-    rmbAmount: deriveRmbAmountValue(formState.amount, dailyExchangeRate),
+    transactionRate: deriveTransactionRateValue(dailyExchangeRate, formState.originalCurrency),
+    rmbAmount: deriveRmbAmountValue(formState.amount, deriveTransactionRateValue(dailyExchangeRate, formState.originalCurrency)),
   };
 }
 
 export function deriveTransactionRateValue(
   value: number | string | null | undefined,
+  currency: string,
 ) {
   const parsed = parseNumericValue(value);
 
@@ -95,23 +103,24 @@ export function deriveTransactionRateValue(
     return "";
   }
 
-  const derived = (parsed * 0.99).toFixed(6);
+  // 输入始终是买入价；人民币自身保持 1，其他币种只在这里扣一次 1%。
+  const derived = companyExchangeRate(currency, value)?.toFixed(6) ?? "";
   return derived.replace(/\.?0+$/, "");
 }
 
+/** 金额入口只接受已计算的成交价，调用方不能再传买入价或重复扣减 1%。 */
 export function deriveRmbAmountValue(
   amount: number | string | null | undefined,
-  dailyExchangeRate: number | string | null | undefined,
+  transactionRate: number | string | null | undefined,
 ) {
   const parsedAmount = parseNumericValue(amount);
-  const parsedRate = parseNumericValue(dailyExchangeRate);
+  const parsedRate = parseNumericValue(transactionRate);
 
   if (parsedAmount === null || parsedRate === null) {
     return "";
   }
 
-  const derived = Math.round((parsedAmount * parsedRate + Number.EPSILON) * 100) / 100;
-  return derived.toFixed(2).replace(/\.?0+$/, "");
+  return multiplyRoundedDecimal(String(amount), String(transactionRate), 2).replace(/\.?0+$/, "");
 }
 
 function getOrderedCurrencyCodes(

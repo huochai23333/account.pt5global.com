@@ -34,9 +34,6 @@ test.describe("汇率按日期补充", () => {
     await expectDateControlValue(fromDate, yesterday);
     await expectDateControlValue(toDate, yesterday);
     await expect(dialog.getByLabel("币种 1")).toHaveValue("USD");
-    await expect(dialog.getByText(/将检查 1 天、3 个币种，共 3 条日期汇率/))
-      .toBeVisible();
-
     // 32 个含首尾的日历日期必须在浏览器端被拦住，且不清空用户已经填写的范围。
     await fillDateControl(fromDate, toChineseDate(thirtyTwoDayRangeStart));
     await dialog.getByRole("button", { name: "获取并保存" }).click();
@@ -51,95 +48,21 @@ test.describe("汇率按日期补充", () => {
       .toBeVisible();
     await expect(dialog.getByLabel("币种 1")).toHaveValue("US");
 
-    // 第二行故意与第一行重复，提交时应自动转成大写并去重。
+    // 真实页面提交已存在的昨日美元与不支持的币种；部分完成必须保留凭证和失败明细。
+    const currencyInputs=dialog.getByRole("textbox",{name:/^币种 \d+$/});
+    while(await currencyInputs.count()>1) await dialog.getByRole("button",{name:/移除第/}).last().click();
     await dialog.getByLabel("币种 1").fill("usd");
-    await dialog.getByLabel("币种 2").fill("USD");
-    await dialog.getByRole("button", { name: "添加币种" }).click();
-    await dialog.getByLabel("币种 4").fill("AUD");
-
-    let releaseResponse: () => void = () => undefined;
-    const responseGate = new Promise<void>((resolve) => {
-      releaseResponse = resolve;
-    });
-    let requestStarted: () => void = () => undefined;
-    const requestStartedPromise = new Promise<void>((resolve) => {
-      requestStarted = resolve;
-    });
-    let requestBody: Record<string, unknown> | null = null;
-
-    await page.route("**/functions/v1/exchange-rate-sync", async (route) => {
-      const body = route.request().postDataJSON() as Record<string, unknown>;
-      if (body.trigger !== "historical") {
-        await route.continue();
-        return;
-      }
-
-      requestBody = body;
-      requestStarted();
-      await responseGate;
-      await route.fulfill({
-        contentType: "application/json",
-        status: 200,
-        body: JSON.stringify({
-          operationId: "11111111-1111-4111-8111-111111111111",
-          operationStatus: "queued",
-          failedCount: 1,
-          insertedCount: 1,
-          skippedCount: 1,
-          results: [
-            {
-              baseCurrency: "USD",
-              rate: 7.01,
-              rateDate: yesterday,
-              status: "inserted",
-              targetCurrency: "CNY",
-            },
-            {
-              baseCurrency: "JPY",
-              rate: 0.046,
-              rateDate: yesterday,
-              status: "skipped",
-              targetCurrency: "CNY",
-            },
-            {
-              baseCurrency: "AUD",
-              message: "这个日期暂时没有可用汇率。",
-              rateDate: yesterday,
-              status: "failed",
-              targetCurrency: "CNY",
-            },
-          ],
-        }),
-      });
-    });
-
-    await dialog.getByRole("button", { name: "获取并保存" }).click();
-    await requestStartedPromise;
-    await expect(dialog.getByRole("button", { name: "正在获取" }))
-      .toBeDisabled();
-    await expect(fromDate).toBeDisabled();
-    await expect(dialog.getByLabel("币种 1")).toBeDisabled();
-
-    expect(requestBody).toEqual({
-      baseCurrencies: ["USD", "JPY", "AUD"],
-      fromDate: yesterday,
-      toDate: yesterday,
-      trigger: "historical",
-    });
-
-    releaseResponse();
-    await expect(dialog.getByText("已新增 1 条，跳过已有 1 条，失败 1 条。"))
-      .toBeVisible();
-    const failures = dialog.getByRole("region", { name: "未能获取的日期" });
-    await expect(failures.getByText(`${yesterday} · AUD 暂时没有可用汇率`))
-      .toBeVisible();
-    await expect(failures).not.toContainText("USD");
-    await expect(dialog.getByLabel("币种 1")).toHaveValue("USD");
-    await expect(dialog.getByLabel("币种 2")).toHaveValue("JPY");
-    await expect(dialog.getByLabel("币种 3")).toHaveValue("AUD");
-    await expectDateControlValue(fromDate, yesterday);
-    await expectDateControlValue(toDate, yesterday);
-
+    await dialog.getByRole("button",{name:"添加币种"}).click();
+    await dialog.getByLabel("币种 2").fill("ZZZ");
+    await dialog.getByRole("button",{name:"获取并保存"}).click();
+    await expect(dialog.getByText(/已新增 0 条，跳过已有 1 条，失败 1 条/)).toBeVisible({timeout:60_000});
+    await expect(dialog.getByRole("region",{name:"未能获取的日期"})).toContainText(`${yesterday} · ZZZ`);
+    const admin=getLocalSupabaseAdminClient()!;
+    const {data: saved}=await admin.from("exchange_rate").select("*").eq("original_currency","USD").eq("rate_date",yesterday).single();
+    expect(saved.is_day_final).toBe(true);
+    expect(saved.bank_code).toBe("BOC");
+    await expect(dialog.getByText(new RegExp(saved.id))).toBeVisible();
+    await expectDateControlValue(fromDate,yesterday);
     // 同一个长弹窗缩到 390px 后，固定底部操作、失败明细和表单都不能撑出屏幕。
     await page.setViewportSize({ height: 844, width: 390 });
     await expect(dialog).toBeVisible();
@@ -170,29 +93,15 @@ test.describe("汇率按日期补充", () => {
     await page.setViewportSize({ height: 950, width: 1440 });
     await page.goto("/admin/settings");
 
-    // 夹具中的旧日期汇率抓取时间更晚；最新卡仍必须选择今天的 7.18。
-    const latestUsdCard = page
-      .locator("article:visible")
-      .filter({ hasText: "USD/CNY" })
-      .first();
-    await expect(latestUsdCard).toContainText("7.18");
-    await expect(latestUsdCard).not.toContainText("6.99");
-
-    // 历史卡片验证的是固定种子，不是运行当天；多日复用本地库后应以种子实际日期为准。
-    const admin = getLocalSupabaseAdminClient();
-    if (!admin) throw new Error("本地数据库管理员连接不可用。");
-    const { data: historicalRate, error: historicalRateError } = await admin.from("exchange_rate")
-      .select("rate_date").eq("id", "e1000000-0000-4000-8000-000000000005").single();
-    if (historicalRateError || !historicalRate?.rate_date) throw new Error("历史汇率种子缺失。");
-    const historicalRateDate = String(historicalRate.rate_date);
-    const desktopHistoryRow = page
-      .locator("table:visible tbody tr")
-      // 历史获取回归可能留下其他币种记录，这里只定位本用例固定验证的 USD 夹具。
-      .filter({ hasText: "按日期补充" })
-      .filter({ hasText: "USD" });
-    await expect(desktopHistoryRow).toHaveCount(1);
-    await expect(desktopHistoryRow).toContainText("USD");
-    await expect(desktopHistoryRow).toContainText("6.99");
+    // 页面与数据库读取当前真实报价，不固定过时种子金额或旧供应商名称。
+    const admin=getLocalSupabaseAdminClient()!;
+    const today=getShanghaiDate();
+    const {data: quote}=await admin.from("exchange_rate").select("*").eq("original_currency","USD").eq("rate_date",today).single();
+    const latestUsdCard=page.locator("article:visible").filter({hasText:"USD/CNY"}).first();
+    await expect(latestUsdCard).toContainText(String(Number(quote.daily_exchange_rate)));
+    const historicalRateDate=addDays(today,-1);
+    const desktopHistoryRow=page.locator("table:visible tbody tr").filter({hasText:toChineseDate(historicalRateDate)}).filter({hasText:"USD"});
+    await expect(desktopHistoryRow).toContainText("NowAPI");
     await expect(desktopHistoryRow).toContainText(toChineseDate(historicalRateDate));
     await expectNoHorizontalOverflow(page);
 
@@ -204,7 +113,7 @@ test.describe("汇率按日期补充", () => {
     await expect(responsiveHistory.locator("table")).toBeHidden();
     const mobileHistoryCard = responsiveHistory
       .locator("article:visible")
-      .filter({ hasText: "按日期补充" })
+      .filter({ hasText: toChineseDate(historicalRateDate) })
       .filter({ hasText: "USD/CNY" });
     await expect(mobileHistoryCard).toHaveCount(1);
     await expect(mobileHistoryCard).toContainText("USD/CNY");

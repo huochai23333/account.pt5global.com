@@ -18,6 +18,7 @@ import {
 
 export type ExchangeRateFormState = {
   dailyExchangeRate: string;
+  quotedAt: string;
   originalCurrency: string;
   targetCurrency: string;
 };
@@ -45,6 +46,7 @@ export type ExchangeRateCopy = {
     inputPrompt: (label: string) => string;
     invalidFormat: (label: string) => string;
     originalCurrencyRequired: string;
+    quotedAtRequired: string;
     targetCurrencyRequired: string;
   };
 };
@@ -70,6 +72,7 @@ export function createExchangeRateCopy(
       inputPrompt: (label) => t("validation.inputPrompt", { label }),
       invalidFormat: (label) => t("validation.invalidFormat", { label }),
       originalCurrencyRequired: t("validation.originalCurrencyRequired"),
+      quotedAtRequired: t("validation.quotedAtRequired"),
       targetCurrencyRequired: t("validation.targetCurrencyRequired"),
     },
   };
@@ -80,6 +83,7 @@ export function createExchangeRateFormState(
 ): ExchangeRateFormState {
   return {
     dailyExchangeRate: defaults?.dailyExchangeRate ?? "",
+    quotedAt: defaults?.quotedAt ?? "",
     originalCurrency: defaults?.originalCurrency ?? "",
     targetCurrency: defaults?.targetCurrency ?? "",
   };
@@ -90,6 +94,7 @@ export function createExchangeRateFormStateFromRow(
 ): ExchangeRateFormState {
   return {
     dailyExchangeRate: formatEditableExchangeRateValue(row.daily_exchange_rate),
+    quotedAt: row.provider_updated_at ? new Date(Date.parse(row.provider_updated_at) + 28_800_000).toISOString().slice(0, 19) : "",
     originalCurrency: normalizeCurrencyCode(row.original_currency),
     targetCurrency: normalizeCurrencyCode(row.target_currency),
   };
@@ -103,6 +108,13 @@ export function parseExchangeRateForm(
   | { ok: false; message: string } {
   const originalCurrency = normalizeCurrencyCode(formState.originalCurrency);
   const targetCurrency = normalizeCurrencyCode(formState.targetCurrency);
+  // 人工录入必须填写真实报价时间；不能把保存时刻冒充银行的发布时间。
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(formState.quotedAt)
+    || formState.quotedAt.slice(0, 10) !== getBeijingDateString()
+    || !Number.isFinite(Date.parse(`${formState.quotedAt}+08:00`))
+    || Date.parse(`${formState.quotedAt}+08:00`) > Date.now()) {
+    return { ok: false, message: copy.validation.quotedAtRequired };
+  }
 
   if (!originalCurrency) {
     return {
@@ -132,6 +144,7 @@ export function parseExchangeRateForm(
     ok: true,
     payload: {
       dailyExchangeRate,
+      quotedAt: formState.quotedAt,
       originalCurrency,
       targetCurrency,
     },
@@ -184,6 +197,15 @@ export function addExchangeRateCalendarDays(value: string, amount: number) {
     String(date.getUTCMonth() + 1).padStart(2, "0"),
     String(date.getUTCDate()).padStart(2, "0"),
   ].join("-");
+}
+
+/** 银行报价必须按北京时间显示到秒，浏览器所在时区不能改变业务报价日期。 */
+export function formatExchangeRateQuoteTime(value: string | null | undefined, locale: Locale = DEFAULT_LOCALE) {
+  if (!value || !Number.isFinite(Date.parse(value))) return "—";
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).format(new Date(value));
 }
 
 export function getHistoricalExchangeRateMaxDate() {

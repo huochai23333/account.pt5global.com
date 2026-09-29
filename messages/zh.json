@@ -2666,8 +2666,10 @@
         "currencyRequired": "请填写要添加的币种。",
         "pairAdded": "{currency} 已加入每天获取列表。",
         "pairRemoved": "{currency} 已从每天获取列表移除。",
-        "manualFetched": "已获取 {count} 个币种的当日汇率。"
-      }
+        "manualFetched": "已获取 {count} 个币种的当日汇率。",
+        "manualPartial": "已完成 {count} 个币种，{failed} 个未完成，请查看明细。"
+      },
+      "resultProof": "记录 {id} · 报价 {time}"
     },
     "historicalFetch": {
       "title": "按日期补充汇率",
@@ -2697,7 +2699,9 @@
         "dateOrder": "开始日期不能晚于结束日期。",
         "latestDate": "历史汇率最晚只能补充到昨天，今天请使用“立即获取”。",
         "range": "一次最多补充连续 31 天的汇率。"
-      }
+      },
+      "completedTitle": "已完成明细",
+      "completedItem": "{currency} · {date} · 买入价 {rate} · 记录 {id} · 报价 {time}"
     },
     "latest": {
       "title": "最新汇率",
@@ -2709,8 +2713,9 @@
       "card": {
         "eyebrow": "币种对",
         "latestBadge": "最新",
-        "currentRate": "当前汇率",
-        "historyCount": "历史记录 {count} 条"
+        "currentRate": "中行现汇买入价",
+        "historyCount": "历史记录 {count} 条",
+        "fixedRate": "人民币固定汇率"
       }
     },
     "filters": {
@@ -2732,14 +2737,14 @@
       "columns": {
         "originalCurrency": "原始货币",
         "targetCurrency": "目标货币",
-        "rate": "汇率值",
+        "rate": "中行现汇买入价",
         "rateDate": "汇率日期",
         "source": "获取方式",
-        "updatedAt": "更新时间",
+        "updatedAt": "报价时间",
         "actions": "操作"
       },
       "sources": {
-        "automatic": "当日获取",
+        "automatic": "中行 · NowAPI",
         "historical": "按日期补充",
         "manual": "手动录入",
         "system": "系统提供"
@@ -2747,16 +2752,19 @@
     },
     "dialogs": {
       "cancel": "取消",
-      "currencyHint": "货币代码会在保存时自动转成大写，例如 usd 会被保存为 USD。",
+      "currencyHint": "按每 1 外币填写原始现汇买入汇率。例如牌价 700 填写 7，成交汇率自动计算为 6.93。人工录入只用于当天，目标币种为 CNY。",
       "fields": {
         "originalCurrency": "原始货币",
         "targetCurrency": "目标货币",
-        "dailyExchangeRate": "汇率值"
+        "dailyExchangeRate": "原始现汇买入汇率（每 1 外币）",
+        "quotedAt": "中行报价时间（北京时间）",
+        "quoteTime": "发布时间（时:分:秒）"
       },
       "placeholders": {
         "originalCurrency": "例如 USD",
         "targetCurrency": "例如 CNY",
-        "dailyExchangeRate": "请输入汇率值"
+        "dailyExchangeRate": "请输入汇率值",
+        "quoteTime": "例如 13:46:01"
       },
       "create": {
         "title": "新增汇率",
@@ -2780,13 +2788,53 @@
       "targetCurrencyRequired": "请输入目标货币代码。",
       "inputPrompt": "请输入{label}。",
       "invalidFormat": "{label}格式不正确。",
-      "greaterThanZero": "{label}必须大于 0。"
+      "greaterThanZero": "{label}必须大于 0。",
+      "quotedAtRequired": "请填写当天有效的北京时间报价时间。"
     },
     "errors": {
       "duplicateKey": "该汇率记录已存在，请检查后重试。",
       "positiveRate": "汇率值必须大于 0。",
       "permission": "当前账号没有查看或操作汇率数据的权限。",
       "unknown": "汇率暂时没有保存成功，请稍后再试。"
+    },
+    "companyRate": "公司成交汇率",
+    "recalculation": {
+      "title": "历史重新核算",
+      "eyebrow": "汇率核算",
+      "description": "先预览每笔订单、结汇和佣金的金额变化，再按预览执行。原成本、人员、佣金参数版本和结算状态均保留。",
+      "verificationRequired": "需先配置 NowAPI 并完成美元、欧元及历史报价的中行核对。",
+      "preview": "生成核算预览",
+      "execute": "执行这份预览",
+      "refresh": "刷新核算结果",
+      "loadFailed": "历史核算记录暂时无法读取，请稍后刷新。",
+      "actionFailed": "核算尚未完成，请刷新查看凭证；缺少报价或数据变化时请补齐后重新预览。",
+      "receipt": "核算凭证：{id}",
+      "scope": "当前范围：普通订单 {ordinary} 笔，批发订单 {wholesale} 笔，结汇 {settlements} 条，批发佣金 {commissions} 条。",
+      "result": "完成 {succeeded} 笔，未完成 {failed} 笔，实际更新 {rows} 行。",
+      "status": {
+        "preview": "预览已保存，请核对逐笔金额。",
+        "succeeded": "核算完成，结果已核对并保存。",
+        "partial_failed": "部分完成，请检查未完成订单。",
+        "failed": "本次核算未完成，请检查明细。"
+      },
+      "itemStatus": {
+        "ready": "待执行",
+        "failed": "未完成",
+        "succeeded": "已完成"
+      },
+      "oldAmount": "原人民币金额",
+      "newAmount": "新人民币金额",
+      "difference": "差额",
+      "quote": "{currency} · {date} · 买入价 {rate} · 报价 {time} · 记录 {id}",
+      "commission": "佣金 {id}：{old} → {next}",
+      "itemFailed": "报价缺失、原参数不完整或预览后数据变化，请核对后重新预览。",
+      "failure": {
+        "missingQuote": "缺少这笔订单业务日期的中行报价，请补齐后重新预览。",
+        "missingParameters": "原佣金参数快照不完整，请先核对佣金记录。",
+        "parameterVersion": "订单与佣金的原参数版本不一致，请先核对。",
+        "changed": "预览后订单、佣金或报价发生变化，请重新预览。",
+        "unknown": "这笔订单尚未完成核算，请检查记录后重新预览。"
+      }
     }
   },
   "Referrals": {
@@ -4300,7 +4348,11 @@
       "allClaimed": "全部认领"
     },
     "priority": "{priority} 级",
-    "status": { "hall": "大厅", "claimed": "已认领", "used": "已使用" },
+    "status": {
+      "hall": "大厅",
+      "claimed": "已认领",
+      "used": "已使用"
+    },
     "actions": {
       "claimForMe": "认领给自己",
       "claim": "认领线索",
@@ -4476,7 +4528,10 @@
         "confirming": "同步结果仍在确认中，可稍后到系统运行页查看。"
       }
     },
-    "pagination": { "previous": "上一页", "next": "下一页" },
+    "pagination": {
+      "previous": "上一页",
+      "next": "下一页"
+    },
     "errors": {
       "unknown": "操作没有完成，请稍后重试。",
       "sales_lead_already_claimed": "这条线索刚刚已被其他业务员认领。",
@@ -5087,7 +5142,9 @@
     }
   },
   "SystemHealth": {
-    "metadata": { "title": "系统运行" },
+    "metadata": {
+      "title": "系统运行"
+    },
     "eyebrow": "实际完成情况",
     "title": "系统运行",
     "description": "这里展示后台任务真正完成的结果、重试次数和需要处理的问题。任务被安排或请求已送达，不会在这里算作成功。",

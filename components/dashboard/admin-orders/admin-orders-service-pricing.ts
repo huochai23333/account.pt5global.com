@@ -55,8 +55,8 @@ export function applyServicePricingToOrderForm(
 
   return {
     ...nextState,
-    transactionRate: deriveTransactionRateValue(nextState.dailyExchangeRate),
-    rmbAmount: deriveRmbAmountValue(amountValue, nextState.dailyExchangeRate),
+    transactionRate: deriveTransactionRateValue(nextState.dailyExchangeRate, "USD"),
+    rmbAmount: deriveRmbAmountValue(amountValue, deriveTransactionRateValue(nextState.dailyExchangeRate, "USD")),
   };
 }
 

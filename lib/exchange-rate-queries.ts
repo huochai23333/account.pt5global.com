@@ -94,6 +94,7 @@ export async function getLatestCnyExchangeRates(
       .from("exchange_rate")
       .select(EXCHANGE_RATE_SELECT)
       .eq("target_currency", "CNY")
+      .eq("rate_date", getBeijingDateString())
       .order("rate_date", { ascending: false })
       .order("fetched_at", { ascending: false, nullsFirst: false })
       .order("provider_updated_at", { ascending: false, nullsFirst: false })

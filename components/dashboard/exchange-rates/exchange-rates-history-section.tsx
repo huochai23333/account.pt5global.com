@@ -6,6 +6,7 @@ import Link from "next/link";
 import { History, LoaderCircle, PencilLine, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { companyExchangeRate } from "@/lib/company-exchange-rate";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { MetaGrid, MetaItem, RecordCard } from "@/components/ui/data-display";
@@ -24,11 +25,12 @@ import {
   DashboardTableFrame,
   dashboardFilterInputClassName,
 } from "../dashboard-section-panel";
-import { EmptyState, formatDateTime } from "../dashboard-shared-ui";
+import { EmptyState } from "../dashboard-shared-ui";
 
 import {
   formatExchangeRateDate,
   formatExchangeRateValue,
+  formatExchangeRateQuoteTime,
 } from "./exchange-rates-utils";
 
 type PaginationState = {
@@ -211,12 +213,14 @@ function HistoryDesktopTable({
 
   return (
     <DashboardTableFrame>
-      <table className="w-full min-w-[1120px] table-fixed border-collapse">
+      {/* 固定按容器分配列宽，时间和操作可换行；新增成交价列不能把右侧内容挤出面板。 */}
+      <table className="w-full table-fixed border-collapse">
         <thead className="bg-surface-inset">
           <tr className="border-b border-border-subtle">
             <HistoryHeaderCell>{t("history.columns.originalCurrency")}</HistoryHeaderCell>
             <HistoryHeaderCell>{t("history.columns.targetCurrency")}</HistoryHeaderCell>
             <HistoryHeaderCell>{t("history.columns.rate")}</HistoryHeaderCell>
+            <HistoryHeaderCell>{t("companyRate")}</HistoryHeaderCell>
             <HistoryHeaderCell>{t("history.columns.rateDate")}</HistoryHeaderCell>
             <HistoryHeaderCell>{t("history.columns.source")}</HistoryHeaderCell>
             <HistoryHeaderCell>{t("history.columns.updatedAt")}</HistoryHeaderCell>
@@ -240,13 +244,14 @@ function HistoryDesktopTable({
                   t("summary.noRecord"),
                 )}
               />
+              <HistoryValueCell value={formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)} />
               <HistoryValueCell
                 value={formatExchangeRateDate(row.rate_date, locale, t("summary.noRecord"))}
               />
               <HistoryValueCell value={t(`history.sources.${getExchangeRateSourceKind(row.source)}`)} />
-              <HistoryValueCell value={formatDateTime(row.created_at, locale)} />
+              <HistoryValueCell value={formatExchangeRateQuoteTime(row.provider_updated_at, locale)} />
               {canManage ? (
-                <td className="px-5 py-4">
+                <td className="px-3 py-4">
                   <HistoryActions
                     deleting={deletePendingId === row.id}
                     onDelete={() => onDeleteRow(row)}
@@ -291,6 +296,7 @@ function HistoryMobileCard({
         </p>
       </div>
       <MetaGrid className="mt-4 grid-cols-2">
+        <MetaItem label={t("companyRate")}>{formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)}</MetaItem>
         <MetaItem label={t("history.columns.rateDate")}>
           {formatExchangeRateDate(row.rate_date, locale, t("summary.noRecord"))}
         </MetaItem>
@@ -298,7 +304,7 @@ function HistoryMobileCard({
           {t(`history.sources.${getExchangeRateSourceKind(row.source)}`)}
         </MetaItem>
         <MetaItem className="col-span-2" label={t("history.columns.updatedAt")}>
-          {formatDateTime(row.created_at, locale)}
+          {formatExchangeRateQuoteTime(row.provider_updated_at, locale)}
         </MetaItem>
       </MetaGrid>
       {canManage ? (
@@ -351,12 +357,12 @@ function HistoryActions({
 
 function HistoryHeaderCell({ children }: { children: ReactNode }) {
   return (
-    <th className="px-5 py-4 text-left text-xs font-semibold tracking-[0.18em] text-content-muted uppercase">
+    <th className="px-3 py-4 text-left text-xs font-semibold text-content-muted">
       {children}
     </th>
   );
 }
 
 function HistoryValueCell({ value }: { value: ReactNode }) {
-  return <td className="px-5 py-4 text-sm text-content-muted">{value}</td>;
+  return <td className="break-words px-3 py-4 text-sm text-content-muted">{value}</td>;
 }

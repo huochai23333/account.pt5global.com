@@ -7,7 +7,7 @@ import type { AppRole, UserStatus } from "./user-self-service";
  * 查询和写入模块共用这段字符串，可以避免某个入口漏选字段后出现页面数据不完整。
  */
 export const EXCHANGE_RATE_SELECT =
-  "id,original_currency,target_currency,daily_exchange_rate,created_at,rate_date,source,fetched_at,provider_updated_at";
+  "id,original_currency,target_currency,daily_exchange_rate,created_at,rate_date,source,fetched_at,provider_updated_at,provider_rate_date,bank_code,bank_quote,quote_type,is_day_final";
 
 export type ExchangeRateRow = {
   id: string;
@@ -19,6 +19,11 @@ export type ExchangeRateRow = {
   source: string | null;
   fetched_at: string | null;
   provider_updated_at: string | null;
+  provider_rate_date: string | null;
+  bank_code: "BOC" | null;
+  bank_quote: number | string | null;
+  quote_type: "spot_buy" | "fixed" | null;
+  is_day_final: boolean;
 };
 
 export type ExchangeRateLatestRow = ExchangeRateRow & {
@@ -31,6 +36,7 @@ export type ExchangeRateFormInput = {
   originalCurrency: string;
   targetCurrency: string;
   dailyExchangeRate: number;
+  quotedAt: string;
 };
 
 export type ExchangeRateViewerContext = {
@@ -69,12 +75,16 @@ export type ManualExchangeRateFetchItem = {
   ok: boolean;
   rate?: number;
   rateDate?: string;
+  rateRecordId?: string;
+  quotedAt?: string;
   message?: string;
 };
 
 export type ManualExchangeRateFetchResult = {
   results: ManualExchangeRateFetchItem[];
   successCount: number;
+  failedCount: number;
+  outcome: string;
 };
 
 export type HistoricalExchangeRateFetchStatus =
@@ -92,6 +102,8 @@ export type HistoricalExchangeRateFetchItem = {
   baseCurrency: string;
   targetCurrency: "CNY";
   rateDate: string;
+  rateRecordId?: string;
+  quotedAt?: string;
   status: HistoricalExchangeRateFetchStatus;
   rate?: number;
   message?: string;

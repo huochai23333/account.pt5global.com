@@ -12,6 +12,7 @@ import {
 } from "@/components/dashboard/dashboard-section-panel";
 import {
   deriveRmbAmountValue,
+  deriveTransactionRateValue,
   formatEditableNumericValue,
 } from "@/components/dashboard/admin-orders/admin-orders-utils";
 import {
@@ -68,7 +69,7 @@ export function WholesaleOrderSettlementDialog({
     [exchangeRates, order.customer_payment_currency, settlementDate],
   );
   const activeRateValue = formatEditableNumericValue(
-    selectedRate?.daily_exchange_rate,
+    deriveTransactionRateValue(selectedRate?.daily_exchange_rate, order.customer_payment_currency),
   );
   const rmbPreview = deriveRmbAmountValue(
     Number(settlementAmount || 0),

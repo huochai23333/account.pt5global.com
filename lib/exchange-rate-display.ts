@@ -64,8 +64,7 @@ export type ExchangeRateSourceKind =
 export function getExchangeRateSourceKind(
   source: string | null | undefined,
 ): ExchangeRateSourceKind {
-  if (source === "frankfurter") return "historical";
-  if (source === "exchangerate-api") return "automatic";
+  if (source === "nowapi") return "automatic";
   if (source === "system") return "system";
   return "manual";
 }
@@ -126,7 +125,8 @@ export function findCnyExchangeRateByDate(
         normalizeCurrencyCode(row.original_currency) ===
           normalizedBaseCurrency &&
         normalizeCurrencyCode(row.target_currency) === "CNY" &&
-        row.rate_date === rateDate,
+        row.rate_date === rateDate &&
+        (rateDate === getBeijingDateString() || row.is_day_final),
     ) ?? null
   );
 }
@@ -175,6 +175,11 @@ function buildCnyRate(id: string, rateDate: string) {
     source: "system",
     fetched_at: null,
     provider_updated_at: null,
+    provider_rate_date: rateDate,
+    bank_code: null,
+    bank_quote: 100,
+    quote_type: null,
+    is_day_final: true,
   } satisfies ExchangeRateRow;
 }
 
@@ -186,8 +191,8 @@ function toComparableTimestamp(value: string | null | undefined) {
 
 function toExchangeRateComparableTimestamp(row: ExchangeRateRow) {
   return (
-    toComparableTimestamp(row.fetched_at) ||
     toComparableTimestamp(row.provider_updated_at) ||
+    toComparableTimestamp(row.fetched_at) ||
     toComparableTimestamp(row.created_at)
   );
 }

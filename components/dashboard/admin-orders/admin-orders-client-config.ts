@@ -131,17 +131,17 @@ export function getNextOrderFormState<Key extends keyof OrderFormState>(
   };
 
   if (key === "dailyExchangeRate") {
-    nextState.transactionRate = deriveTransactionRateValue(String(value));
+    nextState.transactionRate = deriveTransactionRateValue(String(value), nextState.originalCurrency);
     nextState.rmbAmount = deriveRmbAmountValue(
       nextState.amount,
-      nextState.dailyExchangeRate,
+      nextState.transactionRate,
     );
   }
 
   if (key === "amount") {
     nextState.rmbAmount = deriveRmbAmountValue(
       nextState.amount,
-      nextState.dailyExchangeRate,
+      nextState.transactionRate,
     );
   }
 

@@ -22,6 +22,8 @@ import {
   type ManualExchangeRateFetchItem,
 } from "@/lib/exchange-rates";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { formatExchangeRateQuoteTime } from "./exchange-rates-utils";
 
 import { Button } from "../../ui/button";
 import {
@@ -78,6 +80,7 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
   syncState,
 }: ExchangeRateSyncSectionProps) {
   const t = useTranslations("ExchangeRates");
+  const { locale } = useLocale();
   const isEnabled = syncState?.settings.is_enabled ?? false;
   const pairs = syncState?.pairs ?? [];
 
@@ -297,6 +300,9 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
                       : t("sync.resultFailed", {
                           currency: result.baseCurrency,
                         })}
+                    {result.ok && result.rateRecordId ? <span className="mt-1 block break-all text-xs">
+                      {t("sync.resultProof", { id: result.rateRecordId, time: formatExchangeRateQuoteTime(result.quotedAt, locale) })}
+                    </span> : null}
                   </p>
                 ))}
               </div>

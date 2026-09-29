@@ -9,7 +9,7 @@ import {
   type ServiceOrderPriceOption,
 } from "@/lib/admin-orders";
 import {
-  findLatestCnyExchangeRate,
+  findTodayCnyExchangeRate,
   type ExchangeRateRow,
 } from "@/lib/exchange-rates";
 import { previewOrderServiceFeeType } from "@/lib/service-fee-types";
@@ -259,7 +259,7 @@ export function useAdminOrderCreateDialog({
       return;
     }
 
-    const currentRate = findLatestCnyExchangeRate(
+    const currentRate = findTodayCnyExchangeRate(
       orderCurrencyRates,
       createFormState.originalCurrency,
     );

@@ -62,6 +62,11 @@ export async function ensureLocalUsdRate(rateDate: string, rate = 7.2) {
       original_currency: "USD",
       rate_date: rateDate,
       target_currency: "CNY",
+      bank_quote: Number((rate * 100).toFixed(6)),
+      source: "manual",
+      provider_updated_at: `${rateDate}T00:01:00+08:00`,
+      provider_rate_date: rateDate,
+      is_day_final: rateDate < new Date(Date.now() + 28_800_000).toISOString().slice(0, 10),
     })
     .select("id")
     .single();

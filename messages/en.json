@@ -2666,8 +2666,10 @@
         "currencyRequired": "Enter the currency to add.",
         "pairAdded": "{currency} was added to the daily list.",
         "pairRemoved": "{currency} was removed from the daily list.",
-        "manualFetched": "Fetched today's rates for {count} currencies."
-      }
+        "manualFetched": "Fetched today's rates for {count} currencies.",
+        "manualPartial": "{count} currencies completed; {failed} remain incomplete. See details."
+      },
+      "resultProof": "Record {id} · quoted {time}"
     },
     "historicalFetch": {
       "title": "Backfill FX Rates by Date",
@@ -2697,7 +2699,9 @@
         "dateOrder": "The start date cannot be later than the end date.",
         "latestDate": "Historical rates can only be backfilled through yesterday. Use Fetch Now for today.",
         "range": "You can backfill up to 31 consecutive days at a time."
-      }
+      },
+      "completedTitle": "Completed details",
+      "completedItem": "{currency} · {date} · buying rate {rate} · record {id} · quoted {time}"
     },
     "latest": {
       "title": "Latest FX Rates",
@@ -2709,8 +2713,9 @@
       "card": {
         "eyebrow": "Currency Pair",
         "latestBadge": "Latest",
-        "currentRate": "Current Rate",
-        "historyCount": "{count} history records"
+        "currentRate": "BOC spot buying rate",
+        "historyCount": "{count} history records",
+        "fixedRate": "Fixed CNY rate"
       }
     },
     "filters": {
@@ -2732,14 +2737,14 @@
       "columns": {
         "originalCurrency": "Original Currency",
         "targetCurrency": "Target Currency",
-        "rate": "Rate",
+        "rate": "BOC spot buying rate",
         "rateDate": "Rate Date",
         "source": "How It Was Added",
-        "updatedAt": "Updated At",
+        "updatedAt": "Quote time",
         "actions": "Actions"
       },
       "sources": {
-        "automatic": "Today's Fetch",
+        "automatic": "BOC · NowAPI",
         "historical": "Backfilled by Date",
         "manual": "Entered Manually",
         "system": "Provided by the System"
@@ -2747,16 +2752,19 @@
     },
     "dialogs": {
       "cancel": "Cancel",
-      "currencyHint": "Currency codes are automatically changed to uppercase when you save. For example, usd becomes USD.",
+      "currencyHint": "Enter the original spot buying rate per 1 foreign unit. A bank quote of 700 means 7; the company rate is 6.93. Manual entry is for today, with CNY as the target.",
       "fields": {
         "originalCurrency": "Original Currency",
         "targetCurrency": "Target Currency",
-        "dailyExchangeRate": "Rate Value"
+        "dailyExchangeRate": "Original spot buying rate (per 1 foreign unit)",
+        "quotedAt": "BOC quote time (Beijing time)",
+        "quoteTime": "Publication time (HH:mm:ss)"
       },
       "placeholders": {
         "originalCurrency": "For example USD",
         "targetCurrency": "For example CNY",
-        "dailyExchangeRate": "Enter the FX rate value"
+        "dailyExchangeRate": "Enter the FX rate value",
+        "quoteTime": "For example, 13:46:01"
       },
       "create": {
         "title": "Create FX Rate",
@@ -2780,13 +2788,53 @@
       "targetCurrencyRequired": "Please enter the target currency code.",
       "inputPrompt": "Please enter the {label}.",
       "invalidFormat": "The {label} format is invalid.",
-      "greaterThanZero": "The {label} must be greater than 0."
+      "greaterThanZero": "The {label} must be greater than 0.",
+      "quotedAtRequired": "Enter a valid quote time for today in Beijing."
     },
     "errors": {
       "duplicateKey": "This FX rate already exists. Please review it and try again.",
       "positiveRate": "The FX rate value must be greater than 0.",
       "permission": "The current account does not have permission to view or manage FX rate data.",
       "unknown": "The exchange rate could not be saved. Please try again later."
+    },
+    "companyRate": "Company transaction rate",
+    "recalculation": {
+      "title": "Recalculate historical orders",
+      "eyebrow": "Exchange rate review",
+      "description": "Preview the changes to each order, settlement and commission, then apply that preview. Original costs, people, commission versions and settlement statuses are preserved.",
+      "verificationRequired": "Configure NowAPI and verify USD, EUR and historical quotes against BOC before recalculation.",
+      "preview": "Create recalculation preview",
+      "execute": "Apply this preview",
+      "refresh": "Refresh results",
+      "loadFailed": "Historical recalculation records are temporarily unavailable. Refresh later.",
+      "actionFailed": "Recalculation is incomplete. Refresh the receipt, resolve missing quotes or changed data, then create a new preview.",
+      "receipt": "Recalculation receipt: {id}",
+      "scope": "Current scope: {ordinary} ordinary orders, {wholesale} wholesale orders, {settlements} settlements and {commissions} wholesale commissions.",
+      "result": "{succeeded} orders completed; {failed} incomplete; {rows} rows updated.",
+      "status": {
+        "preview": "Preview saved. Review each amount before applying.",
+        "succeeded": "Recalculation completed and verified.",
+        "partial_failed": "Partially completed. Review incomplete orders.",
+        "failed": "Recalculation incomplete. Review the details."
+      },
+      "itemStatus": {
+        "ready": "Ready to apply",
+        "failed": "Incomplete",
+        "succeeded": "Completed"
+      },
+      "oldAmount": "Original CNY",
+      "newAmount": "New CNY",
+      "difference": "Difference",
+      "quote": "{currency} · {date} · buying rate {rate} · quoted {time} · record {id}",
+      "commission": "Commission {id}: {old} → {next}",
+      "itemFailed": "A quote or original parameter is missing, or data changed after preview. Review and create a new preview.",
+      "failure": {
+        "missingQuote": "The BOC quote for this business date is missing. Add it and preview again.",
+        "missingParameters": "The original commission parameters are incomplete. Check the commission record.",
+        "parameterVersion": "The original parameter versions of the order and commission differ. Check them first.",
+        "changed": "The order, commission or quote changed after preview. Preview again.",
+        "unknown": "This order was not recalculated. Check its records and preview again."
+      }
     }
   },
   "Referrals": {
@@ -4300,7 +4348,11 @@
       "allClaimed": "All Claimed"
     },
     "priority": "Priority {priority}",
-    "status": { "hall": "In hall", "claimed": "Claimed", "used": "Used" },
+    "status": {
+      "hall": "In hall",
+      "claimed": "Claimed",
+      "used": "Used"
+    },
     "actions": {
       "claimForMe": "Claim for myself",
       "claim": "Claim lead",
@@ -4476,7 +4528,10 @@
         "confirming": "The result is still being confirmed. Check System Runs later."
       }
     },
-    "pagination": { "previous": "Previous", "next": "Next" },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
     "errors": {
       "unknown": "The action could not be completed. Please try again.",
       "sales_lead_already_claimed": "Another salesperson just claimed this lead.",
@@ -5087,7 +5142,9 @@
     }
   },
   "SystemHealth": {
-    "metadata": { "title": "System Runs" },
+    "metadata": {
+      "title": "System Runs"
+    },
     "eyebrow": "Verified completion",
     "title": "System Runs",
     "description": "See what background work actually finished, how many retries occurred, and what needs attention. Being scheduled or delivered does not count as success.",

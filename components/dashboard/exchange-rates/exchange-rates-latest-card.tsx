@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 
 import { useLocale } from "@/components/i18n/locale-provider";
-import { formatDateTime } from "@/components/dashboard/dashboard-shared-ui";
+import { companyExchangeRate } from "@/lib/company-exchange-rate";
 import type { ExchangeRateLatestRow } from "@/lib/exchange-rates";
 
-import { formatExchangeRateValue } from "./exchange-rates-utils";
+import { formatExchangeRateValue, formatExchangeRateQuoteTime } from "./exchange-rates-utils";
 
 export function LatestRateCard({
   historyCountLabel,
@@ -38,7 +38,7 @@ export function LatestRateCard({
 
       <div className="mt-6 rounded-surface-inset bg-surface-interactive px-5 py-4 shadow-surface-interactive">
         <p className="text-sm text-content-muted">
-          {t("latest.card.currentRate")}
+          {t(row.original_currency === "CNY" ? "latest.card.fixedRate" : "latest.card.currentRate")}
         </p>
         <p className="mt-2 text-3xl font-bold tracking-tight text-content-strong">
           {formatExchangeRateValue(
@@ -49,9 +49,10 @@ export function LatestRateCard({
         </p>
       </div>
 
+      <div className="mt-4 text-sm text-content-muted">{t("companyRate")}: <strong>{formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)}</strong></div>
       <div className="mt-4 flex items-center justify-between gap-4 text-sm text-content-muted">
         <span>{historyCountLabel}</span>
-        <span>{formatDateTime(row.created_at, locale)}</span>
+        <span>{row.original_currency === "CNY" ? "—" : formatExchangeRateQuoteTime(row.provider_updated_at, locale)}</span>
       </div>
     </article>
   );

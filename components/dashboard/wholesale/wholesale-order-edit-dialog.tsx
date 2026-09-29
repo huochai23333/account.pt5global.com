@@ -312,17 +312,8 @@ function useWholesaleCurrencyOptions(
       buildOrderCurrencyOptions(exchangeRates),
     );
     const orderCurrency = order?.customer_payment_currency;
-    const hasCny = options.some((option) => option.currency === "CNY");
-    const nextOptions = hasCny
-      ? [...options]
-      : [
-          ...options,
-          {
-            currency: "CNY",
-            dailyExchangeRate: "1",
-            transactionRate: "0.99",
-          },
-        ];
+    // 公共构造函数包含人民币固定汇率，编辑页不另行计算折让。
+    const nextOptions = [...options];
     const hasOrderCurrency =
       !orderCurrency ||
       nextOptions.some((option) => option.currency === orderCurrency);

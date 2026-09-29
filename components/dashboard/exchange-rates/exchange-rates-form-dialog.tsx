@@ -1,6 +1,7 @@
 "use client";
 
 import * as FormControls from "@/components/ui/form-controls";
+import { DatePicker } from "@/components/ui/date-picker";
 
 import { useTranslations } from "next-intl";
 
@@ -108,6 +109,22 @@ export function ExchangeRateFormDialog({
         <div className="rounded-control-large border border-border-subtle bg-surface-inset px-4 py-4 text-sm leading-7 text-content-muted">
           {t("dialogs.currencyHint")}
         </div>
+        <DashboardFormField label={t("dialogs.fields.quotedAt")} required>
+          <DatePicker
+            disabled={pending}
+            onValueChange={(value) => onFieldChange("quotedAt", `${value}T${formState.quotedAt.split("T")[1] ?? ""}`)}
+            value={formState.quotedAt.slice(0, 10)}
+          />
+        </DashboardFormField>
+        {/* 银行时间精确到秒；日期选择器管日期，时间文本保留银行发布的秒数。 */}
+        <DashboardFormField label={t("dialogs.fields.quoteTime")} required>
+          <FormControls.Input
+            disabled={pending}
+            onChange={(event) => onFieldChange("quotedAt", `${formState.quotedAt.slice(0, 10)}T${event.target.value}`)}
+            placeholder={t("dialogs.placeholders.quoteTime")}
+            value={formState.quotedAt.split("T")[1] ?? ""}
+          />
+        </DashboardFormField>
       </div>
     </FormDialog>
   );

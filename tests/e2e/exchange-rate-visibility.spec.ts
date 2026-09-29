@@ -134,6 +134,8 @@ async function expectManagementActionsHidden(page: Page) {
     "按日期补充",
     "编辑",
     "删除",
+    "生成核算预览",
+    "执行这份预览",
   ]) {
     await expect(
       page.getByRole("button", { exact: true, name: actionName }),

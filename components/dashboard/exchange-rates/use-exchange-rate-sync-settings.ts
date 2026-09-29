@@ -222,10 +222,10 @@ export function useExchangeRateSyncSettings({
       markBrowserCloudSyncActivity();
       setManualResults(result.results);
       setFeedback({
-        tone: "success",
-        message: t("sync.feedback.manualFetched", {
-          count: result.successCount,
-        }),
+        tone: result.failedCount > 0 || result.successCount === 0 ? "error" : "success",
+        message: result.failedCount > 0 || result.successCount === 0
+          ? t("sync.feedback.manualPartial", { count: result.successCount, failed: result.failedCount })
+          : t("sync.feedback.manualFetched", { count: result.successCount }),
       });
     } catch (error) {
       setFeedback({

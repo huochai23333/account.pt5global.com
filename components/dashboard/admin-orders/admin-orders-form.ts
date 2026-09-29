@@ -81,7 +81,7 @@ export function createOrderFormStateFromOrder(
     dailyExchangeRate: formatEditableNumericValue(order.daily_exchange_rate),
     transactionRate:
       formatEditableNumericValue(order.transaction_rate) ||
-      deriveTransactionRateValue(order.daily_exchange_rate),
+      deriveTransactionRateValue(order.daily_exchange_rate, order.original_currency ?? ""),
     rmbAmount: formatEditableNumericValue(order.rmb_amount),
     costAmount: formatEditableNumericValue(order.cost_amount),
     orderEntryUser: normalizeOptionalString(order.order_entry_user) ?? "",
@@ -316,7 +316,7 @@ function parseBaseOrderForm(
     copy,
   );
   const transactionRate = parseRequiredNumber(
-    deriveTransactionRateValue(formState.dailyExchangeRate) || formState.transactionRate,
+    deriveTransactionRateValue(formState.dailyExchangeRate, formState.originalCurrency) || formState.transactionRate,
     copy.fields.transactionRate,
     copy,
   );
@@ -339,7 +339,7 @@ function parseBaseOrderForm(
   }
 
   const rmbAmount = parseRequiredNumber(
-    deriveRmbAmountValue(amount, dailyExchangeRate),
+    deriveRmbAmountValue(amount, transactionRate),
     copy.fields.rmbAmount,
     copy,
   );

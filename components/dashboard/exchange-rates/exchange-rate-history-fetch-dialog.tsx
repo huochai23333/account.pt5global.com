@@ -2,6 +2,8 @@
 
 import { CalendarRange, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { formatExchangeRateQuoteTime } from "./exchange-rates-utils";
 
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -46,7 +48,9 @@ export function ExchangeRateHistoryFetchDialog({
   result,
 }: ExchangeRateHistoryFetchDialogProps) {
   const t = useTranslations("ExchangeRates.historicalFetch");
+  const { locale } = useLocale();
   const failedResults = result?.results.filter((item) => item.status === "failed") ?? [];
+  const completedResults = result?.results.filter((item) => item.status !== "failed") ?? [];
   const currencyCount = new Set(
     formState.currencies
       .map((currency) => currency.trim().toUpperCase())
@@ -149,6 +153,14 @@ export function ExchangeRateHistoryFetchDialog({
         </p>
       </div>
 
+      {completedResults.length > 0 ? <section className="space-y-2">
+        <h3 className="text-sm font-semibold">{t("completedTitle")}</h3>
+        <div className="max-h-40 space-y-2 overflow-y-auto rounded-surface-inset bg-surface-inset p-3">
+          {completedResults.map(item => <p key={`${item.baseCurrency}-${item.rateDate}`} className="break-all text-xs leading-6">
+            {t("completedItem", { currency: item.baseCurrency, date: item.rateDate, rate: item.rate ?? "", id: item.rateRecordId ?? "", time: formatExchangeRateQuoteTime(item.quotedAt, locale) })}
+          </p>)}
+        </div>
+      </section> : null}
       {failedResults.length > 0 ? (
         <section className="space-y-2" aria-labelledby="historical-failures-title">
           <h3

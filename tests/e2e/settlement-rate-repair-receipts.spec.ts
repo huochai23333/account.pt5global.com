@@ -22,7 +22,7 @@ test("页面等待汇率精确补齐后才保存收款分配", async ({ page }) 
   let terminalRun: Record<string, unknown> | null = null;
 
   try {
-    await removeTestHistoricalRate(admin);
+    await removeTestHistoricalRate();
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/settlement-releases");
@@ -66,16 +66,9 @@ test("页面等待汇率精确补齐后才保存收款分配", async ({ page }) 
       rateRecordId: persistedRate.id,
       verifiedDates: expect.arrayContaining([HISTORICAL_RATE_DATE]),
     });
-    // 不写死供应商是否把周末标成请求日或前一报价日；只接受不晚于业务日、
-    // 且在系统允许的七天沿用窗口内的真实报价日。
-    const businessDateTime = Date.parse(`${HISTORICAL_RATE_DATE}T00:00:00.000Z`);
-    const providerDateTime = Date.parse(
-      `${persistedRate.provider_rate_date}T00:00:00.000Z`,
-    );
-    expect(providerDateTime).toBeLessThanOrEqual(businessDateTime);
-    expect(businessDateTime - providerDateTime).toBeLessThanOrEqual(
-      7 * 24 * 60 * 60 * 1_000,
-    );
+    // 历史补齐必须来自精确业务日期的完整中行日末报价。
+    expect(persistedRate.provider_rate_date).toBe(HISTORICAL_RATE_DATE);
+    expect(persistedRate.source).toBe("nowapi");
     const persistedRelease = await readReleaseByNote(admin, marker);
     expect(persistedRelease.status).toBe("allocated");
     expect(persistedRelease.allocation_revision).toBe(1);
@@ -89,7 +82,7 @@ test("页面等待汇率精确补齐后才保存收款分配", async ({ page }) 
     await expectNoDocumentHorizontalOverflow(page);
   } finally {
     await cleanupRelease(admin, marker, releaseId);
-    await removeTestHistoricalRate(admin);
+    await removeTestHistoricalRate();
     replaceExchangeRateEndpointInLocalDocker(originalEndpoint);
   }
 });
@@ -250,6 +243,8 @@ async function cleanupRelease(
       .maybeSingle<{ id: string }>();
     releaseId = data?.id ?? null;
   }
+  // 发布之前就失败时没有测试收款可清理，保留原始错误，避免清理错误掩盖真正原因。
+  if (!releaseId) return;
 
   // 有效分配要求 settlement_id 始终非空；如果先删结汇记录，外键的 SET NULL
   // 会先触发该约束。测试清理必须按“分配明细 → 结汇记录 → 收款发布”顺序执行。
@@ -344,21 +339,18 @@ function runLocalDockerSql(sql: string) {
   ).trim();
 }
 
-async function removeTestHistoricalRate(admin: SupabaseClient) {
-  const { error } = await admin
-    .from("exchange_rate")
-    .delete()
-    .eq("original_currency", "USD")
-    .eq("target_currency", "CNY")
-    .eq("rate_date", HISTORICAL_RATE_DATE)
-    .eq("source", "frankfurter");
-  if (error) throw error;
+async function removeTestHistoricalRate() {
+  // 供应商服务账号不需要删除权限；测试夹具仅通过固定的本地 Docker 数据库清理。
+  // 该日期专供补价测试；外键仍保护任何已被业务引用的报价，不能删除其他业务日期。
+  runLocalDockerSql(
+    `delete from public.exchange_rate where original_currency='USD' and target_currency='CNY' and rate_date='${HISTORICAL_RATE_DATE}' and source in ('nowapi','manual');`,
+  );
 }
 
 async function readHistoricalRate(admin: SupabaseClient) {
   const { data, error } = await admin
     .from("exchange_rate")
-    .select("id,daily_exchange_rate,provider_rate_date")
+    .select("id,daily_exchange_rate,provider_rate_date,source")
     .eq("original_currency", "USD")
     .eq("target_currency", "CNY")
     .eq("rate_date", HISTORICAL_RATE_DATE)
@@ -366,6 +358,7 @@ async function readHistoricalRate(admin: SupabaseClient) {
       id: string;
       daily_exchange_rate: number;
       provider_rate_date: string;
+      source: string;
     }>();
   if (error) throw error;
   return data;
