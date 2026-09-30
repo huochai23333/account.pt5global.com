@@ -131,6 +131,7 @@ export function WholesaleLogisticsAssignmentHistory({
                   {!assignment.effective_to ? (
                     <Button
                       disabled={Boolean(pendingKey)}
+                      loading={pendingKey === `end:${assignment.id}`}
                       onClick={() => void endAssignment(assignment)}
                       size="compact"
                       type="button"

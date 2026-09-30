@@ -55,7 +55,8 @@ export function useMailWorkspaceServices(input: {
   }, [input]);
 
   const saveAgent = useCallback(async (profile: MailAgentProfile, resetToGenerated = false) => {
-    input.setBusy(`agent:${profile.memberId}`); input.setFeedback(null);
+    // 保存与恢复共用一张卡片，区分操作后才能只在被点击的按钮显示等待动画。
+    input.setBusy(`agent:${resetToGenerated ? "reset" : "save"}:${profile.memberId}`); input.setFeedback(null);
     try {
       const receipt = await requestMailJson<{ memberId: string; aliasLocalPart: string; refPrefix: string; version: number }>("/api/mail/agents", { method: "PUT", body: JSON.stringify({
         memberId: profile.memberId, aliasLocalPart: profile.aliasLocalPart, refPrefix: profile.refPrefix,

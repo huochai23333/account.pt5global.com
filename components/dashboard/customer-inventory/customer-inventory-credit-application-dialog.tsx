@@ -98,6 +98,7 @@ export function CustomerInventoryCreditApplicationDialog({
             disabled={
               pendingKey === actionKey || availableTiers.length === 0
             }
+            loading={pendingKey === actionKey}
             form={formId}
             type="submit"
           >

@@ -2,26 +2,40 @@
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import type { VariantProps } from "class-variance-authority";
+import { LoaderCircle } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
+
+type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & {
+  loading?: boolean;
+};
 
 function Button({
   className,
   variant = "primary",
   size = "default",
   wrap = false,
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
   return (
     <ButtonPrimitive
+      // 等待中的按钮保留原文案供读屏器识别，同时阻止重复提交。
+      aria-busy={loading || undefined}
       data-slot="button"
       data-size={size}
       data-variant={variant}
       data-wrap={wrap ? "true" : "false"}
-      className={cn(buttonVariants({ variant, size, wrap, className }))}
+      className={cn(buttonVariants({ variant, size, wrap, className }), loading && "[&>svg:nth-of-type(n+2)]:hidden")}
+      disabled={disabled || loading}
       {...props}
-    />
+    >
+      {loading ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /> : null}
+      {children}
+    </ButtonPrimitive>
   );
 }
 

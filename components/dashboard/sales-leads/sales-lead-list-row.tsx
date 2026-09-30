@@ -68,7 +68,7 @@ export function SalesLeadListRow({ lead, canManage, now, pending, onClaim, onOpe
       </dl></Cell>
       <Cell label={t("list.actions")}><div className="flex min-w-0 flex-wrap gap-2 xl:flex-col xl:items-stretch">
         {lead.status === "claimed" ? <Button data-testid={`convert-lead-${lead.id}`} disabled={pending === lead.id || !lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} size="compact" wrap>{t("actions.addCustomer")}</Button> : null}
-        {lead.status === "hall" ? <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>{t(canManage ? "actions.claimForMe" : "actions.claim")}</Button> : null}
+        {lead.status === "hall" ? <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} loading={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>{t(canManage ? "actions.claimForMe" : "actions.claim")}</Button> : null}
         <Button disabled={pending === lead.id} onClick={() => onOpen(lead)} size="compact" variant="outline" wrap>{t("actions.details")}</Button>
         <Button aria-controls={`${id}-public`} aria-expanded={expanded} onClick={() => setExpanded(!expanded)} size="compact" variant="outline" wrap>{expanded ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}{t(expanded ? "view.collapse" : "view.expand")}</Button>
       </div></Cell>

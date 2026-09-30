@@ -2,8 +2,6 @@
 
 import type { ReactNode } from "react";
 
-import { LoaderCircle } from "lucide-react";
-
 import { ActionGroup } from "@/components/ui/action-group";
 import { Button } from "../ui/button";
 import { Field, Textarea } from "../ui/form-controls";
@@ -59,11 +57,11 @@ export function FormDialog({
           <Button
             data-testid={submitTestId}
             disabled={pending || submitDisabled}
+            loading={pending}
             onClick={onSubmit}
             type="button"
             wrap
           >
-            {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
             {submitLabel}
           </Button>
         </ActionGroup>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Mail, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Archive, LoaderCircle, Mail, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -58,10 +58,10 @@ export function MailThreadDetailPanel(props: {
           <StatusBadge tone={props.detail.state === "waiting_pt5" ? "warning" : props.detail.state === "closed" ? "neutral" : "info"}>{stateLabel(props.detail.state)}</StatusBadge>
         </div>
         <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <Field className="w-full sm:w-64" label={<span className="flex items-center gap-2"><UserRound className="size-4 shrink-0" />{t("assignee")}</span>}><Select disabled={props.busy !== null || !props.agentsReady} onValueChange={props.onAssign} options={props.agents.map((agent) => ({ label: agent.displayName, value: agent.memberId }))} placeholder={t(props.agentsReady ? "selectAgent" : "secondaryLoading")} value={props.detail.assignedMemberId} /></Field>
-          {(["waiting_pt5", "waiting_customer", "closed"] as MailThreadState[]).map((state) => <Button disabled={props.busy !== null || props.detail?.state === state} key={state} onClick={() => props.onState(state)} size="compact" type="button" variant="outline">{state === "closed" ? <Archive className="size-4" /> : null}{stateLabel(state)}</Button>)}
-          {props.canDelete ? <Button disabled={props.busy !== null} onClick={props.onDelete} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteCopy")}</Button> : null}
-          <Button disabled={props.busy !== null} onClick={props.onQuarantine} size="compact" type="button" variant="outline"><ShieldCheck className="size-4" />{t("moveToQuarantine")}</Button>
+          <Field className="w-full sm:w-64" label={<span className="flex items-center gap-2"><UserRound className="size-4 shrink-0" />{t("assignee")}{props.busy === "assign" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /> : null}</span>}><Select disabled={props.busy !== null || !props.agentsReady} onValueChange={props.onAssign} options={props.agents.map((agent) => ({ label: agent.displayName, value: agent.memberId }))} placeholder={t(props.agentsReady ? "selectAgent" : "secondaryLoading")} value={props.detail.assignedMemberId} /></Field>
+          {(["waiting_pt5", "waiting_customer", "closed"] as MailThreadState[]).map((state) => <Button disabled={props.busy !== null || props.detail?.state === state} loading={props.busy === `state:${state}`} key={state} onClick={() => props.onState(state)} size="compact" type="button" variant="outline">{state === "closed" ? <Archive className="size-4" /> : null}{stateLabel(state)}</Button>)}
+          {props.canDelete ? <Button disabled={props.busy !== null} loading={props.busy === "delete"} onClick={props.onDelete} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteCopy")}</Button> : null}
+          <Button disabled={props.busy !== null} loading={props.busy === "quarantine"} onClick={props.onQuarantine} size="compact" type="button" variant="outline"><ShieldCheck className="size-4" />{t("moveToQuarantine")}</Button>
         </div>
       </header>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-inset/40 p-3 sm:p-4" data-testid="mail-messages">

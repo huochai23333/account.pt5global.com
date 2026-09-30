@@ -221,7 +221,8 @@ function WholesaleClaimTableRow({
           <Button
             variant="danger"
             size="compact"
-            disabled={pendingKey === "1688:delete"}
+            disabled={pendingKey?.startsWith("1688:delete:")}
+            loading={pendingKey === `1688:delete:${purchaseOrder.id}`}
             onClick={() => onDelete(purchaseOrder.id)}
             type="button"
           >

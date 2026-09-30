@@ -178,6 +178,7 @@ export function WholesaleLogisticsAssignmentDialog({
               (!editing && selectedStores.length === 0) ||
               (Boolean(editing) && splitInterval && !splitFromDate)
             }
+            loading={Boolean(saving)}
             wrap
             onClick={() => void save()}
             type="button"

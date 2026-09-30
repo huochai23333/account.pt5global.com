@@ -121,6 +121,7 @@ export function CustomerInventoryAttachmentsDialog({
             <Button
               className="w-full sm:w-fit"
               disabled={files.length === 0 || pendingKey === uploadKey}
+              loading={pendingKey === uploadKey}
               onClick={() => void uploadFiles()}
               type="button"
             >
@@ -156,6 +157,7 @@ export function CustomerInventoryAttachmentsDialog({
                     disabled={
                       pendingKey === `attachment-download:${attachment.id}`
                     }
+                    loading={pendingKey === `attachment-download:${attachment.id}`}
                     onClick={() => void downloadAttachment(attachment)}
                     type="button"
                     variant="outline"
@@ -168,6 +170,7 @@ export function CustomerInventoryAttachmentsDialog({
                       disabled={
                         pendingKey === `attachment-delete:${attachment.id}`
                       }
+                      loading={pendingKey === `attachment-delete:${attachment.id}`}
                       onClick={() => void removeAttachment(attachment)}
                       type="button"
                       variant="danger"

@@ -134,6 +134,7 @@ export function CustomerInventoryCreditManageDialog({
             disabled={
               pendingKey === actionKey || rateMissing || !hasWork
             }
+            loading={pendingKey === actionKey}
             form={formId}
             type="submit"
           >

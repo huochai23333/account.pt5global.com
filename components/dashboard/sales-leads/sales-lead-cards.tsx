@@ -57,7 +57,7 @@ export function SalesLeadCards({
             <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:max-w-[52%] sm:justify-end">
               {lead.status === "claimed" ? <Button data-testid={`convert-lead-${lead.id}`} disabled={pending === lead.id || !lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} size="compact" wrap>{t("actions.addCustomer")}</Button> : null}
               {lead.status === "hall" ? (
-                <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>
+                <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} loading={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>
                   {t(canManage ? "actions.claimForMe" : "actions.claim")}
                 </Button>
               ) : null}

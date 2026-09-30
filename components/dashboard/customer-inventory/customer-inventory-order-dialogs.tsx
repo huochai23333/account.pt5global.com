@@ -146,6 +146,7 @@ export function CustomerInventoryOrderDialogs({
           </Button>
           <Button
             disabled={pendingKey === actionKey}
+            loading={pendingKey === actionKey}
             form={formId}
             type="submit"
             variant={dialog.kind === "cancel" ? "danger" : "primary"}

@@ -35,7 +35,7 @@ export function SalesLeadsClient({ initialData }: { initialData: SalesLeadPageDa
     return <DashboardPageShell><DashboardAccessState description={t("states.noPermissionDescription")} kind="permission" title={t("states.noPermissionTitle")} /></DashboardPageShell>;
   }
   return <DashboardPageShell header={<DashboardSectionHeader
-    actions={view.data.canManage ? <Button disabled={view.pending === "sync"} onClick={() => void view.syncNow()} variant="outline" wrap><RefreshCw className="size-4" />{t("actions.syncNow")}</Button> : undefined}
+    actions={view.data.canManage ? <Button disabled={view.pending === "sync"} loading={view.pending === "sync"} onClick={() => void view.syncNow()} variant="outline" wrap><RefreshCw className="size-4" />{t("actions.syncNow")}</Button> : undefined}
     badge={t("header.badge")} badgeIcon={<BriefcaseBusiness className="size-3.5" />}
     description={t("header.description")} presentation="overview" title={t("header.title")}
   />}>

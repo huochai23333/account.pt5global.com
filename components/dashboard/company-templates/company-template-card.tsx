@@ -12,6 +12,7 @@ import type { CompanyTemplateSummary } from "@/lib/company-templates/model";
 export function CompanyTemplateCard({
   busy,
   isAdmin,
+  managingKey,
   onActivate,
   onPublish,
   onToggleStatus,
@@ -21,6 +22,7 @@ export function CompanyTemplateCard({
 }: {
   busy: boolean;
   isAdmin: boolean;
+  managingKey: string | null;
   onActivate: (template: CompanyTemplateSummary, versionId: string) => void;
   onPublish: (template: CompanyTemplateSummary) => void;
   onToggleStatus: (template: CompanyTemplateSummary) => void;
@@ -49,7 +51,7 @@ export function CompanyTemplateCard({
         {usable ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white" href={`/${workspace}/company-templates/${template.id}`}><FileCode2 className="size-4" />{text("actions.open")}</Link> : null}
         {usable && template.currentVersion.guide_sha256 ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-content-strong" href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
         {isAdmin ? <Button disabled={busy} onClick={() => onPublish(template)} size="compact" type="button" variant="outline"><Upload className="size-4" />{text("actions.newVersion")}</Button> : null}
-        {isAdmin ? <Button disabled={busy} onClick={() => onToggleStatus(template)} size="compact" type="button" variant="ghost"><Power className="size-4" />{text(usable ? "actions.disable" : "actions.enable")}</Button> : null}
+        {isAdmin ? <Button disabled={busy} loading={managingKey === `${template.id}:status`} onClick={() => onToggleStatus(template)} size="compact" type="button" variant="ghost"><Power className="size-4" />{text(usable ? "actions.disable" : "actions.enable")}</Button> : null}
       </div>
       {isAdmin && template.versions.length > 1 ? (
         <details className="mt-5 border-t border-border-subtle pt-4">
@@ -60,7 +62,7 @@ export function CompanyTemplateCard({
               return <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-surface-inset px-3 py-2" key={version.id}>
                 <span className="min-w-0 truncate text-sm">{text("labels.historyVersion", { file: version.source_filename, version: version.version_number })}</span>
                 {current ? <span className="shrink-0 text-xs font-semibold text-status-success">{text("status.current")}</span>
-                  : <Button disabled={busy} onClick={() => onActivate(template, version.id)} size="compact" type="button" variant="ghost">{text("actions.restore")}</Button>}
+                  : <Button disabled={busy} loading={managingKey === `${template.id}:activate:${version.id}`} onClick={() => onActivate(template, version.id)} size="compact" type="button" variant="ghost">{text("actions.restore")}</Button>}
               </div>;
             })}
           </div>

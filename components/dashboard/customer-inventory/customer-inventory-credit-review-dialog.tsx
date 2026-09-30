@@ -96,6 +96,7 @@ export function CustomerInventoryCreditReviewDialog({
           </Button>
           <Button
             disabled={pendingKey === actionKey || rateMissing}
+            loading={pendingKey === actionKey}
             form={formId}
             type="submit"
           >

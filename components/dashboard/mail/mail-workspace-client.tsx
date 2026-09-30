@@ -77,7 +77,7 @@ export function MailWorkspaceClient(props: {
     <DashboardPageShell
       feedback={feedback ? { message: feedback, tone: /已|正常|完成/.test(feedback) && !/没有|未全部/.test(feedback) ? "success" : "info" } : null}
       header={<DashboardSectionHeader
-        actions={<><Link className={cn(buttonVariants({ variant: "outline", wrap: true }), "w-full sm:w-auto")} href={props.backHref}><ArrowLeft className="size-4" />{t("backToMy")}</Link><MailFeishuStatus bound={state.summary?.feishuBound} busy={state.busy !== null} onConnect={() => void state.connectFeishu()} /></>}
+        actions={<><Link className={cn(buttonVariants({ variant: "outline", wrap: true }), "w-full sm:w-auto")} href={props.backHref}><ArrowLeft className="size-4" />{t("backToMy")}</Link><MailFeishuStatus bound={state.summary?.feishuBound} busyKey={state.busy} onConnect={() => void state.connectFeishu()} /></>}
         badge={t("sharedMailbox")}
         badgeIcon={<Mail className="size-4" />}
         description={t("workspaceDescription")}
@@ -95,7 +95,7 @@ export function MailWorkspaceClient(props: {
       {view === "inbox" ? <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.6fr)]">
         <MailThreadList
           bulkRuleOption={bulkRuleOption}
-          busy={state.busy === "threads" || state.busy === "threads-more"}
+          busy={state.busy}
           filters={state.filters}
           isAdmin={props.isAdmin}
           onBulkQuarantine={() => {
@@ -116,10 +116,10 @@ export function MailWorkspaceClient(props: {
         />
         <MailThreadDetailPanel agentsReady={secondary.agentsState === "ready"} agents={state.enabledAgents} aiDraft={state.aiDraft} busy={busy} canDelete={props.isAdmin} canSend={Boolean(state.summary?.senderProfileReady)} composer={state.composer} detail={state.selected} onAssign={(id) => void state.assign(id)} onComposer={state.setComposer} onDelete={() => void state.deleteSelected()} onFiles={(files) => void state.uploadFiles(files)} onQuarantine={() => state.selected ? void intake.quarantineThreads([{ threadId: state.selected.id, expectedVersion: state.selected.version }]) : undefined} onSend={() => void state.send()} onState={(value) => void state.updateState(value)} onSuggest={() => void state.generateReply()} pendingSend={state.pendingSend} />
       </div> : null}
-      {view === "quarantine" && props.isAdmin && secondary.panelState === "ready" ? <MailQuarantinePanel busy={intake.busy} detail={intake.selectedQuarantine} items={intake.quarantine} onDelete={(item) => void intake.deleteQuarantine(item)} onOpen={(id) => void intake.openQuarantine(id)} onRefresh={() => void intake.reloadQuarantine()} onRestore={(item) => void intake.restore(item)} /> : null}
+      {view === "quarantine" && props.isAdmin && secondary.panelState === "ready" ? <MailQuarantinePanel busy={intake.busy} detail={intake.selectedQuarantine} items={intake.quarantine} onDelete={(item) => void intake.deleteQuarantine(item)} onOpen={(id) => void intake.openQuarantine(id)} onRefresh={() => void intake.refreshQuarantine()} onRestore={(item) => void intake.restore(item)} /> : null}
       {view === "rules" && props.isAdmin && secondary.panelState === "ready" ? <MailIntakeRulesPanel busy={intake.busy} onCreate={(rule) => void intake.createRule(rule)} onDelete={(rule) => void intake.deleteRule(rule)} onRules={intake.setRules} onSave={(rule) => void intake.updateRule(rule)} rules={intake.rules} /> : null}
       {view === "settings" && props.isAdmin && secondary.panelState === "ready" ? <MailAdminPanel agents={state.agents} busy={state.busy} metrics={state.metrics} onAgents={state.setAgents} onConnect={() => void state.connectMailbox()} onReport={(start, end) => void state.generateReport(start, end)} onSaveAgent={(agent, reset) => void state.saveAgent(agent, reset)} report={state.report} summary={state.summary} /> : null}
-      {view === "settings" && !props.isAdmin ? <MailOwnSettingsPanel busy={state.busy !== null} onChange={state.setOwnProfile} onSave={(reset) => state.ownProfile ? void state.saveAgent(state.ownProfile, reset) : undefined} profile={state.ownProfile} /> : null}
+      {view === "settings" && !props.isAdmin ? <MailOwnSettingsPanel busy={state.busy !== null} busyKey={state.busy} onChange={state.setOwnProfile} onSave={(reset) => state.ownProfile ? void state.saveAgent(state.ownProfile, reset) : undefined} profile={state.ownProfile} /> : null}
     </DashboardPageShell>
   );
 }

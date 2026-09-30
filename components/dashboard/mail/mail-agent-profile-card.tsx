@@ -10,6 +10,7 @@ import type { MailAgentProfile } from "@/lib/mail/mail-types";
 export function MailAgentProfileCard(props: {
   profile: MailAgentProfile;
   busy: boolean;
+  busyKey: string | null;
   canToggle: boolean;
   onChange: (profile: MailAgentProfile) => void;
   onSave: (resetToGenerated?: boolean) => void;
@@ -38,8 +39,8 @@ export function MailAgentProfileCard(props: {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <span className={`text-xs ${profile.feishuBound ? "text-status-success" : "text-status-warning"}`}>{profile.feishuBound ? t("feishuBound") : t("feishuUnbound")}</span>
         <div className="flex flex-wrap gap-2">
-          <Button disabled={props.busy} onClick={() => props.onSave(true)} size="compact" type="button" variant="outline"><RotateCcw className="size-4" />{t("restoreSuggested")}</Button>
-          <Button disabled={props.busy} onClick={() => props.onSave(false)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button>
+          <Button disabled={props.busy} loading={props.busyKey === `agent:reset:${profile.memberId}`} onClick={() => props.onSave(true)} size="compact" type="button" variant="outline"><RotateCcw className="size-4" />{t("restoreSuggested")}</Button>
+          <Button disabled={props.busy} loading={props.busyKey === `agent:save:${profile.memberId}`} onClick={() => props.onSave(false)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button>
         </div>
       </div>
     </article>

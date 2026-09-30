@@ -40,7 +40,7 @@ export function MailIntakeRulesPanel(props: {
           <Field label={t("ruleMatchType")}><Select onValueChange={setMatchType} options={matchOptions} value={matchType} /></Field>
           <Field label={t("rulePattern")}><Input onChange={(event) => setPattern(event.target.value)} placeholder={matchType === "sender" ? "newsletter@example.com" : matchType === "domain" ? "example.com" : t("ruleSubjectPlaceholder")} type={matchType === "sender" ? "email" : "text"} value={pattern} /></Field>
           <Field label={t("ruleAction")}><Select onValueChange={setAction} options={actionOptions} value={action} /></Field>
-          <Button className="w-full sm:w-auto" disabled={props.busy !== null || !pattern.trim()} onClick={() => { props.onCreate({ matchType, action, pattern }); setPattern(""); }} type="button"><Plus className="size-4" />{t("addRule")}</Button>
+          <Button className="w-full sm:w-auto" disabled={props.busy !== null || !pattern.trim()} loading={props.busy === "rule:create"} onClick={() => { props.onCreate({ matchType, action, pattern }); setPattern(""); }} type="button"><Plus className="size-4" />{t("addRule")}</Button>
         </div>
       </Surface>
       <Surface>
@@ -53,7 +53,7 @@ export function MailIntakeRulesPanel(props: {
               <Field label={t("rulePattern")}><Input onChange={(event) => props.onRules(props.rules.map((item, itemIndex) => itemIndex === index ? { ...item, pattern: event.target.value } : item))} value={rule.pattern} /></Field>
               <Field label={t("ruleAction")}><Select onValueChange={(value) => props.onRules(props.rules.map((item, itemIndex) => itemIndex === index ? { ...item, action: value } : item))} options={actionOptions} value={rule.action} /></Field>
             </div>
-            <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2"><ChoiceField checked={rule.enabled} label={t("ruleEnabled")} onChange={(event) => props.onRules(props.rules.map((item, itemIndex) => itemIndex === index ? { ...item, enabled: event.target.checked } : item))} rootClassName="min-h-0 border-0 bg-transparent px-0 py-0" /><span className="text-xs text-content-muted">{t("ruleHits", { count: rule.hitCount })}</span><div className="ml-auto flex flex-wrap gap-2"><Button disabled={props.busy !== null} onClick={() => props.onDelete(rule)} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteRule")}</Button><Button disabled={props.busy !== null} onClick={() => props.onSave(rule)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button></div></div>
+            <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2"><ChoiceField checked={rule.enabled} label={t("ruleEnabled")} onChange={(event) => props.onRules(props.rules.map((item, itemIndex) => itemIndex === index ? { ...item, enabled: event.target.checked } : item))} rootClassName="min-h-0 border-0 bg-transparent px-0 py-0" /><span className="text-xs text-content-muted">{t("ruleHits", { count: rule.hitCount })}</span><div className="ml-auto flex flex-wrap gap-2"><Button disabled={props.busy !== null} loading={props.busy === `rule:delete:${rule.id}`} onClick={() => props.onDelete(rule)} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteRule")}</Button><Button disabled={props.busy !== null} loading={props.busy === `rule:save:${rule.id}`} onClick={() => props.onSave(rule)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button></div></div>
           </article>
         ))}</div>
       </Surface>

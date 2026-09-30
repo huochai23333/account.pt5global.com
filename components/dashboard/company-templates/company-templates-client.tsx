@@ -24,6 +24,7 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
   const t = useTranslations("CompanyTemplates");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [managingKey, setManagingKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<DashboardActionFeedback>(null);
   const [publishTarget, setPublishTarget] = useState<CompanyTemplateSummary | null | undefined>();
   const [desktop, setDesktop] = useState(false);
@@ -41,7 +42,10 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
     startTransition(() => router.refresh());
   }
 
-  async function manage(body: Record<string, unknown>, successMessage: string) {
+  async function manage(body: Record<string, unknown>, successMessage: string, actionKey: string) {
+    if (managingKey || pending) return;
+    // 请求开始时就记录当前操作；页面刷新只覆盖请求完成后的等待阶段。
+    setManagingKey(actionKey);
     setFeedback(null);
     try {
       const response = await fetch("/api/company-templates/manage", {
@@ -54,6 +58,8 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
     } catch (cause) {
       const code = getCompanyTemplateDisplayError(cause, "company_template_manage_failed");
       setFeedback({ message: t(`errors.${code}`), tone: "error" });
+    } finally {
+      setManagingKey(null);
     }
   }
 
@@ -65,12 +71,13 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
       {!desktop ? <p className="rounded-xl bg-surface-inset p-5 text-sm text-content-muted">{t("viewer.desktopOnly")}</p> : initialTemplates.length ? (
         <div className="grid min-w-0 gap-5 xl:grid-cols-2">
           {initialTemplates.map((template) => <CompanyTemplateCard
-            busy={pending}
+            busy={pending || managingKey !== null}
+            managingKey={managingKey}
             isAdmin={isAdmin}
             key={template.id}
-            onActivate={(item, versionId) => manage({ action: "activate", expectedRevision: item.revision, templateId: item.id, versionId }, t("feedback.restored"))}
+            onActivate={(item, versionId) => manage({ action: "activate", expectedRevision: item.revision, templateId: item.id, versionId }, t("feedback.restored"), `${item.id}:activate:${versionId}`)}
             onPublish={(item) => setPublishTarget(item)}
-            onToggleStatus={(item) => manage({ action: "status", active: item.status !== "active", expectedRevision: item.revision, templateId: item.id }, t(item.status === "active" ? "feedback.disabled" : "feedback.enabled"))}
+            onToggleStatus={(item) => manage({ action: "status", active: item.status !== "active", expectedRevision: item.revision, templateId: item.id }, t(item.status === "active" ? "feedback.disabled" : "feedback.enabled"), `${item.id}:status`)}
             template={template}
             text={(key, values) => t(key, values)}
             workspace={workspace}

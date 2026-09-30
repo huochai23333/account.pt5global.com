@@ -14,9 +14,9 @@ export function ExchangeRateRecalculationSection() {
     <p className="text-sm leading-6 text-content-muted">{t("description")}</p>
     {!state.verified ? <p role="status" className="text-sm text-content-muted">{t("verificationRequired")}</p> : null}
     <div className="flex flex-wrap gap-2">
-      <Button type="button" variant="outline" disabled={state.pending || !state.verified} onClick={() => void state.prepare()}>{t("preview")}</Button>
-      <Button type="button" variant="primary" disabled={state.pending || !state.verified || !ready || state.preview?.run.status !== "preview"} onClick={() => void state.execute()}>{t("execute")}</Button>
-      <Button type="button" variant="outline" disabled={state.pending} onClick={() => void state.reload()}>{t("refresh")}</Button>
+      <Button type="button" variant="outline" disabled={state.pending || !state.verified} loading={state.pendingAction === "preview"} onClick={() => void state.prepare()}>{t("preview")}</Button>
+      <Button type="button" variant="primary" disabled={state.pending || !state.verified || !ready || state.preview?.run.status !== "preview"} loading={state.pendingAction === "execute"} onClick={() => void state.execute()}>{t("execute")}</Button>
+      <Button type="button" variant="outline" disabled={state.pending} loading={state.pendingAction === "refresh"} onClick={() => void state.reload()}>{t("refresh")}</Button>
     </div>
     {state.message ? <p role="alert">{state.message}</p> : null}
     {state.preview ? <div className="min-w-0">

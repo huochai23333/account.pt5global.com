@@ -103,6 +103,7 @@ export function ClientBusinessAddDialog({
                   <Button
                     className="shrink-0"
                     disabled={Boolean(pendingUserId)}
+                    loading={pending}
                     onClick={async () => {
                       const succeeded = await onAdd(candidate.userId);
                       if (succeeded) onOpenChange(false);

@@ -41,7 +41,7 @@ export function MailAdminPanel(props: {
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-2" data-testid="mail-admin-panel">
       <Surface>
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="flex items-center gap-2 text-xl font-bold text-content-strong"><Cable className="size-5" />{t("companyMailbox")}</h2><p className="mt-1 break-words text-sm text-content-muted">{props.summary?.mailbox.maskedEmail ?? t("notConnected")} · {props.summary?.mailbox.health === "active" ? t("healthy") : t("needsAttention")}</p></div><Button disabled={props.busy !== null} onClick={props.onConnect} type="button" variant="outline">{t("connectShared")}</Button></div>
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="flex items-center gap-2 text-xl font-bold text-content-strong"><Cable className="size-5" />{t("companyMailbox")}</h2><p className="mt-1 break-words text-sm text-content-muted">{props.summary?.mailbox.maskedEmail ?? t("notConnected")} · {props.summary?.mailbox.health === "active" ? t("healthy") : t("needsAttention")}</p></div><Button disabled={props.busy !== null} loading={props.busy === "connect"} onClick={props.onConnect} type="button" variant="outline">{t("connectShared")}</Button></div>
         {props.summary?.mailbox.lastError ? <p className="mt-3 break-words text-sm text-status-danger">{props.summary.mailbox.lastError}</p> : null}
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{metricItems.map(([label, value]) => <div className="rounded-surface-inset border border-border-subtle bg-surface-inset p-3" key={label}><p className="text-xs text-content-muted">{label}</p><p className="mt-1 text-2xl font-bold text-content-strong">{value}</p></div>)}</div>
         <p className="mt-4 text-sm text-content-muted">{t("averageFirstReply")}{props.metrics?.averageFirstReplyMinutes == null ? t("noData") : t("minutes", { count: Math.round(props.metrics.averageFirstReplyMinutes) })}</p>
@@ -59,6 +59,7 @@ export function MailAdminPanel(props: {
         <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-2">{props.agents.length === 0 ? <p className="text-sm text-content-muted">{t("emptyAgents")}</p> : props.agents.map((agent, index) => (
           <MailAgentProfileCard
             busy={props.busy !== null}
+            busyKey={props.busy}
             canToggle
             key={agent.memberId}
             onChange={(next) => props.onAgents(props.agents.map((item, itemIndex) => itemIndex === index ? next : item))}

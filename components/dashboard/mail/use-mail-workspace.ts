@@ -134,7 +134,8 @@ export function useMailWorkspace(input: {
 
   const updateState = useCallback(async (state: MailThreadState) => {
     if (!selected) return;
-    setBusy("state"); setFeedback(null);
+    // 记下具体选中的状态，等待时只让被点击的按钮显示转圈。
+    setBusy(`state:${state}`); setFeedback(null);
     try {
       const receipt = await requestJson<{ version: number }>(`/api/mail/threads/${selected.id}/state`, {
         method: "POST", body: JSON.stringify({ state, expectedVersion: selected.version }),

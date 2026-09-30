@@ -2,7 +2,7 @@
 
 import { Select } from "@/components/ui/select";
 
-import { Filter, ShieldAlert } from "lucide-react";
+import { Filter, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -253,7 +253,7 @@ function FeedbackTableRow({
         {formatFeedbackDate(feedback.created_at, locale, fallback)}
       </td>
       <td className="px-4 py-4">
-        <div className="grid gap-2">
+        <div aria-busy={pending || undefined} className="grid gap-2">
           <span
             className={cn(
               "inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold",
@@ -261,6 +261,7 @@ function FeedbackTableRow({
             )}
           >
             {statusLabels[feedback.status]}
+            {pending ? <LoaderCircle aria-hidden="true" className="ml-2 size-3.5 animate-spin motion-reduce:animate-none" /> : null}
           </span>
           <Select
             aria-label={t("list.statusAction")}

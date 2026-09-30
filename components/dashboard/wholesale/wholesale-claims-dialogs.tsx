@@ -87,6 +87,7 @@ export function Wholesale1688UploadDialog({
             size="default"
             className="disabled:opacity-60"
             disabled={parsedRows.length === 0 || pending}
+            loading={pending}
             onClick={async () => {
               const succeeded = await onImportRows(
                 selectedFile?.name ?? "",

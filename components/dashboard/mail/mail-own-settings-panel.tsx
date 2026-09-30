@@ -11,6 +11,7 @@ import { MailAgentProfileCard } from "./mail-agent-profile-card";
 export function MailOwnSettingsPanel(props: {
   profile: MailAgentProfile | null;
   busy: boolean;
+  busyKey: string | null;
   onChange: (profile: MailAgentProfile) => void;
   onSave: (resetToGenerated?: boolean) => void;
 }) {
@@ -21,7 +22,7 @@ export function MailOwnSettingsPanel(props: {
       <p className="mt-1 text-sm leading-6 text-content-muted">{t("mySenderSettingsDescription")}</p>
       <div className="mt-5 max-w-3xl">
         {props.profile
-          ? <MailAgentProfileCard busy={props.busy} canToggle={false} onChange={props.onChange} onSave={props.onSave} profile={props.profile} />
+          ? <MailAgentProfileCard busy={props.busy} busyKey={props.busyKey} canToggle={false} onChange={props.onChange} onSave={props.onSave} profile={props.profile} />
           : <p className="text-sm text-content-muted">{t("senderSettingsUnavailable")}</p>}
       </div>
     </Surface>

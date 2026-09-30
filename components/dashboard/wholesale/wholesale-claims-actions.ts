@@ -144,7 +144,8 @@ export function createWholesaleClaimsActions(runAction: RunWholesaleAction) {
     });
 
   const delete1688Order = (purchaseOrderId: string) =>
-    runAction("1688:delete", "采购订单已移出当前认领列表。", async () => {
+    // 将订单编号放进等待标记，列表才能只在用户刚点击的那一行显示动画。
+    runAction(`1688:delete:${purchaseOrderId}`, "采购订单已移出当前认领列表。", async () => {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 

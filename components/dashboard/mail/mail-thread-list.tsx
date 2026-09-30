@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, MailOpen, Plus, RefreshCw, ShieldCheck } from "lucide-react";
+import { Inbox, LoaderCircle, MailOpen, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button, InteractiveButton } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export function MailThreadList(props: {
   filters: MailThreadQuery;
   selectedId: string | null;
   isAdmin: boolean;
-  busy: boolean;
+  busy: string | null;
   onFilter: (filters: MailThreadQuery) => void;
   onLoadMore: () => void;
   onOpen: (id: string) => void;
@@ -42,7 +42,7 @@ export function MailThreadList(props: {
   return (
     <Surface className="flex min-h-[36rem] flex-col overflow-hidden" padding={null}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle p-3 sm:p-4">
-        <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-content-strong"><Inbox className="size-5 shrink-0" />{t("threadTitle")}</h2>
+        <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-content-strong"><Inbox className="size-5 shrink-0" />{t("threadTitle")}{props.busy === "threads" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /> : null}</h2>
         <Button onClick={props.onNew} size="compact" type="button"><Plus className="size-4" />{t("newMail")}</Button>
         {props.isAdmin && props.selectedIds.length > 0 ? <Button onClick={props.onBulkQuarantine} size="compact" type="button" variant="outline"><ShieldCheck className="size-4" />{t("quarantineSelected", { count: props.selectedIds.length })}</Button> : null}
       </div>
@@ -66,7 +66,7 @@ export function MailThreadList(props: {
           </Button>
         ) : null}
         {props.isAdmin ? <div className="flex min-w-[13rem] flex-1 items-center gap-2 sm:flex-none"><span className="shrink-0 text-xs font-semibold text-content-muted">{t("futureMail")}</span><Select aria-label={t("futureMail")} controlSize="compact" onValueChange={props.onBulkRuleOption} options={[{ value: "none", label: t("quarantineOnly") }, { value: "sender", label: t("blockSender") }, { value: "domain", label: t("blockDomain") }]} value={props.bulkRuleOption} /></div> : null}
-        <Button aria-label={t("refreshMail")} className="ml-auto shrink-0" disabled={props.busy} onClick={() => props.onFilter(props.filters)} size="compact" type="button" variant="outline"><RefreshCw className={cn("size-4", props.busy && "animate-spin")} /></Button>
+        <Button aria-label={t("refreshMail")} className="ml-auto shrink-0" disabled={props.busy !== null} onClick={() => props.onFilter(props.filters)} size="compact" type="button" variant="outline"><RefreshCw className={cn("size-4", props.busy === "threads" && "animate-spin motion-reduce:animate-none")} /></Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {props.threads.length === 0 ? (
@@ -75,13 +75,14 @@ export function MailThreadList(props: {
           <div className="mb-2 flex min-w-0 items-stretch gap-2" key={thread.id}>
             {props.isAdmin ? <div className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-surface-inset border border-border-subtle bg-surface-panel"><Checkbox aria-label={t("selectThread", { subject: thread.subject })} checked={props.selectedIds.includes(thread.id)} onChange={() => props.onToggleSelected(thread.id)} /></div> : null}
             <InteractiveButton
-            className={cn("block min-w-0 flex-1 rounded-surface-inset border p-3 text-left", props.selectedId === thread.id ? "border-ring bg-surface-interactive" : "border-border-subtle hover:bg-surface-inset")}
-            data-testid={`mail-thread-${thread.id}`}
-            onClick={() => props.onOpen(thread.id)}
-            type="button"
-          >
+              aria-busy={props.busy === `thread:${thread.id}` || undefined}
+              className={cn("block min-w-0 flex-1 rounded-surface-inset border p-3 text-left", props.selectedId === thread.id ? "border-ring bg-surface-interactive" : "border-border-subtle hover:bg-surface-inset")}
+              data-testid={`mail-thread-${thread.id}`}
+              onClick={() => props.onOpen(thread.id)}
+              type="button"
+            >
             <div className="flex min-w-0 items-start justify-between gap-3">
-              <p className={cn("min-w-0 break-words text-sm text-content-strong", thread.unread ? "font-extrabold" : "font-semibold")}>{thread.subject}</p>
+              <p className={cn("flex min-w-0 items-center gap-2 break-words text-sm text-content-strong", thread.unread ? "font-extrabold" : "font-semibold")}>{props.busy === `thread:${thread.id}` ? <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" /> : null}{thread.subject}</p>
               {thread.unread ? <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-label={t("unread")} /> : null}
             </div>
             <p className="mt-1 truncate text-xs text-content-muted">{thread.customerEmail}</p>
@@ -93,7 +94,7 @@ export function MailThreadList(props: {
             </InteractiveButton>
           </div>
         ))}
-        {props.hasMore ? <div className="flex justify-center p-3"><Button disabled={props.busy} onClick={props.onLoadMore} size="compact" type="button" variant="outline">{t("loadMoreThreads")}</Button></div> : null}
+        {props.hasMore ? <div className="flex justify-center p-3"><Button disabled={props.busy !== null} loading={props.busy === "threads-more"} onClick={props.onLoadMore} size="compact" type="button" variant="outline">{t("loadMoreThreads")}</Button></div> : null}
       </div>
     </Surface>
   );

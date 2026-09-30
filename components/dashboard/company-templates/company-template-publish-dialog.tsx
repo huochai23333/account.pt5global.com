@@ -60,7 +60,7 @@ export function CompanyTemplatePublishDialog({ onClose, onPublished, open, templ
     <DashboardDialog
       actions={<>
         <Button disabled={busy} onClick={onClose} type="button" variant="outline">{text("actions.cancel")}</Button>
-        <Button disabled={busy || htmlFiles.length === 0} form={formId} type="submit">{text(busy ? "actions.publishing" : "actions.publish")}</Button>
+        <Button disabled={busy || htmlFiles.length === 0} loading={busy} form={formId} type="submit">{text(busy ? "actions.publishing" : "actions.publish")}</Button>
       </>}
       description={text("publish.description")}
       onOpenChange={(nextOpen) => { if (!nextOpen && !busy) onClose(); }}

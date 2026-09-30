@@ -34,6 +34,14 @@ export function useMailIntake(input: {
     setQuarantine(result.items);
   }, []);
 
+  const refreshQuarantine = useCallback(async () => {
+    // 手动刷新需要独立的等待状态；内部写操作后的重新读取仍沿用原操作的状态。
+    setBusy("quarantine:refresh"); setFeedback(null);
+    try { await reloadQuarantine(); }
+    catch { setFeedback("隔离邮件暂时无法刷新。"); }
+    finally { setBusy(null); }
+  }, [reloadQuarantine]);
+
   const reloadRules = useCallback(async () => {
     const result = await requestMailJson<{ rules: MailIntakeRule[] }>("/api/mail/intake-rules");
     setRules(result.rules);
@@ -130,7 +138,7 @@ export function useMailIntake(input: {
   }, [reloadRules]);
 
   const updateRule = useCallback(async (rule: MailIntakeRule) => {
-    setBusy(`rule:${rule.id}`); setFeedback(null);
+    setBusy(`rule:save:${rule.id}`); setFeedback(null);
     try {
       const receipt = await requestMailJson<{ ruleId: string; version: number; updated: boolean }>("/api/mail/intake-rules", {
         method: "PUT", body: JSON.stringify({ ...rule, expectedVersion: rule.version }),
@@ -142,7 +150,7 @@ export function useMailIntake(input: {
   }, [reloadRules]);
 
   const deleteRule = useCallback(async (rule: MailIntakeRule) => {
-    setBusy(`rule:${rule.id}`); setFeedback(null);
+    setBusy(`rule:delete:${rule.id}`); setFeedback(null);
     try {
       const receipt = await requestMailJson<{ ruleId: string; deleted: boolean; auditId: number }>("/api/mail/intake-rules", {
         method: "DELETE", body: JSON.stringify({ ruleId: rule.id, expectedVersion: rule.version }),
@@ -156,6 +164,6 @@ export function useMailIntake(input: {
 
   return {
     quarantine, rules, selectedQuarantine, selectedActiveIds, busy, feedback,
-    setQuarantine, setRules, reloadQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
+    setQuarantine, setRules, reloadQuarantine, refreshQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
   };
 }

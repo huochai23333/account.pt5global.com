@@ -91,6 +91,7 @@ export function CustomerInventoryCreditLifecycleDialog({
           </Button>
           <Button
             disabled={pendingKey === actionKey}
+            loading={pendingKey === actionKey}
             form={formId}
             type="submit"
           >

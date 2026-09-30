@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 
 import { Copy, KeyRound, Link as LinkIcon } from "lucide-react";
 
@@ -14,6 +14,7 @@ import {
   buildInviteLinkValue,
   writeInviteValueToClipboard,
 } from "./dashboard-home-invite-links";
+import { InviteActionButton } from "./dashboard-home-invite-action-button";
 
 type HomeInviteNotice = {
   message: string;
@@ -53,6 +54,7 @@ export function HomeInviteSection({
   role,
 }: HomeInviteSectionProps) {
   const [notice, setNotice] = useState<HomeInviteNotice | null>(null);
+  const [pendingCopyId, setPendingCopyId] = useState<string | null>(null);
   const mini = density === "mini";
   const compact = density === "compact";
   const normalizedReferralCode = referralCode?.trim().toUpperCase() ?? "";
@@ -66,17 +68,22 @@ export function HomeInviteSection({
     [businessBoards, copy, role],
   );
 
-  const handleCopy = async (value: string, successMessage: string) => {
+  const handleCopy = async (id: string, value: string, successMessage: string) => {
+    if (pendingCopyId) return;
     if (!value) {
       setNotice({ message: copy.copyFailed, tone: "error" });
       return;
     }
 
+    // 剪贴板权限可能需要等待；当前按钮一直转圈到浏览器确认复制结果。
+    setPendingCopyId(id);
     try {
       await writeInviteValueToClipboard(value);
       setNotice({ message: successMessage, tone: "success" });
     } catch {
       setNotice({ message: copy.copyFailed, tone: "error" });
+    } finally {
+      setPendingCopyId(null);
     }
   };
 
@@ -100,8 +107,9 @@ export function HomeInviteSection({
               className="shrink-0"
               // 迷你卡片和普通卡片使用同一个测试标识，保证响应式切换后仍能验证复制行为。
               data-testid="home-invite-copy-code"
+              loading={pendingCopyId === "home-invite-copy-code"}
               onClick={() =>
-                void handleCopy(normalizedReferralCode, copy.copiedCode)
+                void handleCopy("home-invite-copy-code", normalizedReferralCode, copy.copiedCode)
               }
               size="icon"
               type="button"
@@ -162,8 +170,9 @@ export function HomeInviteSection({
             aria-label={copy.copyCode}
             className="shrink-0"
             data-testid="home-invite-copy-code"
+            loading={pendingCopyId === "home-invite-copy-code"}
             onClick={() =>
-              void handleCopy(normalizedReferralCode, copy.copiedCode)
+              void handleCopy("home-invite-copy-code", normalizedReferralCode, copy.copiedCode)
             }
             size="icon"
             title={copy.copyCode}
@@ -186,9 +195,11 @@ export function HomeInviteSection({
               iconOnly={false}
               key={action.testId}
               label={action.label}
+              loading={pendingCopyId === action.testId}
               miniLabel={action.miniLabel}
               onClick={() =>
                 void handleCopy(
+                  action.testId,
                   buildInviteLinkValue(action, normalizedReferralCode),
                   action.successMessage,
                 )
@@ -262,8 +273,9 @@ export function HomeInviteSection({
           icon={<Copy className="size-4" />}
           iconOnly={mini}
           label={copy.copyCode}
+          loading={pendingCopyId === "home-invite-copy-code"}
           onClick={() =>
-            void handleCopy(normalizedReferralCode, copy.copiedCode)
+            void handleCopy("home-invite-copy-code", normalizedReferralCode, copy.copiedCode)
           }
           testId="home-invite-copy-code"
         />
@@ -273,9 +285,11 @@ export function HomeInviteSection({
             iconOnly={mini}
             key={action.testId}
             label={action.label}
+            loading={pendingCopyId === action.testId}
             miniLabel={action.miniLabel}
             onClick={() =>
               void handleCopy(
+                action.testId,
                 buildInviteLinkValue(action, normalizedReferralCode),
                 action.successMessage,
               )
@@ -338,50 +352,5 @@ function InviteHeading({
         </p>
       ) : null}
     </div>
-  );
-}
-
-function InviteActionButton({
-  icon,
-  iconOnly,
-  label,
-  miniLabel,
-  onClick,
-  testId,
-}: {
-  icon: ReactNode;
-  iconOnly: boolean;
-  label: string;
-  miniLabel?: string;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <Button
-      className={cn("justify-start", iconOnly && "justify-center")}
-      data-testid={testId}
-      onClick={onClick}
-      title={label}
-      type="button"
-      size="default"
-      variant="outline"
-      wrap
-    >
-      {iconOnly && miniLabel ? (
-        <span aria-hidden="true" className="text-xs font-bold leading-none">
-          {miniLabel}
-        </span>
-      ) : (
-        icon
-      )}
-      <span
-        className={cn(
-          "min-w-0 whitespace-normal break-words text-left leading-5",
-          iconOnly && "sr-only",
-        )}
-      >
-        {label}
-      </span>
-    </Button>
   );
 }

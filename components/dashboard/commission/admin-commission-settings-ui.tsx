@@ -96,7 +96,8 @@ export function BusinessParameterSettingsTable({
                       onCancelSchedule={() => onCancelSchedule(setting)}
                       onEdit={() => onEdit(setting)}
                       onHistory={() => onHistory(setting)}
-                      pending={pendingKey !== null}
+                      pendingKey={pendingKey}
+                      parameterCode={setting.parameterCode}
                     />
                   </td>
                 </tr>
@@ -138,7 +139,8 @@ export function BusinessParameterSettingsTable({
                 onCancelSchedule={() => onCancelSchedule(setting)}
                 onEdit={() => onEdit(setting)}
                 onHistory={() => onHistory(setting)}
-                pending={pendingKey !== null}
+                pendingKey={pendingKey}
+                parameterCode={setting.parameterCode}
               />
             </RecordCard>
           ))}
@@ -244,15 +246,18 @@ function RuleActions({
   onCancelSchedule,
   onEdit,
   onHistory,
-  pending,
+  pendingKey,
+  parameterCode,
 }: {
   hasSchedule: boolean;
   onCancelSchedule: () => void;
   onEdit: () => void;
   onHistory: () => void;
-  pending: boolean;
+  pendingKey: string | null;
+  parameterCode: string;
 }) {
   const t = useTranslations("Commission.settings");
+  const pending = pendingKey !== null;
   return (
     <div className="flex min-w-0 flex-wrap justify-end gap-2 max-sm:justify-start">
       <Button
@@ -280,6 +285,7 @@ function RuleActions({
       {hasSchedule ? (
         <Button
           disabled={pending}
+          loading={pendingKey === `cancel:${parameterCode}`}
           onClick={onCancelSchedule}
           size="compact"
           type="button"
