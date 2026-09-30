@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RecordCard } from "@/components/ui/data-display";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { CompanyTemplateSummary } from "@/lib/company-templates/model";
+import { CompanyTemplateOpenLink } from "./company-template-open-link";
 
 /** 模板卡片只负责展示和发出管理意图，真正的权限、写入和回执核对都留在服务端。 */
 export function CompanyTemplateCard({
@@ -48,7 +49,7 @@ export function CompanyTemplateCard({
         <div><dt className="text-content-muted">{text("labels.file")}</dt><dd className="mt-1 truncate font-semibold" title={template.currentVersion.source_filename}>{template.currentVersion.source_filename}</dd></div>
       </dl>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {usable ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white" href={`/${workspace}/company-templates/${template.id}`}><FileCode2 className="size-4" />{text("actions.open")}</Link> : null}
+        {usable ? <CompanyTemplateOpenLink href={`/${workspace}/company-templates/${template.id}`} label={text("actions.open")} loading={text("viewer.loading")} /> : null}
         {usable && template.currentVersion.guide_sha256 ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-content-strong" href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
         {isAdmin ? <Button disabled={busy} onClick={() => onPublish(template)} size="compact" type="button" variant="outline"><Upload className="size-4" />{text("actions.newVersion")}</Button> : null}
         {isAdmin ? <Button disabled={busy} loading={managingKey === `${template.id}:status`} onClick={() => onToggleStatus(template)} size="compact" type="button" variant="ghost"><Power className="size-4" />{text(usable ? "actions.disable" : "actions.enable")}</Button> : null}
