@@ -54,6 +54,8 @@ export function AuthPasswordField({
         />
         <Button
           aria-label={toggleLabel}
+          // aria-pressed 让键盘及读屏用户知道密码目前是否可见。
+          aria-pressed={isPasswordVisible}
           className="absolute inset-y-0 right-0 rounded-l-none rounded-r-[22px] text-content-muted"
           disabled={disabled}
           onClick={() => setIsPasswordVisible((current) => !current)}

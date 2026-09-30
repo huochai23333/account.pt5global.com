@@ -64,7 +64,8 @@ export function LoginForm({
 
       <AuthPasswordField
         autoComplete="current-password"
-        disabled={login.submitting}
+        // 登录等待期间禁止修改密码，但仍可查看或隐藏已输入的内容。
+        readOnly={login.submitting}
         hidePasswordLabel={t("hidePassword")}
         label={t("password")}
         labelAction={

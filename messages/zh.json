@@ -287,6 +287,7 @@
     "password": "访问密码",
     "forgotPassword": "忘记密码？",
     "passwordPlaceholder": "请输入您的访问密码",
+    "connectionTimeout": "登录等待时间过长，请检查网络后再试。",
     "showPassword": "显示密码",
     "hidePassword": "隐藏密码",
     "submit": "登录",

@@ -23,6 +23,7 @@ import { getSignedInWorkspaceDestination } from "@/lib/workspace-business-availa
 
 import {
   isEmailNotConfirmedAuthError,
+  isAuthConnectionTimeoutError,
   isInvalidCredentialsAuthError,
   isInvalidEmailAuthError,
   isTooFrequentAuthError,
@@ -170,5 +171,6 @@ function formatLoginError(
   if (isEmailNotConfirmedAuthError(error)) return t("emailNotConfirmed");
   if (isInvalidEmailAuthError(error)) return t("invalidEmail");
   if (isTooFrequentAuthError(error)) return t("tooFrequent");
+  if (isAuthConnectionTimeoutError(error)) return t("connectionTimeout");
   return t("serviceUnavailable");
 }

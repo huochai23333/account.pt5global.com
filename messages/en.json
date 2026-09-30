@@ -283,6 +283,7 @@
     "footerLinkLabel": "Back to Sign In"
   },
   "LoginForm": {
+    "connectionTimeout": "Sign-in took too long. Check your connection and try again.",
     "email": "Email",
     "password": "Password",
     "forgotPassword": "Forgot password?",

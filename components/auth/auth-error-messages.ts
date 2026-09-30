@@ -102,6 +102,12 @@ export function isTooFrequentAuthError(error: unknown) {
   );
 }
 
+/** 连接等待超时不等同于密码错误，登录页应提示用户检查网络并允许再次操作。 */
+export function isAuthConnectionTimeoutError(error: unknown) {
+  const { code, status } = normalizeAuthError(error);
+  return code === "request_timeout" || status === 408 || status === 504;
+}
+
 export function isSignupDisabledAuthError(error: unknown) {
   const { code, message } = normalizeAuthError(error);
 

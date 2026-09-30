@@ -9,11 +9,16 @@ import { getSupabaseEnv } from "./supabase";
 import { getRequestPublicOrigin } from "./public-site-origin";
 import { getCurrentWorkspaceBusinessAccess } from "./workspace-business-access";
 import { getSignedInWorkspaceDestination } from "./workspace-business-availability";
+import { SUPABASE_HTTP_PROXY_PATH } from "./supabase-http-transport";
 
 const AUTH_ENTRY_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  // SDK 的转发请求已带用户令牌，不能在这里再刷新 Cookie；否则每次认证读取都会额外等待。
+  if (pathname.startsWith(`${SUPABASE_HTTP_PROXY_PATH}/`)) {
+    return NextResponse.next();
+  }
   const currentBasePath = getWorkspaceBasePath(pathname);
   const isPasswordRecoveryEntry =
     pathname === "/forgot-password" &&

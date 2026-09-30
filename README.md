@@ -118,6 +118,12 @@ npm run test:e2e
 
 ## 环境变量
 
+浏览器使用 Supabase SDK 发起的 HTTP 请求经本站 `/api/supabase/*` 转发，网站服务器再连接下方配置的实际项目地址。员工登录及页面查询无需从自己的电脑直接连接 `supabase.co`；部署服务器必须能连接该项目。登录与会话刷新等待上限为 15 秒，其他认证请求为 60 秒，文件和数据请求为 120 秒；页面本身的读取等待限制仍独立生效。转发只传递公开密钥和当前用户令牌，权限继续由 Supabase 检查，响应禁止缓存。登录等待期间密码保持只读，显示/隐藏按钮仍可使用。SDK 生成的文件直链仍指向原始存储地址，需要另行验证浏览器能否访问。
+
+所有浏览器经网站服务器的同一个出口 IP 联系 Supabase。Auth 按 IP 计数的请求可能共享限流额度；线上验收要观察登录及会话刷新是否出现限流提示。公开转发入口不能使用或转发 Supabase secret/service_role 密钥。
+
+本地验证使用既有开发服务与 Docker：`PLAYWRIGHT_SKIP_WEB_SERVER=1`、`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`，运行 `npx playwright test tests/e2e/auth-network.spec.ts tests/e2e/auth.spec.ts --workers=1`。网络回归切断浏览器直连后从页面登录，独立核对认证会话和账号资料，再刷新验证身份。
+
 至少需要：
 
 ```env
