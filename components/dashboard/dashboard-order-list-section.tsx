@@ -11,7 +11,7 @@ import {
 } from "./dashboard-collection-section";
 
 export type DashboardOrderListUnit =
-  "claimGroups" | "logisticsOrders" | "orders" | "purchaseOrders";
+  "logisticsOrders" | "orders";
 
 export type DashboardOrderListProgress =
   | {

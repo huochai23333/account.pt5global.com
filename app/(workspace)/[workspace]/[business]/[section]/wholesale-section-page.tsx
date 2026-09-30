@@ -150,7 +150,7 @@ export const renderWholesaleSectionPage: WorkspaceSectionRenderer = async ({
       namespaces={[
         "ClientBusinessAccess",
         "DashboardShared",
-        // 批发订单、1688 认领和物流页面共用同一套订单列表框架文案。
+        // 批发订单和物流页面共用同一套订单列表框架文案。
         "OrderListFramework",
         "WholesaleBusiness",
       ]}

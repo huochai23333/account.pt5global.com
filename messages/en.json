@@ -101,8 +101,6 @@
     },
     "units": {
       "orders": "orders",
-      "purchaseOrders": "1688 orders",
-      "claimGroups": "claim groups",
       "logisticsOrders": "logistics orders"
     }
   },
@@ -521,7 +519,6 @@
       "reviews": "Review Center",
       "feedback": "Feedback",
       "records": "Operation Records",
-      "orderClaims": "Order Claims",
       "salesLeads": "Leads",
       "incentives": "Incentives",
       "settlementReleases": "Settlement Releases",
@@ -1088,7 +1085,7 @@
     "sections": {
       "orders": {
         "title": "Wholesale Orders",
-        "description": "Manage wholesale customer orders, purchase cost, shipping, fees, gross profit, order month, and related 1688 purchase orders."
+        "description": "Manage wholesale customer orders, purchase cost, shipping, fees, gross profit, and order month."
       },
       "inventory-orders": {
         "title": "Inventory Orders",
@@ -1097,10 +1094,6 @@
       "settlement-releases": {
         "title": "Settlement Releases",
         "description": "Finance publishes received customer settlement payments, and sales staff claim them into matching wholesale orders."
-      },
-      "order-claims": {
-        "title": "Order Claims",
-        "description": "Receive 1688 purchase orders from files or automatic syncs so sales staff can claim them and assign them to the right customer. Original order data stays protected from casual edits."
       },
       "leads": {
         "title": "Lead Hall",
@@ -4592,120 +4585,9 @@
       "text010": " Recommended by:",
       "text002": "Recommended information"
     },
-    "components_dashboard_wholesale_wholesale_claims_dialogs": {
-      "text009": "Select customer",
-      "attribute005": "Client",
-      "text002": " Read ",
-      "text001": " Select file ",
-      "text003": " Purchase orders, of which ",
-      "attribute006": "Associated wholesale orders",
-      "text005": " Receive purchase order ",
-      "text007": "\"Match to customer\" ",
-      "text004": " The strip has the name of the recipient. After confirmation, you will first enter the hall to be sorted or claimed. ",
-      "text011": " Confirm ownership ",
-      "attribute003": "Order document",
-      "attribute002": "Upload 1688 orders",
-      "text010": " This customer does not have a wholesale order that can be associated. Please create a new order before claiming it. ",
-      "attribute001": "Select the order form exported from 1688 and confirm it is correct before receiving it and entering the claim list. The system will sort your items to be sorted first according to the name of the consignee.",
-      "attribute004": "After confirming the customer and wholesale orders, this purchase order will enter claimed.",
-      "noMatchingOrders": "No wholesale orders match your search",
-      "orderSearchLabel": "Search wholesale orders",
-      "orderSearchPlaceholder": "Enter an order number or amount",
-      "selectCustomerFirst": "Select a customer first",
-      "selectOrder": "Select this customer's order",
-      "selectedOrderCount": "{count} selected",
-      "exactSearchAction": "Find This Order Across Dates",
-      "exactSearchActive": "Exact all-time search is active",
-      "exitExactSearch": "Exit All-Time Search",
-      "loadingOrders": "Loading wholesale orders…",
-      "loadMoreOrders": "Load More Wholesale Orders",
-      "text006": " The system “based on the consignee’s name”",
-      "text008": "”, please confirm the wholesale order to be associated. "
-    },
-    "components_dashboard_wholesale_wholesale_claim_group_dialog": {
-      "cancelGroup": "Remove all links",
-      "cancelWarning": "After removal, every 1688 order in this group will return to the waiting list. The wholesale orders will not be deleted.",
-      "confirmCancel": "Confirm removal",
-      "create": "Confirm claim",
-      "createDescription": "Confirm the client for the {count} selected 1688 orders, then select one or more wholesale orders.",
-      "createTitle": "Claim purchase orders",
-      "editDescription": "You can change the client, update wholesale orders, or remove a mistakenly selected 1688 order.",
-      "editTitle": "Adjust links",
-      "keepGroup": "Keep links",
-      "purchaseOrdersLabel": "1688 orders in this group",
-      "removePurchaseOrder": "Remove {orderNumber} from this group",
-      "save": "Save changes",
-      "selectionSummary": "This link includes {count} 1688 orders"
-    },
-    "components_dashboard_wholesale_wholesale_claim_groups_table": {
-      "actions": "Actions",
-      "adjust": "Adjust links",
-      "claimedBy": "First claimed",
-      "claimedSummary": "First claimed by {name}, {time}",
-      "customer": "Client",
-      "group": "Claim group",
-      "groupNumber": "Claim group {number}",
-      "purchaseOrders": "1688 orders",
-      "updatedBy": "Last adjusted",
-      "updatedSummary": "Last adjusted by {name}, {time}",
-      "wholesaleOrders": "Wholesale orders"
-    },
-    "components_dashboard_wholesale_wholesale_claims_section": {
-      "text003": " Strip ",
-      "text002": " Clear search ",
-      "text001": " Upload 1688 files ",
-      "attribute005": "Search purchase orders",
-      "attribute006": "1688 Order number, consignee, product, customer, salesperson",
-      "attribute003": "Order claim",
-      "attribute007": "No purchase order yet",
-      "assistedEmptyDescription": "There are no 1688 orders waiting for client confirmation.",
-      "bulkClaim": "Claim selected orders",
-      "claimedBoardCount": "{groupCount} groups · {purchaseCount} 1688 orders",
-      "claimedEmptyDescription": "Claimed orders will appear here in groups with both sides of the link.",
-      "claimedEmptyTitle": "No claimed orders",
-      "clearSelection": "Clear selection",
-      "hallEmptyDescription": "There are no 1688 orders waiting to be claimed.",
-      "purchaseBoardCount": "{count} 1688 orders",
-      "purchaseFromLabel": "Purchase start date",
-      "purchaseToLabel": "Purchase end date",
-      "recipientFilterLabel": "Recipient name",
-      "recipientFilterPlaceholder": "Enter all or part of a name",
-      "selectedCount": "{count} purchase orders selected"
-    },
-    "components_dashboard_wholesale_wholesale_claims_table": {
-      "text005": "Client",
-      "text006": "Associated wholesale orders",
-      "text020": " Confirm ownership ",
-      "text007": " Commodity ",
-      "text008": "Quantity",
-      "text004": "Salesman",
-      "text012": "Receiving time",
-      "text009": "Purchase amount",
-      "text017": " Claim ",
-      "text013": "Operate",
-      "text010": "Purchase time",
-      "text022": " Move out ",
-      "text011": "Claim time",
-      "text015": " 1688 stores ",
-      "text021": "Waiting to be claimed",
-      "text002": "Consignee name",
-      "text019": "To be classified",
-      "text014": " Match by consignee name ",
-      "text016": "Waiting to be claimed",
-      "text018": "Claimed",
-      "text003": "Auxiliary classification",
-      "text023": " Adjust assignment ",
-      "text001": " 1688 order number ",
-      "missingItem": "Item not recorded",
-      "missingStatus": "Status not recorded",
-      "notMatched": "Client not matched",
-      "selectAll": "Select all purchase orders in the current results",
-      "selectOrder": "Select purchase order {orderNumber}"
-    },
     "components_dashboard_wholesale_wholesale_client": {
       "text001": " Reload ",
-      "text002": "Logistics records could not be loaded. Please try again later.",
-      "claimsLoadError": "1688 orders could not be loaded. Please try again later."
+      "text002": "Logistics records could not be loaded. Please try again later."
     },
     "components_dashboard_wholesale_wholesale_commission_records": {
       "text002": "Client",
@@ -4764,7 +4646,7 @@
       "attribute002": "Add new wholesale customers",
       "attribute004": "Edit wholesale customers",
       "attribute003": "Modify the customer's unique name, contact information, source, other names, customer owner and remarks.",
-      "attribute001": "The customer's unique name is used to claim 1688 orders. Other names can contain common nicknames or store names."
+      "attribute001": "Use a unique name to identify the customer. Other names can include common nicknames or store names."
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
       "attribute005": "Contact information",
@@ -4810,14 +4692,12 @@
       "text004": " · exchange rate ",
       "attribute002": "Order information",
       "text002": " Closed ",
-      "attribute006": "The 1688 purchase order has not been associated yet.",
       "text005": "The foreign exchange settlement record has not been registered yet.",
       "text003": ", remaining",
-      "attribute005": "Linked Procurement",
       "attribute004": "Foreign exchange settlement records",
       "attribute003": "Expenses and profits",
       "text001": " Register for foreign exchange settlement ",
-      "attribute001": "View expenses, profits, foreign exchange settlement, linked procurement records, and remarks in groups."
+      "attribute001": "View fees, profit, settlement records, and notes in groups."
     },
     "components_dashboard_wholesale_wholesale_order_edit_dialog": {
       "title": "Edit Wholesale Order",
@@ -4850,7 +4730,7 @@
       "attribute001": "Search orders",
       "attribute003": "Order status",
       "text008": "All customers",
-      "attribute002": "Order number, customer, or 1688 order number",
+      "attribute002": "Order number or customer name",
       "attribute008": "Included month",
       "attribute007": "Order date arrives",
       "attribute006": "Order date from",
@@ -4880,11 +4760,6 @@
       "text005": "Save order",
       "attribute002": "Create a new wholesale order",
       "attribute001": "An order number is automatically generated. In the entry stage, only customer payments and costs are recorded. During foreign exchange settlement, the exchange rate is confirmed and the RMB amount, gross profit and commission are calculated."
-    },
-    "components_dashboard_wholesale_wholesale_order_linked_records": {
-      "text001": "Not associated",
-      "attribute001": "Check the product, amount and claim information of this 1688 order.",
-      "attribute002": "1688 Order details"
     },
     "components_dashboard_wholesale_wholesale_order_rate_dialogs": {
       "dialogDescription": "Record each settled amount and date. The selected date's exchange rate is used, and the order becomes settled once the accumulated amount reaches the order total.",
@@ -4945,7 +4820,6 @@
       "text018": "Gross profit margin",
       "text013": "Payment currency",
       "text022": "Latest exchange settlement time",
-      "text024": " Associated 1688 Purchase Order ",
       "text012": "Average foreign exchange settlement rate",
       "text006": "Packing fee",
       "text015": "RMB amount",

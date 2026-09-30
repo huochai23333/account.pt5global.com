@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ApiRequestQuotaKind = "ai" | "wholesale_1688";
+export type ApiRequestQuotaKind = "ai";
 
 export type ApiRequestQuota = {
   allowed: boolean;

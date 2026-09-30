@@ -11,7 +11,6 @@ import type {
 } from "./wholesale-logistics-page";
 import type { WholesaleOrderPage } from "./wholesale-order-page";
 import type { WholesaleReferralCommissionRow } from "./wholesale-referral-commissions";
-import type { WholesaleClaimPage } from "./wholesale-claims-page";
 import type { WorkspaceWholesaleSectionKey } from "./workspace-config";
 
 export type WholesaleCustomer = {
@@ -134,53 +133,6 @@ export type WholesaleOrderChangeLog = {
   created_at: string;
 };
 
-export type Wholesale1688Order = {
-  id: string;
-  batch_id: string | null;
-  external_order_number: string;
-  seller_name: string | null;
-  item_summary: string | null;
-  quantity: number | null;
-  purchase_amount: number | null;
-  order_status: string | null;
-  purchased_at: string | null;
-  recipient_name: string | null;
-  raw_payload: Record<string, unknown>;
-  assisted_customer_id: string | null;
-  assisted_at: string | null;
-  imported_by_user_id: string | null;
-  created_at: string;
-};
-
-/** 一次认领形成一个组，组内采购订单和批发订单共同归属于同一客户。 */
-export type Wholesale1688ClaimGroup = {
-  id: string;
-  customer_id: string;
-  claimed_by_user_id: string | null;
-  claimed_at: string;
-  updated_by_user_id: string | null;
-  updated_at: string;
-};
-
-export type Wholesale1688ClaimGroupPurchase = {
-  claim_group_id: string;
-  purchase_order_id: string;
-};
-
-export type Wholesale1688ClaimGroupOrder = {
-  claim_group_id: string;
-  wholesale_order_id: string;
-};
-
-/** 批发订单详情使用的扁平关联记录，保留认领组信息但不改变采购原文。 */
-export type WholesaleLinked1688Order = Wholesale1688Order & {
-  claim_group_id: string;
-  wholesale_order_id: string;
-  claimed_by_user_id: string | null;
-  claimed_at: string;
-  updated_by_user_id: string | null;
-  updated_at: string;
-};
 
 export type WholesaleCommission = {
   id: string;
@@ -218,7 +170,6 @@ export type WholesaleProfile = {
 };
 
 export type WholesalePageData = {
-  claimPage: WholesaleClaimPage | null;
   currentUserId: string | null;
   currentRole: AppRole | null;
   commissionRuleSettings: CommissionRuleSetting[];
@@ -229,10 +180,6 @@ export type WholesalePageData = {
   orderPageError: string | null;
   orders: WholesaleOrder[];
   orderSettlements: WholesaleOrderSettlement[];
-  purchaseClaimGroups: Wholesale1688ClaimGroup[];
-  purchaseClaimGroupOrders: Wholesale1688ClaimGroupOrder[];
-  purchaseClaimGroupPurchases: Wholesale1688ClaimGroupPurchase[];
-  purchaseOrders: Wholesale1688Order[];
   logisticsAssignments: WholesaleLogisticsStoreAssignment[];
   logisticsFilters: WholesaleLogisticsFilters | null;
   logisticsPage: WholesaleLogisticsPage | null;

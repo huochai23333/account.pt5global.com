@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type {
-  WholesaleLinked1688Order,
   WholesaleOrder,
   WholesaleOrderListItem,
   WholesaleOrderChangeLog,
@@ -21,10 +20,7 @@ import {
   readWholesaleOrderSummary,
   readWholesaleRelatedRows,
 } from "./wholesale-order-page-decoders";
-import {
-  emptyWholesaleRelatedQuery,
-  getLinkedWholesalePurchaseOrders,
-} from "./wholesale-order-page-related";
+import { emptyWholesaleRelatedQuery } from "./wholesale-related-query";
 
 export type WholesaleOrderFilters = {
   customerId: string;
@@ -43,7 +39,7 @@ export type WholesaleOrderCursor = {
 };
 
 export type WholesaleOrderPageWarning = {
-  area: "attachments" | "changes" | "contacts" | "purchases" | "settlements";
+  area: "attachments" | "changes" | "contacts" | "settlements";
   message: string;
 };
 
@@ -70,7 +66,6 @@ export type WholesaleOrderPage = {
   orderListAttachments: WholesaleOrderListAttachment[];
   orders: WholesaleOrderListItem[];
   orderSettlements: WholesaleOrderSettlement[];
-  purchaseOrders: WholesaleLinked1688Order[];
   summary: WholesaleOrderPageSummary;
   totalCount: number;
   warnings: WholesaleOrderPageWarning[];
@@ -129,7 +124,6 @@ export async function getWholesaleOrderPage(
       orderListAttachments: [],
       orders,
       orderSettlements: [],
-      purchaseOrders: [],
       summary: readWholesaleOrderSummary(core.summary),
       totalCount: readWholesaleOrderNumber(core.totalCount),
       warnings,
@@ -138,12 +132,11 @@ export async function getWholesaleOrderPage(
 
   const [
     settlementsResult,
-    purchaseOrdersResult,
     changeLogsResult,
     attachmentsResult,
     contactsResult,
   ] = await Promise.all([
-    // 客户页面只需订单、物流和附件；结汇及关联采购属于后台处理资料。
+    // 客户页面只需订单和附件；内部结汇资料按岗位限制读取。
     canViewInternalFields
       ? supabase
           .from("wholesale_order_settlements")
@@ -151,9 +144,6 @@ export async function getWholesaleOrderPage(
           .in("order_id", orderIds)
           .order("settled_on", { ascending: false })
           .order("created_at", { ascending: false })
-      : emptyWholesaleRelatedQuery(),
-    canViewInternalFields
-      ? getLinkedWholesalePurchaseOrders(supabase, orderIds, true)
       : emptyWholesaleRelatedQuery(),
     canViewInternalFields
       ? supabase
@@ -202,12 +192,6 @@ export async function getWholesaleOrderPage(
       warnings,
       "settlements",
       "部分结汇记录暂时没有加载成功。",
-    ),
-    purchaseOrders: readWholesaleRelatedRows<WholesaleLinked1688Order>(
-      purchaseOrdersResult,
-      warnings,
-      "purchases",
-      "部分关联采购订单暂时没有加载成功。",
     ),
     summary: readWholesaleOrderSummary(core.summary),
     totalCount: readWholesaleOrderNumber(core.totalCount),

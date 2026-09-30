@@ -10,7 +10,6 @@ import type { AppRole } from "./auth-routing";
 export type WholesaleRoleCapabilities = {
   canAllocateSettlementRelease: boolean;
   canAssignSalesUser: boolean;
-  canManageClaims: boolean;
   canManageEveryCustomer: boolean;
   canManageEveryOrder: boolean;
   canManageInventoryCredit: boolean;
@@ -35,7 +34,6 @@ export function getWholesaleRoleCapabilities(
     canAllocateSettlementRelease:
       isAdministrator || isWholesaleCollaborator,
     canAssignSalesUser: isAdministrator || isWholesaleCollaborator,
-    canManageClaims: isAdministrator || isWholesaleCollaborator,
     canManageEveryCustomer: isAdministrator || isWholesaleCollaborator,
     canManageEveryOrder: isAdministrator || isWholesaleCollaborator,
     canManageInventoryCredit: isAdministrator || isWholesaleCollaborator,

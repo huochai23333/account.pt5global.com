@@ -159,7 +159,6 @@ function mergeWholesaleOrderPages(
       current.orderSettlements,
       next.orderSettlements,
     ),
-    purchaseOrders: mergeRows(current.purchaseOrders, next.purchaseOrders),
     warnings: Array.from(
       new Map(
         [...current.warnings, ...next.warnings].map((warning) => [

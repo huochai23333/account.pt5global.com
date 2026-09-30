@@ -42,9 +42,6 @@ export function filterWholesaleOrdersForAssessment(
   const profilesById = new Map(
     data.profiles.map((profile) => [profile.user_id, profile]),
   );
-  const purchaseOrdersByOrderId = groupByWholesaleOrderId(
-    data.orderPage?.purchaseOrders ?? [],
-  );
   const searchValue = normalizeSearchText(filters.searchText);
   const orderedFromTime = getDateBoundaryTime(filters.orderedFromDate, "start");
   const orderedToTime = getDateBoundaryTime(filters.orderedToDate, "end");
@@ -74,7 +71,6 @@ export function filterWholesaleOrdersForAssessment(
       ? profilesById.get(order.sales_user_id)
       : null;
     const salesName = salesProfile?.name || salesProfile?.email || "未分配";
-    const linkedPurchaseOrders = purchaseOrdersByOrderId.get(order.id) ?? [];
 
     return [
       order.order_number,
@@ -83,27 +79,10 @@ export function filterWholesaleOrdersForAssessment(
       order.courier_company ?? "",
       order.payment_platform ?? "",
       order.notes ?? "",
-      ...linkedPurchaseOrders.flatMap((row) => [
-        row.external_order_number,
-        row.item_summary ?? "",
-        row.seller_name ?? "",
-      ]),
     ].some((text) => normalizeSearchText(text).includes(searchValue));
   });
 }
 
-function groupByWholesaleOrderId<
-  Row extends { wholesale_order_id: string | null },
->(rows: Row[]) {
-  const grouped = new Map<string, Row[]>();
-  for (const row of rows) {
-    if (!row.wholesale_order_id) continue;
-    const current = grouped.get(row.wholesale_order_id) ?? [];
-    current.push(row);
-    grouped.set(row.wholesale_order_id, current);
-  }
-  return grouped;
-}
 
 function getDateBoundaryTime(value: string, boundary: "start" | "end") {
   if (!value) return null;

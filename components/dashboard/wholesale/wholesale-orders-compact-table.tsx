@@ -10,7 +10,7 @@ import { WholesaleOrderDetailsDialog } from "./wholesale-order-details-dialog";
 import type { WholesaleOrdersTableProps } from "./wholesale-orders-table";
 import { WholesaleTable, WholesaleTd, WholesaleTh } from "./wholesale-ui";
 
-/** 常查字段保持在一屏内；费用、采购和附件仍可从每行详情查看。 */
+/** 常查字段保持在一屏内；费用和附件仍可从每行详情查看。 */
 export function WholesaleOrdersCompactTable(props: WholesaleOrdersTableProps) {
   const t = useTranslations("WholesaleBusiness.ordersUi");
   const [selectedOrder, setSelectedOrder] = useState<WholesaleOrderListItem | null>(null);
@@ -90,7 +90,6 @@ export function WholesaleOrdersCompactTable(props: WholesaleOrdersTableProps) {
           order={selectedOrder}
           orderListAttachments={props.orderListAttachmentsByOrderId.get(selectedOrder.id) ?? []}
           pendingKey={props.pendingKey}
-          purchaseOrders={props.purchaseOrdersByOrderId.get(selectedOrder.id) ?? []}
           salesName={getProfileName(props.profilesById, selectedOrder.sales_user_id)}
           settlements={props.orderSettlementsByOrderId.get(selectedOrder.id) ?? []}
         />

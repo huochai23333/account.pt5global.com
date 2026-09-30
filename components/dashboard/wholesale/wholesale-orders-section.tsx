@@ -193,7 +193,6 @@ export function WholesaleOrdersSection({
           orderSettlementsByOrderId: viewData.orderSettlementsByOrderId,
           pendingKey,
           profilesById,
-          purchaseOrdersByOrderId: viewData.purchaseOrdersByOrderId,
         }}
       />
 

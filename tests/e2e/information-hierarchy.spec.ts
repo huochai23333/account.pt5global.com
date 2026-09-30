@@ -23,7 +23,6 @@ test.describe("全站信息层级与内容减负", () => {
   }) => {
     for (const route of [
       "/admin/wholesale/orders",
-      "/admin/wholesale/order-claims",
       "/admin/wholesale/logistics",
     ]) {
       await page.goto(route);
@@ -149,8 +148,8 @@ test.describe("全站信息层级与内容减负", () => {
 
   test("工作页在移动端突出状态，在桌面端让记录进入首屏", async ({ page }) => {
     await page.setViewportSize({ height: 844, width: 390 });
-    await page.goto("/admin/wholesale/order-claims");
-    await expect(page.getByRole("button", { name: /待分类/ })).toBeInViewport();
+    await page.goto("/admin/wholesale/orders");
+    await expect(page.getByRole("heading", { name: "批发订单" })).toBeInViewport();
     await expectNoHorizontalOverflow(page);
 
     await page.setViewportSize({ height: 900, width: 1280 });

@@ -8,7 +8,7 @@ for (const role of ["administrator", "salesman"] as const) {
     await loginAs(page, role);
     const workspace = role === "administrator" ? "admin" : role;
     const prefix = `/${workspace}/wholesale/`;
-    const expected = ["leads", "customers", "orders", "inventory-orders", "settlement-releases", "order-claims", "logistics",
+    const expected = ["leads", "customers", "orders", "inventory-orders", "settlement-releases", "logistics",
       ...(role === "administrator" ? ["people"] : []), "vip", "referrals", "commission", "incentives",
       ...(role === "administrator" ? ["settings"] : [])];
 
@@ -53,3 +53,17 @@ for (const role of ["administrator", "salesman"] as const) {
     }
   });
 }
+
+test("已移除的订单认领地址和导入接口不再提供操作入口", async ({ page }) => {
+  await loginAs(page, "administrator");
+
+  await page.goto("/admin/wholesale/order-claims");
+  await expect(page.getByText("你访问的页面不存在")).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/wholesale\/order-claims$/);
+
+  // 页面与接口都被移除，直接提交请求也不能重新写入采购记录。
+  const importResponse = await page.request.post("/api/wholesale/1688-orders", {
+    data: { rows: [{ external_order_number: "REMOVED-IMPORT" }] },
+  });
+  expect(importResponse.status()).toBe(404);
+});

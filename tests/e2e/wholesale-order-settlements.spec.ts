@@ -96,7 +96,7 @@ test.describe("wholesale order settlements", () => {
     await expectCompactSettlementOrderControls(page);
     await expectNoSettlementStatusInOrderNumberCell(page);
     await expectCompactLocalSeededOrderRows(page);
-    await page.getByLabel("搜索订单").fill("1688-LOCAL-001");
+    await page.getByLabel("搜索订单").fill("WH-LOCAL-" + getShanghaiDateInputValue().slice(0, 7).replace("-", "") + "-001");
     await page.getByRole("button", { name: "跨日期查此单号" }).click();
     await expect(
       page.locator('[data-testid^="wholesale-order-row-"]').filter({
@@ -105,7 +105,6 @@ test.describe("wholesale order settlements", () => {
       }),
     ).toBeVisible();
     await page.getByRole("button", { name: "查看全部字段" }).click();
-    await expectLinkedPurchaseOrderDetailsDialog(page);
     await expectNoDocumentHorizontalOverflow(page);
 
     await page.setViewportSize({ height: 844, width: 390 });
@@ -175,19 +174,6 @@ async function expectCompactLocalSeededOrderRows(page: Page) {
   expect(Math.max(...rowHeights)).toBeLessThanOrEqual(150);
 }
 
-async function expectLinkedPurchaseOrderDetailsDialog(page: Page) {
-  await page.getByRole("button", { name: "1688-LOCAL-001" }).first().click();
-
-  const purchaseDialog = page.getByRole("dialog", { name: "1688 订单详情" });
-  await expect(purchaseDialog).toBeVisible();
-  await expect(purchaseDialog.getByText("Yiwu Sample Supplier")).toBeVisible();
-  await expect(purchaseDialog.getByText("Travel accessories batch A")).toBeVisible();
-  await expect(purchaseDialog.getByText("1688-LOCAL-001")).toBeVisible();
-  await purchaseDialog
-    .getByRole("button", { name: /关闭弹窗|Close dialog/ })
-    .click();
-  await expect(purchaseDialog).toHaveCount(0);
-}
 
 async function expectLocalSeededWholesaleOrders(page: Page) {
   await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(20);

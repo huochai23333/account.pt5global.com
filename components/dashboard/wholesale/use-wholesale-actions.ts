@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
 import { createWholesaleBusinessActions } from "./wholesale-business-actions";
-import { createWholesaleClaimsActions } from "./wholesale-claims-actions";
 import { createWholesaleCustomerActions } from "./wholesale-customer-actions";
 import { createWholesaleOrderActions } from "./wholesale-order-actions";
 import { createWholesaleOrderListActions } from "./wholesale-order-list-actions";
@@ -36,10 +35,6 @@ export function useWholesaleActions() {
     () => createWholesaleOrderListActions(runner.runAction),
     [runner.runAction],
   );
-  const claimsActions = useMemo(
-    () => createWholesaleClaimsActions(runner.runAction),
-    [runner.runAction],
-  );
   const businessActions = useMemo(
     () => createWholesaleBusinessActions(runner.runAction),
     [runner.runAction],
@@ -47,7 +42,6 @@ export function useWholesaleActions() {
 
   return {
     ...businessActions,
-    ...claimsActions,
     ...customerActions,
     ...orderActions,
     ...orderListActions,

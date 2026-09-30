@@ -101,8 +101,6 @@
     },
     "units": {
       "orders": "笔订单",
-      "purchaseOrders": "笔 1688 订单",
-      "claimGroups": "个认领组",
       "logisticsOrders": "笔物流订单"
     }
   },
@@ -521,7 +519,6 @@
       "reviews": "审核中心",
       "feedback": "反馈管理",
       "records": "操作记录",
-      "orderClaims": "订单认领",
       "salesLeads": "线索",
       "incentives": "提成",
       "settlementReleases": "结汇发布",
@@ -1088,7 +1085,7 @@
     "sections": {
       "orders": {
         "title": "批发订单",
-        "description": "集中管理批发客户订单、采购金额、运费、费用、毛利、订单月份和关联 1688 采购订单。"
+        "description": "集中管理批发客户订单、采购金额、运费、费用、毛利和订单月份。"
       },
       "inventory-orders": {
         "title": "库存订单",
@@ -1097,10 +1094,6 @@
       "settlement-releases": {
         "title": "结汇发布",
         "description": "财务发布收到的客户结汇款，业务员认领后匹配到对应批发订单。"
-      },
-      "order-claims": {
-        "title": "订单认领",
-        "description": "接收 1688 采购订单文件或自动同步来的订单，由业务员认领并归属到对应客户。原始订单保持不可随意更改。"
       },
       "leads": {
         "title": "线索大厅",
@@ -4592,120 +4585,9 @@
       "text010": " 推荐人：",
       "text002": "推荐信息"
     },
-    "components_dashboard_wholesale_wholesale_claims_dialogs": {
-      "text009": "选择客户",
-      "attribute005": "客户",
-      "text002": " 已读取 ",
-      "text001": " 选择文件 ",
-      "text003": " 条采购订单，其中 ",
-      "attribute006": "关联批发订单",
-      "text005": " 接收采购订单 ",
-      "text007": "”匹配到客户“ ",
-      "text004": " 条带有收货人名字。确认后会先进入待分类或认领大厅。 ",
-      "text011": " 确认归属 ",
-      "attribute003": "订单文件",
-      "attribute002": "上传 1688 订单",
-      "text010": " 这个客户还没有可关联的批发订单，请先新建订单后再认领。 ",
-      "attribute001": "选择从 1688 导出的订单表格，确认无误后再接收进入认领列表。系统会按收货人名字先帮你分到待分类。",
-      "attribute004": "确认客户和批发订单后，这条采购订单会进入已认领。",
-      "noMatchingOrders": "没有找到符合搜索内容的批发订单",
-      "orderSearchLabel": "搜索批发订单",
-      "orderSearchPlaceholder": "输入订单编号或金额",
-      "selectCustomerFirst": "请先选择客户",
-      "selectOrder": "请选择该客户的订单",
-      "selectedOrderCount": "已选择 {count} 笔",
-      "exactSearchAction": "跨日期查此单号",
-      "exactSearchActive": "正在进行全历史精确查询",
-      "exitExactSearch": "退出全历史查询",
-      "loadingOrders": "正在加载批发订单…",
-      "loadMoreOrders": "继续加载批发订单",
-      "text006": " 系统根据收货人名字“",
-      "text008": "”，请确认要关联的批发订单。 "
-    },
-    "components_dashboard_wholesale_wholesale_claim_group_dialog": {
-      "cancelGroup": "撤销整组关联",
-      "cancelWarning": "撤销后，这组里的所有 1688 订单都会重新回到待认领列表。批发订单本身不会被删除。",
-      "confirmCancel": "确认撤销",
-      "create": "确认认领",
-      "createDescription": "为已选择的 {count} 笔 1688 订单确认客户，并勾选一笔或多笔批发订单。",
-      "createTitle": "认领采购订单",
-      "editDescription": "可以更换客户、调整批发订单，或移出误选的 1688 订单。",
-      "editTitle": "调整关联",
-      "keepGroup": "保留关联",
-      "purchaseOrdersLabel": "本组 1688 订单",
-      "removePurchaseOrder": "从本组移出 {orderNumber}",
-      "save": "保存调整",
-      "selectionSummary": "本次关联包含 {count} 笔 1688 订单"
-    },
-    "components_dashboard_wholesale_wholesale_claim_groups_table": {
-      "actions": "操作",
-      "adjust": "调整关联",
-      "claimedBy": "首次认领",
-      "claimedSummary": "首次认领：{name}，{time}",
-      "customer": "客户",
-      "group": "认领组",
-      "groupNumber": "认领组 {number}",
-      "purchaseOrders": "1688 订单",
-      "updatedBy": "最后调整",
-      "updatedSummary": "最后调整：{name}，{time}",
-      "wholesaleOrders": "批发订单"
-    },
-    "components_dashboard_wholesale_wholesale_claims_section": {
-      "text003": " 条 ",
-      "text002": " 清空搜索 ",
-      "text001": " 上传 1688 文件 ",
-      "attribute005": "搜索采购订单",
-      "attribute006": "1688 订单号、收货人、商品、客户、业务员",
-      "attribute003": "订单认领",
-      "attribute007": "暂无采购订单",
-      "assistedEmptyDescription": "当前没有需要确认客户归属的 1688 订单。",
-      "bulkClaim": "批量认领",
-      "claimedBoardCount": "{groupCount} 组 · {purchaseCount} 笔 1688 订单",
-      "claimedEmptyDescription": "完成认领后，会按认领组在这里集中展示两侧订单。",
-      "claimedEmptyTitle": "暂无已认领订单",
-      "clearSelection": "取消选择",
-      "hallEmptyDescription": "当前没有等待业务员认领的 1688 订单。",
-      "purchaseBoardCount": "{count} 笔 1688 订单",
-      "purchaseFromLabel": "采购开始日期",
-      "purchaseToLabel": "采购结束日期",
-      "recipientFilterLabel": "收货人名字",
-      "recipientFilterPlaceholder": "输入全部或部分名字",
-      "selectedCount": "已选择 {count} 条采购订单"
-    },
-    "components_dashboard_wholesale_wholesale_claims_table": {
-      "text005": "客户",
-      "text006": "关联批发订单",
-      "text020": " 确认归属 ",
-      "text007": " 商品 ",
-      "text008": "数量",
-      "text004": "业务员",
-      "text012": "接收时间",
-      "text009": "采购金额",
-      "text017": " 认领 ",
-      "text013": "操作",
-      "text010": "采购时间",
-      "text022": " 移出 ",
-      "text011": "认领时间",
-      "text015": " 1688 店铺 ",
-      "text021": "等待认领",
-      "text002": "收货人名字",
-      "text019": "待分类",
-      "text014": " 按收货人名字匹配 ",
-      "text016": "等待认领",
-      "text018": "已认领",
-      "text003": "辅助归类",
-      "text023": " 调整归属 ",
-      "text001": " 1688 订单号 ",
-      "missingItem": "未记录商品",
-      "missingStatus": "未记录状态",
-      "notMatched": "尚未匹配客户",
-      "selectAll": "选择当前筛选结果中的全部采购订单",
-      "selectOrder": "选择采购订单 {orderNumber}"
-    },
     "components_dashboard_wholesale_wholesale_client": {
       "text001": " 重新加载 ",
-      "text002": "物流记录暂时没有加载成功，请稍后重试。",
-      "claimsLoadError": "1688 订单暂时没有加载成功，请稍后重试。"
+      "text002": "物流记录暂时没有加载成功，请稍后重试。"
     },
     "components_dashboard_wholesale_wholesale_commission_records": {
       "text002": "客户",
@@ -4764,7 +4646,7 @@
       "attribute002": "新增批发客户",
       "attribute004": "编辑批发客户",
       "attribute003": "修改客户唯一名称、联系方式、来源、其他名称、客户负责人和备注。",
-      "attribute001": "客户唯一标识名称用于认领 1688 订单，其他名称可填写客户常用昵称或店铺名。"
+      "attribute001": "客户唯一标识名称用于区分客户；其他名称可填写常用昵称或店铺名。"
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
       "attribute005": "联系方式",
@@ -4810,14 +4692,12 @@
       "text004": " · 汇率 ",
       "attribute002": "订单信息",
       "text002": " 已结 ",
-      "attribute006": "尚未关联 1688 采购订单。",
       "text005": "尚未登记结汇记录。",
       "text003": "， 剩余",
-      "attribute005": "关联采购记录",
       "attribute004": "结汇记录",
       "attribute003": "费用和利润",
       "text001": " 登记结汇 ",
-      "attribute001": "分组查看费用、利润、结汇、关联采购记录和备注。"
+      "attribute001": "分组查看费用、利润、结汇记录和备注。"
     },
     "components_dashboard_wholesale_wholesale_order_edit_dialog": {
       "title": "修改批发订单",
@@ -4850,7 +4730,7 @@
       "attribute001": "搜索订单",
       "attribute003": "订单状态",
       "text008": "全部客户",
-      "attribute002": "订单号、客户或 1688 单号",
+      "attribute002": "订单号或客户名称",
       "attribute008": "计入月份",
       "attribute007": "下单日期到",
       "attribute006": "下单日期从",
@@ -4880,11 +4760,6 @@
       "text005": "保存订单",
       "attribute002": "新建批发订单",
       "attribute001": "订单编号会自动生成。录入阶段只记录客户支付和成本，结汇时再确认汇率并计算人民币金额、毛利和提成。"
-    },
-    "components_dashboard_wholesale_wholesale_order_linked_records": {
-      "text001": "未关联",
-      "attribute001": "查看这条 1688 订单的商品、金额和认领信息。",
-      "attribute002": "1688 订单详情"
     },
     "components_dashboard_wholesale_wholesale_order_rate_dialogs": {
       "dialogDescription": "登记每一次实际结汇的金额和日期。系统会使用所选日期的汇率，累计结汇金额达到订单金额后自动变为已结汇。",
@@ -4945,7 +4820,6 @@
       "text018": "毛利率",
       "text013": "支付币种",
       "text022": "最近结汇时间",
-      "text024": " 关联 1688 采购订单 ",
       "text012": "平均结汇汇率",
       "text006": "打包费",
       "text015": "人民币金额",

@@ -10,7 +10,6 @@ import {
   canManageEveryWholesaleCustomer,
   canManageEveryWholesaleOrder,
 } from "@/lib/wholesale-role-permissions";
-import { WholesaleClaimsSection } from "./wholesale-claims-section";
 import { WholesaleCommissionSection } from "./wholesale-commission-section";
 import { WholesaleCustomersSection } from "./wholesale-customers-section";
 import { WholesaleLogisticsSection } from "./wholesale-logistics-section";
@@ -42,7 +41,6 @@ export function WholesaleClient({
   const canAdmin = initialData.currentRole === "administrator";
   const capabilities = getWholesaleRoleCapabilities(initialData.currentRole);
   const canEdit = capabilities.canManageEveryOrder;
-  const canManageClaims = capabilities.canManageClaims;
   const canManageWholesaleCustomers = canManageEveryWholesaleCustomer(
     initialData.currentRole,
   );
@@ -94,22 +92,6 @@ export function WholesaleClient({
         </div>
       ) : null}
 
-      {initialData.section === "order-claims" && initialData.claimPage ? (
-        <WholesaleClaimsSection
-          actions={actions}
-          canAdmin={canAdmin}
-          canManageClaims={canManageClaims}
-          customers={initialData.customers}
-          initialPage={initialData.claimPage}
-          pendingKey={actions.pendingKey}
-        />
-      ) : null}
-
-      {initialData.section === "order-claims" && !initialData.claimPage ? (
-        <FeedbackNotice tone="error">
-          {uiText("claimsLoadError")}
-        </FeedbackNotice>
-      ) : null}
 
       {initialData.section === "logistics" ? (
         initialData.logisticsPage && initialData.logisticsFilters ? (

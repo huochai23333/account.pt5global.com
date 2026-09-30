@@ -11,7 +11,6 @@ import {
   expectDateControlValue,
   fillDateControl,
 } from "./helpers/date-control";
-import { expectSelectValue } from "./helpers/select-control";
 
 type WorkspaceEntry = {
   paths: readonly string[];
@@ -41,7 +40,6 @@ const workspaceEntries: readonly WorkspaceEntry[] = [
     paths: [
       "/salesman/wholesale/orders",
       "/salesman/wholesale/settlement-releases",
-      "/salesman/wholesale/order-claims",
       "/salesman/wholesale/logistics",
       "/salesman/wholesale/customers",
       "/salesman/wholesale/vip",
@@ -254,43 +252,6 @@ test.describe("workspace entrypoint regression", () => {
     await expect(page.getByRole("heading", { name: "人员管理" })).toBeVisible();
     await expect(page.getByText("业务员账户").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "新增客户" })).toHaveCount(0);
-  });
-
-  test("wholesale claim page separates assisted, hall, and claimed orders", async ({
-    page,
-  }) => {
-    await loginAs(page, "administrator");
-    await page.goto("/admin/wholesale/order-claims");
-    await expectWorkspaceShell(page);
-    await expectNotForbiddenPage(page);
-
-    await expect(page.getByRole("button", { name: /待分类/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /认领大厅/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /已认领/ })).toBeVisible();
-    await expect(page.getByText("1688-LOCAL-003")).toBeVisible();
-    await expect(page.getByText("Wholesale Beta").first()).toBeVisible();
-
-    await page.getByRole("button", { name: /认领大厅/ }).click();
-    await expect(page.getByText("1688-LOCAL-004")).toBeVisible();
-    await expect(page.getByText("Unknown Buyer")).toBeVisible();
-
-    await page.getByRole("button", { name: /已认领/ }).click();
-    await expect(page.getByText("1688-LOCAL-001").first()).toBeVisible();
-    await expect(page.getByText("1688-LOCAL-002").first()).toBeVisible();
-
-    await page.getByRole("button", { name: /待分类/ }).click();
-    await page
-      .getByRole("button", { exact: true, name: "认领" })
-      .first()
-      .click();
-    const claimDialog = page.getByRole("dialog", { name: "认领采购订单" });
-    await expectSelectValue(
-      claimDialog.getByLabel("客户"),
-      "c1000000-0000-4000-8000-000000000002",
-    );
-    await expect(claimDialog.getByLabel("搜索批发订单")).toBeEnabled();
-    // 候选订单由弹窗打开后的请求异步载入，使用可见性断言等待首项完成渲染。
-    await expect(claimDialog.getByRole("checkbox").first()).toBeVisible();
   });
 
   test("salesman wholesale customer page shares customers but hides people management", async ({

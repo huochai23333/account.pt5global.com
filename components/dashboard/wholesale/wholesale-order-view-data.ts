@@ -21,10 +21,6 @@ export function useWholesaleOrderViewData(page: WholesaleOrderPage | null) {
         page?.orderSettlements ?? [],
         (row) => row.order_id,
       ),
-      purchaseOrdersByOrderId: groupByOrderId(
-        page?.purchaseOrders ?? [],
-        (row) => row.wholesale_order_id,
-      ),
     };
   }, [page]);
 }

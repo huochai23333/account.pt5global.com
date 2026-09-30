@@ -10,7 +10,6 @@ import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 const ORDER_PAGES = [
   "/admin/wholesale/orders",
-  "/admin/wholesale/order-claims",
   "/admin/wholesale/logistics",
 ] as const;
 
@@ -22,8 +21,8 @@ const DATE_PRESET_LABELS = [
   "自定义",
 ] as const;
 
-test.describe("三类批发订单列表统一框架", () => {
-  test("三类页面使用同一日期工具条和列表数量底栏", async ({ page }) => {
+test.describe("批发订单与物流列表统一框架", () => {
+  test("两类页面使用同一日期工具条和列表数量底栏", async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
@@ -80,9 +79,10 @@ test.describe("三类批发订单列表统一框架", () => {
     const reset = page.getByRole("button", { name: "恢复默认范围" });
     const startDate = page.getByLabel("下单日期从");
 
-    await dateToolbar.getByRole("button", { name: "本月" }).click();
+    // 月末时“本月”可能刚好等于“最近 30 天”，选择上月才能稳定验证切换。
+    await dateToolbar.getByRole("button", { name: "上月" }).click();
     await expect(
-      dateToolbar.getByRole("button", { name: "本月" }),
+      dateToolbar.getByRole("button", { name: "上月" }),
     ).toHaveAttribute("aria-pressed", "true");
     await expect(reset).toBeEnabled();
 
@@ -125,33 +125,6 @@ test.describe("三类批发订单列表统一框架", () => {
     await expect(progress).toHaveCount(1);
   });
 
-  test("认领看板使用正确单位并只显示一条精确查询提示", async ({ page }) => {
-    await loginAs(page, "administrator");
-    await page.goto("/admin/wholesale/order-claims");
-
-    await page.getByRole("button", { name: /认领大厅/ }).click();
-    await expect(getOrderListProgress(page)).toContainText("笔 1688 订单");
-
-    await page.getByRole("button", { name: /已认领/ }).click();
-    await expect(getOrderListProgress(page)).toContainText("个认领组");
-
-    const search = page.getByLabel("搜索采购订单");
-    await search.fill("1688-LOCAL-001");
-    await page.getByRole("button", { name: "跨日期查此单号" }).click();
-    await expect(
-      page.getByText("全历史精确查询：1688-LOCAL-001", { exact: true }),
-    ).toHaveCount(1);
-
-    await page.getByRole("button", { name: "退出全历史查询" }).click();
-    await expect(
-      page.getByText("全历史精确查询：1688-LOCAL-001", { exact: true }),
-    ).toHaveCount(0);
-    await expect(
-      page
-        .getByRole("group", { name: "日期快捷范围" })
-        .getByRole("button", { name: "最近 30 天" }),
-    ).toHaveAttribute("aria-pressed", "true");
-  });
 });
 
 function getOrderListProgress(page: Page) {

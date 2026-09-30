@@ -29,14 +29,9 @@ export function buildWholesaleOrderAssessmentMessages({
   const profilesById = new Map(
     data.profiles.map((profile) => [profile.user_id, profile]),
   );
-  const purchaseOrderCount = countLinkedRecords(
-    data.orderPage?.purchaseOrders ?? [],
-    orders,
-  );
   const summary = buildOrderSummary({
     fullSummary: data.orderPage?.summary ?? null,
     orders,
-    purchaseOrderCount,
   });
   const topCustomers = buildTopCustomerSummaries(orders, customersById);
   const examples = orders.slice(0, MAX_ORDER_EXAMPLES).map((order) => {
@@ -95,7 +90,6 @@ export function buildWholesaleOrderAssessmentMessages({
 function buildOrderSummary({
   fullSummary,
   orders,
-  purchaseOrderCount,
 }: {
   fullSummary: WholesaleOrderAssessmentData["orderPage"] extends infer Page
     ? Page extends { summary: infer Summary }
@@ -103,7 +97,6 @@ function buildOrderSummary({
       : null
     : null;
   orders: WholesaleOrder[];
-  purchaseOrderCount: number;
 }) {
   const totalPayment =
     fullSummary?.customerPaymentRmbAmount ??
@@ -145,7 +138,6 @@ function buildOrderSummary({
     ),
     "未结汇订单": unsettledCount,
     "订单数量": fullSummary?.orderCount ?? orders.length,
-    "采购订单数量": purchaseOrderCount,
     "产品采购金额合计": roundMoney(
       fullSummary?.productPurchaseAmount ??
         sumOrders(orders, "product_purchase_amount"),
@@ -186,15 +178,6 @@ function buildTopCustomerSummaries(
     }));
 }
 
-function countLinkedRecords<Row extends { wholesale_order_id: string | null }>(
-  rows: Row[],
-  orders: WholesaleOrder[],
-) {
-  const orderIds = new Set(orders.map((order) => order.id));
-  return rows.filter(
-    (row) => row.wholesale_order_id && orderIds.has(row.wholesale_order_id),
-  ).length;
-}
 
 function sumOrders(orders: WholesaleOrder[], key: keyof WholesaleOrder) {
   return orders.reduce((sum, order) => sum + Number(order[key] ?? 0), 0);

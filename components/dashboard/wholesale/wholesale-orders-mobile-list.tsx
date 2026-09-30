@@ -6,7 +6,6 @@ import { InteractiveButton as DesignButton } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type {
-  WholesaleLinked1688Order,
   WholesaleCustomer,
   WholesaleOrderListItem,
   WholesaleOrderSettlement,
@@ -44,7 +43,6 @@ type WholesaleOrdersMobileListProps = {
   orders: WholesaleOrderListItem[];
   orderSettlementsByOrderId: Map<string, WholesaleOrderSettlement[]>;
   profilesById: Map<string, WholesaleProfile>;
-  purchaseOrdersByOrderId: Map<string, WholesaleLinked1688Order[]>;
   pendingKey: string | null;
 };
 export function WholesaleOrdersMobileList({
@@ -62,7 +60,6 @@ export function WholesaleOrdersMobileList({
   orders,
   orderSettlementsByOrderId,
   profilesById,
-  purchaseOrdersByOrderId,
   pendingKey,
 }: WholesaleOrdersMobileListProps) {
   const uiText = useTranslations(
@@ -162,7 +159,6 @@ export function WholesaleOrdersMobileList({
             orderListAttachmentsByOrderId.get(selectedOrder.id) ?? []
           }
           pendingKey={pendingKey}
-          purchaseOrders={purchaseOrdersByOrderId.get(selectedOrder.id) ?? []}
           salesName={canViewInternalFields ? getProfileName(profilesById, selectedOrder.sales_user_id) : getClientOrderContactName(selectedOrder, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}
           settlements={orderSettlementsByOrderId.get(selectedOrder.id) ?? []}
         />

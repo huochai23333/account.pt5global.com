@@ -3,7 +3,7 @@ import type {
   WholesaleOrderPageSummary,
   WholesaleOrderPageWarning,
 } from "./wholesale-order-page";
-import type { WholesaleRelatedQueryResult } from "./wholesale-order-page-related";
+import type { WholesaleRelatedQueryResult } from "./wholesale-related-query";
 
 export function readWholesaleRelatedRows<T>(
   result: WholesaleRelatedQueryResult,

@@ -38,7 +38,6 @@ const NAV_LABELS = {
   logistics: "物流管理",
   mail: "邮件工作台",
   my: "我的",
-  orderClaims: "订单认领",
   salesLeads: "线索",
   orders: "订单",
   people: "人员管理",
@@ -72,7 +71,6 @@ const NAV_ENTRY_DESCRIPTIONS = {
   logistics: "查看店小秘物流永久档案、店铺历史归属、缺失运费和分币种运费汇总",
   mail: "处理本人负责的客户邮件；管理员还可以分配会话、维护人员设置和查看运行状态",
   my: "从头像进入个人资料、邀请码和账号入口",
-  orderClaims: "接收 1688 采购订单并由业务员认领归属客户",
   salesLeads: "从大厅认领潜在客户、记录联系结果并在期限内持续跟进",
   orders: "查看或处理当前账号可见的订单",
   people: "按当前业务查看业务人员或承接账号资料",
@@ -86,7 +84,7 @@ const NAV_ENTRY_DESCRIPTIONS = {
   tasks: "查看、领取、提交或管理任务",
   team: "查看当前账号可见的团队范围",
   vip: "在对应业务内处理VIP申请、收款确认、充值记录和有效期调整",
-  wholesaleOrders: "管理批发客户订单、费用、毛利、订单月份和关联 1688 采购订单",
+  wholesaleOrders: "管理批发客户订单、费用、毛利和订单月份",
 } as const satisfies Record<WorkspaceNavLabelKey, string>;
 
 const BUSINESS_LABELS = {
@@ -95,7 +93,7 @@ const BUSINESS_LABELS = {
 } as const satisfies Record<WorkspaceBusinessKey, string>;
 
 const SYSTEM_UPDATE_GUIDES = [
-  "当前工作台开放批发业务，使用独立的客户、订单、1688 认领、物流、提成和推荐功能。",
+  "当前工作台开放批发业务，使用独立的客户、订单、物流、提成和推荐功能。",
   "任务支持按目标角色发放、多人分别领取、分别提交审核；管理员可以设置提交任务时是否必须上传文件。",
   "管理员可以通过操作记录核对重要处理动作，也可以通过反馈管理跟进用户提交的问题。",
   "个人照片上传后的图片初审只是辅助检查，是否通过以审核结果和页面提示为准。",

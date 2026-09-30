@@ -10,7 +10,6 @@ import {
   getMotionStaggerDelay,
 } from "@/lib/motion-tokens";
 import type {
-  WholesaleLinked1688Order,
   WholesaleCustomer,
   WholesaleOrderListItem,
   WholesaleOrderSettlement,
@@ -28,7 +27,6 @@ import {
   getCustomerName,
   getProfileName,
 } from "./wholesale-display";
-import { LinkedPurchaseOrders } from "./wholesale-order-linked-records";
 import { WholesaleOrderListAttachments } from "./wholesale-order-list-attachments";
 import { WholesaleOrderSettlementRecordsCell } from "./wholesale-order-settlement-records-cell";
 import {
@@ -63,7 +61,6 @@ export type WholesaleOrdersTableProps = {
   orders: WholesaleOrderListItem[];
   pendingKey: string | null;
   profilesById: Map<string, WholesaleProfile>;
-  purchaseOrdersByOrderId: Map<string, WholesaleLinked1688Order[]>;
 };
 export function WholesaleOrdersTable({
   canMarkOrderSettled,
@@ -80,11 +77,10 @@ export function WholesaleOrdersTable({
   orders,
   pendingKey,
   profilesById,
-  purchaseOrdersByOrderId,
 }: WholesaleOrdersTableProps) {
   const t = useTranslations("WholesaleBusiness.ordersUi");
   return (
-    <WholesaleTable minWidth={canViewInternalFields ? 3540 : 2460}>
+    <WholesaleTable minWidth={canViewInternalFields ? 3220 : 2140}>
       <thead>
         <tr>
           <WholesaleTh className={wholesaleStickyFirstThClassName}>
@@ -161,9 +157,6 @@ export function WholesaleOrdersTable({
           </WholesaleTh>
           <WholesaleTh className="min-w-[300px] whitespace-normal">
             <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text023" />
-          </WholesaleTh>
-          <WholesaleTh className="min-w-[320px] whitespace-normal">
-            <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text024" />
           </WholesaleTh>
           <WholesaleTh className="min-w-[260px] whitespace-normal">
             {t("orderList.title")}
@@ -329,13 +322,6 @@ export function WholesaleOrdersTable({
                   <WholesaleOrderSettlementRecordsCell
                     currency={order.customer_payment_currency}
                     settlements={settlements}
-                  />
-                </WholesaleTd>
-                <WholesaleTd className="min-w-[320px] whitespace-normal">
-                  <LinkedPurchaseOrders
-                    canViewInternalFields={canViewInternalFields}
-                    profilesById={profilesById}
-                    purchaseOrders={purchaseOrdersByOrderId.get(order.id) ?? []}
                   />
                 </WholesaleTd>
                 <WholesaleTd className="min-w-[260px] whitespace-normal">

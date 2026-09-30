@@ -18,7 +18,6 @@ export const workspaceWholesaleSectionKeys = [
   "orders",
   "inventory-orders",
   "settlement-releases",
-  "order-claims",
   "leads",
   "logistics",
   "customers",
@@ -78,7 +77,6 @@ export type WorkspaceNavLabelKey =
   | "systemHealth"
   | "incentives"
   | "settlementReleases"
-  | "orderClaims"
   | "salesLeads"
   | "logistics"
   | "customerInventoryOrders"

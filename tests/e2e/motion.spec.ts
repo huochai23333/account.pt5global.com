@@ -44,7 +44,7 @@ test.describe("全系统动效回归", () => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await loginAs(page, "administrator");
-    await page.goto("/admin/wholesale/order-claims");
+    await page.goto("/admin/wholesale/orders");
 
     const trigger = page.getByTestId("workspace-account-menu-trigger");
     await trigger.click();

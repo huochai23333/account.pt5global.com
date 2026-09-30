@@ -1,7 +1,5 @@
 import type { AppRole } from "./auth-routing";
 import type {
-  Wholesale1688ClaimGroup,
-  Wholesale1688Order,
   WholesaleCommission,
   WholesaleCustomer,
   WholesaleOrder,
@@ -119,8 +117,6 @@ export function scopeWholesaleProfiles({
   orderChangeLogs,
   orders,
   profiles,
-  purchaseClaimGroups,
-  purchaseOrders,
   registeredCandidates,
 }: {
   currentRole: AppRole | null;
@@ -129,8 +125,6 @@ export function scopeWholesaleProfiles({
   orderChangeLogs: WholesaleOrderChangeLog[];
   orders: WholesaleOrder[];
   profiles: WholesaleProfile[];
-  purchaseClaimGroups: Wholesale1688ClaimGroup[];
-  purchaseOrders: Wholesale1688Order[];
   registeredCandidates: WholesaleProfile[];
 }) {
   if (canReadFullWholesaleDirectory(currentRole)) return profiles;
@@ -149,14 +143,6 @@ export function scopeWholesaleProfiles({
     addOptionalId(visibleProfileIds, order.created_by_user_id);
   }
 
-  for (const claimGroup of purchaseClaimGroups) {
-    addOptionalId(visibleProfileIds, claimGroup.claimed_by_user_id);
-    addOptionalId(visibleProfileIds, claimGroup.updated_by_user_id);
-  }
-
-  for (const purchaseOrder of purchaseOrders) {
-    addOptionalId(visibleProfileIds, purchaseOrder.imported_by_user_id);
-  }
 
   for (const log of orderChangeLogs) {
     addOptionalId(visibleProfileIds, log.actor_user_id);

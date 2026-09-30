@@ -12,7 +12,6 @@ const adminNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
   ["inventory-orders", "customerInventoryOrders"],
   ["settlement-releases", "settlementReleases"],
-  ["order-claims", "orderClaims"],
   ["logistics", "logistics"],
   ["people", "people"],
   ["vip", "vip"],
@@ -23,7 +22,6 @@ const adminNavItems = createNavItems([
 ]);
 const salesNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
-  ["order-claims", "orderClaims"],
   ["customers", "customers"],
   ["people", "people"],
   ["vip", "vip"],
@@ -37,7 +35,6 @@ const salesmanNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
   ["inventory-orders", "customerInventoryOrders"],
   ["settlement-releases", "settlementReleases"],
-  ["order-claims", "orderClaims"],
   ["logistics", "logistics"],
   ["vip", "vip"],
   ["referrals", "referrals"],
@@ -64,7 +61,6 @@ const financeNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
   ["inventory-orders", "customerInventoryOrders"],
   ["settlement-releases", "settlementReleases"],
-  ["order-claims", "orderClaims"],
   ["logistics", "logistics"],
   ["customers", "customers"],
   ["vip", "vip"],

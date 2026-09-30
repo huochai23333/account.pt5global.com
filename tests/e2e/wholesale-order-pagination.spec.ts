@@ -10,9 +10,15 @@ import { expandOrderFilters } from "./helpers/order-filter-visibility";
 const LOCAL_ORDER_NUMBER_2 = buildCurrentLocalOrderNumber(2);
 
 test.describe("wholesale order pagination", () => {
-  test("loads stable batches and searches linked numbers across all orders", async ({
+  test("loads stable batches and searches own order numbers", async ({
     page,
   }) => {
+    const browserErrors: string[] = [];
+    // 列表在首次加载、筛选和刷新后都不应留下浏览器运行错误。
+    page.on("pageerror", (error) => browserErrors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") browserErrors.push(message.text());
+    });
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/orders");
@@ -21,7 +27,7 @@ test.describe("wholesale order pagination", () => {
     await expandOrderFilters(page);
     await expect(page.getByLabel("客户", { exact: true })).toBeVisible();
     await expectNoDocumentHorizontalOverflow(page);
-    // 日常默认表格只保留常用列；完整采购关联仍可按需切换查看。
+    // 日常默认表格只保留常用列；详细费用和附件可按需查看。
     await expect(page.getByRole("columnheader")).toHaveCount(7);
 
     const rows = page.locator('[data-testid^="wholesale-order-row-"]');
@@ -36,19 +42,16 @@ test.describe("wholesale order pagination", () => {
     expect(new Set(loadedIds).size).toBe(loadedIds.length);
     expect(loadedIds.slice(0, 20)).toEqual(firstBatchIds);
 
-    await searchWholesaleOrdersAcrossDates(page, "1688-LOCAL-001");
-    await expect(rows).toHaveCount(2);
-    await page.getByRole("button", { name: "查看全部字段" }).click();
-    for (const orderId of [
-      "c2000000-0000-4000-8000-000000000001",
-      "c2000000-0000-4000-8000-000000000004",
-    ]) {
-      await expect(
-        page
-          .getByTestId(`wholesale-order-row-${orderId}`)
-          .getByRole("button", { name: "1688-LOCAL-001" }),
-      ).toBeVisible();
-    }
+    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
+    await expect(rows).toHaveCount(1);
+    await expect(page.getByTestId("wholesale-order-row-c2000000-0000-4000-8000-000000000001")).toBeVisible();
+    // 刷新后重新从数据库读取，确认搜索结果不依赖页面内存中的旧数据。
+    await page.reload();
+    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
+    await expect(rows).toHaveCount(1);
+    await expect(page.getByTestId("wholesale-order-row-c2000000-0000-4000-8000-000000000001")).toBeVisible();
+    await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
+    expect(browserErrors).toEqual([]);
   });
 
   test("salesman and client can use wholesale order cards on mobile", async ({
@@ -78,9 +81,6 @@ test.describe("wholesale order pagination", () => {
       .toBeVisible();
     await expect(detailsDialog.getByRole("heading", { name: "结汇记录" }))
       .toBeVisible();
-    await expect(
-      detailsDialog.getByRole("heading", { name: "关联采购记录" }),
-    ).toBeVisible();
     await expect(detailsDialog.getByRole("heading", { name: "备注" }))
       .toBeVisible();
     await expect(detailsDialog.getByRole("button", { name: "修改订单" }))
@@ -132,16 +132,16 @@ test.describe("wholesale order pagination", () => {
         status: 500,
       });
     });
-    await searchWholesaleOrdersAcrossDates(page, "1688-LOCAL-001");
+    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
     await expect(page.getByText("部分结汇记录暂时没有加载成功。"))
       .toBeVisible();
-    await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(2);
+    await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(1);
     await page.getByRole("button", { name: "查看全部字段" }).click();
     await expect(
       page.locator('[data-testid^="wholesale-order-row-"]').filter({
-        hasText: "1688-LOCAL-001",
+        hasText: buildCurrentLocalOrderNumber(1),
       }),
-    ).toHaveCount(2);
+    ).toHaveCount(1);
 
     await page.unroute("**/rest/v1/wholesale_order_settlements**");
     await page.route("**/rest/v1/rpc/get_wholesale_order_page", (route) =>
@@ -275,8 +275,6 @@ test.describe("wholesale order pagination", () => {
       const download = await downloadPromise;
       expect(download.suggestedFilename()).toBe(fileName);
 
-      // 客户表格不提供内部采购入口；附件下载仍可正常完成。
-      await expect(clientRow.getByRole("button", { name: "1688-CLIENT-LOCAL-001" })).toHaveCount(0);
 
       await clientPage.setViewportSize({ height: 844, width: 390 });
       await clientPage.goto("/client/wholesale/orders");
@@ -390,7 +388,6 @@ async function expectMobileOrderCards(
       const dialog = page.getByRole("dialog", { name: /^订单 / });
       await expect(dialog.getByText("物流公司")).toBeVisible();
       await expect(dialog.getByRole("heading", { name: "结汇记录" })).toHaveCount(0);
-      await expect(dialog.getByRole("heading", { name: "关联采购记录" })).toHaveCount(0);
       await dialog.getByRole("button", { name: "关闭" }).click();
     }
     await expectNoDocumentHorizontalOverflow(page);

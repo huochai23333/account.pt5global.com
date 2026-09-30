@@ -10,10 +10,6 @@ import { getCurrentSessionContext } from "./current-session-context";
 import { getExchangeRates, type ExchangeRateRow } from "./exchange-rates";
 import { getDefaultOrderDateRange } from "./order-date-range";
 import {
-  getWholesaleClaimPage,
-  type WholesaleClaimFilters,
-} from "./wholesale-claims-page";
-import {
   getDefaultWholesaleLogisticsFilters,
   getInitialWholesaleLogisticsData,
   type WholesaleReferralWaybillCount,
@@ -32,10 +28,6 @@ import {
 } from "./wholesale-profiles";
 import type { WorkspaceWholesaleSectionKey } from "./workspace-config";
 import type {
-  Wholesale1688ClaimGroup,
-  Wholesale1688ClaimGroupOrder,
-  Wholesale1688ClaimGroupPurchase,
-  Wholesale1688Order,
   WholesaleCommission,
   WholesaleCustomer,
   WholesaleOrder,
@@ -98,7 +90,6 @@ export async function getWholesalePageData(
         : [],
       orderSettlements: orderPage?.orderSettlements ?? [],
       profiles,
-      purchaseOrders: orderPage?.purchaseOrders ?? [],
     };
   }
 
@@ -119,29 +110,6 @@ export async function getWholesalePageData(
       customers,
       logisticsFilters,
       profiles,
-    };
-  }
-
-  if (section === "order-claims") {
-    const dateRange = getDefaultOrderDateRange();
-    const filters: WholesaleClaimFilters = {
-      ...dateRange,
-      exactOrderNumber: "",
-      recipientName: "",
-      searchMode: "date_range",
-      searchText: "",
-    };
-    const [customers, profileResult, claimPage] = await Promise.all([
-      getWholesaleCustomers(supabase),
-      getWholesaleProfilesWithCandidates(supabase, false),
-      getWholesaleClaimPage(supabase, "assisted", filters),
-    ]);
-
-    return {
-      ...baseData,
-      claimPage,
-      customers,
-      ...profileResult,
     };
   }
 
@@ -173,10 +141,6 @@ type WholesaleSectionRows = {
   orderSettlements: WholesaleOrderSettlement[];
   orders: WholesaleOrder[];
   profiles: WholesaleProfile[];
-  purchaseClaimGroups: Wholesale1688ClaimGroup[];
-  purchaseClaimGroupOrders: Wholesale1688ClaimGroupOrder[];
-  purchaseClaimGroupPurchases: Wholesale1688ClaimGroupPurchase[];
-  purchaseOrders: Wholesale1688Order[];
   referrals: WholesaleReferral[];
   registeredCandidates: WholesaleProfile[];
 };
@@ -234,7 +198,6 @@ function createEmptyWholesalePageData({
   section: WorkspaceWholesaleSectionKey;
 }): WholesalePageData {
   return {
-    claimPage: null,
     ...createEmptyWholesaleSectionRows(),
     currentRole,
     currentUserId,
@@ -260,10 +223,6 @@ function createEmptyWholesaleSectionRows(): WholesaleSectionRows {
     orderSettlements: [],
     orders: [],
     profiles: [],
-    purchaseClaimGroups: [],
-    purchaseClaimGroupOrders: [],
-    purchaseClaimGroupPurchases: [],
-    purchaseOrders: [],
     referrals: [],
     registeredCandidates: [],
   };

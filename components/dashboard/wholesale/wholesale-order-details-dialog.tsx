@@ -5,7 +5,6 @@ import { CheckCircle2, PencilLine } from "lucide-react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import { Button } from "@/components/ui/button";
 import type {
-  WholesaleLinked1688Order,
   WholesaleOrderListItem,
   WholesaleOrderSettlement,
 } from "@/lib/wholesale";
@@ -40,7 +39,6 @@ type WholesaleOrderDetailsDialogProps = {
   order: WholesaleOrderListItem;
   orderListAttachments: WholesaleOrderListAttachment[];
   pendingKey: string | null;
-  purchaseOrders: WholesaleLinked1688Order[];
   salesName: string;
   settlements: WholesaleOrderSettlement[];
 };
@@ -59,7 +57,6 @@ export function WholesaleOrderDetailsDialog({
   order,
   orderListAttachments,
   pendingKey,
-  purchaseOrders,
   salesName,
   settlements,
 }: WholesaleOrderDetailsDialogProps) {
@@ -226,12 +223,6 @@ export function WholesaleOrderDetailsDialog({
           )}
         </DetailGroup> : null}
 
-        {canViewInternalFields ? <DetailGroup title={uiText("attribute005")}>
-          <RecordLabels
-            emptyText={uiText("attribute006")}
-            labels={purchaseOrders.map((item) => item.external_order_number)}
-          />
-        </DetailGroup> : null}
 
         <DetailGroup title={orderListText("title")}>
           <WholesaleOrderListAttachments
@@ -266,28 +257,5 @@ function DetailGroup({
       <h3 className="mb-3 text-sm font-semibold text-content-muted">{title}</h3>
       {children}
     </section>
-  );
-}
-function RecordLabels({
-  emptyText,
-  labels,
-}: {
-  emptyText: string;
-  labels: string[];
-}) {
-  if (labels.length === 0) {
-    return <p className="text-sm text-content-muted">{emptyText}</p>;
-  }
-  return (
-    <div className="flex flex-wrap gap-2">
-      {labels.map((label) => (
-        <span
-          className="max-w-full break-words rounded-full bg-status-info-soft px-3 py-1.5 text-xs font-semibold text-primary [overflow-wrap:anywhere]"
-          key={label}
-        >
-          {label}
-        </span>
-      ))}
-    </div>
   );
 }
