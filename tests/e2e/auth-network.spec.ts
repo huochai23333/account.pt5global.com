@@ -23,9 +23,10 @@ test("密码按钮可用鼠标和键盘切换，保留输入内容", async ({ pa
 
 test("登录等待时仍可查看密码，失败后按钮和表单恢复", async ({ page }) => {
   const account = getRegressionAccount("salesman");
+  const upstream = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL")!;
   let releaseRequest: (() => void) | undefined;
   const blockedRequest = new Promise<void>((resolve) => { releaseRequest = resolve; });
-  await page.route("**/api/supabase/auth/v1/token?*", async (route) => {
+  await page.route(`${upstream}/auth/v1/token?*`, async (route) => {
     await blockedRequest;
     await route.fulfill({
       status: 408,
@@ -54,16 +55,22 @@ test("登录等待时仍可查看密码，失败后按钮和表单恢复", async
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("浏览器不能直连数据库时仍可登录，刷新保留真实身份", async ({ page }) => {
+test("浏览器直连 Supabase 登录，刷新保留真实身份", async ({ page }) => {
   const admin = getLocalSupabaseAdminClient();
   test.skip(!admin, "需要本地 Docker 认证服务独立核对身份。");
   if (!admin) return;
   const upstream = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL")!;
   const directRequests: string[] = [];
-  // 只切断浏览器直连；网站服务端仍可访问本地 Docker，模拟员工无法连接境外服务。
-  await page.route(`${upstream}/**`, async (route) => {
-    directRequests.push(new URL(route.request().url()).pathname);
-    await route.abort("connectionfailed");
+  const browserErrors: string[] = [];
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+  // 记录浏览器真实发出的请求，证明登录没有再经过网站的转发入口。
+  page.on("request", (request) => {
+    if (request.url().startsWith(`${upstream}/`)) {
+      directRequests.push(new URL(request.url()).pathname);
+    }
   });
   const account = getRegressionAccount("salesman");
   await setTestLocale(page, "zh");
@@ -86,32 +93,14 @@ test("浏览器不能直连数据库时仍可登录，刷新保留真实身份",
   await page.reload();
   await page.goto("/salesman/my");
   await expect(page.getByText(account.email, { exact: true }).first()).toBeVisible();
-  expect(directRequests).toEqual([]);
+  expect(directRequests).toContain("/auth/v1/token");
+  expect(directRequests.some((path) => path.startsWith("/rest/v1/"))).toBe(true);
+  expect(browserErrors).toEqual([]);
 });
 
-test("转发入口拒绝无密钥和外站请求", async ({ request }) => {
-  const path = "/api/supabase/auth/v1/health";
-  expect((await request.get(path)).status()).toBe(401);
-  expect((await request.get(path, { headers: { origin: "https://other.example" } })).status()).toBe(403);
-  expect((await request.get("/api/supabase/rest/v1/../private", {
-    headers: { apikey: readLocalEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ?? "invalid" },
-  })).status()).toBe(404);
-});
-
-test("反向代理的内部地址不误拦截本站请求", async ({ request }) => {
-  const apikey = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
-    ?? readLocalEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  test.skip(!apikey, "需要本地 Docker Supabase 的公开密钥。");
-  if (!apikey) return;
-  // 本地请求 URL 仍是 localhost，但模拟代理报告正式域名；来源判断必须采用公开站点地址。
-  const response = await request.get("/api/supabase/auth/v1/health", {
-    headers: {
-      apikey,
-      origin: "https://account.pt5global.com",
-      "x-forwarded-host": "account.pt5global.com",
-    },
-  });
-  expect(response.status()).toBe(200);
+test("旧转发入口不再提供 Supabase 请求", async ({ request }) => {
+  // 恢复直连后，本站不应再保留可被调用的认证转发路由。
+  expect((await request.get("/api/supabase/auth/v1/health")).status()).toBe(404);
 });
 
 test("真实密码错误不会生成会话或进入工作台", async ({ page }) => {
