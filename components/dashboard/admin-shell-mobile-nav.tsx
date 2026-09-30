@@ -84,10 +84,11 @@ export function AdminShellMobileNav({
         />
       </DesignButton>
 
+      {/* 菜单浮在页面内容上方，使用不透底的表面色，避免底下的文字与导航项叠读。 */}
       <nav
         aria-hidden={!mobileMenuOpen}
         className={cn(
-          "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-[62vh] overflow-y-auto rounded-control-large border border-surface-panel-border bg-surface-overlay p-2 shadow-surface-interactive backdrop-blur-2xl backdrop-saturate-150 transition-[opacity,transform,clip-path] duration-200 ease-out",
+          "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-[62vh] overflow-y-auto rounded-control-large border border-surface-panel-border bg-surface-inset p-2 shadow-surface-interactive transition-[opacity,transform,clip-path] duration-200 ease-out",
           mobileMenuOpen
             ? "pointer-events-auto translate-y-0 opacity-100 [clip-path:inset(0_0_0_0)]"
             : "pointer-events-none -translate-y-1 opacity-0 [clip-path:inset(0_0_100%_0)]",

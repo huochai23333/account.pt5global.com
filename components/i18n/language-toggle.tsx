@@ -103,9 +103,10 @@ export function LanguageToggle() {
 
         <AnimatePresence>
           {mobileMenuOpen ? (
+            // 语言菜单会覆盖系统标题和导航；不透底才能让选项始终清楚可读。
             <motion.div
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-36 origin-top-right rounded-control-large border border-border-subtle bg-surface-overlay p-2 shadow-surface-floating backdrop-blur-2xl backdrop-saturate-150"
+              className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-36 origin-top-right rounded-control-large border border-border-subtle bg-surface-inset p-2 shadow-surface-floating"
               exit={{ opacity: 0, scale: 0.985, y: -4 }}
               initial={{ opacity: 0, scale: 0.985, y: -4 }}
               role="menu"

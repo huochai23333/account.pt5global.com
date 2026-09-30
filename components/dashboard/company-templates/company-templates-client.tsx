@@ -69,7 +69,8 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
       header={<DashboardListHeader actions={isAdmin && desktop ? <Button onClick={() => setPublishTarget(null)}><Plus className="size-4" />{t("actions.create")}</Button> : null} description={t("description")} title={t("title")} />}
     >
       {!desktop ? <p className="rounded-xl bg-surface-inset p-5 text-sm text-content-muted">{t("viewer.desktopOnly")}</p> : initialTemplates.length ? (
-        <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+        // 每张卡片按自己的内容高度排列；展开一侧的版本记录时，另一侧不应跟着变长。
+        <div className="grid min-w-0 items-start gap-5 xl:grid-cols-2">
           {initialTemplates.map((template) => <CompanyTemplateCard
             busy={pending || managingKey !== null}
             managingKey={managingKey}

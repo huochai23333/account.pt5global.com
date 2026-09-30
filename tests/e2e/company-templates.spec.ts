@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { loginAs, type RegressionRole } from "./helpers/auth";
 import { fillQuotationRow, fillPublishDialog, htmlFile, publishMultipart, requireLocalAdminClient, readTemplateBySlug, readVersion, countTemplates, countVersions, deleteTemplate, sha256, clickStableTemplateButton, expectNoPageOverflow } from "./helpers/company-template-actions";
@@ -255,6 +255,10 @@ test.describe("公司模板", () => {
 
   test("管理员从页面完成新建、更新、指南、回退和停用，并核对数据库最终记录", async ({ page }) => {
     test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const browserErrors: string[] = [];
+    page.on("pageerror", (error) => browserErrors.push(error.message));
+    page.on("console", (message) => { if (message.type() === "error") browserErrors.push(message.text()); });
     const admin = requireLocalAdminClient();
     const account = await loginAs(page, "administrator");
     const marker = Date.now();
@@ -308,7 +312,21 @@ test.describe("公司模板", () => {
       });
 
       const updatedArticle = page.locator("article").filter({ hasText: name });
+      const otherArticle = page.locator("article").filter({ hasText: "PT5 DS 报价单（多目的国版）" });
+      const otherHeightBefore = (await otherArticle.boundingBox())?.height;
+      expect(otherHeightBefore).toBeDefined();
       await updatedArticle.getByText("版本记录").click();
+      await expect(updatedArticle.locator("details")).toHaveAttribute("open", "");
+      // 双列卡片的高度应彼此独立，避免一侧展开后把另一侧也视觉上拉开。
+      expect((await updatedArticle.boundingBox())?.height).toBeGreaterThan(otherHeightBefore!);
+      await expect.poll(async () => (await otherArticle.boundingBox())?.height).toBe(otherHeightBefore);
+      await page.reload();
+      const otherHeightAfterReload = (await otherArticle.boundingBox())?.height;
+      await updatedArticle.getByText("版本记录").click();
+      await expect(updatedArticle.locator("details")).toHaveAttribute("open", "");
+      await expect.poll(async () => (await otherArticle.boundingBox())?.height).toBe(otherHeightAfterReload);
+      await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
+      expect(browserErrors).toEqual([]);
       await updatedArticle.getByRole("button", { name: "恢复此版本" }).click();
       await expect(page.getByText("已恢复所选版本。")).toBeVisible();
       await expect.poll(async () => (await readTemplateBySlug(admin, slug)).current_version_id).toBe(version1.id);

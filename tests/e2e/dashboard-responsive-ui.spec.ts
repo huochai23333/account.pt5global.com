@@ -141,6 +141,79 @@ test.describe("工作台分阶段视觉升级", () => {
     await expect(page.locator("#account-center")).toBeVisible();
   });
 
+  for (const role of ["administrator", "salesman", "operator", "finance", "client"] as const) {
+    test(`${role} 超窄屏顶栏和手机导航保持清晰`, async ({ page }) => {
+      await loginAs(page, role);
+      const pageErrors: string[] = [];
+      page.on("pageerror", (error) => pageErrors.push(error.message));
+
+      for (const width of [320, 360, 390]) {
+        await page.setViewportSize({ height: 900, width });
+        await page.goto(role === "administrator" ? "/admin/home" : `/${role}/home`);
+        await expect(page.getByTestId("home-widget-card").first()).toBeVisible();
+
+        const label = page.locator("header p.font-label");
+        // 320px 装不下辅助岗位标签和四个操作入口，系统标题仍在第二行完整显示。
+        if (width === 320) await expect(label).toBeHidden();
+        else await expect(label).toBeVisible();
+
+        const layout = await page.evaluate(() => {
+          const labelElement = document.querySelector("header p.font-label");
+          const labelBox = labelElement?.getClientRects()[0] ?? null;
+          const languageBox = document.querySelector('header button[aria-label="切换语言"]')?.getBoundingClientRect();
+          return {
+            labelRight: labelBox?.right ?? null,
+            languageLeft: languageBox?.left ?? null,
+            languageRight: languageBox?.right ?? null,
+            overflow: document.documentElement.scrollWidth - window.innerWidth,
+          };
+        });
+        expect(layout.overflow).toBeLessThanOrEqual(2);
+        expect(layout.languageRight).not.toBeNull();
+        expect(layout.languageRight!).toBeLessThanOrEqual(width);
+        if (layout.labelRight !== null) {
+          expect(layout.labelRight).toBeLessThanOrEqual(layout.languageLeft!);
+        }
+
+        if (width === 320) {
+          await page.getByRole("button", { name: "切换语言" }).click();
+          const languageMenu = page.getByRole("menu");
+          await expect(languageMenu.getByRole("menuitemradio", { name: "中文" })).toBeVisible();
+          const languageAlpha = await languageMenu.evaluate((element) => {
+            const channels = getComputedStyle(element).backgroundColor.match(/[\d.]+/g)?.map(Number) ?? [];
+            return channels.length === 4 ? channels[3] : 1;
+          });
+          expect(languageAlpha).toBe(1);
+          await page.keyboard.press("Escape");
+          await expect(languageMenu).toHaveCount(0);
+        }
+
+        const navButton = page.locator("header").getByRole("button", { exact: true, name: "首页" });
+        await navButton.click();
+        const nav = page.locator('header nav[aria-hidden="false"]');
+        await expect(nav).toBeVisible();
+        await expect(nav.getByRole("link", { exact: true, name: "首页" })).toBeVisible();
+        const menu = await nav.evaluate((element) => {
+          const color = getComputedStyle(element).backgroundColor;
+          const channels = color.match(/[\d.]+/g)?.map(Number) ?? [];
+          const box = element.getBoundingClientRect();
+          return { alpha: channels.length === 4 ? channels[3] : 1, left: box.left, right: box.right };
+        });
+        // 浮层必须不透底，否则页面上的文字会穿过菜单，与入口文案叠在一起。
+        expect(menu.alpha).toBe(1);
+        expect(menu.left).toBeGreaterThanOrEqual(0);
+        expect(menu.right).toBeLessThanOrEqual(width);
+        await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
+      }
+
+      await page.reload();
+      await expect(page.getByTestId("home-widget-card").first()).toBeVisible();
+      await page.locator("header").getByRole("button", { exact: true, name: "首页" }).click();
+      await expect(page.locator('header nav[aria-hidden="false"]')).toBeVisible();
+      expect(pageErrors).toEqual([]);
+    });
+  }
+
   test("公司费用首屏、移动筛选和弹窗底部操作区符合共享规则", async ({
     page,
   }) => {

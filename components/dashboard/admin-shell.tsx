@@ -126,8 +126,9 @@ export async function AdminShell({
                     data-slot="workspace-header"
                   >
                     <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-3 py-3 sm:flex sm:justify-between sm:px-6 sm:py-4 lg:px-8">
-                      <div className="min-w-[4.5rem] sm:min-w-0">
-                        <p className="font-label whitespace-nowrap text-[10px] tracking-[0.08em] text-content-muted uppercase sm:text-[11px] sm:tracking-[0.2em]">
+                      {/* 超窄屏优先给语言和账号按钮留足触控空间；下一行的系统标题仍能标明当前位置。 */}
+                      <div className="min-w-0">
+                        <p className="font-label hidden whitespace-nowrap text-[10px] tracking-[0.08em] text-content-muted uppercase min-[360px]:block sm:text-[11px] sm:tracking-[0.2em]">
                           {workspace.workspaceLabel}
                         </p>
                         <h1 className="hidden text-xl font-bold tracking-tight text-primary sm:block sm:text-3xl">
