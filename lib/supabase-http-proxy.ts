@@ -1,5 +1,8 @@
 import "server-only";
 
+import type { NextRequest } from "next/server";
+
+import { getRequestPublicOrigin } from "./public-site-origin";
 import { getSupabaseEnv } from "./supabase";
 import { getSupabaseHttpTimeoutMs, isSupabaseHttpPath, SUPABASE_HTTP_PROXY_PATH } from "./supabase-http-transport";
 
@@ -17,15 +20,16 @@ const responseHeaderNames = [
  * 只传递浏览器本来持有的公开密钥和用户令牌。不能补 service_role、读取站点 Cookie
  * 来代替身份，也不能提前刷新会话；权限继续由 Supabase Auth、RLS 和业务函数检查。
  */
-export async function proxySupabaseHttpRequest(request: Request) {
+export async function proxySupabaseHttpRequest(request: NextRequest) {
   const incoming = new URL(request.url);
   const pathname = incoming.pathname.slice(SUPABASE_HTTP_PROXY_PATH.length);
   if (!incoming.pathname.startsWith(`${SUPABASE_HTTP_PROXY_PATH}/`) || !isSupabaseHttpPath(pathname)) {
     return failure(404, "访问地址不存在。");
   }
-  // 认证和文件请求可能写入资料，拒绝其他网站借用当前站点发起这些请求。
+  // Hostinger 转发到 Node 时，请求 URL 可能是内部地址；用系统配置的公开地址判断浏览器来源。
+  // 认证和文件请求可能写入资料，仍须拒绝其他网站借用当前站点发起请求。
   const origin = request.headers.get("origin");
-  if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== incoming.origin)) {
+  if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== getRequestPublicOrigin(request))) {
     return failure(403, "请从系统页面重新操作。");
   }
   const { supabaseUrl, supabaseKey } = getSupabaseEnv();

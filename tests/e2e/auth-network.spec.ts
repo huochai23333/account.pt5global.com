@@ -98,6 +98,22 @@ test("转发入口拒绝无密钥和外站请求", async ({ request }) => {
   })).status()).toBe(404);
 });
 
+test("反向代理的内部地址不误拦截本站请求", async ({ request }) => {
+  const apikey = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+    ?? readLocalEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  test.skip(!apikey, "需要本地 Docker Supabase 的公开密钥。");
+  if (!apikey) return;
+  // 本地请求 URL 仍是 localhost，但模拟代理报告正式域名；来源判断必须采用公开站点地址。
+  const response = await request.get("/api/supabase/auth/v1/health", {
+    headers: {
+      apikey,
+      origin: "https://account.pt5global.com",
+      "x-forwarded-host": "account.pt5global.com",
+    },
+  });
+  expect(response.status()).toBe(200);
+});
+
 test("真实密码错误不会生成会话或进入工作台", async ({ page }) => {
   const account = getRegressionAccount("salesman");
   await setTestLocale(page, "zh");
