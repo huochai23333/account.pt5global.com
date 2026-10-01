@@ -23,7 +23,7 @@
 
 代码上传：Supabase 已提交并推送到 `fix/logistics-sync-resume-20261001`，提交 [a3d85dcefa8864f5db2702d3596e1c809bfa530a](https://github.com/huochai23333/PT5-dropshipping-supabase/commit/a3d85dcefa8864f5db2702d3596e1c809bfa530a)，远端分支 SHA 已独立核对；其 main 保持 bcf6ab689c28d58efe435e6e6d75f6f58909ccb3。该提交 check-runs=0、workflow runs=0、部署记录=0，仓库没有配置 CI，不能称为 CI 测试通过。未创建 PR 或 Supabase 云开发分支（只读列表为空），未部署、未生产迁移、未切换 Compute。
 
-Web 完整改动已提交在同名本地修复分支，暂不推送。两个仓库 Actions、webhooks、GitHub environments/deployments 均无配置/记录，但这些不能证明 Hostinger 外部集成不监听修复分支；现有工具未提供 Hostinger 绑定分支读取，GitHub App 安装查询返回 403。需要确认 `account.pt5global.com` 在 Hostinger 绑定的仓库分支，或另行明确授权可能产生部署/预览的上传；不得直接推送 main。两仓库 README 已更新，所有暂存内容已按物流修复范围与凭据模式复核。
+Web 已按用户明确确认上传：用户确认 Hostinger 仅绑定 main，修复分支不会自动部署或创建预览，并授权“上传吧”。代码提交 [05c6e37990385619cbd0693b9737af45acb2a880](https://github.com/huochai23333/account.pt5global.com/commit/05c6e37990385619cbd0693b9737af45acb2a880) 已推送到 `fix/logistics-sync-resume-20261001`，远端 SHA 一致；main 保持 86a189957e814b70ef856ed06204b327a033eeef。该代码提交 workflow runs=0、check-runs=0、commit statuses 为空，仓库没有配置 CI/checks，不能称为云端 CI 测试通过。未合并、未创建 PR、未手动部署、未执行生产迁移。Supabase 未重复上传。两仓库 README 已更新，暂存内容已按物流修复范围与凭据模式复核；本次文档补充仅记录最终上传状态。
 
 本地恢复：本轮启动的 Web、Edge 和 Docker Desktop 已停止，相关端口无监听，恢复初始 Docker 停止状态。归档仍为原 62 行，测试夹具行 0，HTTP 队列 0；暂停之后外联响应未增加，启动窗口仍仅 4 条 401；这 4 次失败调用的用量/账单未核对。`cron.launch_active_jobs=off` 持久暂停保留，未重新启用可能打生产的任务。截图和验证产物保留在 ignored output，未上传凭据或本地配置。
 
