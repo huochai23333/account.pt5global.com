@@ -13,6 +13,9 @@ import {
 
 test.describe.configure({ mode: "serial" });
 
+// 本文件验收已有档案的查询/归属；外部同步写入由专用同步用例完成，避免本地 cron 重试外发。
+test.beforeEach(async ({ page }) => { await isolateSourceRefresh(page); });
+
 test.describe("店小秘物流永久档案", () => {
   test("管理员可筛选业务员、店铺、日期与运费并查看分币种汇总", async ({
     page,
@@ -136,6 +139,7 @@ test.describe("店小秘物流永久档案", () => {
     const salesmanPage = await browser.newPage({
       viewport: { height: 900, width: 1440 },
     });
+    await isolateSourceRefresh(salesmanPage);
     await loginAs(salesmanPage, "salesman");
     await salesmanPage.goto("/salesman/wholesale/logistics");
     await expectNotForbiddenPage(salesmanPage);
@@ -156,6 +160,7 @@ test.describe("店小秘物流永久档案", () => {
     const financePage = await browser.newPage({
       viewport: { height: 900, width: 1440 },
     });
+    await isolateSourceRefresh(financePage);
     await loginAs(financePage, "finance");
     await financePage.goto("/finance/wholesale/logistics");
     await expectNotForbiddenPage(financePage);
@@ -204,6 +209,14 @@ async function expectResponsiveLayout(page: Page) {
   await page.setViewportSize({ height: 844, width: 390 });
   await expectNoDocumentHorizontalOverflow(page);
   await expectNoCompressedText(page);
+}
+
+async function isolateSourceRefresh(page: Page) {
+  await page.route("**/functions/v1/wholesale-logistics-sync", (route) => route.fulfill({
+    status: route.request().method() === "OPTIONS" ? 200 : 503,
+    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
+    json: { error: "local_read_regression" },
+  }));
 }
 
 async function expectNoDocumentHorizontalOverflow(page: Page) {

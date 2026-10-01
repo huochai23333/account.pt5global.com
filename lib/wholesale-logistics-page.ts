@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
+import { getOperationRun, requireSucceededOperationRun } from "./operation-runs";
 import {
   getDefaultOrderDateRange,
   normalizeOrderDateRange,
@@ -22,22 +23,27 @@ export type WholesaleLogisticsFilters = {
 export type WholesaleLogisticsRecord = {
   assignment_id: string | null;
   customer_id: string | null;
+  /** 内容最后变化与成功观测是两个时间；重复核对只推进 last_synced_at。 */
+  data_changed_at: string;
   id: string;
   last_mile_tracking_number: string | null;
   last_synced_at: string;
   logistics_provider: string | null;
   logistics_status: string | null;
   order_created_at: string | null;
+  order_source_last_seen_at: string;
   package_number: string;
   sales_user_id: string | null;
   shipping_cost: number | null;
   shipping_cost_updated_at: string | null;
+  shipping_source_last_seen_at: string | null;
   shipping_currency: string | null;
   source_order_id: number;
   source_system: string;
   store_name: string | null;
   tracking_number: string | null;
   tracking_updated_at: string | null;
+  tracking_source_last_seen_at: string | null;
 };
 
 export type WholesaleLogisticsPage = {
@@ -210,6 +216,21 @@ export async function requestWholesaleLogisticsRefresh(
       && receipt.operationStatus !== "skipped")
   ) {
     throw new Error("最新物流数据仍在确认中，请稍后到系统运行页查看。");
+  }
+
+  // 响应只用于定位运行编号；再次读取账本，避免将已排队、部分完成或伪成功响应当成完成。
+  const run = await getOperationRun(supabase, receipt.operationId);
+  if (run.operationKey !== "wholesale-logistics-sync") {
+    throw new Error("最新物流数据仍在确认中，请稍后到系统运行页查看。");
+  }
+  if (receipt.operationStatus === "succeeded") {
+    requireSucceededOperationRun(run, "最新物流数据尚未全部更新，请稍后查看。");
+    if (run.resultProof.completed !== true) {
+      throw new Error("最新物流数据尚未全部更新，请稍后查看。");
+    }
+  } else if (run.status !== "skipped" || run.resultProof.reason !== "already_fresh") {
+    // 另一个同步正在执行只是等待状态；页面继续展示已有档案，并保留稍后更新提示。
+    throw new Error("最新物流数据正在更新，请稍后查看。");
   }
 
   return {
