@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getWholesaleOrderAssessmentSample } from "./wholesale-order-assessment-sample";
 
 import type { AppRole } from "./auth-routing";
 import {
@@ -45,7 +46,7 @@ export async function getWholesalePageData(
   section: WorkspaceWholesaleSectionKey,
   options?: {
     orderFilters?: WholesaleOrderFilters;
-    orderLimit?: number;
+    orderSampleSize?: number;
   },
 ): Promise<WholesalePageData> {
   const sessionContext = await getCurrentSessionContext(supabase);
@@ -64,7 +65,7 @@ export async function getWholesalePageData(
         getWholesaleCustomers(supabase),
         getWholesaleProfiles(supabase, false),
         getExchangeRates(supabase),
-        getWholesaleOrderPage(supabase, filters, null, options?.orderLimit)
+        getWholesaleOrderPage(supabase, filters)
           .then((page) => ({ error: null, page }))
           .catch((error: unknown) => ({
             error:
@@ -75,7 +76,9 @@ export async function getWholesalePageData(
           })),
       ]);
 
-    const orderPage = orderPageResult.page;
+    const orderPage = orderPageResult.page && options?.orderSampleSize
+      ? await getWholesaleOrderAssessmentSample(supabase, filters, orderPageResult.page, options.orderSampleSize)
+      : orderPageResult.page;
 
     return {
       ...baseData,
@@ -173,7 +176,7 @@ async function getWholesaleSectionRows(
         supabase
           .from("wholesale_referrals")
           .select("*")
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false }).order("id", { ascending: false }),
         "批发推荐关系",
       ),
     ]);

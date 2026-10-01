@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
@@ -158,8 +159,8 @@ export async function getAdminPeoplePageData(
 export async function getAdminPeopleDirectory(
   supabase: SupabaseClient,
 ): Promise<AdminPersonRow[]> {
-  const { data, error } = await withRequestTimeout(
-    supabase.rpc("get_admin_people_directory"),
+  const { data, error } = await queryCompleteDashboardRows(
+    supabase.rpc("get_admin_people_directory").order("created_at", { ascending: false }).order("user_id", { ascending: false }),
   );
 
   if (error) {
@@ -192,6 +193,15 @@ export async function getAdminPeopleChangeLogs(
     throw error;
   }
 
+  return normalizeAdminPeopleChangeLogRows(data);
+}
+
+/** 完整历史使用独立入口，账号页的最近十条摘要继续保持紧凑。 */
+export async function getAdminPeopleChangeLogDirectory(supabase: SupabaseClient) {
+  const { data, error } = await queryCompleteDashboardRows(
+    supabase.rpc("get_admin_people_change_log_directory").order("created_at", { ascending: false }).order("id", { ascending: false }),
+  );
+  if (error) throw new Error("账号操作记录暂时无法读取，请稍后重试。", { cause: error });
   return normalizeAdminPeopleChangeLogRows(data);
 }
 

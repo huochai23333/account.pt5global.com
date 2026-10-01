@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows, type DashboardCollectionQuery } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentSessionContext } from "./current-session-context";
@@ -17,11 +18,6 @@ import { getWholesaleProfiles } from "./wholesale-profiles";
 import type { WholesaleCustomer } from "./wholesale-types";
 
 export * from "./customer-inventory-types";
-
-type QueryResult<T> = {
-  data: T[] | null;
-  error: { message: string } | null;
-};
 
 /**
  * 库存订单拥有独立的数据装载入口。
@@ -48,8 +44,7 @@ export async function getCustomerInventoryPageData(
         .from("customer_inventory_orders")
         .select("*")
         .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(200),
+        .order("id", { ascending: false }),
       "库存订单",
     ),
     queryRows<CustomerInventoryOrderItem>(
@@ -57,8 +52,7 @@ export async function getCustomerInventoryPageData(
         .from("customer_inventory_order_items")
         .select("*")
         .order("sort_order", { ascending: true })
-        .order("id", { ascending: true })
-        .limit(20_000),
+        .order("id", { ascending: true }),
       "库存订单商品",
     ),
     queryRows<CustomerInventoryCreditApplication>(
@@ -66,40 +60,35 @@ export async function getCustomerInventoryPageData(
         .from("customer_inventory_credit_applications")
         .select("*")
         .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(600),
+        .order("id", { ascending: false }),
       "库存信贷",
     ),
     queryRows<CustomerInventoryExtensionRequest>(
       supabase
         .from("customer_inventory_credit_extension_requests")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(600),
+        .order("created_at", { ascending: false }).order("id", { ascending: false }),
       "信贷延期",
     ),
     queryRows<CustomerInventoryRepayment>(
       supabase
         .from("customer_inventory_credit_repayments")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(600),
+        .order("created_at", { ascending: false }).order("id", { ascending: false }),
       "信贷还款",
     ),
     queryRows<CustomerInventoryAttachment>(
       supabase
         .from("customer_inventory_order_list_attachments")
         .select("*")
-        .order("created_at", { ascending: true })
-        .limit(2_000),
+        .order("created_at", { ascending: true }).order("id", { ascending: true }),
       "库存订单附件",
     ),
     queryRows<CustomerInventoryAuditLog>(
       supabase
         .from("customer_inventory_order_audit_logs")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1_000),
+        .order("created_at", { ascending: false }).order("id", { ascending: false }),
       "库存订单操作记录",
     ),
     queryRows<WholesaleCustomer>(
@@ -107,7 +96,7 @@ export async function getCustomerInventoryPageData(
         .from("wholesale_customers")
         .select("*")
         .not("registered_user_id", "is", null)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false }).order("id", { ascending: false }),
       "已注册批发客户",
     ),
     getWholesaleProfiles(supabase, false),
@@ -182,10 +171,10 @@ async function loadUsdToCurrencyRates(
 }
 
 async function queryRows<T>(
-  query: PromiseLike<QueryResult<T>>,
+  query: DashboardCollectionQuery<T>,
   label: string,
 ): Promise<T[]> {
-  const result = await query;
+  const result = await queryCompleteDashboardRows(query);
 
   if (result.error) {
     throw new Error(`${label}暂时没有加载成功，请稍后重试。`, {

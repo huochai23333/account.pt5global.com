@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { RecordCard } from "@/components/ui/data-display";
 
@@ -189,14 +191,21 @@ export function AdminPeopleDirectorySection({
             title={t("directory.emptyTitle")}
           />
         ) : (
-          <PeopleTable
-            currentViewerId={currentViewerId}
-            onAdjustPerson={onAdjustPerson}
-            onEditPersonNote={onEditPersonNote}
-            people={filteredPeople}
-            roleLabels={roleLabels}
-            statusLabels={statusLabels}
-          />
+          <DashboardPagedRecords items={filteredPeople}
+            queryKey={JSON.stringify([searchText, roleFilter, statusFilter])}>
+            {(pageRows) => (
+              <>
+              <PeopleTable
+                currentViewerId={currentViewerId}
+                onAdjustPerson={onAdjustPerson}
+                onEditPersonNote={onEditPersonNote}
+                people={pageRows}
+                roleLabels={roleLabels}
+                statusLabels={statusLabels}
+              />
+              </>
+            )}
+          </DashboardPagedRecords>
         )}
       </div>
     </DashboardListSection>

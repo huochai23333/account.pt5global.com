@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
@@ -25,7 +26,6 @@ import {
 } from "./exchange-rate-types";
 import { withRequestTimeout } from "./request-timeout";
 
-const EXCHANGE_RATE_PAGE_QUERY_LIMIT = 1_000;
 
 /** 页面查询先校验身份，再并行读取汇率和管理员专用的自动同步设置。 */
 export async function getExchangeRatesPageData(
@@ -52,17 +52,15 @@ export async function getExchangeRatesPageData(
 
 export async function getExchangeRates(
   supabase: SupabaseClient,
-  limit = EXCHANGE_RATE_PAGE_QUERY_LIMIT,
 ): Promise<ExchangeRateRow[]> {
-  const { from, to } = getDashboardQueryRange(limit);
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("exchange_rate")
       .select(EXCHANGE_RATE_SELECT)
       .order("rate_date", { ascending: false })
       .order("fetched_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .range(from, to)
+      .order("id", { ascending: false })
       .returns<ExchangeRateRow[]>(),
   );
   if (error) throw error;

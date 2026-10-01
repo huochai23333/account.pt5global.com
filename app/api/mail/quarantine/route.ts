@@ -9,8 +9,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     return NextResponse.json(await queryMailQuarantine(await requireMailIdentity(), {
-      cursor: url.searchParams.get("cursor") ?? undefined,
-      limit: Number(url.searchParams.get("limit") ?? 40),
+      page: Number(url.searchParams.get("page") ?? 1),
       customerEmail: url.searchParams.get("customerEmail") ?? undefined,
       refCode: url.searchParams.get("refCode") ?? undefined,
       assignedMemberId: url.searchParams.get("assignedMemberId") ?? undefined,

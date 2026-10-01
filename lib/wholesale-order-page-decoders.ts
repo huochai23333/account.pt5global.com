@@ -1,5 +1,4 @@
 import type {
-  WholesaleOrderCursor,
   WholesaleOrderPageSummary,
   WholesaleOrderPageWarning,
 } from "./wholesale-order-page";
@@ -57,16 +56,6 @@ export function readWholesaleOrderSummary(
   };
 }
 
-export function readWholesaleOrderCursor(
-  value: unknown,
-): WholesaleOrderCursor | null {
-  const cursor = readRecord(value);
-  return cursor &&
-    typeof cursor.id === "string" &&
-    typeof cursor.orderedAt === "string"
-    ? { id: cursor.id, orderedAt: cursor.orderedAt }
-    : null;
-}
 
 export function readWholesaleOrderArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];

@@ -12,27 +12,46 @@ import type {
   MailThreadDetail,
 } from "@/lib/mail/mail-types";
 
+import { useDashboardQueryPage } from "@/lib/use-dashboard-query-page";
+
 import { requestMailJson } from "./mail-client-request";
 
 export function useMailIntake(input: {
   isAdmin: boolean;
+  selectionScope: string;
   initialQuarantine: MailQuarantineItem[];
   initialRules: MailIntakeRule[];
   onThreadsRemoved: (threadIds: string[]) => void;
   onSummaryRefresh: () => Promise<void>;
 }) {
   const confirm = useDashboardConfirm();
-  const [quarantine, setQuarantine] = useState(input.initialQuarantine);
+  const quarantineQuery = useDashboardQueryPage({
+    initialData: { items: input.initialQuarantine, totalCount: input.initialQuarantine.length },
+    queryKey: "quarantine",
+    queryPage: (page) => requestMailJson<{ items: MailQuarantineItem[]; totalCount: number }>(`/api/mail/quarantine?page=${page}`),
+    totalItems: (data) => data.totalCount,
+    errorMessage: "隔离邮件暂时无法读取，请稍后重试。",
+  });
+  const quarantine = quarantineQuery.data?.items ?? [];
+  const setQuarantineData = quarantineQuery.setData;
+  // 次要面板首批读取和翻页复用同一份分页结果，不能丢掉完整数量。
+  const acceptQuarantinePage = useCallback((page: { items: MailQuarantineItem[]; totalCount: number }) => setQuarantineData(page), [setQuarantineData]);
+  const setQuarantine = useCallback((update: (rows: MailQuarantineItem[]) => MailQuarantineItem[]) => {
+    setQuarantineData((current) => current ? { ...current, items: update(current.items) } : current);
+  }, [setQuarantineData]);
   const [rules, setRules] = useState(input.initialRules);
   const [selectedQuarantine, setSelectedQuarantine] = useState<MailThreadDetail | null>(null);
   const [selectedActiveIds, setSelectedActiveIds] = useState<string[]>([]);
+  const [selectionScope, setSelectionScope] = useState(input.selectionScope);
+  // 新页首次渲染前清除旧页勾选；首次打开页面不能在延迟 effect 中清掉用户刚勾选的邮件。
+  if (selectionScope !== input.selectionScope) {
+    setSelectionScope(input.selectionScope);
+    setSelectedActiveIds([]);
+  }
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const reloadQuarantine = useCallback(async () => {
-    const result = await requestMailJson<{ items: MailQuarantineItem[] }>("/api/mail/quarantine?limit=40");
-    setQuarantine(result.items);
-  }, []);
+  const reloadQuarantine = quarantineQuery.refresh;
 
   const refreshQuarantine = useCallback(async () => {
     // 手动刷新需要独立的等待状态；内部写操作后的重新读取仍沿用原操作的状态。
@@ -101,11 +120,11 @@ export function useMailIntake(input: {
       if (receipt.threadId !== item.id || !receipt.refCode || receipt.version <= item.version) throw new Error("恢复结果没有确认完整。");
       setQuarantine((current) => current.filter((candidate) => candidate.id !== item.id));
       if (selectedQuarantine?.id === item.id) setSelectedQuarantine(null);
-      await input.onSummaryRefresh();
+      await Promise.all([input.onSummaryRefresh(), reloadQuarantine()]);
       setFeedback("邮件已恢复到工作台。");
     } catch (error) { setFeedback(error instanceof Error ? error.message : "隔离邮件没有恢复。"); }
     finally { setBusy(null); }
-  }, [input, selectedQuarantine]);
+  }, [input, reloadQuarantine, selectedQuarantine, setQuarantine]);
 
   const deleteQuarantine = useCallback(async (item: MailQuarantineItem) => {
     if (!await confirm({
@@ -119,11 +138,11 @@ export function useMailIntake(input: {
       if (!receipt.deleted || !receipt.gmailCopyPreserved || receipt.threadId !== item.id || !receipt.auditId) throw new Error("删除结果没有确认完整。");
       setQuarantine((current) => current.filter((candidate) => candidate.id !== item.id));
       if (selectedQuarantine?.id === item.id) setSelectedQuarantine(null);
-      await input.onSummaryRefresh();
+      await Promise.all([input.onSummaryRefresh(), reloadQuarantine()]);
       setFeedback("系统副本已删除，Gmail 原件仍然保留。");
     } catch (error) { setFeedback(error instanceof Error ? error.message : "隔离邮件没有删除完成。"); }
     finally { setBusy(null); }
-  }, [confirm, input, selectedQuarantine]);
+  }, [confirm, input, reloadQuarantine, selectedQuarantine, setQuarantine]);
 
   const createRule = useCallback(async (rule: { matchType: MailIntakeRuleMatcher; action: MailIntakeRuleAction; pattern: string }) => {
     setBusy("rule:create"); setFeedback(null);
@@ -163,7 +182,10 @@ export function useMailIntake(input: {
   }, []);
 
   return {
-    quarantine, rules, selectedQuarantine, selectedActiveIds, busy, feedback,
-    setQuarantine, setRules, reloadQuarantine, refreshQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
+    quarantine, rules, selectedQuarantine, selectedActiveIds,
+    quarantinePagination: quarantineQuery.pagination,
+    onQuarantinePage: async (page: number) => { if (await quarantineQuery.loadPage(page)) setSelectedQuarantine(null); },
+    busy: quarantineQuery.loading ? "quarantine:refresh" : busy, feedback: quarantineQuery.error ?? feedback,
+    setQuarantine: acceptQuarantinePage, setRules, reloadQuarantine, refreshQuarantine, reloadRules, toggleActiveSelection, quarantineThreads, openQuarantine, restore, deleteQuarantine, createRule, updateRule, deleteRule,
   };
 }

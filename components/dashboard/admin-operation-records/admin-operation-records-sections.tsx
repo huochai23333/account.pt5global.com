@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import { Select } from "@/components/ui/select";
 
 import { Filter, ShieldAlert } from "lucide-react";
@@ -136,6 +138,7 @@ export function OperationRecordsFilterSection({
 }
 
 export function OperationRecordsListSection({
+  paginationKey,
   actionLabels,
   categoryLabels,
   feedbackStatusLabels,
@@ -144,6 +147,7 @@ export function OperationRecordsListSection({
   roleLabels,
   statusLabels,
 }: {
+  paginationKey: string;
   actionLabels: OperationRecordsViewModel["actionLabels"];
   categoryLabels: OperationRecordsViewModel["categoryLabels"];
   feedbackStatusLabels: OperationRecordsViewModel["feedbackStatusLabels"];
@@ -156,42 +160,49 @@ export function OperationRecordsListSection({
 
   return (
     <DashboardListSection ariaLabel={t("list.title")}>
-      {records.length === 0 ? (
-        <EmptyState
-          description={t("list.emptyDescription")}
-          icon={<Filter className="size-5" />}
-          title={t("list.emptyTitle")}
-        />
-      ) : (
-        <DashboardTableFrame>
-          <table className="min-w-[1080px] w-full text-left text-sm">
-            <thead className="bg-surface-inset text-xs font-semibold text-content-muted">
-              <tr>
-                <th className="px-4 py-3">{t("list.columns.time")}</th>
-                <th className="px-4 py-3">{t("list.columns.category")}</th>
-                <th className="px-4 py-3">{t("list.columns.action")}</th>
-                <th className="px-4 py-3">{t("list.columns.subject")}</th>
-                <th className="px-4 py-3">{t("list.columns.actor")}</th>
-                <th className="px-4 py-3">{t("list.columns.detail")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {records.map((record) => (
-                <OperationRecordRow
-                  actionLabels={actionLabels}
-                  categoryLabels={categoryLabels}
-                  feedbackStatusLabels={feedbackStatusLabels}
-                  key={record.id}
-                  locale={locale}
-                  record={record}
-                  roleLabels={roleLabels}
-                  statusLabels={statusLabels}
-                />
-              ))}
-            </tbody>
-          </table>
-        </DashboardTableFrame>
-      )}
+      <DashboardPagedRecords items={records}
+        queryKey={paginationKey}>
+        {(pageRows) => (
+          <>
+          {records.length === 0 ? (
+            <EmptyState
+              description={t("list.emptyDescription")}
+              icon={<Filter className="size-5" />}
+              title={t("list.emptyTitle")}
+            />
+          ) : (
+            <DashboardTableFrame>
+              <table className="min-w-[1080px] w-full text-left text-sm">
+                <thead className="bg-surface-inset text-xs font-semibold text-content-muted">
+                  <tr>
+                    <th className="px-4 py-3">{t("list.columns.time")}</th>
+                    <th className="px-4 py-3">{t("list.columns.category")}</th>
+                    <th className="px-4 py-3">{t("list.columns.action")}</th>
+                    <th className="px-4 py-3">{t("list.columns.subject")}</th>
+                    <th className="px-4 py-3">{t("list.columns.actor")}</th>
+                    <th className="px-4 py-3">{t("list.columns.detail")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {pageRows.map((record) => (
+                    <OperationRecordRow
+                      actionLabels={actionLabels}
+                      categoryLabels={categoryLabels}
+                      feedbackStatusLabels={feedbackStatusLabels}
+                      key={record.id}
+                      locale={locale}
+                      record={record}
+                      roleLabels={roleLabels}
+                      statusLabels={statusLabels}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </DashboardTableFrame>
+          )}
+          </>
+        )}
+      </DashboardPagedRecords>
     </DashboardListSection>
   );
 }

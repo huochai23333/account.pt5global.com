@@ -131,7 +131,8 @@ export function getBusinessVipOperationRecords(
       const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
       const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
 
-      return rightTime - leftTime;
+      // 同一时刻的记录用唯一编号固定次序，翻页和刷新后不会交换位置。
+      return rightTime - leftTime || right.id.localeCompare(left.id);
     });
 }
 

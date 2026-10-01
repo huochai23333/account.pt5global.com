@@ -26,7 +26,8 @@
     "previous": "上一页",
     "next": "下一页",
     "page": "第 {page} 页，共 {pageCount} 页",
-    "range": "第 {start}-{end} 条，共 {total} 条"
+    "range": "第 {start}-{end} 条，共 {total} 条",
+    "label": "列表分页"
   },
   "DashboardFramework": {
     "filters": {
@@ -1244,7 +1245,8 @@
       "missingCost": "缺少运费",
       "actions": {
         "settings": "店铺归属设置",
-        "dismiss": "关闭提示"
+        "dismiss": "关闭提示",
+        "retry": "重试"
       },
       "filters": {
         "sales": "业务员",

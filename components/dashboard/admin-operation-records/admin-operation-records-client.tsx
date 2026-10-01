@@ -45,6 +45,7 @@ export function AdminOperationRecordsClient({
           />
 
           <OperationRecordsListSection
+          paginationKey={JSON.stringify([viewModel.searchText, viewModel.categoryFilter, viewModel.actionFilter])}
             actionLabels={viewModel.actionLabels}
             categoryLabels={viewModel.categoryLabels}
             feedbackStatusLabels={viewModel.feedbackStatusLabels}

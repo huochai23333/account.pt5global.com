@@ -4,6 +4,7 @@ import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { DashboardPagedRecords } from "../dashboard-paged-records";
 import { Building2, Network, Plus, Search } from "lucide-react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import {
@@ -17,6 +18,7 @@ import { formatDate } from "./wholesale-display";
 import {
   buildWholesaleReferralTree,
   filterWholesaleReferralTree,
+  flattenWholesaleReferralDirectory,
   type WholesaleReferralTreeNode,
 } from "./wholesale-referrals-display";
 import {
@@ -60,6 +62,7 @@ export function WholesaleReferralsSection({
     () => filterWholesaleReferralTree(tree, searchText),
     [searchText, tree],
   );
+  const directoryRows = useMemo(() => flattenWholesaleReferralDirectory(filteredTree), [filteredTree]);
   return (
     <WholesalePageShell
       actions={
@@ -99,19 +102,20 @@ export function WholesaleReferralsSection({
           </DashboardFilterField>
         </div>
 
-        {filteredTree.length === 0 ? (
+        <DashboardPagedRecords items={directoryRows} queryKey={searchText}>{(pageRows) => filteredTree.length === 0 ? (
           <WholesaleEmptyState
             description={uiText("attribute007")}
             icon={<Network className="size-5" />}
             title={uiText("attribute008")}
           />
         ) : (
-          <div className="space-y-3">
-            {filteredTree.map((node) => (
-              <ReferralTreeNode key={node.id} node={node} />
-            ))}
-          </div>
-        )}
+            <div className="space-y-3">
+              {pageRows.map(({ node, path }) => <div key={node.id}>
+                <p className="mb-2 break-words text-xs text-content-muted">{path.join(" → ")}</p>
+                <ReferralTreeNode node={node} showChildren={false} />
+              </div>)}
+            </div>
+        )}</DashboardPagedRecords>
       </DashboardListSection>
 
       <DashboardDialog
@@ -180,7 +184,10 @@ export function WholesaleReferralsSection({
     </WholesalePageShell>
   );
 }
-function ReferralTreeNode({ node }: { node: WholesaleReferralTreeNode }) {
+function ReferralTreeNode({ node, showChildren = true }: {
+  node: WholesaleReferralTreeNode;
+  showChildren?: boolean;
+}) {
   const t = useTranslations("WholesaleBusiness.referralsUi");
   const isCompanyNode = node.kind === "company";
   return (
@@ -223,7 +230,7 @@ function ReferralTreeNode({ node }: { node: WholesaleReferralTreeNode }) {
             : t("children", { count: node.children.length })}
         </span>
       </div>
-      {node.children.length > 0 ? (
+      {showChildren && node.children.length > 0 ? (
         <div className="mt-3 space-y-3 border-l border-border pl-4">
           {node.children.map((child) => (
             <ReferralTreeNode key={child.id} node={child} />

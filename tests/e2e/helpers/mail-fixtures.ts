@@ -1,4 +1,5 @@
 import { createBlindIndex, encryptMailValue } from "../../../lib/mail/mail-security";
+import { randomUUID } from "node:crypto";
 
 import { getLocalSupabaseAdminClient } from "./local-supabase-admin";
 
@@ -70,6 +71,25 @@ export function getMailAdmin() {
   const supabase = getLocalSupabaseAdminClient();
   if (!supabase) throw new Error("邮件回归只能连接本地 Supabase。");
   return supabase;
+}
+
+/** 同时间且超过两页的可见会话用于检验 ID 排序、完整总数和页间勾选清理。 */
+export async function seedNumberedMailThreads(count = 45, intakeStatus: "active" | "quarantined" = "active") {
+  const now = new Date().toISOString();
+  const rows = Array.from({ length: count }, (_, index) => ({
+    id: randomUUID(), mailbox_id: MAILBOX_ID, provider_thread_id: `numbered-page-${randomUUID()}`,
+    subject_enc: encryptMailValue(`Paging inquiry ${index}`, CONTENT_KEY),
+    customer_email_enc: encryptMailValue("paging@example.com", CONTENT_KEY),
+    customer_email_hash: createBlindIndex("paging@example.com", HASH_SECRET),
+    assigned_user_id: SALESMAN_ID, state: "waiting_pt5", ref_code: `PAGING-${index}`,
+    routing_source: "manual", last_message_at: now, last_inbound_at: now,
+    intake_status: intakeStatus,
+    quarantine_reason: intakeStatus === "quarantined" ? "本地分页测试" : null,
+    quarantined_at: intakeStatus === "quarantined" ? now : null,
+  }));
+  const result = await getMailAdmin().from("mail_threads").insert(rows);
+  if (result.error) throw new Error("邮件分页夹具未能建立。", { cause: result.error });
+  return rows.map((row) => row.id);
 }
 
 /** 历史清理用例只建立入站会话；没有任何 SENT 收件人凭证，因此应被识别为陌生会话。 */

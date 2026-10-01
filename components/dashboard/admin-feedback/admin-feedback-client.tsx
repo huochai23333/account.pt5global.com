@@ -48,6 +48,7 @@ export function AdminFeedbackClient({
           />
 
           <AdminFeedbackListSection
+            paginationKey={JSON.stringify([viewModel.searchText, viewModel.statusFilter, viewModel.typeFilter])}
             feedbackItems={viewModel.filteredFeedback}
             locale={locale}
             onStatusChange={viewModel.handleStatusChange}

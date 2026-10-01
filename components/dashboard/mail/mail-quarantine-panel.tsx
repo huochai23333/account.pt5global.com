@@ -8,10 +8,15 @@ import { Surface } from "@/components/ui/surface";
 import type { MailQuarantineItem, MailThreadDetail } from "@/lib/mail/mail-types";
 import { cn } from "@/lib/utils";
 
+import type { DashboardPaginationState } from "@/lib/dashboard-pagination";
+import { DashboardPaginationFooter } from "../dashboard-collection-section";
+
 import { formatMailTime } from "./mail-display";
 
 export function MailQuarantinePanel(props: {
   items: MailQuarantineItem[];
+  pagination: DashboardPaginationState;
+  onPageChange: (page: number) => void;
   detail: MailThreadDetail | null;
   busy: string | null;
   onOpen: (threadId: string) => void;
@@ -38,6 +43,9 @@ export function MailQuarantinePanel(props: {
             </InteractiveButton>
           ))}
         </div>
+        <div className="px-3 pb-3 sm:px-4"><DashboardPaginationFooter {...props.pagination} pending={props.busy !== null}
+          onNextPage={() => props.onPageChange(props.pagination.page + 1)}
+          onPreviousPage={() => props.onPageChange(props.pagination.page - 1)} /></div>
       </Surface>
       <Surface className="flex min-h-[36rem] flex-col overflow-hidden" padding={null}>
         {!props.detail ? <div className="flex min-h-80 flex-1 items-center justify-center p-6 text-center text-sm text-content-muted">{t("selectQuarantine")}</div> : <>

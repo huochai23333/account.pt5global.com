@@ -1,9 +1,10 @@
+import { queryCompleteDashboardRows, type DashboardCollectionQuery } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WholesaleCustomer, WholesaleOrder } from "./wholesale-types";
 
 /** 统一处理列表读取错误，查询本身始终由调用者的 Supabase 客户端执行并受 RLS 约束。 */
-export async function queryWholesaleRows<T>(query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>, label: string): Promise<T[]> {
-  const result = await query;
+export async function queryWholesaleRows<T>(query: DashboardCollectionQuery<T>, label: string): Promise<T[]> {
+  const result = await queryCompleteDashboardRows(query);
   if (result.error) throw new Error(`${label}暂时没有加载成功，请稍后重试。`, { cause: result.error });
   return result.data ?? [];
 }
@@ -12,7 +13,7 @@ export async function getWholesaleCustomers(supabase: SupabaseClient) {
   // 来源线索仍受自己的 RLS 约束；同事不可见的线索不随客户列表泄露内部跟进资料。
   // customer_id 有唯一约束，关联查询返回一个对象或 null，而不是列表。
   const rows = await queryWholesaleRows<WholesaleCustomer & { sales_leads: { id: string } | null }>(
-    supabase.from("wholesale_customers").select("*,sales_leads!sales_leads_customer_id_fkey(id)").order("created_at", { ascending: false }), "批发客户");
+    supabase.from("wholesale_customers").select("*,sales_leads!sales_leads_customer_id_fkey(id)").order("created_at", { ascending: false }).order("id", { ascending: false }), "批发客户");
   return rows.map(({ sales_leads, ...customer }) => ({ ...customer, source_sales_lead_id: sales_leads?.id ?? null }));
 }
 

@@ -1,12 +1,11 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  getAdminPeopleChangeLogs,
+  getAdminPeopleChangeLogDirectory,
   type AdminPeopleChangeLogRow,
 } from "./admin-people";
 import type { AppRole } from "./auth-routing";
-import { MAX_DASHBOARD_QUERY_ROWS } from "./dashboard-pagination";
-import { withRequestTimeout } from "./request-timeout";
 import { getCurrentSessionContext, type UserStatus } from "./user-self-service";
 import { normalizeOptionalString } from "./value-normalizers";
 import {
@@ -104,7 +103,6 @@ type UserProfileSummary = {
   user_id: string;
 };
 
-const ADMIN_OPERATION_RECORD_LIMIT = Math.min(MAX_DASHBOARD_QUERY_ROWS, 100);
 
 export function canViewAdminOperationRecords(
   role: AppRole | null,
@@ -115,7 +113,6 @@ export function canViewAdminOperationRecords(
 
 export async function getAdminOperationRecordsPageData(
   supabase: SupabaseClient,
-  limit = ADMIN_OPERATION_RECORD_LIMIT,
 ): Promise<AdminOperationRecordsPageData> {
   const { role, status } = await getCurrentSessionContext(supabase);
 
@@ -127,9 +124,9 @@ export async function getAdminOperationRecordsPageData(
   }
 
   const [accountRows, profileRows, feedbackRows] = await Promise.all([
-    getAdminPeopleChangeLogs(supabase, Math.min(limit, 50)),
-    getProfileChangeReviewHistory(supabase, limit),
-    getFeedbackStatusHistory(supabase, limit),
+    getAdminPeopleChangeLogDirectory(supabase),
+    getProfileChangeReviewHistory(supabase),
+    getFeedbackStatusHistory(supabase),
   ]);
   const profiles = await getOperationUserProfiles(supabase, [
     ...profileRows.flatMap((row) => [row.user_id, row.reviewer_user_id]),
@@ -145,21 +142,20 @@ export async function getAdminOperationRecordsPageData(
     ...feedbackRows.map((row) => toFeedbackOperationRecord(row, profiles)),
   ].sort((left, right) => {
     return (
-      new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime()
+      new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime() || right.id.localeCompare(left.id)
     );
   });
 
   return {
     hasPermission: true,
-    records: records.slice(0, limit),
+    records,
   };
 }
 
 async function getProfileChangeReviewHistory(
   supabase: SupabaseClient,
-  limit: number,
 ) {
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("user_profile_change_requests")
       .select(
@@ -167,7 +163,7 @@ async function getProfileChangeReviewHistory(
       )
       .neq("status", "pending")
       .order("reviewed_at", { ascending: false, nullsFirst: false })
-      .limit(limit)
+      .order("id", { ascending: false })
       .returns<ProfileChangeReviewHistoryRow[]>(),
   );
 
@@ -180,9 +176,8 @@ async function getProfileChangeReviewHistory(
 
 async function getFeedbackStatusHistory(
   supabase: SupabaseClient,
-  limit: number,
 ) {
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("workspace_feedback")
       .select(
@@ -190,7 +185,7 @@ async function getFeedbackStatusHistory(
       )
       .not("status_updated_by_user_id", "is", null)
       .order("status_updated_at", { ascending: false })
-      .limit(limit)
+      .order("id", { ascending: false })
       .returns<FeedbackHistoryRow[]>(),
   );
 
@@ -214,11 +209,11 @@ async function getOperationUserProfiles(
     return profiles;
   }
 
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("user_profiles")
       .select("user_id,name,email")
-      .in("user_id", userIds)
+      .in("user_id", userIds).order("user_id")
       .returns<UserProfileSummary[]>(),
   );
 

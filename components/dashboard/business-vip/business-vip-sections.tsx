@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import { Select } from "@/components/ui/select";
 
 import { BadgeCheck, Clock3, Filter, UserRound } from "lucide-react";
@@ -132,6 +134,7 @@ export function BusinessVipFiltersSection({
 }
 
 export function BusinessVipDirectorySection({
+  paginationKey,
   business,
   canAdmin,
   canRequest,
@@ -144,6 +147,7 @@ export function BusinessVipDirectorySection({
   onOpenWholesaleRecords,
   pendingActionKey,
 }: {
+  paginationKey: string;
   business: BusinessVipPageData["business"];
   canAdmin: boolean;
   canRequest: boolean;
@@ -178,14 +182,21 @@ export function BusinessVipDirectorySection({
               title={t("directory.emptyTitle")}
             />
           ) : (
-            <BusinessVipWholesaleCustomerList
-              canManage={canAdmin || canRequest}
-              locale={locale}
-              onOpenAction={onOpenWholesaleAction}
-              onOpenRecords={onOpenWholesaleRecords}
-              pendingActionKey={pendingActionKey}
-              rows={filteredRows}
-            />
+            <DashboardPagedRecords items={filteredRows}
+              queryKey={paginationKey}>
+              {(pageRows) => (
+                <>
+                <BusinessVipWholesaleCustomerList
+                  canManage={canAdmin || canRequest}
+                  locale={locale}
+                  onOpenAction={onOpenWholesaleAction}
+                  onOpenRecords={onOpenWholesaleRecords}
+                  pendingActionKey={pendingActionKey}
+                  rows={pageRows}
+                />
+                </>
+              )}
+            </DashboardPagedRecords>
           )}
         </DashboardListSection>
         <DashboardListSection
@@ -194,6 +205,7 @@ export function BusinessVipDirectorySection({
           <BusinessVipWholesaleRecordTable
             locale={locale}
             rows={filteredRows}
+            paginationKey={paginationKey}
           />
         </DashboardListSection>
       </>
@@ -209,38 +221,45 @@ export function BusinessVipDirectorySection({
           title={t("directory.emptyTitle")}
         />
       ) : (
-        <ResponsiveDataView
-          breakpoint="lg"
-          desktop={
-            <BusinessVipTable
-              canAdmin={canAdmin}
-              canRequest={canRequest}
-              locale={locale}
-              onOpenAdjust={onOpenAdjust}
-              onOpenRequest={onOpenRequest}
-              onOpenReview={onOpenReview}
-              pendingActionKey={pendingActionKey}
-              rows={filteredRows}
-            />
-          }
-          mobile={
+        <DashboardPagedRecords items={filteredRows}
+          queryKey={paginationKey}>
+          {(pageRows) => (
             <>
-              {filteredRows.map((row) => (
-                <BusinessVipMobileCard
+            <ResponsiveDataView
+              breakpoint="lg"
+              desktop={
+                <BusinessVipTable
                   canAdmin={canAdmin}
                   canRequest={canRequest}
-                  key={row.targetId}
                   locale={locale}
                   onOpenAdjust={onOpenAdjust}
                   onOpenRequest={onOpenRequest}
                   onOpenReview={onOpenReview}
                   pendingActionKey={pendingActionKey}
-                  row={row}
+                  rows={pageRows}
                 />
-              ))}
+              }
+              mobile={
+                <>
+                  {pageRows.map((row) => (
+                    <BusinessVipMobileCard
+                      canAdmin={canAdmin}
+                      canRequest={canRequest}
+                      key={row.targetId}
+                      locale={locale}
+                      onOpenAdjust={onOpenAdjust}
+                      onOpenRequest={onOpenRequest}
+                      onOpenReview={onOpenReview}
+                      pendingActionKey={pendingActionKey}
+                      row={row}
+                    />
+                  ))}
+                </>
+              }
+            />
             </>
-          }
-        />
+          )}
+        </DashboardPagedRecords>
       )}
     </DashboardListSection>
   );

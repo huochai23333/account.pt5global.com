@@ -60,7 +60,7 @@ test.describe("批发订单与物流列表统一框架", () => {
     await page.goto("/admin/wholesale/orders");
 
     const desktopProgress = getOrderListProgress(page);
-    const loadMore = page.getByRole("button", { name: "继续加载" });
+    const loadMore = page.getByRole("button", { name: "下一页" });
     await expect(desktopProgress).toBeVisible();
     await expect(loadMore).toBeVisible();
     await expectLeftOf(desktopProgress, loadMore);
@@ -103,24 +103,24 @@ test.describe("批发订单与物流列表统一框架", () => {
     await expect(startDate).toBeFocused();
   });
 
-  test("游标列表最后一页保留计数并隐藏继续加载", async ({ page }) => {
+  test("页码列表末页保留计数并禁用下一页", async ({ page }) => {
     test.setTimeout(120_000);
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/orders");
 
     const progress = getOrderListProgress(page);
-    const loadMore = page.getByRole("button", { name: "继续加载" });
+    const loadMore = page.getByRole("button", { name: "下一页" });
     await expect(progress).toBeVisible();
 
-    // 本地种子数量可能调整，因此设置安全上限，并以按钮消失作为到达末页的信号。
-    for (let batch = 0; batch < 10 && (await loadMore.isVisible()); batch += 1) {
+    // 本地种子数量可能调整，因此设置安全上限，并以按钮禁用作为到达末页的信号。
+    for (let batch = 0; batch < 10 && (await loadMore.isEnabled()); batch += 1) {
       const previousProgress = await progress.textContent();
       await loadMore.click();
       // 必须等当前批次真正写入列表，避免下一轮在按钮的加载禁用状态下重复点击。
       await expect(progress).not.toHaveText(previousProgress ?? "");
     }
 
-    await expect(loadMore).toHaveCount(0);
+    await expect(loadMore).toBeDisabled();
     await expect(progress).toBeVisible();
     await expect(progress).toHaveCount(1);
   });
@@ -128,7 +128,7 @@ test.describe("批发订单与物流列表统一框架", () => {
 });
 
 function getOrderListProgress(page: Page) {
-  return page.getByText(/^已显示 \d+(?:–\d+)? \/ \d+ /);
+  return page.getByText(/^第 \d+-\d+ 条，共 \d+ 条$/);
 }
 
 async function expectLeftOf(left: Locator, right: Locator) {

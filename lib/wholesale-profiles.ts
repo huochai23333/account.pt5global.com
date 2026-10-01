@@ -1,12 +1,8 @@
+import { queryCompleteDashboardRows, type DashboardCollectionQuery } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
 import type { WholesaleProfile } from "./wholesale";
-
-type ProfileQueryResult<T> = {
-  data: T[] | null;
-  error: { message: string } | null;
-};
 
 /**
  * 读取批发页面需要的账号资料。
@@ -35,20 +31,20 @@ export async function getWholesaleProfilesWithCandidates(
       supabase
         .from("user_profiles")
         .select("user_id,name,email,phone,status,city")
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false }).order("user_id", { ascending: false }),
       "账号资料",
     ),
     queryProfileRows<{ user_id: string; role_id: string }>(
-      supabase.from("user_roles_data").select("user_id,role_id"),
+      supabase.from("user_roles_data").select("user_id,role_id").order("user_id"),
       "账号身份关联",
     ),
     queryProfileRows<{ id: string; role: AppRole }>(
-      supabase.from("user_roles").select("id,role"),
+      supabase.from("user_roles").select("id,role").order("id"),
       "账号身份",
     ),
     includeLinkCandidates
       ? queryProfileRows<WholesaleProfile>(
-          supabase.rpc("list_wholesale_customer_link_candidates"),
+          supabase.rpc("list_wholesale_customer_link_candidates").order("user_id"),
           "可关联客户账号",
         )
       : Promise.resolve([]),
@@ -78,10 +74,10 @@ export async function getWholesaleProfilesWithCandidates(
 }
 
 async function queryProfileRows<T>(
-  query: PromiseLike<ProfileQueryResult<T>>,
+  query: DashboardCollectionQuery<T>,
   label: string,
 ): Promise<T[]> {
-  const result = await query;
+  const result = await queryCompleteDashboardRows(query);
 
   if (result.error) {
     throw new Error(`${label}暂时没有加载成功，请稍后再试。`, {

@@ -1,6 +1,11 @@
 export const DEFAULT_DASHBOARD_PAGE_SIZE = 20;
 export const MAX_DASHBOARD_QUERY_ROWS = 200;
 
+/** 查询参数来自网址或表单，非有限数值不能参与范围计算。 */
+export function normalizeDashboardPage(page: number) {
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
 export type DashboardPaginationSlice<T> = {
   endIndex: number;
   hasNextPage: boolean;
@@ -46,10 +51,10 @@ export function getDashboardPaginationState(
   page: number,
   pageSize = DEFAULT_DASHBOARD_PAGE_SIZE,
 ): DashboardPaginationState {
-  const safeTotalItems = Math.max(0, Math.trunc(totalItems));
-  const safePageSize = Math.max(1, Math.trunc(pageSize));
+  const safeTotalItems = Number.isFinite(totalItems) ? Math.max(0, Math.trunc(totalItems)) : 0;
+  const safePageSize = Number.isFinite(pageSize) ? Math.max(1, Math.trunc(pageSize)) : DEFAULT_DASHBOARD_PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(safeTotalItems / safePageSize));
-  const safePage = Math.min(Math.max(1, Math.trunc(page)), pageCount);
+  const safePage = Math.min(normalizeDashboardPage(page), pageCount);
 
   if (safeTotalItems === 0) {
     return {

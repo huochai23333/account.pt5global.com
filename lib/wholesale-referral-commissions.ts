@@ -1,6 +1,6 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { withRequestTimeout } from "./request-timeout";
 
 export type WholesaleReferralCommissionRow = {
   amount: number | null;
@@ -42,8 +42,8 @@ type ReferralCommissionRecord = {
 export async function getWholesaleReferralCommissionRows(
   supabase: SupabaseClient,
 ) {
-  const { data, error } = await withRequestTimeout(
-    supabase.rpc("get_wholesale_referral_commission_rows"),
+  const { data, error } = await queryCompleteDashboardRows(
+    supabase.rpc("get_wholesale_referral_commission_rows").order("month_key", { ascending: false }).order("referrer_customer_id").order("referred_customer_id"),
   );
   if (error) throw error;
 

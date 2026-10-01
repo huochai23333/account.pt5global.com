@@ -5,9 +5,21 @@ import {
   expectWorkspaceShell,
   loginAs,
 } from "./helpers/auth";
+import { readLocalPostgresRows } from "./helpers/local-postgres-query";
 import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
-const LOCAL_ORDER_NUMBER_2 = buildCurrentLocalOrderNumber(2);
+let LOCAL_ORDER_NUMBER_2 = "";
+let fixtureOrderPrefix = "";
+
+test.beforeAll(async () => {
+  const [record] = readLocalPostgresRows<{ order_number: string }>(
+    "select order_number from public.wholesale_orders where id = 'c2000000-0000-4000-8000-000000000001'",
+  );
+  expect(record).toBeDefined();
+  // 夹具可能在上个月生成，以权威记录的实际编号为准，测试不改产品的日期规则。
+  fixtureOrderPrefix = record.order_number.slice(0, -3);
+  LOCAL_ORDER_NUMBER_2 = buildCurrentLocalOrderNumber(2);
+});
 
 test.describe("wholesale order pagination", () => {
   test("loads stable batches and searches own order numbers", async ({
@@ -32,15 +44,17 @@ test.describe("wholesale order pagination", () => {
 
     const rows = page.locator('[data-testid^="wholesale-order-row-"]');
     await expect(rows).toHaveCount(20);
-    await expect(page.getByText(/已显示 20 \/ \d+ 笔订单/)).toBeVisible();
+    await expect(page.getByText(/第 1-20 条，共 \d+ 条/)).toBeVisible();
 
     const firstBatchIds = await readOrderRowIds(page);
-    await page.getByRole("button", { name: "继续加载" }).click();
-    await expect(rows).toHaveCount(40);
+    await page.getByRole("button", { name: "下一页" }).click();
+    await expect(rows).toHaveCount(20);
 
     const loadedIds = await readOrderRowIds(page);
     expect(new Set(loadedIds).size).toBe(loadedIds.length);
-    expect(loadedIds.slice(0, 20)).toEqual(firstBatchIds);
+    expect(loadedIds.some((id) => firstBatchIds.includes(id))).toBe(false);
+    await page.getByRole("button", { name: "上一页" }).click();
+    await expect.poll(() => readOrderRowIds(page)).toEqual(firstBatchIds);
 
     await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
     await expect(rows).toHaveCount(1);
@@ -342,16 +356,7 @@ async function expectNoDocumentHorizontalOverflow(page: Page) {
 }
 
 function buildCurrentLocalOrderNumber(index: number) {
-  // 本地夹具按上海当前月份生成订单号，测试也按同一业务时区计算，避免月份变化后失效。
-  const dateParts = new Intl.DateTimeFormat("en-US", {
-    month: "2-digit",
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-  }).formatToParts(new Date());
-  const year = dateParts.find((part) => part.type === "year")?.value ?? "";
-  const month = dateParts.find((part) => part.type === "month")?.value ?? "";
-
-  return `WH-LOCAL-${year}${month}-${String(index).padStart(3, "0")}`;
+  return `${fixtureOrderPrefix}${String(index).padStart(3, "0")}`;
 }
 
 /**

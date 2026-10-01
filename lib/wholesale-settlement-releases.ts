@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
@@ -96,51 +97,42 @@ export async function getWholesaleSettlementReleasePageData(
     rolesResult,
     monthlyAllocatedUsd,
   ] = await Promise.all([
-    supabase
+    queryCompleteDashboardRows<WholesaleSettlementRelease>(
+supabase
       .from("wholesale_settlement_releases")
       .select("*")
       .order("received_on", { ascending: false })
-      .order("created_at", { ascending: false }) as unknown as Promise<
-      QueryResult<WholesaleSettlementRelease>
-    >,
-    supabase
+      .order("created_at", { ascending: false }).order("id")),
+    queryCompleteDashboardRows<WholesaleSettlementReleaseAllocation>(
+supabase
       .from("wholesale_settlement_release_allocations")
       .select("*")
-      .order("created_at", { ascending: false }) as unknown as Promise<
-      QueryResult<WholesaleSettlementReleaseAllocation>
-    >,
-    supabase
+      .order("created_at", { ascending: false }).order("id")),
+    queryCompleteDashboardRows<WholesaleCustomer>(
+supabase
       .from("wholesale_customers")
       .select("*")
-      .order("created_at", { ascending: false }) as unknown as Promise<
-      QueryResult<WholesaleCustomer>
-    >,
-    supabase
+      .order("created_at", { ascending: false }).order("id")),
+    queryCompleteDashboardRows<WholesaleOrder>(
+supabase
       .from("wholesale_orders")
       .select("*")
       .order("order_month", { ascending: false })
-      .order("ordered_at", { ascending: false }) as unknown as Promise<
-      QueryResult<WholesaleOrder>
-    >,
-    supabase
+      .order("ordered_at", { ascending: false }).order("id")),
+    queryCompleteDashboardRows<WholesaleOrderSettlement>(
+supabase
       .from("wholesale_order_settlements")
       .select("*")
       .order("settled_on", { ascending: false })
-      .order("created_at", { ascending: false }) as unknown as Promise<
-      QueryResult<WholesaleOrderSettlement>
-    >,
-    supabase
+      .order("created_at", { ascending: false }).order("id")),
+    queryCompleteDashboardRows<Omit<WholesaleProfile, "role">>(supabase
       .from("user_profiles")
       .select("user_id,name,email,phone,status,city")
-      .order("created_at", { ascending: false }) as unknown as Promise<
-      QueryResult<Omit<WholesaleProfile, "role">>
-    >,
-    supabase.from("user_roles_data").select("user_id,role_id") as unknown as Promise<
-      QueryResult<{ user_id: string; role_id: string }>
-    >,
-    supabase.from("user_roles").select("id,role") as unknown as Promise<
-      QueryResult<{ id: string; role: AppRole }>
-    >,
+      .order("created_at", { ascending: false }).order("user_id")),
+    queryCompleteDashboardRows<{ user_id: string; role_id: string }>(
+supabase.from("user_roles_data").select("user_id,role_id").order("user_id")),
+    queryCompleteDashboardRows<{ id: string; role: AppRole }>(
+supabase.from("user_roles").select("id,role").order("id")),
     getMonthlySettlementAllocatedUsdSummary(supabase),
   ]);
 

@@ -26,7 +26,8 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {page} of {pageCount}",
-    "range": "{start}-{end} of {total}"
+    "range": "{start}-{end} of {total}",
+    "label": "List pagination"
   },
   "DashboardFramework": {
     "filters": {
@@ -1244,7 +1245,8 @@
       "missingCost": "Missing freight",
       "actions": {
         "settings": "Store Assignment Settings",
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "retry": "Retry"
       },
       "filters": {
         "sales": "Salesperson",

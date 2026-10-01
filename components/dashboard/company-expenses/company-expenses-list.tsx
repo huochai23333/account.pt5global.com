@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import {
   CalendarDays,
   Edit3,
@@ -23,6 +25,7 @@ import {
 } from "./company-expenses-display";
 
 type CompanyExpensesListSectionProps = {
+  paginationKey: string;
   copy: {
     amount: string;
     categoryOptions: Record<CompanyExpenseCategory, string>;
@@ -46,6 +49,7 @@ type CompanyExpensesListSectionProps = {
 
 /** 列表文件集中维护费用卡片和字段排版，页面 Client 不直接渲染记录。 */
 export function CompanyExpensesListSection({
+  paginationKey,
   copy,
   expenses,
   locale,
@@ -55,27 +59,34 @@ export function CompanyExpensesListSection({
 }: CompanyExpensesListSectionProps) {
   return (
     <DashboardListSection ariaLabel={copy.recordsTitle}>
-      {expenses.length === 0 ? (
-        <EmptyState
-          description={copy.emptyDescription}
-          icon={<ReceiptText className="size-6" />}
-          title={copy.emptyTitle}
-        />
-      ) : (
-        <div className="grid gap-4">
-          {expenses.map((expense) => (
-            <CompanyExpenseCard
-              copy={copy}
-              expense={expense}
-              key={expense.id}
-              locale={locale}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              pendingAction={pendingAction}
+      <DashboardPagedRecords items={expenses}
+        queryKey={paginationKey}>
+        {(pageRows) => (
+          <>
+          {expenses.length === 0 ? (
+            <EmptyState
+              description={copy.emptyDescription}
+              icon={<ReceiptText className="size-6" />}
+              title={copy.emptyTitle}
             />
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid gap-4">
+              {pageRows.map((expense) => (
+                <CompanyExpenseCard
+                  copy={copy}
+                  expense={expense}
+                  key={expense.id}
+                  locale={locale}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                  pendingAction={pendingAction}
+                />
+              ))}
+            </div>
+          )}
+          </>
+        )}
+      </DashboardPagedRecords>
     </DashboardListSection>
   );
 }

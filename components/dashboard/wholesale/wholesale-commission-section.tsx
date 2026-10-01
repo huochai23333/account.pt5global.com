@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
@@ -269,15 +271,22 @@ export function WholesaleCommissionSection({
             title={uiText("attribute009")}
           />
         ) : (
-          <WholesaleCommissionRecords
-            canAdmin={canAdmin}
-            commissions={filteredCommissions}
-            customersById={customersById}
-            onSettleCommission={onSettleCommission}
-            orderById={orderById}
-            pendingKey={pendingKey}
-            profilesById={profilesById}
-          />
+          <DashboardPagedRecords items={filteredCommissions}
+            queryKey={JSON.stringify([incentiveSearch, incentiveStatusFilter, incentiveSalesFilter])}>
+            {(pageRows) => (
+              <>
+              <WholesaleCommissionRecords
+                canAdmin={canAdmin}
+                commissions={pageRows}
+                customersById={customersById}
+                onSettleCommission={onSettleCommission}
+                orderById={orderById}
+                pendingKey={pendingKey}
+                profilesById={profilesById}
+              />
+              </>
+            )}
+          </DashboardPagedRecords>
         )}
       </DashboardListSection>
     </WholesalePageShell>

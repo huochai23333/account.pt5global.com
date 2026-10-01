@@ -7,7 +7,7 @@ export function getMailPageData(identity: MailIdentity) {
   return measureServerStage("page.mail.core", async () => {
     try {
       const listPromise = measureServerStage("mail.threads", () => queryMailThreads(identity, {
-        scope: identity.role === "administrator" ? "all" : "mine", limit: 40,
+        scope: identity.role === "administrator" ? "all" : "mine", page: 1,
       })).then((value) => ({ value }), (error: unknown) => ({ error }));
       // 本人首次建档成功后再读取可发送状态，不必等待其他人员建档。
       let ownProfile: Awaited<ReturnType<typeof getMailAgentProfile>> | null = null;
@@ -18,9 +18,9 @@ export function getMailPageData(identity: MailIdentity) {
         measureServerStage("mail.summary", () => getMailWorkspace(identity)), listPromise,
       ]);
       if ("error" in list) throw list.error;
-      return { summary, threads: list.value.threads, nextCursor: list.value.nextCursor, ownProfile, loadError };
+      return { summary, threads: list.value.threads, totalCount: list.value.totalCount, ownProfile, loadError };
     } catch {
-      return { summary: null, threads: [], nextCursor: null, ownProfile: null, loadError: "公司邮箱暂时无法读取，请稍后重试。" };
+      return { summary: null, threads: [], totalCount: 0, ownProfile: null, loadError: "公司邮箱暂时无法读取，请稍后重试。" };
     }
   });
 }

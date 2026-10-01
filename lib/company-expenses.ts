@@ -1,9 +1,6 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  getDashboardQueryRange,
-  MAX_DASHBOARD_QUERY_ROWS,
-} from "./dashboard-pagination";
 import { withRequestTimeout } from "./request-timeout";
 import {
   getCurrentSessionContext,
@@ -80,7 +77,6 @@ export function canManageCompanyExpenses(
 
 export async function getCompanyExpensesPageData(
   supabase: SupabaseClient,
-  limit = MAX_DASHBOARD_QUERY_ROWS,
   context?: CompanyExpenseReaderContext,
 ): Promise<CompanyExpensesPageData> {
   const { role, status } =
@@ -93,14 +89,13 @@ export async function getCompanyExpensesPageData(
     };
   }
 
-  const { from, to } = getDashboardQueryRange(limit);
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("company_expenses")
       .select(COMPANY_EXPENSE_SELECT)
       .order("expense_month", { ascending: false })
       .order("updated_at", { ascending: false })
-      .range(from, to)
+      .order("id", { ascending: false })
       .returns<CompanyExpenseDatabaseRow[]>(),
   );
 

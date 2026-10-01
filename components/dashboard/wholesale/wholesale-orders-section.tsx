@@ -110,7 +110,7 @@ export function WholesaleOrdersSection({
       const succeeded = await action();
       // 请求失败时页面数据没有变化，也不能用旧的服务端结果覆盖用户正在处理的内容。
       if (!succeeded) return false;
-      await pageState.refreshFirstPage();
+      await pageState.refreshPage();
       return true;
     },
     [pageState],
@@ -173,9 +173,9 @@ export function WholesaleOrdersSection({
         }
         loadError={pageState.loadError}
         loading={pageState.loading}
-        loadingMore={pageState.loadingMore}
-        onLoadMore={() => void pageState.loadMore()}
-        onRetry={() => void pageState.refreshFirstPage()}
+        pagination={pageState.pagination}
+        onPageChange={(nextPage) => void pageState.goToPage(nextPage)}
+        onRetry={() => void pageState.refreshPage()}
         page={page}
         renderProps={{
           canMarkOrderSettled,
@@ -209,7 +209,7 @@ export function WholesaleOrdersSection({
         customers={customers}
         exchangeRates={exchangeRates}
         onCreateOrder={(formData) =>
-          onCreateOrder(formData, pageState.refreshFirstPage)
+          onCreateOrder(formData, pageState.refreshPage)
         }
         onOpenChange={setCreateDialogOpen}
         open={createDialogOpen}
@@ -228,7 +228,7 @@ export function WholesaleOrdersSection({
             if (!open) setSelectedEditOrder(null);
           }}
           onUpdateOrder={(formData) =>
-            onUpdateOrder(formData, pageState.refreshFirstPage)
+            onUpdateOrder(formData, pageState.refreshPage)
           }
           open
           order={selectedEditOrder}
@@ -244,7 +244,7 @@ export function WholesaleOrdersSection({
             if (!open) setSelectedSettlementOrder(null);
           }}
           onSettleOrder={(formData) =>
-            onMarkOrderSettled(formData, pageState.refreshFirstPage)
+            onMarkOrderSettled(formData, pageState.refreshPage)
           }
           order={selectedSettlementOrder}
           settlements={

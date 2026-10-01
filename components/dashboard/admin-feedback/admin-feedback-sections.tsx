@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import { Select } from "@/components/ui/select";
 
 import { Filter, LoaderCircle, ShieldAlert } from "lucide-react";
@@ -137,6 +139,7 @@ export function AdminFeedbackFilterSection({
 }
 
 export function AdminFeedbackListSection({
+  paginationKey,
   feedbackItems,
   locale,
   onStatusChange,
@@ -146,6 +149,7 @@ export function AdminFeedbackListSection({
   statusOptions,
   typeLabels,
 }: {
+  paginationKey: string;
   feedbackItems: AdminWorkspaceFeedbackItem[];
   locale: Locale;
   onStatusChange: (feedbackId: string, status: WorkspaceFeedbackStatus) => void;
@@ -159,43 +163,50 @@ export function AdminFeedbackListSection({
 
   return (
     <DashboardListSection ariaLabel={t("list.title")}>
-      {feedbackItems.length === 0 ? (
-        <EmptyState
-          description={t("list.emptyDescription")}
-          icon={<Filter className="size-5" />}
-          title={t("list.emptyTitle")}
-        />
-      ) : (
-        <DashboardTableFrame>
-          <table className="min-w-[1060px] w-full text-left text-sm">
-            <thead className="bg-surface-inset text-xs font-semibold text-content-muted">
-              <tr>
-                <th className="px-4 py-3">{t("list.feedback")}</th>
-                <th className="px-4 py-3">{t("list.submitter")}</th>
-                <th className="px-4 py-3">{t("list.type")}</th>
-                <th className="px-4 py-3">{t("list.source")}</th>
-                <th className="px-4 py-3">{t("list.createdAt")}</th>
-                <th className="px-4 py-3">{t("list.status")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {feedbackItems.map((feedback) => (
-                <FeedbackTableRow
-                  feedback={feedback}
-                  key={feedback.id}
-                  locale={locale}
-                  onStatusChange={onStatusChange}
-                  pending={pendingStatusId !== null}
-                  roleLabels={roleLabels}
-                  statusLabels={statusLabels}
-                  statusOptions={statusOptions}
-                  typeLabels={typeLabels}
-                />
-              ))}
-            </tbody>
-          </table>
-        </DashboardTableFrame>
-      )}
+      <DashboardPagedRecords items={feedbackItems}
+        queryKey={paginationKey}>
+        {(pageRows) => (
+          <>
+          {feedbackItems.length === 0 ? (
+            <EmptyState
+              description={t("list.emptyDescription")}
+              icon={<Filter className="size-5" />}
+              title={t("list.emptyTitle")}
+            />
+          ) : (
+            <DashboardTableFrame>
+              <table className="min-w-[1060px] w-full text-left text-sm">
+                <thead className="bg-surface-inset text-xs font-semibold text-content-muted">
+                  <tr>
+                    <th className="px-4 py-3">{t("list.feedback")}</th>
+                    <th className="px-4 py-3">{t("list.submitter")}</th>
+                    <th className="px-4 py-3">{t("list.type")}</th>
+                    <th className="px-4 py-3">{t("list.source")}</th>
+                    <th className="px-4 py-3">{t("list.createdAt")}</th>
+                    <th className="px-4 py-3">{t("list.status")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {pageRows.map((feedback) => (
+                    <FeedbackTableRow
+                      feedback={feedback}
+                      key={feedback.id}
+                      locale={locale}
+                      onStatusChange={onStatusChange}
+                      pending={pendingStatusId !== null}
+                      roleLabels={roleLabels}
+                      statusLabels={statusLabels}
+                      statusOptions={statusOptions}
+                      typeLabels={typeLabels}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </DashboardTableFrame>
+          )}
+          </>
+        )}
+      </DashboardPagedRecords>
     </DashboardListSection>
   );
 }

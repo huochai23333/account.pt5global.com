@@ -81,6 +81,7 @@ export function CompanyExpensesClient({
           locale={locale}
         />
         <CompanyExpensesListSection
+          paginationKey={JSON.stringify([viewModel.monthFilter, viewModel.categoryFilter, viewModel.currencyFilter, viewModel.searchQuery])}
           copy={copy.list}
           expenses={viewModel.filteredExpenses}
           locale={locale}

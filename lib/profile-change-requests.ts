@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
@@ -124,13 +125,14 @@ export async function submitProfileChangeRequest(
 export async function getPendingProfileChangeReviews(
   supabase: SupabaseClient,
 ): Promise<PendingProfileChangeReviewRow[]> {
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("pending_user_profile_change_requests")
       .select(
         "request_id,user_id,current_name,email,current_city,previous_name,requested_name,previous_city,requested_city,status,created_at",
       )
       .order("created_at", { ascending: false })
+      .order("request_id", { ascending: false })
       .returns<PendingProfileChangeReviewRow[]>(),
   );
 

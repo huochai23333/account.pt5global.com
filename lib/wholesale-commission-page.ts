@@ -15,7 +15,7 @@ export async function getWholesaleCommissionPageRows(supabase: SupabaseClient, s
   }
   const [customers, orders, commissions, profiles, commissionRuleSettings] = await Promise.all([
     getWholesaleCustomers(supabase), getAllWholesaleOrders(supabase, canViewInternalFields),
-    queryWholesaleRows<WholesaleCommission>(supabase.from("wholesale_commissions").select("*").order("calculated_at", { ascending: false }), "批发提成"),
+    queryWholesaleRows<WholesaleCommission>(supabase.from("wholesale_commissions").select("*").order("calculated_at", { ascending: false }).order("id", { ascending: false }), "批发提成"),
     getWholesaleProfiles(supabase, false), getCommissionRuleSettings(supabase),
   ]);
   return { customers, orders, commissions, profiles, commissionRuleSettings };

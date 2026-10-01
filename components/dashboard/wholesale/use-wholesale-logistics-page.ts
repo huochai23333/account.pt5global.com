@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { useDashboardQueryPage } from "@/lib/use-dashboard-query-page";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   getOrderDatePresetRange,
@@ -61,41 +62,22 @@ export function useWholesaleLogisticsPage({
     }),
     [deferredSearchText, filters],
   );
-  const [page, setPage] = useState(initialPage);
+  const query = useDashboardQueryPage({
+    initialData: initialPage,
+    queryKey: JSON.stringify(queryFilters),
+    totalItems: (data) => data.totalCount,
+    errorMessage: "物流记录暂时没有加载成功，请稍后重试。",
+    queryPage: (pageNumber) => getWholesaleLogisticsPage(requireBrowserClient(), queryFilters, pageNumber),
+  });
+  const page = query.data ?? initialPage;
+  const reloadPage = query.refresh;
   const [assignments, setAssignments] = useState(initialAssignments);
   const [storeOptions, setStoreOptions] = useState(initialStoreOptions);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [updatingSource, setUpdatingSource] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
-  const requestVersion = useRef(0);
   const didRequestSourceRefresh = useRef(false);
-  const filterKey = JSON.stringify(queryFilters);
-  const previousFilterKey = useRef(filterKey);
 
-  const reloadPage = useCallback(async () => {
-    const supabase = getBrowserSupabaseClient();
-    if (!supabase) {
-      setLoadError("当前无法读取物流记录，请刷新页面后重试。");
-      return;
-    }
-
-    const version = ++requestVersion.current;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const nextPage = await getWholesaleLogisticsPage(supabase, queryFilters);
-      if (version === requestVersion.current) setPage(nextPage);
-    } catch (error) {
-      if (version === requestVersion.current) {
-        setLoadError(readError(error, "物流记录暂时没有加载成功。"));
-      }
-    } finally {
-      if (version === requestVersion.current) setLoading(false);
-    }
-  }, [queryFilters]);
 
   const reloadAll = useCallback(async () => {
     const supabase = getBrowserSupabaseClient();
@@ -103,15 +85,10 @@ export function useWholesaleLogisticsPage({
 
     const data = await getInitialWholesaleLogisticsData(supabase, queryFilters);
     setAssignments(data.logisticsAssignments);
-    setPage(data.logisticsPage);
+    await reloadPage();
     setStoreOptions(data.logisticsStoreOptions);
-  }, [queryFilters]);
+  }, [queryFilters, reloadPage]);
 
-  useEffect(() => {
-    if (previousFilterKey.current === filterKey) return;
-    previousFilterKey.current = filterKey;
-    void reloadPage();
-  }, [filterKey, reloadPage]);
 
   useEffect(() => {
     if (didRequestSourceRefresh.current) return;
@@ -140,32 +117,6 @@ export function useWholesaleLogisticsPage({
     void refresh();
   }, [reloadAll]);
 
-  const loadMore = useCallback(async () => {
-    if (!page.nextCursor || loadingMore) return;
-    const supabase = getBrowserSupabaseClient();
-    if (!supabase) return;
-
-    const version = requestVersion.current;
-    setLoadingMore(true);
-    setLoadError(null);
-    try {
-      const nextPage = await getWholesaleLogisticsPage(
-        supabase,
-        queryFilters,
-        page.nextCursor,
-      );
-      if (version === requestVersion.current) {
-        setPage((current) => ({
-          ...nextPage,
-          rows: mergeRows(current.rows, nextPage.rows),
-        }));
-      }
-    } catch (error) {
-      setLoadError(readError(error, "更多物流记录暂时没有加载成功。"));
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, page.nextCursor, queryFilters]);
 
   const runMutation = useCallback(
     async (key: string, successMessage: string, action: () => Promise<void>) => {
@@ -215,9 +166,11 @@ export function useWholesaleLogisticsPage({
     assignments,
     feedback,
     filters,
-    loadError,
-    loading,
-    loadingMore,
+    loadError: query.error,
+    loading: query.loading,
+    hasPage: Boolean(query.data),
+    pagination: query.pagination,
+    goToPage: query.loadPage,
     page,
     pendingKey,
     storeOptions,
@@ -230,7 +183,6 @@ export function useWholesaleLogisticsPage({
         searchMode: "date_range",
         searchText: "",
       })),
-    loadMore,
     reloadPage,
     setFilters: (changes: Partial<WholesaleLogisticsFilters>) =>
       setFilters((current) => applyFilterChanges(current, changes)),
@@ -298,11 +250,6 @@ function requireBrowserClient() {
   return supabase;
 }
 
-function mergeRows<Row extends { id: string }>(current: Row[], next: Row[]) {
-  return Array.from(
-    new Map([...current, ...next].map((row) => [row.id, row])).values(),
-  );
-}
 
 function readError(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;

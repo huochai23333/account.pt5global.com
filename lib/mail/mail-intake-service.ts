@@ -129,8 +129,7 @@ export async function deleteMailIntakeRule(identity: MailIdentity, ruleId: strin
 }
 
 export async function queryMailQuarantine(identity: MailIdentity, input: {
-  cursor?: string;
-  limit?: number;
+  page?: number;
   customerEmail?: string;
   refCode?: string;
   assignedMemberId?: string;
@@ -138,13 +137,12 @@ export async function queryMailQuarantine(identity: MailIdentity, input: {
   endAt?: string;
 }) {
   requireMailAdministrator(identity);
-  const limit = Math.max(1, Math.min(input.limit ?? 40, 100));
-  const cursor = input.cursor ? new Date(input.cursor) : null;
-  if (cursor && Number.isNaN(cursor.getTime())) throw new Error("隔离列表位置无效。");
+  const page = input.page ?? 1;
+  if (!Number.isSafeInteger(page) || page < 1) throw new Error("请选择有效的页码。");
   let query = getSupabaseServiceRoleClient().from("mail_threads")
-    .select("id,subject_enc,customer_email_enc,assigned_user_id,quarantine_reason,quarantined_at,last_message_at,version")
+    .select("id,subject_enc,customer_email_enc,assigned_user_id,quarantine_reason,quarantined_at,last_message_at,version", { count: "exact" })
     .eq("intake_status", "quarantined").is("deleted_at", null)
-    .order("quarantined_at", { ascending: false }).limit(limit + 1);
+    .order("quarantined_at", { ascending: false }).order("id", { ascending: false });
   // 客户邮箱使用盲索引做精确检索，数据库中仍不会出现明文邮箱。
   if (input.customerEmail?.trim()) {
     query = query.eq("customer_email_hash", createBlindIndex(input.customerEmail.trim(), getMailEnv().emailHashSecret));
@@ -153,8 +151,8 @@ export async function queryMailQuarantine(identity: MailIdentity, input: {
   if (input.assignedMemberId?.trim()) query = query.eq("assigned_user_id", input.assignedMemberId.trim());
   if (input.startAt) query = query.gte("quarantined_at", input.startAt);
   if (input.endAt) query = query.lte("quarantined_at", input.endAt);
-  if (cursor) query = query.lt("quarantined_at", cursor.toISOString());
-  const { data, error } = await query;
+  // 数量和当前页使用完全相同的筛选，二十条之外的邮件不会被错误地算作不存在。
+  const { data, error, count } = await query.range((page - 1) * 20, page * 20 - 1);
   if (error) databaseError("隔离邮件暂时无法读取。", error);
   const rows = data ?? [];
   const ids = [...new Set(rows.map((row) => row.assigned_user_id as string | null).filter((value): value is string => Boolean(value)))];
@@ -164,7 +162,7 @@ export async function queryMailQuarantine(identity: MailIdentity, input: {
     if (profiles.error) databaseError("隔离邮件负责人暂时无法读取。", profiles.error);
     for (const profile of profiles.data ?? []) names.set(profile.user_id as string, String(profile.name ?? profile.email ?? "内部员工"));
   }
-  const items: MailQuarantineItem[] = rows.slice(0, limit).map((row) => ({
+  const items: MailQuarantineItem[] = rows.map((row) => ({
     id: row.id as string,
     subject: decryptContent(String(row.subject_enc)),
     customerEmail: decryptContent(String(row.customer_email_enc)),
@@ -175,7 +173,7 @@ export async function queryMailQuarantine(identity: MailIdentity, input: {
     lastMessageAt: String(row.last_message_at),
     version: Number(row.version),
   }));
-  return { items, nextCursor: rows.length > limit ? items.at(-1)?.quarantinedAt ?? null : null };
+  return { items, totalCount: count ?? 0 };
 }
 
 async function assertQuarantineAccess(identity: MailIdentity, threads: Array<{ threadId: string; expectedVersion: number }>) {

@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "../dashboard-paged-records";
+
 import { FileBadge2, ImageIcon, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -82,28 +84,28 @@ export function AdminReviewsClient({
 
           <div className="mt-6">
             {activeTab === "profile" ? (
-              <ProfileChangeReviewList
+              <DashboardPagedRecords items={profileRows} queryKey={activeTab}>{(pageRows) => <ProfileChangeReviewList
                 busyRows={busyRows}
                 onAction={handleProfileChangeReview}
-                rows={profileRows}
-              />
+                rows={pageRows}
+              />}</DashboardPagedRecords>
             ) : null}
 
             {activeTab === "privacy" ? (
-              <PrivacyReviewList
+              <DashboardPagedRecords items={privacyRows} queryKey={activeTab}>{(pageRows) => <PrivacyReviewList
                 busyRows={busyRows}
                 onAction={handlePrivacyReview}
-                rows={privacyRows}
-              />
+                rows={pageRows}
+              />}</DashboardPagedRecords>
             ) : null}
 
             {activeTab === "media" ? (
-              <MediaReviewList
+              <DashboardPagedRecords items={mediaRows} queryKey={activeTab}>{(pageRows) => <MediaReviewList
                 busyRows={busyRows}
                 onAction={handleMediaReview}
                 onPreviewOpen={setPreviewAsset}
-                rows={mediaRows}
-              />
+                rows={pageRows}
+              />}</DashboardPagedRecords>
             ) : null}
           </div>
         </DashboardListSection>

@@ -3,6 +3,8 @@
 import { Inbox, LoaderCircle, MailOpen, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { DashboardPaginationFooter } from "../dashboard-collection-section";
+import type { DashboardPaginationState } from "@/lib/dashboard-pagination";
 import { Button, InteractiveButton } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/form-controls";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -16,13 +18,13 @@ import { formatMailTime } from "./mail-display";
 export function MailThreadList(props: {
   summary: MailWorkspaceSummary | null;
   threads: MailThreadListItem[];
-  hasMore: boolean;
+  pagination: DashboardPaginationState;
   filters: MailThreadQuery;
   selectedId: string | null;
   isAdmin: boolean;
   busy: string | null;
   onFilter: (filters: MailThreadQuery) => void;
-  onLoadMore: () => void;
+  onPageChange: (page: number) => void;
   onOpen: (id: string) => void;
   onNew: () => void;
   selectedIds: string[];
@@ -53,7 +55,7 @@ export function MailThreadList(props: {
             <Button
               className="shrink-0"
               key={tab.label}
-              onClick={() => props.onFilter({ ...props.filters, state: tab.state, unread: tab.unread })}
+              onClick={() => props.onFilter({ ...props.filters, state: tab.state, unread: tab.unread, page: 1 })}
               size="compact"
               type="button"
               variant={active ? "primary" : "outline"}
@@ -61,7 +63,7 @@ export function MailThreadList(props: {
           );
         })}
         {props.isAdmin ? (
-          <Button className="shrink-0" onClick={() => props.onFilter({ scope: "unassigned", limit: 40 })} size="compact" type="button" variant={props.filters.scope === "unassigned" ? "primary" : "outline"}>
+          <Button className="shrink-0" onClick={() => props.onFilter({ scope: "unassigned", page: 1 })} size="compact" type="button" variant={props.filters.scope === "unassigned" ? "primary" : "outline"}>
             {t("unassigned")} {props.summary?.counts.unassigned ?? 0}
           </Button>
         ) : null}
@@ -94,8 +96,11 @@ export function MailThreadList(props: {
             </InteractiveButton>
           </div>
         ))}
-        {props.hasMore ? <div className="flex justify-center p-3"><Button disabled={props.busy !== null} loading={props.busy === "threads-more"} onClick={props.onLoadMore} size="compact" type="button" variant="outline">{t("loadMoreThreads")}</Button></div> : null}
       </div>
+      <div className="px-3 pb-3 sm:px-4"><DashboardPaginationFooter {...props.pagination}
+        pending={props.busy !== null}
+        onNextPage={() => props.onPageChange(props.pagination.page + 1)}
+        onPreviousPage={() => props.onPageChange(props.pagination.page - 1)} /></div>
     </Surface>
   );
 }

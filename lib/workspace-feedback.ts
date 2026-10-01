@@ -1,9 +1,6 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  getDashboardQueryRange,
-  MAX_DASHBOARD_QUERY_ROWS,
-} from "./dashboard-pagination";
 import { normalizeAppRole } from "./auth-metadata";
 import { withRequestTimeout } from "./request-timeout";
 import {
@@ -123,7 +120,6 @@ export async function submitWorkspaceFeedback(
 
 export async function getAdminWorkspaceFeedbackPageData(
   supabase: SupabaseClient,
-  limit = MAX_DASHBOARD_QUERY_ROWS,
 ): Promise<AdminWorkspaceFeedbackPageData> {
   const { role, status } = await getCurrentSessionContext(supabase);
 
@@ -134,13 +130,12 @@ export async function getAdminWorkspaceFeedbackPageData(
     };
   }
 
-  const { from, to } = getDashboardQueryRange(limit);
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("workspace_feedback")
       .select(WORKSPACE_FEEDBACK_SELECT)
       .order("created_at", { ascending: false })
-      .range(from, to)
+      .order("id", { ascending: false })
       .returns<WorkspaceFeedbackRow[]>(),
   );
 

@@ -16,7 +16,7 @@ type Setter<T> = Dispatch<SetStateAction<T>>;
 export function useMailSecondaryData(input: {
   isAdmin: boolean; view: MailWorkspaceView;
   setAgents: Setter<MailAgentProfile[]>; setMetrics: Setter<AdminMailMetrics | null>;
-  setQuarantine: Setter<MailQuarantineItem[]>; setRules: Setter<MailIntakeRule[]>;
+  setQuarantine: (page: { items: MailQuarantineItem[]; totalCount: number }) => void; setRules: Setter<MailIntakeRule[]>;
 }) {
   const { isAdmin, view, setAgents, setMetrics, setQuarantine, setRules } = input;
   const loaded = useRef(new Set<Resource>());
@@ -47,8 +47,8 @@ export function useMailSecondaryData(input: {
           const metrics = await requestMailJson<AdminMailMetrics>("/api/mail/metrics", init);
           if (!controller.signal.aborted) setMetrics(metrics);
         } else if (resource === "quarantine") {
-          const result = await requestMailJson<{ items: MailQuarantineItem[] }>("/api/mail/quarantine?limit=40", init);
-          if (!controller.signal.aborted) setQuarantine(result.items);
+          const result = await requestMailJson<{ items: MailQuarantineItem[]; totalCount: number }>("/api/mail/quarantine?page=1", init);
+          if (!controller.signal.aborted) setQuarantine(result);
         } else {
           const result = await requestMailJson<{ rules: MailIntakeRule[] }>("/api/mail/intake-rules", init);
           if (!controller.signal.aborted) setRules(result.rules);

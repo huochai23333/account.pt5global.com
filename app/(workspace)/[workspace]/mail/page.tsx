@@ -38,7 +38,7 @@ export default async function WorkspaceMailPage({ params, searchParams }: {
           initialRules={[]}
           initialSummary={data.summary}
           initialThreads={data.threads}
-          initialNextCursor={data.nextCursor}
+          initialTotalCount={data.totalCount}
           isAdmin={identity.role === "administrator"}
           viewerId={identity.userId}
         />

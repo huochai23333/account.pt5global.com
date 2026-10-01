@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { mapWithConcurrencyLimit } from "./async-collection";
@@ -217,13 +218,14 @@ export async function getAdminReviewsPageData(
 export async function getPendingPrivacyReviews(
   supabase: SupabaseClient,
 ): Promise<PendingPrivacyReviewRow[]> {
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("pending_user_privacy_requests")
       .select(
         "request_id,user_id,name,email,passport_requests,id_card_requests,status,type,created_at",
       )
       .order("created_at", { ascending: false })
+      .order("request_id", { ascending: false })
       .returns<PendingPrivacyReviewRow[]>(),
   );
 
@@ -237,11 +239,12 @@ export async function getPendingPrivacyReviews(
 export async function getPendingMediaReviews(
   supabase: SupabaseClient,
 ): Promise<PendingMediaReviewWithPreview[]> {
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("pending_user_media_assets")
       .select(PENDING_MEDIA_REVIEW_SELECT)
       .order("created_at", { ascending: false })
+      .order("asset_id", { ascending: false })
       .returns<PendingMediaReviewRow[]>(),
   );
 

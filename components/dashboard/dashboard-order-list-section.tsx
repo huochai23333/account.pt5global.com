@@ -6,31 +6,23 @@ import type { ReactNode } from "react";
 import {
   DashboardCollectionFooter,
   DashboardCollectionSection,
-  DashboardLoadMoreButton,
   DashboardPaginationActions,
 } from "./dashboard-collection-section";
 
 export type DashboardOrderListUnit =
   "logisticsOrders" | "orders";
 
-export type DashboardOrderListProgress =
-  | {
-      end: number;
-      kind: "range";
-      start: number;
-      total: number;
-      unit: DashboardOrderListUnit;
-    }
-  | {
-      kind: "loaded";
-      shown: number;
-      total: number;
-      unit: DashboardOrderListUnit;
-    };
+export type DashboardOrderListProgress = {
+  end: number;
+  kind: "range";
+  start: number;
+  total: number;
+  unit: DashboardOrderListUnit;
+};
 
 /**
- * 四类订单页面共用的列表卡。
- * 数量提示固定在左侧，分页或继续加载固定在右侧；移动端自动上下排列。
+ * 订单与物流共用的列表卡。
+ * 数量提示固定在左侧，页码操作固定在右侧；移动端自动上下排列。
  */
 export function DashboardOrderListSection({
   ariaLabel,
@@ -78,45 +70,13 @@ function DashboardOrderProgressText({
 }: {
   progress: DashboardOrderListProgress;
 }) {
-  const t = useTranslations("OrderListFramework");
-  const unit = t(`units.${progress.unit}`);
-  const countText =
-    progress.kind === "range"
-      ? t("list.range", {
-          end: progress.end,
-          start: progress.start,
-          total: progress.total,
-          unit,
-        })
-      : t("list.loaded", {
-          shown: progress.shown,
-          total: progress.total,
-          unit,
-        });
+  const t = useTranslations("DashboardPagination");
+  const countText = t("range", { end: progress.end, start: progress.start, total: progress.total });
 
   return <>{countText}</>;
 }
 
-export function DashboardOrderLoadMoreButton({
-  loading,
-  onClick,
-}: {
-  loading: boolean;
-  onClick: () => void;
-}) {
-  const t = useTranslations("OrderListFramework");
-
-  return (
-    <DashboardLoadMoreButton
-      label={t("list.loadMore")}
-      loading={loading}
-      loadingLabel={t("list.loadingMore")}
-      onClick={onClick}
-    />
-  );
-}
-
-/** 普通订单继续使用页码分页，只复用统一底栏右侧的操作样式。 */
+/** 订单与其他记录列表共用同一页码操作栏。 */
 export function DashboardOrderPaginationActions({
   hasNextPage,
   hasPreviousPage,
@@ -124,6 +84,7 @@ export function DashboardOrderPaginationActions({
   onPreviousPage,
   page,
   pageCount,
+  pending = false,
 }: {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
@@ -131,6 +92,7 @@ export function DashboardOrderPaginationActions({
   onPreviousPage: () => void;
   page: number;
   pageCount: number;
+  pending?: boolean;
 }) {
   return (
     <DashboardPaginationActions
@@ -140,6 +102,7 @@ export function DashboardOrderPaginationActions({
       onPreviousPage={onPreviousPage}
       page={page}
       pageCount={pageCount}
+      pending={pending}
     />
   );
 }

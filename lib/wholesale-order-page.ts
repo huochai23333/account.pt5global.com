@@ -14,7 +14,6 @@ import {
 import {
   deduplicateWholesaleOrderWarnings,
   readWholesaleOrderArray,
-  readWholesaleOrderCursor,
   readWholesaleOrderNumber,
   readWholesaleOrderRecord,
   readWholesaleOrderSummary,
@@ -31,11 +30,6 @@ export type WholesaleOrderFilters = {
   searchText: string;
   searchMode: OrderSearchMode;
   status: "all" | WholesaleOrder["status"];
-};
-
-export type WholesaleOrderCursor = {
-  id: string;
-  orderedAt: string;
 };
 
 export type WholesaleOrderPageWarning = {
@@ -61,7 +55,6 @@ export type WholesaleOrderPageSummary = {
 export type WholesaleOrderPage = {
   canViewInternalFields: boolean;
   clientContactsByOrderId: Record<string, string>;
-  nextCursor: WholesaleOrderCursor | null;
   orderChangeLogs: WholesaleOrderChangeLog[];
   orderListAttachments: WholesaleOrderListAttachment[];
   orders: WholesaleOrderListItem[];
@@ -80,22 +73,20 @@ export const WHOLESALE_ORDER_PAGE_SIZE = 20;
 export async function getWholesaleOrderPage(
   supabase: SupabaseClient,
   filters: WholesaleOrderFilters,
-  cursor: WholesaleOrderCursor | null = null,
-  limit = WHOLESALE_ORDER_PAGE_SIZE,
+  page = 1,
 ): Promise<WholesaleOrderPage> {
   const dateRange = normalizeOrderDateRange({
     fromDate: filters.orderedFromDate,
     toDate: filters.orderedToDate,
   });
   const { data, error } = await supabase.rpc("get_wholesale_order_page", {
-    p_cursor: cursor,
+    p_page: page,
     p_filters: {
       ...filters,
       orderedFromDate: dateRange.fromDate,
       orderedToDate: dateRange.toDate,
       searchText: filters.searchText.trim(),
     },
-    p_limit: limit,
   });
 
   if (error) {
@@ -119,7 +110,7 @@ export async function getWholesaleOrderPage(
     return {
       canViewInternalFields,
       clientContactsByOrderId: {},
-      nextCursor: readWholesaleOrderCursor(core.nextCursor),
+
       orderChangeLogs: [],
       orderListAttachments: [],
       orders,
@@ -173,7 +164,7 @@ export async function getWholesaleOrderPage(
   return {
     canViewInternalFields,
     clientContactsByOrderId,
-    nextCursor: readWholesaleOrderCursor(core.nextCursor),
+
     orderChangeLogs: readWholesaleRelatedRows<WholesaleOrderChangeLog>(
       changeLogsResult,
       warnings,

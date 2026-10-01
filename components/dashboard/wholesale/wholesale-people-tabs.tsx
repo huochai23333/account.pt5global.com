@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
@@ -147,11 +149,18 @@ export function WholesaleCustomerPeopleTab({
           />
         </DashboardFilterField>
       </div>
-      <WholesaleCustomerDirectory
-        customers={filteredCustomers}
-        onSelect={onSelectCustomer}
-        profilesById={profilesById}
-      />
+      <DashboardPagedRecords items={filteredCustomers}
+        queryKey={JSON.stringify([customerSearch, customerKindFilter, customerSalesFilter])}>
+        {(pageRows) => (
+          <>
+          <WholesaleCustomerDirectory
+            customers={pageRows}
+            onSelect={onSelectCustomer}
+            profilesById={profilesById}
+          />
+          </>
+        )}
+      </DashboardPagedRecords>
     </DashboardListSection>
   );
 }
@@ -257,10 +266,17 @@ export function WholesaleSalesAccountPeopleTab({
           />
         </DashboardFilterField>
       </div>
-      <WholesaleSalesAccountDirectory
-        accounts={filteredAccounts}
-        onSelect={onSelectProfile}
-      />
+      <DashboardPagedRecords items={filteredAccounts}
+        queryKey={JSON.stringify([accountSearch, accountRoleFilter, accountStatusFilter])}>
+        {(pageRows) => (
+          <>
+          <WholesaleSalesAccountDirectory
+            accounts={pageRows}
+            onSelect={onSelectProfile}
+          />
+          </>
+        )}
+      </DashboardPagedRecords>
     </DashboardListSection>
   );
 }

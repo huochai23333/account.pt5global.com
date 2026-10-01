@@ -16,6 +16,24 @@ export type WholesaleReferralTreeNode = {
   name: string;
 };
 
+/**
+ * 每个客户是一条分页记录，祖先名称只用于说明推荐路径。
+ * 不能只分页公司根节点：公司下有很多客户时，那样仍然会一次渲染整棵树。
+ */
+export function flattenWholesaleReferralDirectory(nodes: WholesaleReferralTreeNode[]) {
+  const rows: { node: WholesaleReferralTreeNode; path: string[] }[] = [];
+  const seen = new Set<string>();
+  const visit = (node: WholesaleReferralTreeNode, path: string[]) => {
+    if (seen.has(node.id)) return;
+    seen.add(node.id);
+    // 保留真实下级人数；分页视图只渲染当前客户卡片，禁止继续展开整棵子树。
+    if (node.kind === "customer") rows.push({ node, path });
+    for (const child of node.children) visit(child, [...path, node.name]);
+  };
+  for (const node of nodes) visit(node, []);
+  return rows;
+}
+
 export function buildWholesaleReferralTree({
   companyBranchName,
   customers,

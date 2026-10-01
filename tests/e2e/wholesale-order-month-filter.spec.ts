@@ -9,7 +9,7 @@ import {
   expectWorkspaceShell,
   loginAs,
 } from "./helpers/auth";
-import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import { localSqlValue, readLocalPostgresRows } from "./helpers/local-postgres-query";
 import { expandOrderFilters } from "./helpers/order-filter-visibility";
 
 test("filters wholesale orders by included month across pagination and responsive layouts", async ({
@@ -22,26 +22,22 @@ test("filters wholesale orders by included month across pagination and responsiv
     if (message.type() === "error") browserErrors.push(message.text());
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
-  const admin = getLocalSupabaseAdminClient();
-  test.skip(!admin, "需要本地 Supabase 管理客户端独立核对筛选结果。");
-  if (!admin) return;
-
   const defaultRange = getDefaultOrderDateRange();
   const dateBounds = getShanghaiOrderDateBounds(defaultRange);
-  const currentMonth = defaultRange.toDate.slice(0, 7);
+  const [fixture] = readLocalPostgresRows<{ order_month: string }>(
+    "select order_month from public.wholesale_orders where id = 'c2000000-0000-4000-8000-000000000001'",
+  );
+  const currentMonth = fixture.order_month.slice(0, 7);
   const currentMonthDate = `${currentMonth}-01`;
 
   // 页面查询之外再走一次服务端数据库读取，先取得当前日期范围内的权威数量。
   // 后续页面断言必须与这个数量一致，不能只凭列表出现或请求成功判断筛选正确。
-  const currentMonthResult = await admin
-    .from("wholesale_orders")
-    .select("id", { count: "exact" })
-    .eq("order_month", currentMonthDate)
-    .gte("ordered_at", dateBounds.fromInclusive)
-    .lt("ordered_at", dateBounds.toExclusive);
-  expect(currentMonthResult.error).toBeNull();
-  expect(currentMonthResult.count).not.toBeNull();
-  const currentMonthCount = currentMonthResult.count ?? 0;
+  const [{ count: currentMonthCount }] = readLocalPostgresRows<{ count: number }>(`
+    select count(*) from public.wholesale_orders
+    where order_month = ${localSqlValue(currentMonthDate)}
+      and ordered_at >= ${localSqlValue(dateBounds.fromInclusive)}
+      and ordered_at < ${localSqlValue(dateBounds.toExclusive)}
+  `);
   expect(currentMonthCount).toBeGreaterThan(20);
 
   await page.setViewportSize({ height: 900, width: 1440 });
@@ -52,24 +48,22 @@ test("filters wholesale orders by included month across pagination and responsiv
 
   await applyIncludedMonth(page, currentMonth);
   await expect(
-    page.getByText(`已显示 20 / ${currentMonthCount} 笔订单`, { exact: true }),
+    page.getByText(`第 1-20 条，共 ${currentMonthCount} 条`, { exact: true }),
   ).toBeVisible();
   await expectOrderSummaryCount(page, currentMonthCount);
 
-  await page.getByRole("button", { name: "继续加载" }).click();
+  await page.getByRole("button", { name: "下一页" }).click();
   await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(
-    Math.min(40, currentMonthCount),
+    Math.min(20, currentMonthCount - 20),
   );
 
   // 1900 年月份由独立查询确认没有记录，用它验证真实空状态而不是依赖固定夹具猜测。
-  const emptyMonthResult = await admin
-    .from("wholesale_orders")
-    .select("id", { count: "exact", head: true })
-    .eq("order_month", "1900-01-01")
-    .gte("ordered_at", dateBounds.fromInclusive)
-    .lt("ordered_at", dateBounds.toExclusive);
-  expect(emptyMonthResult.error).toBeNull();
-  expect(emptyMonthResult.count).toBe(0);
+  const [{ count: emptyCount }] = readLocalPostgresRows<{ count: number }>(`
+    select count(*) from public.wholesale_orders where order_month = '1900-01-01'
+      and ordered_at >= ${localSqlValue(dateBounds.fromInclusive)}
+      and ordered_at < ${localSqlValue(dateBounds.toExclusive)}
+  `);
+  expect(emptyCount).toBe(0);
 
   await applyIncludedMonth(page, "1900-01");
   await expect(page.getByText("没有匹配的批发订单。可以调整筛选条件，或新建一笔订单。"))

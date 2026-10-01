@@ -19,11 +19,6 @@ export type WholesaleLogisticsFilters = {
   toDate: string;
 };
 
-export type WholesaleLogisticsCursor = {
-  id: string;
-  sortAt: string;
-};
-
 export type WholesaleLogisticsRecord = {
   assignment_id: string | null;
   customer_id: string | null;
@@ -48,7 +43,6 @@ export type WholesaleLogisticsRecord = {
 export type WholesaleLogisticsPage = {
   lastUpdatedAt: string | null;
   missingCostCount: number;
-  nextCursor: WholesaleLogisticsCursor | null;
   recordedCostCount: number;
   rows: WholesaleLogisticsRecord[];
   totalCount: number;
@@ -81,7 +75,7 @@ export type WholesaleReferralWaybillCount = {
   waybill_count: number;
 };
 
-export const WHOLESALE_LOGISTICS_PAGE_SIZE = 50;
+export const WHOLESALE_LOGISTICS_PAGE_SIZE = 20;
 
 /** 默认显示最近 30 天；业务员进入时只看自己，管理员和财务默认查看全部。 */
 export function getDefaultWholesaleLogisticsFilters(
@@ -136,26 +130,24 @@ export async function getInitialWholesaleLogisticsData(
   };
 }
 
-/** 筛选、统计和游标都由数据库处理，浏览器只合并已经返回的批次。 */
+/** 筛选、统计和页码都由数据库处理，浏览器只显示当前页的 20 条记录。 */
 export async function getWholesaleLogisticsPage(
   supabase: SupabaseClient,
   filters: WholesaleLogisticsFilters,
-  cursor: WholesaleLogisticsCursor | null = null,
-  limit = WHOLESALE_LOGISTICS_PAGE_SIZE,
+  page = 1,
 ): Promise<WholesaleLogisticsPage> {
   const dateRange = normalizeOrderDateRange({
     fromDate: filters.fromDate,
     toDate: filters.toDate,
   });
   const { data, error } = await supabase.rpc("get_wholesale_logistics_page", {
-    p_cursor: cursor,
+    p_page: page,
     p_filters: {
       ...filters,
       fromDate: dateRange.fromDate,
       searchText: filters.searchText.trim(),
       toDate: dateRange.toDate,
     },
-    p_limit: limit,
   });
 
   if (error) {
@@ -173,7 +165,6 @@ export async function getWholesaleLogisticsPage(
     lastUpdatedAt:
       typeof result.lastUpdatedAt === "string" ? result.lastUpdatedAt : null,
     missingCostCount: readNumber(result.missingCostCount),
-    nextCursor: readCursor(result.nextCursor),
     recordedCostCount: readNumber(result.recordedCostCount),
     rows: result.rows as WholesaleLogisticsRecord[],
     totalCount: readNumber(result.totalCount),
@@ -227,14 +218,6 @@ export async function requestWholesaleLogisticsRefresh(
   };
 }
 
-function readCursor(value: unknown): WholesaleLogisticsCursor | null {
-  const cursor = readRecord(value);
-  return cursor &&
-    typeof cursor.id === "string" &&
-    typeof cursor.sortAt === "string"
-    ? { id: cursor.id, sortAt: cursor.sortAt }
-    : null;
-}
 
 function readCurrencyTotals(value: unknown) {
   const totals = readRecord(value);

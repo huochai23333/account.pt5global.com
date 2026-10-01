@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 
 import {
   DashboardOrderListSection,
-  DashboardOrderLoadMoreButton,
+  DashboardOrderPaginationActions,
 } from "@/components/dashboard/dashboard-order-list-section";
 import { FeedbackNotice } from "@/components/dashboard/dashboard-shared-ui";
 import { Button } from "@/components/ui/button";
@@ -112,7 +112,7 @@ export function WholesaleLogisticsSection({
         </p>
       ) : null}
 
-      <WholesaleLogisticsSummary page={logistics.page} />
+      {logistics.hasPage ? <WholesaleLogisticsSummary page={logistics.page} /> : null}
 
       <WholesaleLogisticsFiltersPanel
         filters={logistics.filters}
@@ -128,18 +128,16 @@ export function WholesaleLogisticsSection({
       <DashboardOrderListSection
         ariaLabel={t("list.title")}
         controls={
-          logistics.page.nextCursor ? (
-            <DashboardOrderLoadMoreButton
-              loading={logistics.loadingMore}
-              onClick={() => void logistics.loadMore()}
-            />
-          ) : undefined
+          <DashboardOrderPaginationActions {...logistics.pagination} pending={logistics.loading}
+            onNextPage={() => void logistics.goToPage(logistics.pagination.page + 1)}
+            onPreviousPage={() => void logistics.goToPage(logistics.pagination.page - 1)} />
         }
         progress={
-          logistics.page.rows.length > 0
+          logistics.hasPage && logistics.page.rows.length > 0
             ? {
-                kind: "loaded",
-                shown: logistics.page.rows.length,
+                kind: "range",
+                start: logistics.pagination.startIndex,
+                end: logistics.pagination.endIndex,
                 total: logistics.page.totalCount,
                 unit: "logisticsOrders",
               }
@@ -150,14 +148,14 @@ export function WholesaleLogisticsSection({
           <p className="mb-3 text-sm text-content-muted">{t("list.loading")}</p>
         ) : null}
         {logistics.loadError ? (
-          <FeedbackNotice tone="error">{logistics.loadError}</FeedbackNotice>
+          <FeedbackNotice tone="error">{logistics.loadError}<Button disabled={logistics.loading} onClick={() => void logistics.goToPage(logistics.pagination.page)} type="button" variant="outline">{t("actions.retry")}</Button></FeedbackNotice>
         ) : null}
 
-        <WholesaleLogisticsRecords
+        {logistics.hasPage && !logistics.loading ? <WholesaleLogisticsRecords
           customersById={customersById}
           page={logistics.page}
           profilesById={profilesById}
-        />
+        /> : null}
       </DashboardOrderListSection>
 
       {canManage ? (

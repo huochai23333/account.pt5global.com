@@ -46,6 +46,7 @@ export function BusinessVipClient({
       />
 
       <BusinessVipDirectorySection
+          paginationKey={JSON.stringify([viewModel.searchText, viewModel.statusFilter])}
         business={initialData.business}
         canAdmin={initialData.canAdmin}
         canRequest={initialData.canRequest}

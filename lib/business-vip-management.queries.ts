@@ -1,3 +1,4 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentSessionContext } from "./current-session-context";
@@ -9,7 +10,6 @@ import type {
   BusinessVipPageData,
   BusinessVipPageMode,
 } from "./business-vip-management.types";
-import { withRequestTimeout } from "./request-timeout";
 import type { WorkspaceBusinessKey } from "./workspace-business-modules";
 import { parseEnabledWorkspaceBusinessKey } from "./workspace-business-availability";
 
@@ -42,8 +42,8 @@ export async function getBusinessVipPageData(
 }
 
 async function getWholesaleVipRows(supabase: SupabaseClient) {
-  const result = (await withRequestTimeout(
-    supabase.rpc("list_wholesale_vip_management"),
+  const result = (await queryCompleteDashboardRows(
+    supabase.rpc("list_wholesale_vip_management").order("customer_id"),
   )) as unknown as RpcResult<WholesaleVipRpcRow>;
 
   if (result.error) {

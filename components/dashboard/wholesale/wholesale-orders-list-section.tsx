@@ -7,13 +7,14 @@ import { useState } from "react";
 
 import {
   DashboardOrderListSection,
-  DashboardOrderLoadMoreButton,
+  DashboardOrderPaginationActions,
 } from "@/components/dashboard/dashboard-order-list-section";
 import { FeedbackNotice } from "@/components/dashboard/dashboard-shared-ui";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { Button } from "@/components/ui/button";
 import type { WholesaleOrderPage } from "@/lib/wholesale-order-page";
+import type { DashboardPaginationState } from "@/lib/dashboard-pagination";
 
 import { WholesaleOrdersMobileList } from "./wholesale-orders-mobile-list";
 import { ClientWholesaleOrdersTable } from "./client-wholesale-orders-table";
@@ -37,8 +38,8 @@ export function WholesaleOrdersListSection({
   assessmentPanel,
   loadError,
   loading,
-  loadingMore,
-  onLoadMore,
+  pagination,
+  onPageChange,
   onRetry,
   page,
   renderProps,
@@ -46,8 +47,8 @@ export function WholesaleOrdersListSection({
   assessmentPanel?: ReactNode;
   loadError: string | null;
   loading: boolean;
-  loadingMore: boolean;
-  onLoadMore: () => void;
+  pagination: DashboardPaginationState;
+  onPageChange: (page: number) => void;
   onRetry: () => void;
   page: WholesaleOrderPage | null;
   renderProps: WholesaleOrderRenderProps;
@@ -61,18 +62,16 @@ export function WholesaleOrdersListSection({
     <DashboardOrderListSection
       ariaLabel={uiText("attribute004")}
       controls={
-        page?.nextCursor ? (
-          <DashboardOrderLoadMoreButton
-            loading={loadingMore}
-            onClick={onLoadMore}
-          />
-        ) : undefined
+        <DashboardOrderPaginationActions {...pagination} pending={loading}
+          onNextPage={() => onPageChange(pagination.page + 1)}
+          onPreviousPage={() => onPageChange(pagination.page - 1)} />
       }
       progress={
         page && page.orders.length > 0
           ? {
-              kind: "loaded",
-              shown: page.orders.length,
+              kind: "range",
+              start: pagination.startIndex,
+              end: pagination.endIndex,
               total: page.totalCount,
               unit: "orders",
             }

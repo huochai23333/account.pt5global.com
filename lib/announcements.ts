@@ -1,8 +1,8 @@
+import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   getDashboardQueryRange,
-  MAX_DASHBOARD_QUERY_ROWS,
 } from "./dashboard-pagination";
 import { withRequestTimeout } from "./request-timeout";
 import {
@@ -102,7 +102,6 @@ function getVisibleAnnouncementAudiences(
 
 export async function getAdminAnnouncementsPageData(
   supabase: SupabaseClient,
-  limit = MAX_DASHBOARD_QUERY_ROWS,
 ): Promise<AdminAnnouncementsPageData> {
   const { role } = await getCurrentSessionContext(supabase);
 
@@ -113,14 +112,13 @@ export async function getAdminAnnouncementsPageData(
     };
   }
 
-  const { from, to } = getDashboardQueryRange(limit);
-  const { data, error } = await withRequestTimeout(
+  const { data, error } = await queryCompleteDashboardRows(
     supabase
       .from("announcements")
       .select(ANNOUNCEMENT_SELECT)
       .order("updated_at", { ascending: false })
       .order("created_at", { ascending: false })
-      .range(from, to)
+      .order("id", { ascending: false })
       .returns<AnnouncementRow[]>(),
   );
 

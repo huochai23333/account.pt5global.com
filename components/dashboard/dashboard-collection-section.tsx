@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "../ui/button";
@@ -41,7 +41,10 @@ export function DashboardCollectionSection({
   );
 }
 
-/** 桌面端左右排列，移动端上下排列，列表数量只在这里渲染一次。 */
+/**
+ * 宽列表左右排列，窄列表自动换行；邮件的电脑双栏也可能比手机视口更窄。
+ * 数量保留自己的行宽，不能被翻页按钮挤成零宽度而消失。
+ */
 export function DashboardCollectionFooter({
   controls,
   count,
@@ -50,10 +53,10 @@ export function DashboardCollectionFooter({
   count: ReactNode;
 }) {
   return (
-    <div className="mt-5 flex flex-col gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="min-w-0 break-words text-sm text-content-muted">{count}</p>
+    <div className="mt-5 flex flex-col gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <p className="min-w-0 break-words text-sm text-content-muted sm:flex-[1_1_12rem]">{count}</p>
       {controls ? (
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex w-full max-w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
           {controls}
         </div>
       ) : null}
@@ -69,6 +72,7 @@ export function DashboardPaginationActions({
   onPreviousPage,
   page,
   pageCount,
+  pending = false,
 }: {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
@@ -76,13 +80,14 @@ export function DashboardPaginationActions({
   onPreviousPage: () => void;
   page: number;
   pageCount: number;
+  pending?: boolean;
 }) {
   const t = useTranslations("DashboardPagination");
 
   return (
-    <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+    <nav aria-label={t("label")} aria-busy={pending} className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
       <Button
-        disabled={!hasPreviousPage}
+        disabled={pending || !hasPreviousPage}
         onClick={onPreviousPage}
         size="compact"
         type="button"
@@ -91,11 +96,11 @@ export function DashboardPaginationActions({
         <ChevronLeft className="size-4" />
         {t("previous")}
       </Button>
-      <p className="min-w-[84px] text-center text-xs font-medium text-primary sm:min-w-[120px] sm:text-sm">
+      <p className="min-w-16 flex-1 text-center text-xs font-medium text-primary sm:text-sm">
         {t("page", { page, pageCount })}
       </p>
       <Button
-        disabled={!hasNextPage}
+        disabled={pending || !hasNextPage}
         onClick={onNextPage}
         size="compact"
         type="button"
@@ -104,7 +109,7 @@ export function DashboardPaginationActions({
         {t("next")}
         <ChevronRight className="size-4" />
       </Button>
-    </div>
+    </nav>
   );
 }
 
@@ -122,6 +127,7 @@ export function DashboardPaginationFooter({
   pageCount,
   startIndex,
   totalItems,
+  pending = false,
 }: {
   endIndex: number;
   hasNextPage: boolean;
@@ -132,11 +138,11 @@ export function DashboardPaginationFooter({
   pageCount: number;
   startIndex: number;
   totalItems: number;
+  pending?: boolean;
 }) {
   const t = useTranslations("DashboardPagination");
 
-  if (totalItems === 0) return null;
-
+  // 空结果也保留“共 0 条”和禁用的翻页按钮，筛选前后的列表结构保持一致。
   return (
     <DashboardCollectionFooter
       controls={
@@ -147,6 +153,7 @@ export function DashboardPaginationFooter({
           onPreviousPage={onPreviousPage}
           page={page}
           pageCount={pageCount}
+          pending={pending}
         />
       }
       count={t("range", {
@@ -155,32 +162,6 @@ export function DashboardPaginationFooter({
         total: totalItems,
       })}
     />
-  );
-}
-
-export function DashboardLoadMoreButton({
-  label,
-  loading,
-  loadingLabel,
-  onClick,
-}: {
-  label: string;
-  loading: boolean;
-  loadingLabel: string;
-  onClick: () => void;
-}) {
-  return (
-    <Button
-      className="w-full sm:w-auto"
-      disabled={loading}
-      onClick={onClick}
-      type="button"
-      variant="outline"
-      size="compact"
-    >
-      {loading ? <LoaderCircle className="size-4 animate-spin" /> : null}
-      {loading ? loadingLabel : label}
-    </Button>
   );
 }
 

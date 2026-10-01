@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
@@ -208,26 +210,33 @@ export function WholesaleSettlementReleaseSection({
           </DashboardFilterField>
         </div>
 
-        {filteredReleases.length > 0 ? (
-          <WholesaleSettlementReleaseTable
-            allocationsByReleaseId={allocationsByReleaseId}
-            canAllocate={canAllocate}
-            canPublish={canPublish}
-            customersById={customersById}
-            onCancelRelease={onCancelRelease}
-            onOpenAllocation={setSelectedAllocationRelease}
-            ordersById={ordersById}
-            pendingKey={pendingKey}
-            profilesById={profilesById}
-            releases={filteredReleases}
-          />
-        ) : (
-          <WholesaleEmptyState
-            description={uiText("attribute009")}
-            icon={<ReceiptText className="size-6" />}
-            title={uiText("attribute010")}
-          />
-        )}
+        <DashboardPagedRecords items={filteredReleases}
+          queryKey={JSON.stringify([searchText, statusFilter])}>
+          {(pageRows) => (
+            <>
+            {filteredReleases.length > 0 ? (
+              <WholesaleSettlementReleaseTable
+                allocationsByReleaseId={allocationsByReleaseId}
+                canAllocate={canAllocate}
+                canPublish={canPublish}
+                customersById={customersById}
+                onCancelRelease={onCancelRelease}
+                onOpenAllocation={setSelectedAllocationRelease}
+                ordersById={ordersById}
+                pendingKey={pendingKey}
+                profilesById={profilesById}
+                releases={pageRows}
+              />
+            ) : (
+              <WholesaleEmptyState
+                description={uiText("attribute009")}
+                icon={<ReceiptText className="size-6" />}
+                title={uiText("attribute010")}
+              />
+            )}
+            </>
+          )}
+        </DashboardPagedRecords>
       </DashboardListSection>
 
       {createDialogOpen ? (

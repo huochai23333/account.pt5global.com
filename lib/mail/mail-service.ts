@@ -174,20 +174,9 @@ export async function queryMailThreads(identity: MailIdentity, filters: MailThre
   if (filters.scope !== "mine" && identity.role !== "administrator") {
     throw new Error("只有管理员可以查看这个邮件范围。");
   }
-  const limit = Math.max(1, Math.min(filters.limit ?? 40, 100));
-  let cursorAt: string | null = null;
-  let cursorId: string | null = null;
-  if (filters.cursor) {
-    try {
-      const parsed = JSON.parse(filters.cursor) as { at?: string; id?: string };
-      if (!parsed.at || Number.isNaN(new Date(parsed.at).getTime())
-        || !parsed.id || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(parsed.id)) throw new Error();
-      cursorAt = parsed.at;
-      cursorId = parsed.id;
-    } catch { throw new Error("邮件列表位置无效。"); }
-  }
-
-  // 未读与复合游标都在数据库查询中生效；先取 limit+1 条，额外一条仅用于判断是否还有下一页。
+  const page = filters.page ?? 1;
+  if (!Number.isSafeInteger(page) || page < 1) throw new Error("邮件页码无效。");
+  // 当前页和完整筛选总数由同一次数据库读取返回，未读与范围条件不会漏掉后续会话。
   const { data, error } = await getSupabaseServiceRoleClient().rpc("query_mail_thread_page", {
     p_user_id: identity.userId,
     p_scope: filters.scope,
@@ -196,18 +185,15 @@ export async function queryMailThreads(identity: MailIdentity, filters: MailThre
     p_customer_hash: filters.customer ? createBlindIndex(filters.customer, getMailEnv().emailHashSecret) : null,
     p_ref_code: filters.refCode?.trim().toUpperCase() || null,
     p_unread: filters.unread === true,
-    p_cursor_at: cursorAt,
-    p_cursor_id: cursorId,
-    p_limit: limit + 1,
+    p_page: page,
   });
   if (error) databaseError("邮件列表暂时无法读取。", error);
-  const rows = (data ?? []) as ThreadRow[];
-  const hasMore = rows.length > limit;
-  const pageRows = rows.slice(0, limit);
-  const items = await toThreadItems(identity, pageRows);
-  const last = pageRows.at(-1);
-  return { threads: items, nextCursor: hasMore && last
-    ? JSON.stringify({ at: last.last_message_at, id: last.id }) : null };
+  const result = data as { threads?: ThreadRow[]; totalCount?: number } | null;
+  if (!result || !Array.isArray(result.threads) || typeof result.totalCount !== "number") {
+    throw new Error("邮件列表暂时无法读取。");
+  }
+  const items = await toThreadItems(identity, result.threads);
+  return { threads: items, totalCount: result.totalCount, page, pageSize: 20 };
 }
 
 export async function getMailThread(identity: MailIdentity, threadId: string, options?: { includeQuarantined?: boolean }): Promise<MailThreadDetail> {

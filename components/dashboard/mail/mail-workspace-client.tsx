@@ -34,7 +34,7 @@ export function MailWorkspaceClient(props: {
   feishuFeedback: FeishuConnectionReason | null;
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
-  initialNextCursor: string | null;
+  initialTotalCount: number;
   initialAgents: MailAgentProfile[];
   initialOwnProfile: MailAgentProfile | null;
   initialQuarantine: MailQuarantineItem[];
@@ -50,6 +50,7 @@ export function MailWorkspaceClient(props: {
   const [bulkRuleOption, setBulkRuleOption] = useState<"none" | "sender" | "domain">("none");
   const intake = useMailIntake({
     isAdmin: props.isAdmin,
+    selectionScope: JSON.stringify(state.filters),
     initialQuarantine: props.initialQuarantine,
     initialRules: props.initialRules,
     onThreadsRemoved: state.removeThreads,
@@ -104,7 +105,7 @@ export function MailWorkspaceClient(props: {
           }}
           onBulkRuleOption={setBulkRuleOption}
           onFilter={(filters) => void state.loadThreads(filters)}
-          onLoadMore={() => void state.loadMoreThreads()}
+          onPageChange={(pageNumber) => void state.loadThreads({ ...state.filters, page: pageNumber })}
           onNew={startNewMessage}
           onOpen={(id) => void state.openThread(id)}
           onToggleSelected={intake.toggleActiveSelection}
@@ -112,11 +113,11 @@ export function MailWorkspaceClient(props: {
           selectedIds={intake.selectedActiveIds}
           summary={state.summary}
           threads={state.threads}
-          hasMore={Boolean(state.nextCursor)}
+          pagination={state.pagination}
         />
         <MailThreadDetailPanel agentsReady={secondary.agentsState === "ready"} agents={state.enabledAgents} aiDraft={state.aiDraft} busy={busy} canDelete={props.isAdmin} canSend={Boolean(state.summary?.senderProfileReady)} composer={state.composer} detail={state.selected} onAssign={(id) => void state.assign(id)} onComposer={state.setComposer} onDelete={() => void state.deleteSelected()} onFiles={(files) => void state.uploadFiles(files)} onQuarantine={() => state.selected ? void intake.quarantineThreads([{ threadId: state.selected.id, expectedVersion: state.selected.version }]) : undefined} onSend={() => void state.send()} onState={(value) => void state.updateState(value)} onSuggest={() => void state.generateReply()} pendingSend={state.pendingSend} />
       </div> : null}
-      {view === "quarantine" && props.isAdmin && secondary.panelState === "ready" ? <MailQuarantinePanel busy={intake.busy} detail={intake.selectedQuarantine} items={intake.quarantine} onDelete={(item) => void intake.deleteQuarantine(item)} onOpen={(id) => void intake.openQuarantine(id)} onRefresh={() => void intake.refreshQuarantine()} onRestore={(item) => void intake.restore(item)} /> : null}
+      {view === "quarantine" && props.isAdmin && secondary.panelState === "ready" ? <MailQuarantinePanel pagination={intake.quarantinePagination} onPageChange={(page) => void intake.onQuarantinePage(page)} busy={intake.busy} detail={intake.selectedQuarantine} items={intake.quarantine} onDelete={(item) => void intake.deleteQuarantine(item)} onOpen={(id) => void intake.openQuarantine(id)} onRefresh={() => void intake.refreshQuarantine()} onRestore={(item) => void intake.restore(item)} /> : null}
       {view === "rules" && props.isAdmin && secondary.panelState === "ready" ? <MailIntakeRulesPanel busy={intake.busy} onCreate={(rule) => void intake.createRule(rule)} onDelete={(rule) => void intake.deleteRule(rule)} onRules={intake.setRules} onSave={(rule) => void intake.updateRule(rule)} rules={intake.rules} /> : null}
       {view === "settings" && props.isAdmin && secondary.panelState === "ready" ? <MailAdminPanel agents={state.agents} busy={state.busy} metrics={state.metrics} onAgents={state.setAgents} onConnect={() => void state.connectMailbox()} onReport={(start, end) => void state.generateReport(start, end)} onSaveAgent={(agent, reset) => void state.saveAgent(agent, reset)} report={state.report} summary={state.summary} /> : null}
       {view === "settings" && !props.isAdmin ? <MailOwnSettingsPanel busy={state.busy !== null} busyKey={state.busy} onChange={state.setOwnProfile} onSave={(reset) => state.ownProfile ? void state.saveAgent(state.ownProfile, reset) : undefined} profile={state.ownProfile} /> : null}

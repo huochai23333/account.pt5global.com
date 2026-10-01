@@ -81,8 +81,7 @@ export type MailThreadQuery = {
   assigneeId?: string;
   customer?: string;
   refCode?: string;
-  cursor?: string;
-  limit?: number;
+  page?: number;
 };
 
 export type MailAgentProfile = {

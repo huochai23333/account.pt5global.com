@@ -1,5 +1,6 @@
 "use client";
 
+import { getDashboardPaginationState } from "@/lib/dashboard-pagination";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -25,7 +26,7 @@ export type { ComposerState } from "./use-mail-workspace-composer";
 export function useMailWorkspace(input: {
   initialSummary: MailWorkspaceSummary | null;
   initialThreads: MailThreadListItem[];
-  initialNextCursor: string | null;
+  initialTotalCount: number;
   initialAgents: MailAgentProfile[];
   initialOwnProfile: MailAgentProfile | null;
   initialMetrics: AdminMailMetrics | null;
@@ -38,14 +39,13 @@ export function useMailWorkspace(input: {
   const t = useTranslations("MailWorkspace");
   const [summary, setSummary] = useState(input.initialSummary);
   const [threads, setThreads] = useState(input.initialThreads);
-  const [nextCursor, setNextCursor] = useState(input.initialNextCursor);
+  const [totalCount, setTotalCount] = useState(input.initialTotalCount);
   const threadRequestVersion = useRef(0);
-  const threadCursorRef = useRef(input.initialNextCursor);
   const [agents, setAgents] = useState(input.initialAgents);
   const [ownProfile, setOwnProfile] = useState(input.initialOwnProfile);
   const [metrics, setMetrics] = useState(input.initialMetrics);
   const [selected, setSelected] = useState<MailThreadDetail | null>(null);
-  const [filters, setFilters] = useState<MailThreadQuery>({ scope: input.isAdmin ? "all" : "mine", limit: 40 });
+  const [filters, setFilters] = useState<MailThreadQuery>({ scope: input.isAdmin ? "all" : "mine", page: 1 });
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(input.initialError);
   const [aiDraft, setAiDraft] = useState("");
@@ -69,39 +69,26 @@ export function useMailWorkspace(input: {
     const requestVersion = ++threadRequestVersion.current;
     setBusy("threads"); setFeedback(null);
     try {
-      const result = await requestJson<{ threads: MailThreadListItem[]; nextCursor: string | null }>("/api/mail/threads", {
-        method: "POST", body: JSON.stringify({ ...nextFilters, cursor: undefined }),
+      let result = await requestJson<{ threads: MailThreadListItem[]; totalCount: number }>("/api/mail/threads", {
+        method: "POST", body: JSON.stringify(nextFilters),
       });
+      // 删除或隔离导致末页越界时，再读取最后一个有效页。
+      const validPage = getDashboardPaginationState(result.totalCount, nextFilters.page ?? 1).page;
+      if (validPage !== (nextFilters.page ?? 1)) {
+        nextFilters = { ...nextFilters, page: validPage };
+        result = await requestJson<{ threads: MailThreadListItem[]; totalCount: number }>("/api/mail/threads", {
+          method: "POST", body: JSON.stringify(nextFilters),
+        });
+      }
       if (requestVersion !== threadRequestVersion.current) return;
       draftGuard.setDirty(false);
       setFilters(nextFilters); setThreads(result.threads); setSelected(null);
-      threadCursorRef.current = result.nextCursor;
-      setNextCursor(result.nextCursor);
+      setTotalCount(result.totalCount);
       await refreshSummary();
     } catch (error) { if (requestVersion === threadRequestVersion.current) setFeedback(error instanceof Error ? error.message : "邮件列表暂时无法读取。"); }
     finally { if (requestVersion === threadRequestVersion.current) setBusy(null); }
   }, [draftGuard, filters, refreshSummary]);
 
-  const loadMoreThreads = useCallback(async () => {
-    const cursor = threadCursorRef.current;
-    if (!cursor || busy) return;
-    const requestVersion = threadRequestVersion.current;
-    setBusy("threads-more"); setFeedback(null);
-    try {
-      const result = await requestJson<{ threads: MailThreadListItem[]; nextCursor: string | null }>("/api/mail/threads", {
-        method: "POST", body: JSON.stringify({ ...filters, cursor }),
-      });
-      // 筛选改变或另一页已提交时，旧响应不能混入当前列表。
-      if (requestVersion !== threadRequestVersion.current || cursor !== threadCursorRef.current) return;
-      setThreads((current) => {
-        const known = new Set(current.map((item) => item.id));
-        return [...current, ...result.threads.filter((item) => !known.has(item.id))];
-      });
-      threadCursorRef.current = result.nextCursor;
-      setNextCursor(result.nextCursor);
-    } catch (error) { if (requestVersion === threadRequestVersion.current) setFeedback(error instanceof Error ? error.message : "更多邮件暂时无法读取。"); }
-    finally { if (requestVersion === threadRequestVersion.current) setBusy(null); }
-  }, [busy, filters]);
 
   const { composer, pendingSend, send, setComposer, startNew, updateComposer, uploadFiles } = useMailWorkspaceComposer({
     viewerId: input.viewerId,
@@ -190,10 +177,11 @@ export function useMailWorkspace(input: {
       setFeedback("系统副本已删除，Gmail 原件仍然保留。");
       setSelected(null); setThreads((current) => current.filter((item) => item.id !== selected.id));
       draftGuard.setDirty(false);
-      await refreshSummary();
+      // 当前页删除后重新补满二十条；若末页被删空，列表读取会自动退回有效页。
+      await loadThreads(filters, { skipDraftGuard: true });
     } catch (error) { setFeedback(error instanceof Error ? error.message : "邮件副本没有删除完成。"); }
     finally { setBusy(null); }
-  }, [confirm, draftGuard, refreshSummary, selected, t]);
+  }, [confirm, draftGuard, filters, loadThreads, selected, t]);
   // 发件设置包含管理员，但客户会话仍只允许转交给启用的业务员。
   const enabledAgents = useMemo(() => agents.filter((agent) => agent.enabled && agent.role === "salesman"), [agents]);
   const removeThreads = useCallback((threadIds: string[]) => {
@@ -202,8 +190,8 @@ export function useMailWorkspace(input: {
   }, []);
 
   return {
-    summary, threads, nextCursor, agents, ownProfile, enabledAgents, metrics, selected, filters, composer, busy, feedback, aiDraft, report, pendingSend,
-    setComposer: updateComposer, setAgents, setOwnProfile, setMetrics, loadThreads, loadMoreThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
+    summary, threads, pagination: getDashboardPaginationState(totalCount, filters.page ?? 1), agents, ownProfile, enabledAgents, metrics, selected, filters, composer, busy, feedback, aiDraft, report, pendingSend,
+    setComposer: updateComposer, setAgents, setOwnProfile, setMetrics, loadThreads, openThread, updateState, assign, uploadFiles, send, generateReply,
     generateReport, saveAgent, connectMailbox, connectFeishu, startNew, deleteSelected, refreshSummary, removeThreads,
   };
 }

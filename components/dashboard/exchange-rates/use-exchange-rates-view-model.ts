@@ -156,8 +156,8 @@ export function useExchangeRatesViewModel({
       ),
     [normalizedFilters, rates],
   );
-  const latestPagination = useDashboardPagination(filteredLatestRows);
-  const historyPagination = useDashboardPagination(filteredHistoryRows);
+  const latestPagination = useDashboardPagination(filteredLatestRows, 20, JSON.stringify(normalizedFilters));
+  const historyPagination = useDashboardPagination(filteredHistoryRows, 20, JSON.stringify(normalizedFilters));
 
   const openCreateDialog = useCallback(() => {
     if (!canManage) return;

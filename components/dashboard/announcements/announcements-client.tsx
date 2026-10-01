@@ -70,6 +70,7 @@ export function AdminAnnouncementsClient({
           statusFilter={viewModel.statusFilter}
         />
         <AnnouncementsListSection
+          paginationKey={JSON.stringify([viewModel.statusFilter, viewModel.audienceFilter])}
           announcements={viewModel.filteredAnnouncements}
           copy={copy.list}
           locale={locale}

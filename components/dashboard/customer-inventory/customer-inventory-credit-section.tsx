@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import {
   CalendarClock,
   CircleDollarSign,
@@ -60,6 +62,11 @@ export function CustomerInventoryCreditSection({
   const pendingExtensions = data.extensions.filter(
     (extension) => extension.status === "pending",
   );
+  // 信贷申请与延期申请合并为一份待审记录，每页合计最多二十项。
+  const reviewItems = [
+    ...pendingOrders.map((order) => ({ id: order.id, order, extension: null })),
+    ...pendingExtensions.map((extension) => ({ id: extension.id, order: null, extension })),
+  ];
   const activeCredits = data.credits.filter(
     (credit) => credit.status === "active",
   );
@@ -115,8 +122,9 @@ export function CustomerInventoryCreditSection({
           description={t("reviews.description")}
           title={t("reviews.title")}
         >
+          <DashboardPagedRecords items={reviewItems}>{(pageRows) => (
           <div className="grid gap-3 lg:grid-cols-2">
-            {pendingOrders.map((order) => {
+            {pageRows.flatMap((item) => item.order ? [item.order] : []).map((order) => {
               const credits = data.credits.filter(
                 (credit) =>
                   credit.order_id === order.id && credit.status === "pending",
@@ -134,7 +142,7 @@ export function CustomerInventoryCreditSection({
                 />
               );
             })}
-            {pendingExtensions.map((extension) => {
+            {pageRows.flatMap((item) => item.extension ? [item.extension] : []).map((extension) => {
               const credit = data.credits.find(
                 (item) => item.id === extension.credit_application_id,
               );
@@ -159,6 +167,7 @@ export function CustomerInventoryCreditSection({
               );
             })}
           </div>
+          )}</DashboardPagedRecords>
         </WholesalePanel>
       ) : null}
 
@@ -178,30 +187,37 @@ export function CustomerInventoryCreditSection({
           />
         ) : null}
 
-        {data.credits.length === 0 ? (
-          <WholesaleEmptyState
-            description={t("credits.emptyDescription")}
-            icon={<CircleDollarSign className="size-5" />}
-            title={t("credits.emptyTitle")}
-          />
-        ) : filteredCredits.length === 0 ? (
-          <CustomerInventoryFilterEmptyState
-            description={t("filters.noCreditResultsDescription")}
-          />
-        ) : (
-          <div className="mt-4 grid gap-3 xl:grid-cols-2">
-            {filteredCredits.map((credit) => (
-              <CustomerInventoryCreditCard
-                canManageCredit={canManageCredit}
-                credit={credit}
-                data={data}
-                isClient={isClient}
-                key={credit.id}
-                onDialog={onDialog}
+        <DashboardPagedRecords items={filteredCredits}
+          queryKey={JSON.stringify(filters)}>
+          {(pageRows) => (
+            <>
+            {data.credits.length === 0 ? (
+              <WholesaleEmptyState
+                description={t("credits.emptyDescription")}
+                icon={<CircleDollarSign className="size-5" />}
+                title={t("credits.emptyTitle")}
               />
-            ))}
-          </div>
-        )}
+            ) : filteredCredits.length === 0 ? (
+              <CustomerInventoryFilterEmptyState
+                description={t("filters.noCreditResultsDescription")}
+              />
+            ) : (
+              <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                {pageRows.map((credit) => (
+                  <CustomerInventoryCreditCard
+                    canManageCredit={canManageCredit}
+                    credit={credit}
+                    data={data}
+                    isClient={isClient}
+                    key={credit.id}
+                    onDialog={onDialog}
+                  />
+                ))}
+              </div>
+            )}
+            </>
+          )}
+        </DashboardPagedRecords>
       </WholesalePanel>
     </div>
   );

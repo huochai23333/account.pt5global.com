@@ -119,7 +119,7 @@ export async function POST(request: Request) {
             : "all",
       },
       // 评估最多取 100 笔作为客户和订单样例；总数及金额汇总仍由 RPC 对完整范围计算。
-      orderLimit: 100,
+      orderSampleSize: 100,
     });
     if (!data.orderPage?.canViewInternalFields) {
       clearTimeout(timeout);

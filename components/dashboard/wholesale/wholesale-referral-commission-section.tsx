@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardPagedRecords } from "@/components/dashboard/dashboard-paged-records";
+
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 
 import * as FormControls from "@/components/ui/form-controls";
@@ -157,122 +159,129 @@ export function WholesaleReferralCommissionSection({
             />
           </DashboardFilterField>
         </div>
-        {filteredRows.length === 0 ? (
-          <WholesaleEmptyState
-            description={uiText("attribute008")}
-            icon={<Calculator className="size-5" />}
-            title={uiText("attribute009")}
-          />
-        ) : (
-          <>
-            <ResponsiveDataView
-              desktop={
-                <>
-                  <DashboardTableFrame>
-                    <table className="w-full table-fixed border-collapse text-left text-sm">
-                      <colgroup>
-                        <col className="w-[20%]" />
-                        <col className="w-[20%]" />
-                        <col className="w-[12%]" />
-                        <col className="w-[28%]" />
-                        <col className="w-[20%]" />
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          <WholesaleTh className="whitespace-normal">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text003" />
-                          </WholesaleTh>
-                          <WholesaleTh className="whitespace-normal">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text004" />
-                          </WholesaleTh>
-                          <WholesaleTh className="whitespace-normal">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text005" />
-                          </WholesaleTh>
-                          <WholesaleTh className="whitespace-normal">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text006" />
-                          </WholesaleTh>
-                          <WholesaleTh className="whitespace-normal">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text007" />
-                          </WholesaleTh>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredRows.map((row) => (
-                          <tr
-                            key={`${row.referrerCustomerId}-${row.referredCustomerId}-${row.monthKey}`}
-                          >
-                            <WholesaleTd className="whitespace-normal">
-                              {getCustomerName(
-                                customersById,
-                                row.referrerCustomerId,
-                              )}
-                            </WholesaleTd>
-                            <WholesaleTd className="whitespace-normal">
-                              {getCustomerName(
-                                customersById,
-                                row.referredCustomerId,
-                              )}
-                            </WholesaleTd>
-                            <WholesaleTd className="whitespace-normal">
-                              {row.monthKey}
-                            </WholesaleTd>
-                            <WholesaleTd className="whitespace-normal">
-                              <ReferralCommissionBreakdown row={row} />
-                            </WholesaleTd>
-                            <WholesaleTd className="whitespace-normal">
+        <DashboardPagedRecords items={filteredRows}
+          queryKey={JSON.stringify([search, customerFilter])}>
+          {(pageRows) => (
+            <>
+            {filteredRows.length === 0 ? (
+              <WholesaleEmptyState
+                description={uiText("attribute008")}
+                icon={<Calculator className="size-5" />}
+                title={uiText("attribute009")}
+              />
+            ) : (
+              <>
+                <ResponsiveDataView
+                  desktop={
+                    <>
+                      <DashboardTableFrame>
+                        <table className="w-full table-fixed border-collapse text-left text-sm">
+                          <colgroup>
+                            <col className="w-[20%]" />
+                            <col className="w-[20%]" />
+                            <col className="w-[12%]" />
+                            <col className="w-[28%]" />
+                            <col className="w-[20%]" />
+                          </colgroup>
+                          <thead>
+                            <tr>
+                              <WholesaleTh className="whitespace-normal">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text003" />
+                              </WholesaleTh>
+                              <WholesaleTh className="whitespace-normal">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text004" />
+                              </WholesaleTh>
+                              <WholesaleTh className="whitespace-normal">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text005" />
+                              </WholesaleTh>
+                              <WholesaleTh className="whitespace-normal">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text006" />
+                              </WholesaleTh>
+                              <WholesaleTh className="whitespace-normal">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text007" />
+                              </WholesaleTh>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageRows.map((row) => (
+                              <tr
+                                key={`${row.referrerCustomerId}-${row.referredCustomerId}-${row.monthKey}`}
+                              >
+                                <WholesaleTd className="whitespace-normal">
+                                  {getCustomerName(
+                                    customersById,
+                                    row.referrerCustomerId,
+                                  )}
+                                </WholesaleTd>
+                                <WholesaleTd className="whitespace-normal">
+                                  {getCustomerName(
+                                    customersById,
+                                    row.referredCustomerId,
+                                  )}
+                                </WholesaleTd>
+                                <WholesaleTd className="whitespace-normal">
+                                  {row.monthKey}
+                                </WholesaleTd>
+                                <WholesaleTd className="whitespace-normal">
+                                  <ReferralCommissionBreakdown row={row} />
+                                </WholesaleTd>
+                                <WholesaleTd className="whitespace-normal">
+                                  {row.amount === null
+                                    ? commissionText("calculationUnavailable")
+                                    : formatCurrency(row.amount)}
+                                </WholesaleTd>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </DashboardTableFrame>
+                    </>
+                  }
+                  mobile={
+                    <>
+                      {pageRows.map((row) => (
+                        <div
+                          className="rounded-sm border border-border-subtle bg-surface-interactive p-4"
+                          key={`${row.referrerCustomerId}-${row.referredCustomerId}-${row.monthKey}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="break-words font-semibold text-content-strong">
+                                {getCustomerName(
+                                  customersById,
+                                  row.referrerCustomerId,
+                                )}
+                              </p>
+                              <p className="mt-1 break-words text-sm text-content-muted">
+                                <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text008" />
+                                {getCustomerName(
+                                  customersById,
+                                  row.referredCustomerId,
+                                )}
+                              </p>
+                              <p className="mt-1 text-xs text-content-muted">
+                                {row.monthKey}
+                              </p>
+                            </div>
+                            <p className="shrink-0 text-sm font-semibold text-primary">
                               {row.amount === null
                                 ? commissionText("calculationUnavailable")
                                 : formatCurrency(row.amount)}
-                            </WholesaleTd>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </DashboardTableFrame>
-                </>
-              }
-              mobile={
-                <>
-                  {filteredRows.map((row) => (
-                    <div
-                      className="rounded-sm border border-border-subtle bg-surface-interactive p-4"
-                      key={`${row.referrerCustomerId}-${row.referredCustomerId}-${row.monthKey}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="break-words font-semibold text-content-strong">
-                            {getCustomerName(
-                              customersById,
-                              row.referrerCustomerId,
-                            )}
-                          </p>
-                          <p className="mt-1 break-words text-sm text-content-muted">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_referral_commission_section.text008" />
-                            {getCustomerName(
-                              customersById,
-                              row.referredCustomerId,
-                            )}
-                          </p>
-                          <p className="mt-1 text-xs text-content-muted">
-                            {row.monthKey}
-                          </p>
+                            </p>
+                          </div>
+                          <div className="mt-3">
+                            <ReferralCommissionBreakdown row={row} />
+                          </div>
                         </div>
-                        <p className="shrink-0 text-sm font-semibold text-primary">
-                          {row.amount === null
-                            ? commissionText("calculationUnavailable")
-                            : formatCurrency(row.amount)}
-                        </p>
-                      </div>
-                      <div className="mt-3">
-                        <ReferralCommissionBreakdown row={row} />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              }
-            />
-          </>
-        )}
+                      ))}
+                    </>
+                  }
+                />
+              </>
+            )}
+            </>
+          )}
+        </DashboardPagedRecords>
       </DashboardListSection>
     </WholesalePageShell>
   );

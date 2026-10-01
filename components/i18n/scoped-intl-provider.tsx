@@ -16,10 +16,10 @@ export async function ScopedIntlProvider({
   namespaces,
 }: ScopedIntlProviderProps) {
   const locale = (await getLocale()) as Locale;
-  // UiText、DatePicker 都是跨工作台复用的基础界面文案。所有局部消息提供器都带上它们，
-  // 这样页面不需要知道日期控件内部有哪些按钮和校验提示，也不会遗漏动态弹层文案。
+  // 分页、日期和共享界面文案都随局部提供器一起加载，页面只需声明自己的领域文案。
+  // 新增分页的目录无需逐个补命名空间，英语和中文也会使用相同的底栏结构。
   const scopedNamespaces = Array.from(
-    new Set([...namespaces, "DashboardFramework", "DatePicker", "UiText"]),
+    new Set([...namespaces, "DashboardFramework", "DashboardPagination", "DatePicker", "UiText"]),
   );
   const messages = await getScopedMessages(locale, scopedNamespaces);
 
