@@ -70,3 +70,11 @@ All five prior pending test edits match their preserved executed copies after re
 The three pure files already passed 14 cases; they were not rerun just to repair this accounting. The new nine focused checks render the actual first-party card with fixed synthetic child bodies, then inspect its browser markup and controlled missing/overlapping elements. They do not test authenticated page loading, hydration, real drag/resize, saved layout, screenshot baselines or backend correctness. The earlier 61 controlled checks plus these nine are 70 separate controlled checks, not 70 real-system E2E passes.
 
 Commit `07c612953fc4d7ca7cadfc8d0a078e9d2fd347a4` contains only its ten documented tests/config/docs files and is on remote main. This follow-up separately uploads the verified pending tests and this corrected ledger.
+
+## 2026-10-05 受控验证续作
+
+在 Web `e85419db3bb3a4e1df2217bfb703967613d5f679` 和 Supabase `8103888c9f84162f50f06173e5c11c65a142e0b3` 基础上，本轮只修改测试、测试工具和验证说明。
+
+最终运行：88/88 受控合同检查（59 页面、20 分页、9 组件几何），13/13 日志工具单元检查，相邻 Supabase 仓库 17/17 Storage 回调单元检查；均为 0 skipped。分页新增微秒用例在修复前实际失败一次；首次合同重跑为 86 通过/2 失败，修复 HTML 夹具编码后最终 88 通过。定向类型检查首次发现测试对象重复字段，修正后通过。
+
+本轮没有执行原始认证 E2E，原 29/86 文件、138 不同用例的 135 通过/3 失败、57 文件未执行、39 历史通过缺完整日志均保持原统计。早前 70 项与本轮 88 项受控验证有重叠，不能累加或并入真实 E2E。证据目录、原始日志摘要及未执行原因见 [本轮验证记录](test-reliability-2026-10-05.md)。

@@ -5,16 +5,17 @@ import { createWriteStream } from 'node:fs';
 import { finished } from 'node:stream/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { describeTestLog } from './test-run-evidence.mjs';
 
 export async function recordTestRun(command, args = [], options = {}) {
   const startedAt = new Date().toISOString();
   const root = resolve(options.outputRoot ?? 'output/test-runs');
   await mkdir(root, { recursive: true });
   const directory = join(root, `${startedAt.replace(/[:.]/g, '-')}-${randomUUID()}`);
-  await mkdir(directory); // An existing run must never be reused or overwritten.
+  await mkdir(directory); // 每次使用新目录，不能覆盖上次失败或故障注入的证据。
   const stdout = createWriteStream(join(directory, 'stdout.log'), { flags: 'wx' });
   const stderr = createWriteStream(join(directory, 'stderr.log'), { flags: 'wx' });
-  // Install stream error handlers before the child can write to either file.
+  // 子进程写入前监听日志异常；日志未完整落盘时不得生成成功记录。
   const logs = Promise.all([finished(stdout), finished(stderr)]);
   let launchError;
   const child = spawn(command, args, {
@@ -30,11 +31,17 @@ export async function recordTestRun(command, args = [], options = {}) {
     }));
   });
   await logs;
+  // 写流全部关闭后才计算摘要；清单与日志配合核对意外修改或截断。
+  const [stdoutEvidence, stderrEvidence] = await Promise.all([
+    describeTestLog(join(directory, 'stdout.log')), describeTestLog(join(directory, 'stderr.log')),
+  ]);
   const result = {
+    schemaVersion: 1,
     startedAt, finishedAt: new Date().toISOString(), ...outcome,
     ...(launchError ? { launchError } : {}),
+    logs: { stdout: stdoutEvidence, stderr: stderrEvidence },
   };
-  // Do not persist arguments, environment variables or identity configuration.
+  // 不保存参数、环境或身份配置；记录器本身不替子进程脱敏。
   await writeFile(join(directory, 'result.json'), JSON.stringify(result, null, 2), { flag: 'wx' });
   return { ...result, directory };
 }

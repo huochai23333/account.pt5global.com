@@ -91,3 +91,9 @@ Earlier executed results are preserved separately from permission to rerun the o
 | `workspace-entrypoints.spec.ts` | blocked | Blocked: accounts.ts | 27 routes now require fixed heading plus real business control and reject error pages. /admin/accounts previously failed with missing SUPABASE_SERVICE_ROLE_KEY; do not provision secrets or call that a business test pass. |
 
 The subsequent [reconciled execution ledger](reconciled-execution-ledger.md) records all 29 executed original files, the late 16-file batch, the overwritten-log limitation, and the corrected compact-editor assertion. It keeps the original resize E2E failure pending a permitted real rerun; controlled component checks do not change that result.
+
+## 2026-10-05 后续整改
+
+已修复分页测试预期生成器的微秒截断，并将复合夹具负例拆成单条件负例。页面负例核对特定失败原因，增加隐藏正文、正文外控件、重复正文、框架遮罩及 1440/390px 受控刷新检查。运行记录增加原始日志摘要与独立核验入口。实际最终受控重跑为 88/88，日志工具为 13/13；相邻 Supabase 仓库 Storage 回调单元验证为 17/17。
+
+早前 61/70 项记录是历史批次；本轮 88 项包含重跑，不能累加为新增真实 E2E。原始 86 个文件的 29 已执行、57 未执行及 135 通过/3 失败保持不变。未读取或执行受限辅助文件，未运行库存测试。详见 [本轮命令、证据、整改与阻塞](test-reliability-2026-10-05.md)。

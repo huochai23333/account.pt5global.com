@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, appendFile, unlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { recordTestRun } from './record-test-run.mjs';
+import { verifyTestRun } from './test-run-evidence.mjs';
 
 const scratch = await mkdtemp(join(tmpdir(), 'pt5-record-test-'));
 const read = (directory, name) => readFile(join(directory, name), 'utf8');
@@ -65,4 +67,48 @@ test('CLI recording failure rejects even a command that would succeed', async ()
   assert.equal(result.status, 1);
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /test recording failed:/);
+});
+
+test('saved hashes describe exact UTF-8 bytes from both streams', async () => {
+  const result = await recordTestRun(process.execPath, ['-e', "console.log('测试正文');console.error('测试错误')"], { outputRoot: scratch });
+  // 使用标准库直接对已读字节计算独立期望，不调用被测摘要函数自证。
+  for (const name of ['stdout', 'stderr']) {
+    const bytes = await readFile(join(result.directory, `${name}.log`));
+    assert.deepEqual(result.logs[name], { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
+  }
+  assert.equal((await verifyTestRun(result.directory)).integrity, 'verified');
+});
+
+for (const name of ['stdout', 'stderr']) {
+  test(`changed ${name} cannot pass evidence verification`, async () => {
+    const result = await recordTestRun(process.execPath, ['-e', "console.log('fixed');console.error('fixed')"], { outputRoot: scratch });
+    await appendFile(join(result.directory, `${name}.log`), 'synthetic tampering');
+    await assert.rejects(verifyTestRun(result.directory), new RegExp(`test log integrity mismatch: ${name}`));
+  });
+}
+
+test('missing log fails verification instead of trusting an exit-zero receipt', async () => {
+  const result = await recordTestRun(process.execPath, ['-e', 'process.exit(0)'], { outputRoot: scratch });
+  await unlink(join(result.directory, 'stderr.log'));
+  await assert.rejects(verifyTestRun(result.directory), { code: 'ENOENT' });
+});
+
+test('receipt without hashes is unverified, even if its exit code is zero', async () => {
+  const result = await recordTestRun(process.execPath, ['-e', 'process.exit(0)'], { outputRoot: scratch });
+  await writeFile(join(result.directory, 'result.json'), JSON.stringify({ exitCode: 0, signal: null }));
+  await assert.rejects(verifyTestRun(result.directory), /log evidence schema/);
+});
+
+test('evidence CLI preserves a recorded child failure rather than just passing hashes', async () => {
+  const result = await recordTestRun(process.execPath, ['-e', 'process.exit(7)'], { outputRoot: scratch });
+  const verified = spawnSync(process.execPath, [fileURLToPath(new URL('./verify-test-run.mjs', import.meta.url)), result.directory], { encoding: 'utf8' });
+  assert.equal(verified.status, 7);
+  assert.equal(JSON.parse(verified.stdout).integrity, 'verified');
+  assert.equal(JSON.parse(verified.stdout).exitCode, 7);
+});
+
+test('a contradictory interrupted-success receipt is rejected', async () => {
+  const result = await recordTestRun(process.execPath, ['-e', 'process.exit(0)'], { outputRoot: scratch });
+  await writeFile(join(result.directory, 'result.json'), JSON.stringify({ ...result, signal: 'SIGTERM' }));
+  await assert.rejects(verifyTestRun(result.directory), /interrupted or unlaunched/);
 });

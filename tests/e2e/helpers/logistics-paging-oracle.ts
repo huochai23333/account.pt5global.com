@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { fixtureTimestampMicros } from "./logistics-fixture-time";
 
 export type LogisticsPagingRow = { id: string; packageNumber: string };
 export type LogisticsFixtureRow = LogisticsPagingRow & { sortAt: string };
@@ -16,13 +17,17 @@ export function validateLogisticsFixture(value: unknown): LogisticsFixtureRow[] 
     assert.equal(typeof row.packageNumber, "string");
     assert(row.packageNumber.trim(), "package number cannot be empty");
     assert.equal(typeof row.sortAt, "string");
-    assert(Number.isFinite(Date.parse(row.sortAt)), "independent fixture sort timestamp required");
+    fixtureTimestampMicros(row.sortAt);
   }
   assert.equal(new Set(manifest.rows.map((row) => row.id)).size, 55, "fixture IDs must be unique");
   assert.equal(new Set(manifest.rows.map((row) => row.packageNumber)).size, 55, "fixture package numbers must be unique");
-  // Documented order: effective order timestamp descending, stable UUID descending.
-  // sortAt is fixed when preparing the fixture, not derived from RPC results.
-  return [...manifest.rows].sort((a, b) => Date.parse(b.sortAt) - Date.parse(a.sortAt) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  // 时间来自独立准备的清单，不取自被测接口；时间相同才按 UUID 降序。
+  // 先保留数据库的微秒精度，再比较，不能让较大的 UUID 掩盖较新的时间。
+  return manifest.rows.map((row) => ({ row, micros: fixtureTimestampMicros(row.sortAt) }))
+    .sort((a, b) => a.micros === b.micros
+      ? (a.row.id < b.row.id ? 1 : a.row.id > b.row.id ? -1 : 0)
+      : a.micros > b.micros ? -1 : 1)
+    .map(({ row }) => row);
 }
 
 export function assertLogisticsPaging(fixture: LogisticsFixtureRow[], pages: LogisticsPagingRow[][], returnedSecond: LogisticsPagingRow[]) {

@@ -1,7 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-// Fixed user-facing contracts, not values imported from application translations.
-// The second locator belongs to the business content inside main, not navigation.
+// 标题与控件来自独立固定约定，不复用产品翻译生成期望；控件必须位于正文 main 内。
 export const workspacePageContracts = {
   accounts: { title: "账号管理", label: "搜索账号" },
   announcements: { title: "公告管理", button: "新建公告" },
@@ -27,16 +26,17 @@ export async function expectWorkspacePageContent(page: Page, workspacePath: stri
   if (!contract) throw new Error(`Missing independent workspace page contract: ${workspacePath}`);
   expect(new URL(page.url()).pathname, "must remain on the requested business page").toBe(workspacePath);
   const main = page.locator("main");
-  await expect(main).toHaveCount(1, { timeout });
-  await expect(main.getByRole("heading", { name: contract.title, exact: true })).toBeVisible({ timeout });
+  // 明确错误标签供负例核对；无关异常不能冒充“成功抓住目标错误”。
+  await expect(main, "page-contract:main-count").toHaveCount(1, { timeout });
+  await expect(main.getByRole("heading", { name: contract.title, exact: true }), "page-contract:business-heading").toBeVisible({ timeout });
   if ("label" in contract) {
-    await expect(main.getByLabel(contract.label, { exact: true })).toBeVisible({ timeout });
+    await expect(main.getByLabel(contract.label, { exact: true }), "page-contract:business-control").toBeVisible({ timeout });
   } else {
-    await expect(main.getByRole("button", { name: new RegExp(`^${contract.button}`) })).toBeVisible({ timeout });
+    await expect(main.getByRole("button", { name: new RegExp(`^${contract.button}`) }), "page-contract:business-control").toBeVisible({ timeout });
   }
   await expect(page.getByRole("heading", {
     name: /当前页面暂时打不开|This page is temporarily unavailable|页面出现异常|Something went wrong|这个页面不在你的工作范围内/,
-  })).toHaveCount(0, { timeout });
-  await expect(page.locator("body")).not.toContainText("Application error:", { timeout });
-  await expect(page.locator("nextjs-portal [data-nextjs-dialog], nextjs-portal [data-nextjs-dialog-overlay]")).toHaveCount(0, { timeout });
+  }), "page-contract:error-heading").toHaveCount(0, { timeout });
+  await expect(page.locator("body"), "page-contract:framework-error").not.toContainText("Application error:", { timeout });
+  await expect(page.locator("nextjs-portal [data-nextjs-dialog], nextjs-portal [data-nextjs-dialog-overlay]"), "page-contract:error-overlay").toHaveCount(0, { timeout });
 }

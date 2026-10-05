@@ -672,3 +672,7 @@ Supabase Auth 建议：
 `npm run test:contracts` checks workspace business-content/error-page assertions with synthetic browser documents and logistics paging assertions with 55 fixed synthetic IDs. It is included in `test:regression` and imports no account or backend helpers. The original E2E suites remain subject to restricted-helper and owned-fixture prerequisites; see [test reliability follow-up](docs/test-reliability-follow-up.md) for the exact boundary and the remaining 73-file classification.
 
 The [reconciled execution ledger](docs/reconciled-execution-ledger.md) separates the original 86-file cohort (29 executed files, 135 passing and three failing independent cases, including 39 historical passes without retained full logs) from the 70 controlled-contract checks. The corrected home-editor checks cover actual React card markup and controlled element faults, not authenticated resize/drag/screenshot E2E.
+
+2026-10-05 后续整改的实际受控重跑为 88/88：页面约定 59、分页校验 20、组件几何 9；这些与早前 70 项有重叠，不能相加，也不改变原始 E2E 的 135 通过、3 失败和 57 个未执行文件。分页夹具时间现在保留微秒、明确时区并拒绝非法日期；页面负例核对具体失败原因，另验证受控文档在 1440/390px 刷新后的标题与控件。
+
+新的运行记录同时保存 stdout/stderr 原始字节数与 SHA-256。运行 `node scripts/verify-test-run.mjs output/test-runs/<运行目录>` 核对日志完整性；缺失、被修改、没有摘要的旧记录均不能通过核验，已记录的非零退出码仍返回非零。摘要用于检出日志与保留记录不一致，不是签名，也不证明业务成功或无人同时修改日志和记录。本轮验证范围、实际命令、保留证据和具体阻塞见 [2026-10-05 测试整改记录](docs/test-reliability-2026-10-05.md)。
