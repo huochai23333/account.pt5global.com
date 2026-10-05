@@ -3,19 +3,28 @@ import { expect, test, type Page } from "@playwright/test";
 import { loginAs } from "./helpers/auth";
 
 test.describe("API request limits", () => {
-  test("邮件接口先检查登录，再限制请求体并提示坏内容", async ({ page }) => {
-    // Buffer 会原样发送损坏的 JSON；普通字符串会被 Playwright 自动编码为合法 JSON。
-    const anonymous = await page.request.post("/api/mail/threads", { data: Buffer.from("{"), headers: { "content-type": "application/json" } });
-    expect(anonymous.status()).toBe(401);
-    expect((await anonymous.json()).error).toContain("重新登录");
+  test("未登录时损坏的邮件请求先返回登录失败", async ({ page }) => {
+    const response = await page.request.post("/api/mail/threads", { data: Buffer.from("{"), headers: { "content-type": "application/json" } });
+    expect(response.status()).toBe(401);
+    expect((await response.json()).error).toContain("重新登录");
+  });
 
+  test("已登录时邮件接口拒绝损坏的 JSON", async ({ page }) => {
     await loginAs(page, "administrator");
-    const malformed = await page.request.post("/api/mail/threads", { data: Buffer.from("{"), headers: { "content-type": "application/json" } });
-    expect(malformed.status()).toBe(400);
-    expect((await malformed.json()).error).toContain("提交内容无法读取");
-    const oversized = await page.request.post("/api/mail/ai/report", { data: "x".repeat(70 * 1024), headers: { "content-type": "application/json" } });
-    expect(oversized.status()).toBe(413);
-    expect((await oversized.json()).error).toContain("内容超过允许大小");
+    const response = await page.request.post("/api/mail/threads", { data: Buffer.from("{"), headers: { "content-type": "application/json" } });
+    expect(response.status()).toBe(400);
+    expect((await response.json()).error).toContain("提交内容无法读取");
+  });
+
+  test("邮件报告拒绝超限的合法 JSON 请求体", async ({ page }) => {
+    await loginAs(page, "administrator");
+    const response = await page.request.post("/api/mail/ai/report", {
+      data: Buffer.from(JSON.stringify({ start: "2000-01-01", end: "2000-01-01", requestId: "synthetic-limit-check", padding: "x".repeat(70 * 1024) })),
+      headers: { "content-type": "application/json" },
+    });
+    expect(response.status()).toBe(413);
+    expect(await response.json()).toMatchObject({ code: "confirmed_rejection" });
+    expect((await response.json()).error).toContain("内容超过允许大小");
   });
 
   test("AI endpoint stops oversized request bodies", async ({ page }) => {

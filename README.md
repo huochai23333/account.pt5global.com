@@ -664,3 +664,7 @@ Supabase Auth 建议：
 ### Role navigation regression boundaries
 
 `tests/e2e/dashboard-home-role-tasks.spec.ts` requires the administrator destination to render the actual account-management heading and rejects the application's error-boundary headings after reload. A matching URL and HTTP 200 do not establish a successful page render. A local server missing its authorized admin-service configuration can fail this test; do not classify that environment failure as a production business defect or report the navigation suite as fully passed.
+
+### Preserved test runs
+
+`npm run test:record -- -- node --experimental-strip-types --test scripts/assistant-event-stream.test.mjs` runs an executable without a shell and saves stdout, stderr and an exit receipt in a new `output/test-runs/<timestamp>-<uuid>` directory. The CLI returns the child exit code; launch or recording failures return failure. `npm run test:recording` checks these boundaries and is included in `test:regression`. This utility contains no identity configuration and imports no E2E helpers. It does not provision fixtures or redact child output: use approved synthetic inputs and keep the ignored output directory private.
