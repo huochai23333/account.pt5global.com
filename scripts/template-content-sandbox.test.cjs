@@ -21,7 +21,11 @@ function load(relative, dependencies) {
   return module.exports;
 }
 const document = `<html><body><script>try { document.body.dataset.probe = JSON.stringify({ storage: localStorage.getItem('pt5-audit-canary'), cookie: document.cookie }); } catch(error) { document.body.dataset.probe = error.name; }</script></body></html>`;
+const protocol = load('lib/company-templates/frame-protocol.ts', {});
+const frameDocument = load('lib/company-templates/frame-document.ts', { './frame-protocol': protocol });
 const route = load('app/api/company-templates/[templateId]/content/route.ts', {
+  '@/lib/company-templates/frame-document': frameDocument,
+  '@/lib/company-templates/frame-protocol': protocol,
   '@/lib/company-templates/repository': { getCompanyTemplateDocument: async () => ({ content: document, hash: 'synthetic' }) },
   '@/lib/company-templates/access': { requireCompanyTemplateApiAccess: async () => ({ isAdmin: false }) },
   '@/lib/supabase-server': { getServerSupabaseClient: async () => ({}) },

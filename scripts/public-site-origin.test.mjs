@@ -75,3 +75,18 @@ test("飞书提示只接受失败与固定原因，不信任成功参数或任�
   assert.equal(getFeishuConnectionFeedback({ feishuConnection: "failed", feishuReason: "cancelled" }), "cancelled");
   assert.equal(getFeishuConnectionFeedback({ feishuConnection: "failed", feishuReason: ["state"] }), "unavailable");
 });
+
+// README:154-156,470: Google company-mail authorization is administrator-only;
+// Feishu returns to the actual administrator or salesman mailbox. Expected paths are literals.
+test("documented mail role entrypoints have independent fixed destinations", () => {
+  for (const item of [
+    { provider: "google", role: "administrator", expected: "https://account.pt5global.com/admin/mail", path: "/admin/mail" },
+    { provider: "feishu", role: "administrator", expected: "https://account.pt5global.com/admin/mail", path: "/admin/mail" },
+    { provider: "feishu", role: "salesman", expected: "https://account.pt5global.com/salesman/mail", path: "/salesman/mail" },
+  ]) {
+    assert.equal(getMailReturnPath(item.provider, item.role), item.path);
+    for (const value of [null, "/admin/home", "//outside.example/mail", item.expected + "?mailConnection=success#forged"]) {
+      assert.equal(getSafeMailReturnUrl(value, DEFAULT, item.provider, item.role), item.expected);
+    }
+  }
+});

@@ -1,3 +1,4 @@
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 import { loginAs, setTestLocale } from "./helpers/auth";
@@ -8,6 +9,11 @@ import {
 
 const SALESMAN_ID = "55555555-5555-4555-8555-555555555555";
 const TEST_SOURCE_PREFIX = "E2E-DAILY-LIMIT-";
+
+// 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
+test.beforeAll(async ({ baseURL }) => {
+  requireDisposableFixture({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL, mode: process.env.PT5_E2E_FIXTURE_MODE });
+});
 
 test.describe("sales lead daily claim limit", () => {
   test.setTimeout(120_000);

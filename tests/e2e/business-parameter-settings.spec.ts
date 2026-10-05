@@ -1,3 +1,4 @@
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -6,6 +7,11 @@ import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 const AMOUNT_CODE = "wholesale_referral_order_amount_rate";
 const SALESMAN_CODE = "wholesale_order_salesman_tier";
+
+// 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
+test.beforeAll(async ({ baseURL }) => {
+  requireDisposableFixture({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL, mode: process.env.PT5_E2E_FIXTURE_MODE });
+});
 
 test.describe("批发业务参数中心", () => {
   test("管理员立即发布并按版本凭证回读，刷新和移动端仍一致", async ({

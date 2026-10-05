@@ -565,6 +565,12 @@ PT5-dropshipping-web/
 
 自动化回归：
 
+- `npm run test:public-site-origin` checks public-origin policy and documented mail role destinations using fixed expected paths; it is included in `test:regression`.
+- `npm run test:mail-outbound-reconciliation` checks the real outbound worker against synthetic provider/database boundaries: a lost database receipt must trigger reconciliation rather than another send. It is included in `test:regression` and sends no real mail.
+- `npm run test:e2e-fixture-policy` checks the pure admission guard with 16 independent local/mode/endpoint cases and is included in `test:regression`. Daily-limit, parameter reset and Feishu suites reject the default shared fixture environment before reset hooks; running them requires `PT5_E2E_FIXTURE_MODE=disposable`, explicit local application/Supabase endpoints and an actually dedicated fixture environment. The declaration does not establish physical database isolation or authorize restricted identity helpers.
+- `npm run test:template-content-sandbox` uses an isolated local HTTP fixture and a fresh headless Chrome session to check the real content response sandbox against synthetic storage/cookie values; it is included in `test:regression`, uses no login credentials, and does not verify actual account access.
+- `npm run test:company-exchange-rate` runs nine fixed rate and decimal-money examples and is included in `test:regression`; these examples check exact amounts and rounding, not the whole settlement workflow.
+- `tests/e2e/company-template-isolation.spec.ts` prepares two independent two-version cards, locates each by its template ID, and checks repeated open/close clicks, unchanged neighboring height/state, and reload. Both histories may be open together. It requires the existing local test identity and local cleanup helpers; source/syntax checks alone do not verify browser behavior.
 - `playwright.config.ts` 默认使用 `http://localhost:3000`。
 - Playwright 固定使用单 worker 串行执行，因为角色用例共用本地种子账号和 Supabase 数据；不要通过增加 worker 加速，否则写入场景和登录查询会互相干扰。
 - 全量回归会真实调用本地 `exchange-rate-sync`、`user-media-mutate` 等后台函数；仅启动数据库和网页服务还不够。先在相邻 Supabase 仓库运行 `supabase functions serve` 并确认函数可响应，再启动回归。Windows Supabase CLI 2.108.0 的外层程序可能因函数启动命令过长报 `ENAMETOOLONG`，可使用同一官方安装目录内的 `supabase-go.exe functions serve`；保留项目配置和函数内部鉴权，不修改云端。

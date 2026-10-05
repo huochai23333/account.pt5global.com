@@ -12,6 +12,9 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:dashboard-ui": "node scripts/check-dashboard-structure.mjs",
     "check:operation-contracts": "node scripts/check-operation-contracts.mjs",
+    "test:public-site-origin": "node --experimental-strip-types --test scripts/public-site-origin.test.mjs",
+    "test:mail-outbound-reconciliation": "node scripts/mail-outbound-reconciliation.test.cjs",
+    "test:company-exchange-rate": "node --experimental-strip-types --test scripts/company-exchange-rate.test.mjs",
     "test:assistant-stream": "node --experimental-strip-types --test scripts/assistant-event-stream.test.mjs",
     "test:operation-receipts": "node --experimental-strip-types --test scripts/auth-operation-receipts.test.mjs scripts/operation-runs.test.mjs scripts/operator-reimbursement-receipts.test.mjs scripts/profile-operation-receipts.test.mjs scripts/storage-operation-receipts.test.mjs scripts/verified-action-outcome.test.mjs",
     "test:mail-intake": "node --experimental-strip-types --test scripts/mail-intake.test.mjs",
@@ -19,11 +22,13 @@
     "test:admin-auth-sync": "node tests/unit/admin-auth-sync-race.mjs && node tests/unit/admin-auth-sync-recovery.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:regression": "npm run lint && npm run typecheck && npm run check:i18n && npm run check:dashboard-ui && npm run check:operation-contracts && npm run test:assistant-stream && npm run test:operation-receipts && npm run test:mail-intake && npm run test:mail-security && npm run test:admin-auth-sync && npm run build && npm run test:e2e",
+    "test:regression": "npm run lint && npm run typecheck && npm run check:i18n && npm run check:dashboard-ui && npm run check:operation-contracts && npm run test:assistant-stream && npm run test:operation-receipts && npm run test:mail-intake && npm run test:mail-security && npm run test:admin-auth-sync && npm run test:company-exchange-rate && npm run test:public-site-origin && npm run test:mail-outbound-reconciliation && npm run test:e2e-fixture-policy && npm run test:template-content-sandbox && npm run build && npm run test:e2e",
     "clean:artifacts": "node scripts/clean-local-artifacts.mjs artifacts",
     "clean:cache": "node scripts/clean-local-artifacts.mjs cache",
     "clean:all": "node scripts/clean-local-artifacts.mjs all",
-    "supabase:admin": "node scripts/supabase-admin.mjs"
+    "supabase:admin": "node scripts/supabase-admin.mjs",
+    "test:template-content-sandbox": "node scripts/template-content-sandbox.test.cjs",
+    "test:e2e-fixture-policy": "node --experimental-strip-types --test scripts/e2e-fixture-policy.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

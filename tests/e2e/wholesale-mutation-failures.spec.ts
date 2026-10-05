@@ -181,6 +181,7 @@ test.describe("批发写入失败保留表单", () => {
     const salesValue = await getSelectValue(salesSelect);
     const customerValue = await getSelectValue(customerSelect);
     await logisticsDialog.getByRole("button", { name: "保存归属" }).click();
+    await expectInterceptedFailure(page);
     await expect(logisticsDialog.getByRole("alert")).toContainText(
       "店铺归属暂时没有保存成功，请稍后重试。",
     );
@@ -269,16 +270,23 @@ async function openWholesaleAlpha(page: Page) {
     .click();
 }
 
+const forcedFailureProbes = new WeakMap<Page, Array<() => Promise<void>>>();
+
 async function failJsonRequest(
   page: Page,
   url: string,
   method = "POST",
 ) {
+  let matched = 0;
+  const probes = forcedFailureProbes.get(page) ?? [];
+  probes.push(async () => { await expect.poll(() => matched, { message: `forced ${method} failure must actually match ${url}` }).toBeGreaterThan(0); });
+  forcedFailureProbes.set(page, probes);
   await page.route(url, async (route) => {
     if (route.request().method() !== method) {
       await route.continue();
       return;
     }
+    matched += 1;
     await route.fulfill({
       body: JSON.stringify({
         code: "P0001",
@@ -292,7 +300,14 @@ async function failJsonRequest(
   });
 }
 
+async function expectInterceptedFailure(page: Page) {
+  const probe = forcedFailureProbes.get(page)?.shift();
+  expect(probe, "each forced failure must have a pending route probe").toBeDefined();
+  await probe!();
+}
+
 async function expectFailureNotice(page: Page) {
+  await expectInterceptedFailure(page);
   // Next 自带一个空的路由播报区，同样使用 alert 角色；用文案筛选才能只定位业务反馈。
   await expect(
     page.getByRole("alert").filter({ hasText: FORCED_ERROR_MESSAGE }),

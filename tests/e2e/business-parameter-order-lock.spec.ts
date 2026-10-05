@@ -1,3 +1,4 @@
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -9,6 +10,11 @@ import { cleanupRateFixtures, ensureLocalUsdRate } from "./helpers/wholesale-set
 
 const SALESMAN_CODE = "wholesale_order_salesman_tier";
 const MONTHLY_CODE = "wholesale_referral_waybill_bonus";
+
+// 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
+test.beforeAll(async ({ baseURL }) => {
+  requireDisposableFixture({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL, mode: process.env.PT5_E2E_FIXTURE_MODE });
+});
 
 test.describe("批发业务参数版本与订单", () => {
   test("页面创建的新旧订单锁定各自版本，旧订单结汇仍使用原版本", async ({

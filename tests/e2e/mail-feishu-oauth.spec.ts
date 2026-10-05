@@ -1,3 +1,4 @@
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { loginAs } from "./helpers/auth";
@@ -6,12 +7,17 @@ import { startFeishuBoundary } from "./helpers/mail-feishu-boundary";
 import { setFeishuSaveFault } from "./helpers/mail-feishu-save-fault";
 
 let boundary: Awaited<ReturnType<typeof startFeishuBoundary>>;
+// 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
+test.beforeAll(async ({ baseURL }) => {
+  requireDisposableFixture({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL, mode: process.env.PT5_E2E_FIXTURE_MODE });
+});
+
 test.beforeAll(async () => { boundary = await startFeishuBoundary(); });
 test.beforeEach(async () => {
   setFeishuSaveFault(false); boundary.state.mode = "ok"; boundary.state.tokens = 0; boundary.state.profiles = 0;
   await resetIntegratedMailFixture();
   // 通用邮件种子自带业务员绑定；本套件专门验证首次绑定，先清掉该本地测试凭证。
-  const cleared = await getMailAdmin().from("mail_feishu_bindings").delete().not("user_id", "is", null);
+  const cleared = await getMailAdmin().from("mail_feishu_bindings").delete().in("user_id", [ADMIN_ID, SALESMAN_ID]);
   if (cleared.error) throw new Error(cleared.error.message);
 });
 test.afterEach(() => { setFeishuSaveFault(false); });
@@ -46,7 +52,7 @@ async function expectFailure(page: Page, reason: string, workspace = "admin") {
   await expect(notice).toHaveAttribute("data-reason", reason);
   await expect(notice).toBeVisible();
   await expect(notice).not.toContainText(/private-provider-error|NEXT_REDIRECT|0\.0\.0\.0/);
-  const bindings = await getMailAdmin().from("mail_feishu_bindings").select("user_id");
+  const bindings = await getMailAdmin().from("mail_feishu_bindings").select("user_id").eq("user_id", workspace === "admin" ? ADMIN_ID : SALESMAN_ID);
   expect(bindings.error).toBeNull(); expect(bindings.data).toEqual([]);
   await page.reload(); await expect(notice).toHaveAttribute("data-reason", reason);
 }

@@ -60,3 +60,20 @@ test("错误事件和终态之后的多余内容都失败", async () => {
     /assistant_event_after_completed/,
   );
 });
+
+// 网络可以在多字节字符或JSON行的任意字节处拆包；预期内容是固定文本，不从解析器计算。
+test("byte-fragmented UTF-8 deltas preserve Chinese and emoji including an unterminated final line", async () => {
+  const bytes = new TextEncoder().encode("{\"type\":\"delta\",\"text\":\"你🌍\"}\n{\"type\":\"completed\",\"contentLength\":3}");
+  const chunks = [];
+  const stream = new ReadableStream({ start(controller) {
+    for (const byte of bytes) controller.enqueue(Uint8Array.of(byte));
+    controller.close();
+  } });
+  assert.equal(await readAssistantEventStream(stream, (chunk) => chunks.push(chunk)), "你🌍");
+  assert.deepEqual(chunks, ["你🌍"]);
+});
+
+test("completed length mismatch and duplicate terminal events cannot confirm success", async () => {
+  await assert.rejects(readAssistantEventStream(streamFrom("{\"type\":\"delta\",\"text\":\"ab\"}\n{\"type\":\"completed\",\"contentLength\":1}\n"), () => {}), /assistant_content_length_mismatch/);
+  await assert.rejects(readAssistantEventStream(streamFrom("{\"type\":\"delta\",\"text\":\"ab\"}\n{\"type\":\"completed\",\"contentLength\":2}\n{\"type\":\"completed\",\"contentLength\":2}\n"), () => {}), /assistant_event_after_completed/);
+});
