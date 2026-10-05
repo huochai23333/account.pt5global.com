@@ -124,11 +124,13 @@ test.describe("首页组件管理与紧凑布局", () => {
     await resetHomeLayout(page, "/admin/home");
 
     let shouldFail = true;
+    let forcedFailures = 0;
     await page.route(
       "**/rest/v1/rpc/save_user_home_widget_layout",
       async (route) => {
         if (shouldFail) {
           shouldFail = false;
+          forcedFailures += 1;
           await route.fulfill({
             body: JSON.stringify({ message: "temporary_failure" }),
             contentType: "application/json",
@@ -151,9 +153,21 @@ test.describe("首页组件管理与紧凑布局", () => {
       manager.getByText("首页调整还没有保存，请检查网络后重试。"),
     ).toBeVisible();
     await expect(manager.getByTestId("home-manager-widget")).toHaveCount(6);
+    expect(forcedFailures).toBe(1);
+    const unsavedIds = await manager.getByTestId("home-manager-widget").evaluateAll(
+      (widgets) => widgets.map((widget) => widget.getAttribute("data-home-manager-widget-id")),
+    );
+    expect(new Set(unsavedIds).size).toBe(6);
 
     await manager.getByTestId("home-layout-retry-save").click();
     await expect(manager.getByText("首页调整已保存。")).toBeVisible();
+    await manager.getByTestId("home-manager-done").click();
+    await page.reload();
+    await openHomeManager(page);
+    const persistedIds = await manager.getByTestId("home-manager-widget").evaluateAll(
+      (widgets) => widgets.map((widget) => widget.getAttribute("data-home-manager-widget-id")),
+    );
+    expect(persistedIds).toEqual(unsavedIds);
     await resetHomeLayoutFromOpenDialog(page);
   });
 

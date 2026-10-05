@@ -4,7 +4,7 @@ import { loginAs } from "./helpers/auth";
 
 test.describe("dashboard account password reset", () => {
   test("account center submits one reset request and starts cooldown", async ({
-    page,
+    page, baseURL,
   }) => {
     const account = await loginAs(page, "administrator");
     let resetRequestCount = 0;
@@ -49,7 +49,7 @@ test.describe("dashboard account password reset", () => {
 
     expect(resetRequestCount).toBe(1);
     expect(resetRequestEmail).toBe(account.email);
-    expect(resetRequestRedirectTo).toBe("http://localhost:3000/forgot-password");
+    expect(resetRequestRedirectTo).toBe(new URL("/forgot-password", baseURL).href);
   });
 
   test("account center layout fits desktop and mobile widths", async ({

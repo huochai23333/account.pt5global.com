@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { getDefaultOrderDateRange } from "../../lib/order-date-range";
 import {
   getDefaultWholesaleLogisticsFilters,
   getWholesaleLogisticsPage,
@@ -9,10 +8,23 @@ import {
 import { normalizeWholesaleOrderAssessmentPayload } from "../../lib/wholesale-order-assessment-filters";
 import { getWholesaleOrderPage } from "../../lib/wholesale-order-page";
 
+// Freeze only this test process; expectations below are fixed Shanghai calendar dates.
+const originalDate = Date;
+const frozenTimestamp = originalDate.parse("2026-01-01T00:30:00+08:00");
+test.beforeEach(() => {
+  globalThis.Date = new Proxy(originalDate, {
+    construct(target, args) { return Reflect.construct(target, args.length ? args : [frozenTimestamp]); },
+    get(target, property) { return property === "now" ? () => frozenTimestamp : Reflect.get(target, property); },
+  });
+});
+test.afterEach(() => { globalThis.Date = originalDate; });
+
 test("wholesale order RPC receives normalized dates and explicit search mode", async () => {
   let rpcArguments: Record<string, unknown> | null = null;
+  let rpcName = "";
   const supabase = {
-    rpc: async (_name: string, argumentsValue: Record<string, unknown>) => {
+    rpc: async (name: string, argumentsValue: Record<string, unknown>) => {
+      rpcName = name;
       rpcArguments = argumentsValue;
       return {
         data: {
@@ -38,10 +50,11 @@ test("wholesale order RPC receives normalized dates and explicit search mode", a
     status: "all",
   });
 
+  expect(rpcName).toBe("get_wholesale_order_page");
   expect(rpcArguments).not.toBeNull();
   expect((rpcArguments as unknown as { p_filters: unknown }).p_filters).toMatchObject({
-    orderedFromDate: getDefaultOrderDateRange().fromDate,
-    orderedToDate: getDefaultOrderDateRange().toDate,
+    orderedFromDate: "2025-12-03",
+    orderedToDate: "2026-01-01",
     orderMonth: "2026-09",
     searchMode: "exact_all_time",
     searchText: "WH-1001",
@@ -70,7 +83,7 @@ test("wholesale order assessment accepts the same included month", () => {
 });
 
 test("wholesale logistics defaults and RPC use the mandatory rolling range", async () => {
-  const defaultRange = getDefaultOrderDateRange();
+  const defaultRange = { fromDate: "2025-12-03", toDate: "2026-01-01" };
   const filters = getDefaultWholesaleLogisticsFilters(
     "salesman",
     "sales-user-id",
@@ -83,8 +96,10 @@ test("wholesale logistics defaults and RPC use the mandatory rolling range", asy
   });
 
   let rpcArguments: Record<string, unknown> | null = null;
+  let rpcName = "";
   const supabase = {
-    rpc: async (_name: string, argumentsValue: Record<string, unknown>) => {
+    rpc: async (name: string, argumentsValue: Record<string, unknown>) => {
+      rpcName = name;
       rpcArguments = argumentsValue;
       return {
         data: {
@@ -108,6 +123,7 @@ test("wholesale logistics defaults and RPC use the mandatory rolling range", asy
     searchText: " PKG-1001 ",
   });
 
+  expect(rpcName).toBe("get_wholesale_logistics_page");
   expect(rpcArguments).not.toBeNull();
   expect((rpcArguments as unknown as { p_filters: unknown }).p_filters).toMatchObject({
     fromDate: defaultRange.fromDate,

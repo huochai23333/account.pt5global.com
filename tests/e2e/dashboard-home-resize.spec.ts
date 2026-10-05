@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
+import { expectEditorGeometry } from "./helpers/home-editor-geometry";
 
 test("桌面首页缩放稳定且保留键盘调整方式", async ({ page }) => {
   await loginAs(page, "administrator");
@@ -272,33 +273,6 @@ async function expectAllWidgetsWiggleState(
     .toEqual(expectedStates);
 }
 
-async function expectEditorGeometry(page: Page) {
-  const collisions = await page
-    .getByTestId("home-widget-card")
-    .evaluateAll((cards) =>
-      cards.flatMap((card) => {
-        const toolbar = card.querySelector(
-          '[data-testid="home-widget-editor-toolbar"]',
-        );
-        const preview = card.querySelector(
-          '[data-testid="home-widget-editor-preview"]',
-        );
-
-        if (!toolbar || !preview) {
-          return [];
-        }
-
-        const toolbarBox = toolbar.getBoundingClientRect();
-        const previewBox = preview.getBoundingClientRect();
-
-        return toolbarBox.bottom > previewBox.top + 1
-          ? [card.getAttribute("data-home-widget-type")]
-          : [];
-      }),
-    );
-
-  expect(collisions).toEqual([]);
-}
 
 async function expectResizeHint(
   card: Locator,

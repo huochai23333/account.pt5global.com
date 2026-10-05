@@ -9,6 +9,16 @@ import {
 } from "../../lib/order-date-range";
 import { normalizeAdminOrdersFilters } from "../../lib/admin-orders-page-data";
 
+const originalDate = Date;
+const frozenTimestamp = originalDate.parse("2026-01-01T00:30:00+08:00");
+test.beforeEach(() => {
+  globalThis.Date = new Proxy(originalDate, {
+    construct(target, args) { return Reflect.construct(target, args.length ? args : [frozenTimestamp]); },
+    get(target, property) { return property === "now" ? () => frozenTimestamp : Reflect.get(target, property); },
+  });
+});
+test.afterEach(() => { globalThis.Date = originalDate; });
+
 test.describe("shared order date ranges", () => {
   const shanghaiNewYear = new Date("2026-01-01T00:30:00+08:00");
 
@@ -19,25 +29,17 @@ test.describe("shared order date ranges", () => {
     });
   });
 
-  test("normalizes incomplete, impossible, and inverted ranges", () => {
-    const expected = getDefaultOrderDateRange(shanghaiNewYear);
-
-    expect(
-      normalizeOrderDateRange(
-        { fromDate: "2026-02-30", toDate: "2026-03-01" },
-        shanghaiNewYear,
-      ),
-    ).toEqual(expected);
-    expect(
-      normalizeOrderDateRange(
-        { fromDate: "2026-01-02", toDate: "2026-01-01" },
-        shanghaiNewYear,
-      ),
-    ).toEqual(expected);
-    expect(
-      normalizeOrderDateRange({ fromDate: "2026-01-01" }, shanghaiNewYear),
-    ).toEqual(expected);
-  });
+  for (const [label, range] of [
+    ["impossible start date", { fromDate: "2026-02-30", toDate: "2026-03-01" }],
+    ["inverted range", { fromDate: "2026-01-02", toDate: "2026-01-01" }],
+    ["missing end date", { fromDate: "2026-01-01" }],
+  ] as const) {
+    test(`normalizes an independently invalid ${label}`, () => {
+      expect(normalizeOrderDateRange(range, shanghaiNewYear)).toEqual({
+        fromDate: "2025-12-03", toDate: "2026-01-01",
+      });
+    });
+  }
 
   test("builds half-open Shanghai timestamp bounds", () => {
     expect(
@@ -82,8 +84,8 @@ test.describe("admin order filter normalization", () => {
       searchMode: "exact_all_time",
     });
 
-    expect(isOrderDateValue(normalized.createdFromDate)).toBe(true);
-    expect(isOrderDateValue(normalized.createdToDate)).toBe(true);
+    expect(normalized.createdFromDate).toBe("2025-12-03");
+    expect(normalized.createdToDate).toBe("2026-01-01");
     expect(normalized.searchMode).toBe("date_range");
   });
 

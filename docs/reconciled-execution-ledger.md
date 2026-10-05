@@ -1,0 +1,72 @@
+# Reconciled execution ledger
+
+This corrects the previously late handoff of the 04:16 UI batch and 04:17 pure batch. Counts below refer only to the original 86 files under `tests/e2e`; the controlled contract suites have a separate count. Repeated runs, negative controls and earlier false-green results do not add independent cases.
+
+| Batch | Files | Distinct cases | Latest pass / fail | Evidence boundary |
+| --- | --- | --- | --- | --- |
+| First UI batch | 6 | 43 | 43 / 0 after four fixture corrections | Full initial log overwritten; four retest cases retained, remaining 39 earlier passes cannot be individually reverified from raw logs |
+| Template isolation | 1 | 1 | 1 / 0 | Real local Auth/application; green, remove-layout-fix red, restore green; one distinct case |
+| Role/navigation/search | 4 | 10 | 9 / 1 | Initial admin false green replaced by stricter failure; repeated four other-role checks not counted twice |
+| Public/API | 2 | 12 | 12 / 0 | Saved 04:00 application-browser log |
+| Additional pure batch | 3 | 14 | 14 / 0 | Saved 04:17 pure log; no Auth/browser/backend |
+| Additional UI batch | 13 | 58 | 56 / 2 | Saved 04:16 application-browser log, real local Auth; individual cases include documented mocks |
+| **Original total** | **29 / 86 executed** | **138** | **135 / 3** | **99 cases have retained raw evidence (96 / 3); 39 passes rely on earlier reported output** |
+
+The 57 unexecuted original files remain blocked. The separate 73-file cohort means the 73 files left after the first 13: 16 were subsequently executed, leaving 57. The admission count 70 refers to original restricted dependencies within that 73-file cohort, not new executions or 70 newly discovered failures. Earlier approved synthetic-identity execution and current permission to run original restricted imports are separate.
+
+## Additional 16 files
+
+| File | Independent cases | Pass | Fail |
+| --- | --- | --- | --- |
+| `dashboard-framework.spec.ts` | 6 | 6 | 0 |
+| `dashboard-home-customization.spec.ts` | 6 | 6 | 0 |
+| `dashboard-home-resize.spec.ts` | 1 | 0 | 1 |
+| `dashboard-home-widget-minimums.spec.ts` | 1 | 1 | 0 |
+| `dashboard-my-password-reset.spec.ts` | 2 | 2 | 0 |
+| `dashboard-responsive-ui.spec.ts` | 8 | 8 | 0 |
+| `exchange-rate-visibility.spec.ts` | 9 | 9 | 0 |
+| `information-hierarchy.spec.ts` | 7 | 6 | 1 |
+| `loading-feedback.spec.ts` | 2 | 2 | 0 |
+| `motion.spec.ts` | 5 | 5 | 0 |
+| `order-date-range.spec.ts` | 9 | 9 | 0 |
+| `order-list-framework.spec.ts` | 4 | 4 | 0 |
+| `registration-wizard.spec.ts` | 5 | 5 | 0 |
+| `review-center-entrypoint.spec.ts` | 2 | 2 | 0 |
+| `wholesale-order-date-client.spec.ts` | 3 | 3 | 0 |
+| `wholesale-order-link-options.spec.ts` | 2 | 2 | 0 |
+
+Both additional-batch logs retain every test title and result. Full per-case records, hashes and pending-edit provenance are in the private `qa-reconciled-ledger.json` handoff.
+
+## Earlier 13 files
+
+| File | Independent cases | Latest pass | Latest fail | Retained evidence |
+| --- | --- | --- | --- | --- |
+| `auth.spec.ts` | 12 | 12 | 0 | 2 retained retest cases; 10 historical passes without full retained log |
+| `legacy-tourism-disabled.spec.ts` | 14 | 14 | 0 | 2 retained retest cases; 12 historical passes without full retained log |
+| `permissions.spec.ts` | 12 | 12 | 0 | 0 retained retest cases; 12 historical passes without full retained log |
+| `select-control.spec.ts` | 2 | 2 | 0 | 0 retained retest cases; 2 historical passes without full retained log |
+| `date-picker.spec.ts` | 2 | 2 | 0 | 0 retained retest cases; 2 historical passes without full retained log |
+| `company-template-navigation.spec.ts` | 1 | 1 | 0 | 0 retained retest cases; 1 historical passes without full retained log |
+| `company-template-isolation.spec.ts` | 1 | 1 | 0 | Raw log retained; reruns deduplicated |
+| `dashboard-home-role-tasks.spec.ts` | 5 | 4 | 1 | Raw log retained; reruns deduplicated |
+| `stale-navigation-recovery.spec.ts` | 3 | 3 | 0 | Raw log retained; reruns deduplicated |
+| `dashboard-search-input.spec.ts` | 1 | 1 | 0 | Raw log retained; reruns deduplicated |
+| `workspace-navigation-visible.spec.ts` | 1 | 1 | 0 | Raw log retained; reruns deduplicated |
+| `public-redirects.spec.ts` | 8 | 8 | 0 | Raw log retained; reruns deduplicated |
+| `api-request-limits.spec.ts` | 4 | 4 | 0 | Raw log retained; reruns deduplicated |
+
+The first six counts are reconciled to the prior execution report and test definitions; they do not reconstruct the overwritten 39 per-case execution logs.
+
+## Remaining failed cases
+
+- Administrator home entry to accounts: missing server Auth configuration (`SUPABASE_SERVICE_ROLE_KEY`), not a pass.
+- Information hierarchy at accounts: same environment blocker, a separate failed case.
+- Home resize: this task added the wrong five-toolbar expectation. The product intentionally renders one compact editor plus four full editors, and the existing test already expected one compact editor. The assertion is corrected and checks missing/duplicate/hidden compact controls plus missing/overlapping full editor elements. The original authenticated resize/drag/screenshot test remains unrerun; do not count it as passed.
+
+## Pending edits and verification
+
+All five prior pending test edits match their preserved executed copies after reversing the documented test-entry/network guard changes. They belong to this task. They cover fixed independent Shanghai date expectations and RPC names, dynamic password-reset return origin, persisted widget identities after failed-save retry, and the corrected compact/full editor geometry assertion. No other author changes were discarded.
+
+The three pure files already passed 14 cases; they were not rerun just to repair this accounting. The new nine focused checks render the actual first-party card with fixed synthetic child bodies, then inspect its browser markup and controlled missing/overlapping elements. They do not test authenticated page loading, hydration, real drag/resize, saved layout, screenshot baselines or backend correctness. The earlier 61 controlled checks plus these nine are 70 separate controlled checks, not 70 real-system E2E passes.
+
+Commit `07c612953fc4d7ca7cadfc8d0a078e9d2fd347a4` contains only its ten documented tests/config/docs files and is on remote main. This follow-up separately uploads the verified pending tests and this corrected ledger.
