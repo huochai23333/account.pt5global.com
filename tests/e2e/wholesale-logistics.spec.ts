@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 import {
@@ -10,6 +11,8 @@ import {
   chooseSelectOption,
   expectSelectValue,
 } from "./helpers/select-control";
+
+import { assertLogisticsPaging, validateLogisticsFixture, type LogisticsPagingRow } from "./helpers/logistics-paging-oracle";
 
 test.describe.configure({ mode: "serial" });
 
@@ -121,17 +124,29 @@ test.describe("店小秘物流永久档案", () => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/logistics");
-    await chooseSelectOption(page.getByLabel("店小秘店铺"), {
-      label: "Local Paging Shop",
-    });
+    // Manifest is produced independently when preparing the owned synthetic fixture,
+    // never from get_wholesale_logistics_page or the page under test.
+    const manifestPath = process.env.PT5_E2E_LOGISTICS_PAGING_FIXTURE;
+    if (!manifestPath) throw new Error("PT5_E2E_LOGISTICS_PAGING_FIXTURE must point to an independent 55-row synthetic fixture manifest");
+    const fixture = validateLogisticsFixture(JSON.parse(readFileSync(manifestPath, "utf8")));
+    const firstRequest = waitForPagingResponse(page, 1);
+    await chooseSelectOption(page.getByLabel("店小秘店铺"), { label: "Local Paging Shop" });
     await expect(page.getByText("第 1-20 条，共 55 条").first()).toBeVisible();
+    const first = await readRenderedPagingRows(page, await firstRequest, 20);
+    const secondRequest = waitForPagingResponse(page, 2);
     await page.getByRole("button", { name: "下一页" }).click();
     await expect(page.getByText("第 21-40 条，共 55 条")).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(20);
+    const second = await readRenderedPagingRows(page, await secondRequest, 20);
+    const thirdRequest = waitForPagingResponse(page, 3);
     await page.getByRole("button", { name: "下一页" }).click();
     await expect(page.getByText("第 41-55 条，共 55 条")).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(15);
+    const third = await readRenderedPagingRows(page, await thirdRequest, 15);
     await expect(page.getByRole("button", { name: "下一页" })).toBeDisabled();
+    const returnRequest = waitForPagingResponse(page, 2);
+    await page.getByRole("button", { name: "上一页" }).click();
+    await expect(page.getByText("第 21-40 条，共 55 条")).toBeVisible();
+    const returnedSecond = await readRenderedPagingRows(page, await returnRequest, 20);
+    assertLogisticsPaging(fixture, [first, second, third], returnedSecond);
     await expectResponsiveLayout(page);
   });
 
@@ -243,4 +258,26 @@ async function expectNoCompressedText(page: Page) {
       .slice(0, 5);
   });
   expect(compressedText).toEqual([]);
+}
+
+function waitForPagingResponse(page: Page, pageNumber: number) {
+  return page.waitForResponse((response) => {
+    if (!new URL(response.url()).pathname.endsWith("/rest/v1/rpc/get_wholesale_logistics_page")) return false;
+    const request = response.request();
+    if (request.method() !== "POST") return false;
+    const body = request.postDataJSON();
+    return body?.p_page === pageNumber && body?.p_filters?.storeName === "Local Paging Shop";
+  });
+}
+
+async function readRenderedPagingRows(page: Page, response: Awaited<ReturnType<typeof waitForPagingResponse>>, count: number): Promise<LogisticsPagingRow[]> {
+  expect(response.status()).toBe(200);
+  const data = await response.json();
+  expect(data.totalCount).toBe(55);
+  expect(data.rows).toHaveLength(count);
+  const rows: LogisticsPagingRow[] = data.rows.map((row: { id: string; package_number: string }) => ({ id: row.id, packageNumber: row.package_number }));
+  await expect(page.locator("tbody tr")).toHaveCount(count);
+  // Package is the fifth column; compare the visible order, not only RPC payloads.
+  await expect(page.locator("tbody tr td:nth-child(5)")).toHaveText(rows.map((row) => row.packageNumber));
+  return rows;
 }

@@ -668,3 +668,5 @@ Supabase Auth 建议：
 ### Preserved test runs
 
 `npm run test:record -- -- node --experimental-strip-types --test scripts/assistant-event-stream.test.mjs` runs an executable without a shell and saves stdout, stderr and an exit receipt in a new `output/test-runs/<timestamp>-<uuid>` directory. The CLI returns the child exit code; launch or recording failures return failure. `npm run test:recording` checks these boundaries and is included in `test:regression`. This utility contains no identity configuration and imports no E2E helpers. It does not provision fixtures or redact child output: use approved synthetic inputs and keep the ignored output directory private.
+
+`npm run test:contracts` checks workspace business-content/error-page assertions with synthetic browser documents and logistics paging assertions with 55 fixed synthetic IDs. It is included in `test:regression` and imports no account or backend helpers. The original E2E suites remain subject to restricted-helper and owned-fixture prerequisites; see [test reliability follow-up](docs/test-reliability-follow-up.md) for the exact boundary and the remaining 73-file classification.

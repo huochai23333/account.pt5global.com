@@ -12,6 +12,8 @@ import {
   fillDateControl,
 } from "./helpers/date-control";
 
+import { expectWorkspacePageContent } from "./helpers/workspace-page-contracts";
+
 type WorkspaceEntry = {
   paths: readonly string[];
   role: RegressionRole;
@@ -74,6 +76,7 @@ test.describe("workspace entrypoint regression", () => {
         await page.goto(workspacePath);
         await expectWorkspaceShell(page);
         await expectNotForbiddenPage(page);
+        await expectWorkspacePageContent(page, workspacePath);
       }
     });
   }

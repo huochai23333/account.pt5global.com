@@ -22,7 +22,7 @@
     "test:admin-auth-sync": "node tests/unit/admin-auth-sync-race.mjs && node tests/unit/admin-auth-sync-recovery.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:regression": "npm run lint && npm run typecheck && npm run check:i18n && npm run check:dashboard-ui && npm run check:operation-contracts && npm run test:recording && npm run test:assistant-stream && npm run test:operation-receipts && npm run test:mail-intake && npm run test:mail-security && npm run test:admin-auth-sync && npm run test:company-exchange-rate && npm run test:public-site-origin && npm run test:mail-outbound-reconciliation && npm run test:e2e-fixture-policy && npm run test:template-content-sandbox && npm run build && npm run test:e2e",
+    "test:regression": "npm run lint && npm run typecheck && npm run check:i18n && npm run check:dashboard-ui && npm run check:operation-contracts && npm run test:recording && npm run test:contracts && npm run test:assistant-stream && npm run test:operation-receipts && npm run test:mail-intake && npm run test:mail-security && npm run test:admin-auth-sync && npm run test:company-exchange-rate && npm run test:public-site-origin && npm run test:mail-outbound-reconciliation && npm run test:e2e-fixture-policy && npm run test:template-content-sandbox && npm run build && npm run test:e2e",
     "clean:artifacts": "node scripts/clean-local-artifacts.mjs artifacts",
     "clean:cache": "node scripts/clean-local-artifacts.mjs cache",
     "clean:all": "node scripts/clean-local-artifacts.mjs all",
@@ -30,7 +30,8 @@
     "test:template-content-sandbox": "node scripts/template-content-sandbox.test.cjs",
     "test:e2e-fixture-policy": "node --experimental-strip-types --test scripts/e2e-fixture-policy.test.mjs",
     "test:record": "node scripts/record-test-run.mjs",
-    "test:recording": "node --test scripts/record-test-run.test.mjs"
+    "test:recording": "node --test scripts/record-test-run.test.mjs",
+    "test:contracts": "playwright test --config=tests/contracts/playwright.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
