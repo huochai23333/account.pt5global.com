@@ -660,3 +660,7 @@ Supabase Auth 建议：
 - `PT5-dropshipping-supabase/README.md`
 
 \r\n
+
+### Role navigation regression boundaries
+
+`tests/e2e/dashboard-home-role-tasks.spec.ts` requires the administrator destination to render the actual account-management heading and rejects the application's error-boundary headings after reload. A matching URL and HTTP 200 do not establish a successful page render. A local server missing its authorized admin-service configuration can fail this test; do not classify that environment failure as a production business defect or report the navigation suite as fully passed.

@@ -73,7 +73,10 @@ test("byte-fragmented UTF-8 deltas preserve Chinese and emoji including an unter
   assert.deepEqual(chunks, ["你🌍"]);
 });
 
-test("completed length mismatch and duplicate terminal events cannot confirm success", async () => {
+test("completed length mismatch cannot confirm success", async () => {
   await assert.rejects(readAssistantEventStream(streamFrom("{\"type\":\"delta\",\"text\":\"ab\"}\n{\"type\":\"completed\",\"contentLength\":1}\n"), () => {}), /assistant_content_length_mismatch/);
+});
+
+test("duplicate terminal events cannot confirm success", async () => {
   await assert.rejects(readAssistantEventStream(streamFrom("{\"type\":\"delta\",\"text\":\"ab\"}\n{\"type\":\"completed\",\"contentLength\":2}\n{\"type\":\"completed\",\"contentLength\":2}\n"), () => {}), /assistant_event_after_completed/);
 });
