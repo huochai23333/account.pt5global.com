@@ -29,7 +29,7 @@ Earlier executed results are preserved separately from permission to rerun the o
 | `customer-inventory-orders.spec.ts` | blocked | Blocked: accounts.ts | Resolve fixed-200/lifetime eligibility/tier credit policy and prepare owned disposable fixtures; do not treat existing examples as approved rules. |
 | `dashboard-framework.spec.ts` | executed_pass | Blocked: accounts.ts | Run approved local fixture entry; record any concrete environment failure. |
 | `dashboard-home-customization.spec.ts` | executed_pass | Blocked: accounts.ts | Run approved local fixture entry; record any concrete environment failure. |
-| `dashboard-home-resize.spec.ts` | executed_failure | Blocked: accounts.ts | Observed 4 toolbars versus newly asserted 5; assumption versus compact-editor contract not yet resolved. Do not classify as confirmed business defect. |
+| `dashboard-home-resize.spec.ts` | executed_failure | Blocked: accounts.ts | Wrong five-toolbar expectation is corrected to one compact/four full editors. Real resize/drag/save/reload and screenshots remain unrun; independent final layout proof is unavailable. |
 | `dashboard-home-widget-minimums.spec.ts` | executed_pass | Blocked: accounts.ts | Run approved local fixture entry; record any concrete environment failure. |
 | `dashboard-my-password-reset.spec.ts` | executed_pass | Blocked: accounts.ts | Run approved local fixture entry; record any concrete environment failure. |
 | `dashboard-numbered-pages.spec.ts` | blocked | Blocked: accounts.ts, local-supabase-admin.ts | Original suite imports the listed prohibited helper(s); permission/dependency resolution required. Do not replace these helpers to execute it. |
@@ -95,5 +95,7 @@ The subsequent [reconciled execution ledger](reconciled-execution-ledger.md) rec
 ## 2026-10-05 后续整改
 
 已修复分页测试预期生成器的微秒截断，并将复合夹具负例拆成单条件负例。页面负例核对特定失败原因，增加隐藏正文、正文外控件、重复正文、框架遮罩及 1440/390px 受控刷新检查。运行记录增加原始日志摘要与独立核验入口。实际最终受控重跑为 88/88，日志工具为 13/13；相邻 Supabase 仓库 Storage 回调单元验证为 17/17。
+
+后续真实流程续作不增加模拟数量：[逐项阻塞表](real-e2e-blockers.md)将剩余 57 文件和三个失败逐项映射到能力、角色、数据与人工准备；`node scripts/audit-real-e2e-prerequisites.mjs`只作源码/台账核对，拒绝读取两份受限辅助文件，不运行测试。首页 resize 原用例新增缩放和鼠标拖动后的保存/刷新检查，但该真实用例未执行，不能改记通过。本轮没有新增真实 E2E、受控页面或纯单元通过结果。
 
 早前 61/70 项记录是历史批次；本轮 88 项包含重跑，不能累加为新增真实 E2E。原始 86 个文件的 29 已执行、57 未执行及 135 通过/3 失败保持不变。未读取或执行受限辅助文件，未运行库存测试。详见 [本轮命令、证据、整改与阻塞](test-reliability-2026-10-05.md)。

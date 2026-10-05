@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
 import { expectEditorGeometry } from "./helpers/home-editor-geometry";
+import { verifyResizedAndDraggedLayoutPersistence } from "./helpers/home-layout-persistence";
 
 test("桌面首页缩放稳定且保留键盘调整方式", async ({ page }) => {
   await loginAs(page, "administrator");
@@ -91,6 +92,8 @@ test("桌面首页缩放稳定且保留键盘调整方式", async ({ page }) => 
 
   await verifyKeyboardAdjustDialog(page);
   await verifyStableResizePreview(page, todoCard);
+  // 补上真实尺寸变更和位置拖动的保存/刷新检查；原认证入口保持不变。
+  await verifyResizedAndDraggedLayoutPersistence(page);
   await resetHomeLayout(page);
 });
 
