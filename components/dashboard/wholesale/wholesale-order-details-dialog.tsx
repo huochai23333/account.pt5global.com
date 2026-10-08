@@ -161,6 +161,9 @@ export function WholesaleOrderDetailsDialog({
                       label: "国际运费",
                       value: formatCurrency(order.international_shipping_fee),
                     },
+                    { label: t("fees.serviceFee"), value: formatCurrency(order.service_fee) },
+                    { label: t("fees.cnTaxFee"), value: formatCurrency(order.cn_tax_fee) },
+                    { label: t("fees.paymentProcessingFee"), value: formatCurrency(order.payment_processing_fee) },
                     {
                       label: "其他费用",
                       value: formatCurrency(order.other_fee),
@@ -176,10 +179,6 @@ export function WholesaleOrderDetailsDialog({
                 value: formatOptionalCurrency(order.gross_profit),
               },
               { label: "毛利率", value: formatPercent(order.gross_margin) },
-              {
-                label: "单位毛利",
-                value: formatOptionalCurrency(order.unit_gross_profit),
-              },
             ]}
           />
         </DetailGroup> : null}

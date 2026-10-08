@@ -129,6 +129,9 @@ function buildOrderSummary({
         (totalPayment > 0 ? totalProfit / totalPayment : null),
     ),
     "总毛利": roundMoney(totalProfit),
+    "服务费合计": roundMoney(fullSummary?.serviceFeeAmount ?? sumOrders(orders, "service_fee")),
+    "CN税费合计": roundMoney(fullSummary?.cnTaxFeeAmount ?? sumOrders(orders, "cn_tax_fee")),
+    "付款手续费合计": roundMoney(fullSummary?.paymentProcessingFeeAmount ?? sumOrders(orders, "payment_processing_fee")),
     "打包费合计": roundMoney(
       fullSummary?.packingFeeAmount ?? sumOrders(orders, "packing_fee"),
     ),

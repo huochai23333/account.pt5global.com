@@ -29,6 +29,9 @@ export function readWholesaleOrderSummary(
     customerPaymentRmbAmount: readNumber(summary?.customerPaymentRmbAmount),
     grossProfitAmount: readNumber(summary?.grossProfitAmount),
     orderCount: readNumber(summary?.orderCount),
+    ...(summary?.serviceFeeAmount === undefined ? {} : { serviceFeeAmount: readNumber(summary.serviceFeeAmount) }),
+    ...(summary?.cnTaxFeeAmount === undefined ? {} : { cnTaxFeeAmount: readNumber(summary.cnTaxFeeAmount) }),
+    ...(summary?.paymentProcessingFeeAmount === undefined ? {} : { paymentProcessingFeeAmount: readNumber(summary.paymentProcessingFeeAmount) }),
     packingFeeAmount: readNumber(summary?.packingFeeAmount),
     partialSettledCount: readNumber(summary?.partialSettledCount),
     ...(summary?.internationalShippingFeeAmount === undefined

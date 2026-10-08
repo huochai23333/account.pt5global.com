@@ -6,7 +6,7 @@ import { expectForbiddenPage, loginAs } from "./helpers/auth";
 import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
 const AMOUNT_CODE = "wholesale_referral_order_amount_rate";
-const SALESMAN_CODE = "wholesale_order_salesman_tier";
+const SALESMAN_CODE = "wholesale_salesman_customer_commission";
 
 // 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
 test.beforeAll(async ({ baseURL }) => {
@@ -94,7 +94,7 @@ test.describe("批发业务参数中心", () => {
         .getByTestId("business-parameter-effective-time")
         .fill(nextShanghaiDayLocal());
       await dialog
-        .getByTestId("business-parameter-input-tier_1_rate")
+        .getByTestId("business-parameter-input-existing_customer_rate")
         .fill("15");
       await dialog
         .getByTestId("business-parameter-change-reason")
@@ -153,9 +153,8 @@ test.describe("批发业务参数中心", () => {
       const restored = await readLatestVersion(admin, SALESMAN_CODE);
       expect(restored.version_number).toBe(4);
       expect(restored.config).toMatchObject({
-        tier_1_limit_rmb: 10000,
-        tier_1_rate: 0.15,
-        tier_2_rate: 0.12,
+        existing_customer_rate: 0.15,
+        new_customer_service_fee_rate: 0.12,
       });
       console.log(
         "[参数中心预约凭证]",

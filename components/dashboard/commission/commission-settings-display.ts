@@ -84,24 +84,11 @@ export const COMMISSION_RULE_DEFINITIONS: CommissionRuleDefinition[] = [
   },
   {
     calculationKey: "settings.calculations.wholesaleOrderSalesmanTier",
-    code: "wholesale_order_salesman_tier",
+    code: "wholesale_salesman_customer_commission",
     descriptionKey: "settings.ruleDescriptions.wholesaleOrderSalesmanTier",
     fields: [
-      {
-        configKey: "tier_1_rate",
-        kind: "rate",
-        labelKey: "settings.fields.tier1Rate",
-      },
-      {
-        configKey: "tier_1_limit_rmb",
-        kind: "amountRmb",
-        labelKey: "settings.fields.tier1Limit",
-      },
-      {
-        configKey: "tier_2_rate",
-        kind: "rate",
-        labelKey: "settings.fields.tier2Rate",
-      },
+      { configKey: "existing_customer_rate", kind: "rate", labelKey: "settings.fields.existingCustomerRate" },
+      { configKey: "new_customer_service_fee_rate", kind: "rate", labelKey: "settings.fields.newCustomerServiceFeeRate" },
     ],
     group: "order",
     labelKey: "settings.rules.wholesaleOrderSalesmanTier",
@@ -210,11 +197,10 @@ export function formatCommissionCalculationFormula(
   };
 
   switch (definition.code) {
-    case "wholesale_order_salesman_tier":
+    case "wholesale_salesman_customer_commission":
       return t(definition.calculationKey, {
-        tier1Limit: formattedValue("tier_1_limit_rmb", "amountRmb"),
-        tier1Rate: formattedValue("tier_1_rate", "rate"),
-        tier2Rate: formattedValue("tier_2_rate", "rate"),
+        existingCustomerRate: formattedValue("existing_customer_rate", "rate"),
+        newCustomerServiceFeeRate: formattedValue("new_customer_service_fee_rate", "rate"),
       });
     case "service_escort_salesman":
     case "digital_survival_salesman":

@@ -80,7 +80,7 @@ export function WholesaleOrdersTable({
 }: WholesaleOrdersTableProps) {
   const t = useTranslations("WholesaleBusiness.ordersUi");
   return (
-    <WholesaleTable minWidth={canViewInternalFields ? 3220 : 2140}>
+    <WholesaleTable minWidth={canViewInternalFields ? 3500 : 2140}>
       <thead>
         <tr>
           <WholesaleTh className={wholesaleStickyFirstThClassName}>
@@ -111,6 +111,9 @@ export function WholesaleOrdersTable({
               <WholesaleTh>
                 <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text008" />
               </WholesaleTh>
+              <WholesaleTh>{t("fees.serviceFee")}</WholesaleTh>
+              <WholesaleTh>{t("fees.cnTaxFee")}</WholesaleTh>
+              <WholesaleTh>{t("fees.paymentProcessingFee")}</WholesaleTh>
               <WholesaleTh>
                 <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text009" />
               </WholesaleTh>
@@ -142,7 +145,6 @@ export function WholesaleOrdersTable({
           {canViewInternalFields ? <>
             <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text017" /></WholesaleTh>
             <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text018" /></WholesaleTh>
-            <WholesaleTh><UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text019" /></WholesaleTh>
           </> : null}
           {canViewInternalFields ? (
             <WholesaleTh>
@@ -205,6 +207,7 @@ export function WholesaleOrdersTable({
                       {editAction ? (
                         <Button
                           onClick={() => onOpenOrderEdit(order)}
+                          data-testid={`wholesale-order-edit-${order.id}`}
                           size="compact"
                           type="button"
                           variant="outline"
@@ -253,6 +256,10 @@ export function WholesaleOrdersTable({
                     <WholesaleTd>
                       {formatCurrency(order.international_shipping_fee)}
                     </WholesaleTd>
+                    {/* 新增费用与表头保持同一顺序，均读取数据库保存的人民币金额。 */}
+                    <WholesaleTd>{formatCurrency(order.service_fee)}</WholesaleTd>
+                    <WholesaleTd>{formatCurrency(order.cn_tax_fee)}</WholesaleTd>
+                    <WholesaleTd>{formatCurrency(order.payment_processing_fee)}</WholesaleTd>
                     <WholesaleTd>{formatCurrency(order.other_fee)}</WholesaleTd>
                     <WholesaleTd>
                       {formatCurrency(order.referral_commission_fee)}
@@ -307,7 +314,6 @@ export function WholesaleOrdersTable({
                 {canViewInternalFields ? <>
                   <WholesaleTd>{formatOptionalCurrency(order.gross_profit, t("fallbacks.afterSettlement"))}</WholesaleTd>
                   <WholesaleTd>{formatPercent(order.gross_margin, t("fallbacks.notGenerated"))}</WholesaleTd>
-                  <WholesaleTd>{formatOptionalCurrency(order.unit_gross_profit, t("fallbacks.afterSettlement"))}</WholesaleTd>
                 </> : null}
                 {canViewInternalFields ? (
                   <WholesaleTd>{formatDate(order.order_month)}</WholesaleTd>

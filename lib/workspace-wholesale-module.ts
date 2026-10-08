@@ -91,7 +91,7 @@ export const wholesaleWorkspaceBusinessModule: WorkspaceBusinessModule = {
       {
         kind: "commissionRules",
         ruleCodes: [
-          "wholesale_order_salesman_tier",
+          "wholesale_salesman_customer_commission",
           "wholesale_referral_order_amount_rate",
           "wholesale_referral_waybill_bonus",
         ],

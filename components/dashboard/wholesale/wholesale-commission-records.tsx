@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { RecordCard } from "@/components/ui/data-display";
 
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
+import { useTranslations } from "next-intl";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { DashboardTableFrame } from "@/components/dashboard/dashboard-section-panel";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export function WholesaleCommissionRecords({
   pendingKey,
   profilesById,
 }: WholesaleCommissionRecordsProps) {
+  const t = useTranslations("WholesaleBusiness.orderFees");
   return (
     <>
       <ResponsiveDataView
@@ -121,8 +123,7 @@ export function WholesaleCommissionRecords({
                             )}
                           </p>
                           <p className="mt-1 text-xs text-content-muted">
-                            <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text008" />
-                            {formatCurrency(commission.gross_profit_rmb)}
+                            {t(commission.commission_basis === "service_fee" ? "serviceFeeCommission" : "grossProfitCommission")}：{formatCurrency(commission.commission_basis_amount_rmb)}
                           </p>
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
@@ -189,8 +190,7 @@ export function WholesaleCommissionRecords({
                       {formatCurrency(commission.order_payment_rmb_amount)}
                     </p>
                     <p>
-                      <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text011" />
-                      {formatCurrency(commission.gross_profit_rmb)}
+                      {t(commission.commission_basis === "service_fee" ? "serviceFeeCommission" : "grossProfitCommission")}：{formatCurrency(commission.commission_basis_amount_rmb)}
                     </p>
                     <p>
                       <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text012" />

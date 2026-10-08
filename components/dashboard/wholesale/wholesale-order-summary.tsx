@@ -38,7 +38,15 @@ export function WholesaleOrderSummary({
       tone: "success" as const,
       value: formatCurrency(summary.customerPaymentRmbAmount),
     }] : []),
-    ...(canViewInternalFields ? [{
+    ...(canViewInternalFields ? [
+      ...([
+        ["serviceFee", summary.serviceFeeAmount],
+        ["cnTaxFee", summary.cnTaxFeeAmount],
+        ["paymentProcessingFee", summary.paymentProcessingFeeAmount],
+      ] as const).map(([key, amount]) => ({
+        icon: <CircleDollarSign className="size-4" />, label: t(`fees.${key}`),
+        tone: "info" as const, value: formatCurrency(amount),
+      })), {
       icon: <TrendingUp className="size-4" />,
       label: t("summary.grossProfit"),
       tone: "success" as const,

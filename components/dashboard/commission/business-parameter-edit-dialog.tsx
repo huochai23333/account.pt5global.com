@@ -262,17 +262,13 @@ function calculationValues(
       style: "currency",
     }),
     tier1Count: value("tier_1_threshold"),
-    tier1Limit: value("tier_1_limit_rmb", {
-      currency: "CNY",
-      style: "currency",
-    }),
-    tier1Rate: value("tier_1_rate", { style: "percent" }),
+    existingCustomerRate: value("existing_customer_rate", { style: "percent" }),
+    newCustomerServiceFeeRate: value("new_customer_service_fee_rate", { style: "percent" }),
     tier2BonusUsd: value("tier_2_bonus_usd", {
       currency: "USD",
       style: "currency",
     }),
     tier2Count: value("tier_2_threshold"),
-    tier2Rate: value("tier_2_rate", { style: "percent" }),
     tier3BonusUsd: value("tier_3_bonus_usd", {
       currency: "USD",
       style: "currency",

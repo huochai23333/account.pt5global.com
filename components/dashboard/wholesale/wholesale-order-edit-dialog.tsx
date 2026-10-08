@@ -34,6 +34,8 @@ import {
   WholesaleField,
   WholesaleSubmitButton,
 } from "./wholesale-ui";
+import { useWholesaleOrderFees } from "./use-wholesale-order-fees";
+import { WholesaleOrderFeeFields } from "./wholesale-order-fee-fields";
 type WholesaleOrderEditDialogProps = {
   canReassignOrder: boolean;
   customers: WholesaleCustomer[];
@@ -56,6 +58,11 @@ export function WholesaleOrderEditDialog({
   pending,
   salesAccounts,
 }: WholesaleOrderEditDialogProps) {
+  const feePreview = useWholesaleOrderFees(`${order?.id ?? ""}:${open}`, {
+    smallOrderCount: order?.small_order_count ?? 0,
+    productPurchaseAmount: order?.product_purchase_amount ?? 0,
+    internationalShippingFee: order?.international_shipping_fee ?? 0,
+  });
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_edit_dialog",
   );
@@ -103,7 +110,7 @@ export function WholesaleOrderEditDialog({
       <form
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         key={order.id}
-        onChange={() => setDirty(true)}
+        onChange={(event) => { setDirty(true); feePreview.updateFromForm(event.currentTarget); }}
         onSubmit={async (event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
@@ -204,6 +211,7 @@ export function WholesaleOrderEditDialog({
           step="0.01"
           type="number"
         />
+        <WholesaleOrderFeeFields fees={feePreview.fees} />
         <WholesaleField
           defaultValue={formatEditableNumericValue(order.other_fee)}
           label={uiText("attribute006")}

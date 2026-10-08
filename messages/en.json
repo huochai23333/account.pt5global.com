@@ -1238,6 +1238,11 @@
         "confirmDelete": "Delete “{name}”?",
         "downloadFailed": "This attachment cannot be downloaded right now. Please try again later.",
         "connectionFailed": "The system cannot be reached right now. Refresh the page and try again."
+      },
+      "fees": {
+        "serviceFee": "Service fee",
+        "cnTaxFee": "CN tax",
+        "paymentProcessingFee": "Payment processing fee"
       }
     },
     "logisticsArchive": {
@@ -1333,6 +1338,17 @@
       "companyDescription": "All customers sit under the main company branch. Existing referral relationships continue below each customer.",
       "companyChild": "Direct Company Customer",
       "referredAt": "Referred: {value}"
+    },
+    "orderFees": {
+      "serviceFee": "Service fee",
+      "cnTaxFee": "CN tax",
+      "paymentProcessingFee": "Payment processing fee",
+      "serviceFeeFormula": "(Packing + international shipping + product cost) × 5%, CNY",
+      "cnTaxFeeFormula": "(Packing + international shipping + product cost) × 3%, CNY",
+      "paymentProcessingFeeFormula": "(Packing + international shipping + product cost + service fee + CN tax) × 1%, CNY",
+      "displayOnly": "Calculated automatically for display. These fees do not change gross profit or the customer payment amount.",
+      "serviceFeeCommission": "Service fee commission base",
+      "grossProfitCommission": "Gross profit commission base"
     }
   },
   "WorkspaceSections": {
@@ -3044,9 +3060,6 @@
         "missing": "Not available"
       },
       "fields": {
-        "tier1Rate": "First Rate",
-        "tier1Limit": "First Amount",
-        "tier2Rate": "Extra Rate",
         "tier1Count": "First Count",
         "tier1BonusUsd": "First Reward",
         "tier2Count": "Second Count",
@@ -3054,7 +3067,9 @@
         "tier3Count": "Third Count",
         "tier3BonusUsd": "Third Reward",
         "rate": "Rate",
-        "bonusUsd": "Reward Amount"
+        "bonusUsd": "Reward Amount",
+        "existingCustomerRate": "Existing customer gross profit rate",
+        "newCustomerServiceFeeRate": "New customer service fee rate"
       },
       "rules": {
         "serviceEscortSalesman": "Escort Service Sales Commission",
@@ -3070,7 +3085,7 @@
         "digitalSurvivalSalesman": "Created for the salesperson after a digital survival service is completed.",
         "serviceReferral": "Created for the referrer when a referred customer completes a service order.",
         "vipFirstYearReferralBonus": "Created for the referrer when a referred customer opens the matching VIP for the first time.",
-        "wholesaleOrderSalesmanTier": "Created for the salesperson when a wholesale order is saved.",
+        "wholesaleOrderSalesmanTier": "After full payment, use gross profit or service fee based on customer creation time. New rates apply only to new orders.",
         "wholesaleReferralOrderAmount": "Calculated from each referred wholesale customer's monthly order amount.",
         "wholesaleReferralWaybillBonus": "Adds a reward from each referred wholesale customer's monthly waybill count."
       },
@@ -3079,7 +3094,7 @@
         "digitalSurvivalSalesman": "Commission = max(service order RMB amount - cost amount, 0) × {rate}",
         "serviceReferral": "Commission = service order RMB amount × {rate}",
         "vipFirstYearReferralBonus": "Commission = {bonusUsd} × order transaction rate",
-        "wholesaleOrderSalesmanTier": "Commission = max(wholesale order gross profit, 0) × matching rate; orders up to {tier1Limit} use {tier1Rate}, orders above that use {tier2Rate}",
+        "wholesaleOrderSalesmanTier": "Existing customer commission = max(gross profit, 0) × {existingCustomerRate}; new customer commission = service fee × {newCustomerServiceFeeRate}; calculated after full payment",
         "wholesaleReferralOrderAmount": "Commission = monthly order RMB amount × {rate}",
         "wholesaleReferralWaybillBonus": "At {tier1Count} waybills the reward is {tier1BonusUsd}; at {tier2Count} it is {tier2BonusUsd}; at {tier3Count} it is {tier3BonusUsd}"
       },
@@ -4826,8 +4841,7 @@
       "text022": "Latest exchange settlement time",
       "text012": "Average foreign exchange settlement rate",
       "text006": "Packing fee",
-      "text015": "RMB amount",
-      "text019": "Gross profit per unit"
+      "text015": "RMB amount"
     },
     "components_dashboard_wholesale_wholesale_people_directories": {
       "text001": "Client",

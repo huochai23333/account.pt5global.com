@@ -1238,6 +1238,11 @@
         "confirmDelete": "确认删除“{name}”吗？",
         "downloadFailed": "附件暂时无法下载，请稍后重试。",
         "connectionFailed": "当前无法连接系统，请刷新页面后再试。"
+      },
+      "fees": {
+        "serviceFee": "服务费",
+        "cnTaxFee": "CN税费",
+        "paymentProcessingFee": "付款手续费"
       }
     },
     "logisticsArchive": {
@@ -1333,6 +1338,17 @@
       "companyDescription": "所有客户都归在公司主分支下，已有推荐关系会继续在客户下方展开。",
       "companyChild": "公司子类",
       "referredAt": "推荐时间：{value}"
+    },
+    "orderFees": {
+      "serviceFee": "服务费",
+      "cnTaxFee": "CN税费",
+      "paymentProcessingFee": "付款手续费",
+      "serviceFeeFormula": "（打包费＋国际运费＋产品成本）×5%，人民币",
+      "cnTaxFeeFormula": "（打包费＋国际运费＋产品成本）×3%，人民币",
+      "paymentProcessingFeeFormula": "（打包费＋国际运费＋产品成本＋服务费＋CN税费）×1%，人民币",
+      "displayOnly": "以上三项自动计算，仅用于费用展示，不改变毛利和客户应付金额。",
+      "serviceFeeCommission": "服务费提成基数",
+      "grossProfitCommission": "毛利提成基数"
     }
   },
   "WorkspaceSections": {
@@ -3044,9 +3060,6 @@
         "missing": "暂无"
       },
       "fields": {
-        "tier1Rate": "前段比例",
-        "tier1Limit": "前段金额",
-        "tier2Rate": "超出比例",
         "tier1Count": "第一档数量",
         "tier1BonusUsd": "第一档奖励",
         "tier2Count": "第二档数量",
@@ -3054,7 +3067,9 @@
         "tier3Count": "第三档数量",
         "tier3BonusUsd": "第三档奖励",
         "rate": "比例",
-        "bonusUsd": "奖励金额"
+        "bonusUsd": "奖励金额",
+        "existingCustomerRate": "老客户毛利提成比例",
+        "newCustomerServiceFeeRate": "新客户服务费提成比例"
       },
       "rules": {
         "serviceEscortSalesman": "陪同类服务业务员佣金",
@@ -3070,7 +3085,7 @@
         "digitalSurvivalSalesman": "数字化生存服务完成后，给录入订单的业务员生成。",
         "serviceReferral": "被推荐客户完成服务订单后，给推荐人生成。",
         "vipFirstYearReferralBonus": "被推荐客户首次开通对应 VIP 后，给推荐人生成。",
-        "wholesaleOrderSalesmanTier": "批发订单保存后，给订单业务员生成。",
+        "wholesaleOrderSalesmanTier": "全款收齐后，按客户创建时间确定毛利或服务费提成；新比例仅用于以后创建的订单。",
         "wholesaleReferralOrderAmount": "按被推荐批发客户每月订单金额给推荐客户计算。",
         "wholesaleReferralWaybillBonus": "按被推荐批发客户每月运单数量给推荐客户追加奖励。"
       },
@@ -3079,7 +3094,7 @@
         "digitalSurvivalSalesman": "佣金 = max(服务订单人民币金额 - 成本金额, 0) × {rate}",
         "serviceReferral": "佣金 = 服务订单人民币金额 × {rate}",
         "vipFirstYearReferralBonus": "佣金 = {bonusUsd} × 订单成交汇率",
-        "wholesaleOrderSalesmanTier": "佣金 = max(批发订单毛利, 0) × 对应比例；订单人民币金额不超过 {tier1Limit} 用 {tier1Rate}，超过用 {tier2Rate}",
+        "wholesaleOrderSalesmanTier": "老客户提成 = max(毛利, 0) × {existingCustomerRate}；新客户提成 = 服务费 × {newCustomerServiceFeeRate}；均在全款收齐后计算",
         "wholesaleReferralOrderAmount": "佣金 = 每月订单人民币金额 × {rate}",
         "wholesaleReferralWaybillBonus": "运单数量达到 {tier1Count} 奖励 {tier1BonusUsd}，达到 {tier2Count} 奖励 {tier2BonusUsd}，达到 {tier3Count} 奖励 {tier3BonusUsd}"
       },
@@ -4826,8 +4841,7 @@
       "text022": "最近结汇时间",
       "text012": "平均结汇汇率",
       "text006": "打包费",
-      "text015": "人民币金额",
-      "text019": "单位毛利"
+      "text015": "人民币金额"
     },
     "components_dashboard_wholesale_wholesale_people_directories": {
       "text001": "客户",

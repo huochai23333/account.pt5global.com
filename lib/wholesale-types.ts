@@ -26,6 +26,7 @@ export type WholesaleCustomer = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  salesman_commission_cohort: "existing" | "new";
   /** 当前账号可见的来源线索编号，用于提示关联客户需要保留档案。 */
   source_sales_lead_id?: string | null;
 };
@@ -38,6 +39,10 @@ export type WholesaleOrder = {
   small_order_count: number;
   product_purchase_amount: number;
   packing_fee: number;
+  commission_calculation_snapshot: Record<string, unknown>;
+  service_fee: number;
+  cn_tax_fee: number;
+  payment_processing_fee: number;
   international_shipping_fee: number;
   other_fee: number;
   referral_commission_fee: number;
@@ -49,7 +54,8 @@ export type WholesaleOrder = {
   payment_platform: string | null;
   gross_profit: number | null;
   gross_margin: number | null;
-  unit_gross_profit: number | null;
+  commission_basis: "gross_profit" | "service_fee";
+  commission_basis_amount_rmb: number;
   commission_rate: number;
   salesman_commission_parameter_version_id: string;
   referral_amount_parameter_version_id: string;
@@ -78,6 +84,12 @@ export type WholesaleOrderLinkOption = Pick<
 >;
 
 export type WholesaleOrderInternalFieldKey =
+  | "commission_calculation_snapshot"
+  | "service_fee"
+  | "cn_tax_fee"
+  | "payment_processing_fee"
+  | "commission_basis"
+  | "commission_basis_amount_rmb"
   | "international_shipping_fee"
   | "order_month"
   | "other_fee"
@@ -86,7 +98,7 @@ export type WholesaleOrderInternalFieldKey =
   | "referral_commission_fee";
 
 /**
- * 客户订单列表不会收到内部成本字段，因此列表类型把这六项声明为可选。
+ * 客户订单列表不会收到内部成本字段，因此列表类型把这些内部字段声明为可选。
  * 内部编辑表单仍继续使用字段完整的 WholesaleOrder，避免把缺失数据误写回数据库。
  */
 export type WholesaleOrderListItem = Omit<
@@ -99,6 +111,12 @@ export function hasWholesaleOrderInternalFields(
   order: WholesaleOrderListItem,
 ): order is WholesaleOrder {
   return (
+    order.commission_calculation_snapshot !== undefined &&
+    order.service_fee !== undefined &&
+    order.cn_tax_fee !== undefined &&
+    order.payment_processing_fee !== undefined &&
+    order.commission_basis !== undefined &&
+    order.commission_basis_amount_rmb !== undefined &&
     order.product_purchase_amount !== undefined &&
     order.international_shipping_fee !== undefined &&
     order.other_fee !== undefined &&
@@ -141,6 +159,8 @@ export type WholesaleCommission = {
   customer_id: string | null;
   order_payment_rmb_amount: number;
   gross_profit_rmb: number;
+  commission_basis: "gross_profit" | "service_fee";
+  commission_basis_amount_rmb: number;
   commission_rate: number;
   commission_amount_rmb: number;
   status: "pending" | "settled" | "cancelled";

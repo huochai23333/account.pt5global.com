@@ -44,6 +44,9 @@ export type WholesaleOrderPageSummary = {
   internationalShippingFeeAmount?: number;
   orderCount: number;
   otherFeeAmount?: number;
+  serviceFeeAmount?: number;
+  cnTaxFeeAmount?: number;
+  paymentProcessingFeeAmount?: number;
   packingFeeAmount: number;
   partialSettledCount: number;
   productPurchaseAmount?: number;

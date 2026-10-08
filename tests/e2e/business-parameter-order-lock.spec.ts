@@ -8,7 +8,7 @@ import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 import { chooseSelectOption } from "./helpers/select-control";
 import { cleanupRateFixtures, ensureLocalUsdRate } from "./helpers/wholesale-settlement-fixtures";
 
-const SALESMAN_CODE = "wholesale_order_salesman_tier";
+const SALESMAN_CODE = "wholesale_salesman_customer_commission";
 const MONTHLY_CODE = "wholesale_referral_waybill_bonus";
 
 // 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
@@ -124,10 +124,10 @@ async function publishSalesmanTier(
   await row.getByRole("button", { name: "修改" }).click();
   const dialog = page.getByRole("dialog", { name: /修改批发订单业务员佣金/ });
   await dialog
-    .getByTestId("business-parameter-input-tier_1_rate")
+    .getByTestId("business-parameter-input-existing_customer_rate")
     .fill(input.tier1Rate);
   await dialog
-    .getByTestId("business-parameter-input-tier_2_rate")
+    .getByTestId("business-parameter-input-new_customer_service_fee_rate")
     .fill(input.tier2Rate);
   await dialog
     .getByTestId("business-parameter-change-reason")

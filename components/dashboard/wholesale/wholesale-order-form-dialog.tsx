@@ -20,6 +20,8 @@ import {
   WHOLESALE_PAYMENT_PLATFORM_OPTIONS,
 } from "./wholesale-order-form-options";
 import { useWholesaleOrderCreateSubmission } from "./use-wholesale-order-create-submission";
+import { useWholesaleOrderFees } from "./use-wholesale-order-fees";
+import { WholesaleOrderFeeFields } from "./wholesale-order-fee-fields";
 type WholesaleOrderFormDialogProps = {
   customers: WholesaleCustomer[];
   exchangeRates: ExchangeRateRow[];
@@ -38,6 +40,7 @@ export function WholesaleOrderFormDialog({
   pending,
   salesAccounts,
 }: WholesaleOrderFormDialogProps) {
+  const feePreview = useWholesaleOrderFees(String(open));
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_form_dialog",
   );
@@ -95,7 +98,7 @@ export function WholesaleOrderFormDialog({
     >
       <form
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        onChange={() => setDirty(true)}
+        onChange={(event) => { setDirty(true); feePreview.updateFromForm(event.currentTarget); }}
         onSubmit={async (event) => {
           event.preventDefault();
           if (await submission.submit(event.currentTarget)) setDirty(false);
@@ -161,6 +164,7 @@ export function WholesaleOrderFormDialog({
           step="0.01"
           type="number"
         />
+        <WholesaleOrderFeeFields fees={feePreview.fees} />
         <WholesaleField
           label={uiText("attribute008")}
           min={0}

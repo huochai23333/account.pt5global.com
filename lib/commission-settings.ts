@@ -10,7 +10,7 @@ export const COMMISSION_RULE_CODES = [
   "digital_survival_salesman",
   "service_referral_rate",
   "vip_first_year_referral_bonus",
-  "wholesale_order_salesman_tier",
+  "wholesale_salesman_customer_commission",
   "wholesale_referral_order_amount_rate",
   "wholesale_referral_waybill_bonus",
 ] as const;

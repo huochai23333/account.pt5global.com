@@ -19,7 +19,7 @@ export async function getWholesaleCustomers(supabase: SupabaseClient) {
 
 export function getAllWholesaleOrders(supabase: SupabaseClient, canViewInternalFields: boolean) {
   const columns = canViewInternalFields ? "*"
-    : "id,order_number,customer_id,sales_user_id,small_order_count,packing_fee,courier_company,settlement_exchange_rate,customer_payment_currency,customer_payment_amount,customer_payment_rmb_amount,gross_profit,gross_margin,unit_gross_profit,commission_rate,salesman_commission_parameter_version_id,referral_amount_parameter_version_id,notes,order_month,status,ordered_at,settled_at,created_by_user_id,created_at,updated_at";
+    : "id,order_number,customer_id,sales_user_id,small_order_count,packing_fee,courier_company,settlement_exchange_rate,customer_payment_currency,customer_payment_amount,customer_payment_rmb_amount,gross_profit,gross_margin,commission_rate,salesman_commission_parameter_version_id,referral_amount_parameter_version_id,notes,order_month,status,ordered_at,settled_at,created_by_user_id,created_at,updated_at";
   return queryWholesaleRows<WholesaleOrder>(supabase.from("wholesale_orders").select(columns as "*")
     .order("ordered_at", { ascending: false }).order("id", { ascending: false }), "批发订单");
 }
