@@ -5255,7 +5255,7 @@
   },
   "CompanyTemplates": {
     "title": "公司模板",
-    "description": "使用公司统一发布的工作模板。模板中的填写内容只保留在当前页面，请完成后及时下载或保存。",
+    "description": "使用公司统一发布的工作模板。可保存的模板可以新建个人文档；其他模板请在填写后及时打印或下载。",
     "status": {
       "active": "使用中",
       "inactive": "已停用",
@@ -5288,7 +5288,7 @@
       "slug": "模板标识",
       "description": "模板说明",
       "htmlFile": "互动 HTML",
-      "htmlHint": "支持保存和恢复填写内容的 UTF-8 单文件 HTML，最大 5 MB。",
+      "htmlHint": "UTF-8 单文件 HTML，最大 5 MB。保留上传文件原样，自带保存功能的模板还可新建个人文档。",
       "guideFile": "使用指南 HTML（可选）",
       "guideHint": "没有使用指南时可以留空。",
       "guideKeepHint": "留空会继续使用当前版本的指南。"
@@ -5312,6 +5312,7 @@
     "viewer": {
       "guideTitle": "模板使用指南",
       "refreshNotice": "从公司模板新建个人文档后，填写内容会自动保存。",
+      "pageOnlyNotice": "这份模板的填写内容只保留在当前页面，请在关闭或刷新前打印或下载。",
       "desktopOnly": "公司模板请在电脑上填写和打印。",
       "loading": "正在打开模板，请稍候…",
       "loadFailed": "模板暂时没有打开，请重试。",
@@ -5333,7 +5334,8 @@
       "company_template_publish_not_confirmed": "模板发布后未能核对最终版本。",
       "company_template_publish_failed": "模板没有上传成功，请稍后重试。",
       "company_template_manage_failed": "模板状态没有确认更新，请刷新后重试。",
-      "company_template_save_protocol_invalid": "模板未通过填写内容恢复检查，请按制作说明完善后重试。"
+      "company_template_save_protocol_invalid": "模板未通过填写内容恢复检查，暂未启用这次上传，请保留原文件并联系网站管理员。",
+      "company_template_open_check_failed": "模板未能正常打开，暂未启用这次上传，请保留原文件并联系网站管理员。"
     },
     "documents": {
       "tabs": "模板分类",

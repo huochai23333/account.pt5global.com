@@ -15,6 +15,7 @@ const DISPLAYABLE_ERROR_CODES = new Set([
   "company_template_publish_failed",
   "company_template_manage_failed",
   "company_template_save_protocol_invalid",
+  "company_template_open_check_failed",
 ]);
 
 /** 只把已经准备好日常语言文案的错误码交给翻译层，网络异常等未知内容统一显示失败提示。 */

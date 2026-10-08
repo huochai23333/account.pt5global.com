@@ -5255,7 +5255,7 @@
   },
   "CompanyTemplates": {
     "title": "Company Templates",
-    "description": "Use work templates published by the company. Entries stay on the current page, so download or save the result before leaving.",
+    "description": "Use work templates published by the company. Templates with saving support can create personal documents; print or download other templates after filling them in.",
     "status": {
       "active": "In use",
       "inactive": "Inactive",
@@ -5288,7 +5288,7 @@
       "slug": "Template ID",
       "description": "Description",
       "htmlFile": "Interactive HTML",
-      "htmlHint": "UTF-8 single-file HTML supporting saving and restoring entries, up to 5 MB.",
+      "htmlHint": "UTF-8 single-file HTML, up to 5 MB. The uploaded file stays unchanged. Templates with built-in saving support can also create personal documents.",
       "guideFile": "HTML guide (optional)",
       "guideHint": "Leave blank when no guide is needed.",
       "guideKeepHint": "Leave blank to keep the current guide."
@@ -5312,6 +5312,7 @@
     "viewer": {
       "guideTitle": "Template guide",
       "refreshNotice": "Create a personal document to automatically save your entries.",
+      "pageOnlyNotice": "Entries in this template stay on this page. Print or download them before closing or refreshing.",
       "desktopOnly": "Please fill in and print company templates on a computer.",
       "loading": "Opening template…",
       "loadFailed": "The template did not open. Please try again.",
@@ -5333,7 +5334,8 @@
       "company_template_publish_not_confirmed": "The published version could not be confirmed.",
       "company_template_publish_failed": "The template was not uploaded. Try again later.",
       "company_template_manage_failed": "The template status was not confirmed. Refresh and try again.",
-      "company_template_save_protocol_invalid": "This template failed the entry restoration check. Please follow the authoring guide and retry."
+      "company_template_save_protocol_invalid": "The template could not restore its entries. This upload has not been enabled. Keep the original file and contact the website administrator.",
+      "company_template_open_check_failed": "The template could not open correctly. This upload has not been enabled. Keep the original file and contact the website administrator."
     },
     "documents": {
       "tabs": "Template categories",

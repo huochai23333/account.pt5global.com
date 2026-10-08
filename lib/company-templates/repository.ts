@@ -22,7 +22,7 @@ type TemplateRow = {
   updated_at: string;
 };
 
-const VERSION_FIELDS = "id,template_id,version_number,source_filename,guide_source_filename,html_sha256,guide_sha256,published_by,published_at";
+const VERSION_FIELDS = "id,template_id,version_number,source_filename,guide_source_filename,html_sha256,guide_sha256,published_by,published_at,supports_personal_documents";
 
 /**
  * RLS 会决定当前账号能看到哪些记录：员工只得到启用模板的当前版本，管理员额外得到停用模板和版本历史。

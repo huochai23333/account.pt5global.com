@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/form-controls";
 import { getCompanyTemplateDisplayError } from "@/lib/company-templates/display-error";
 import type { CompanyTemplateSummary } from "@/lib/company-templates/model";
-import { verifyTemplateSaveProtocol } from "@/lib/company-templates/documents/publish-preflight";
+import { verifyTemplateUsability } from "@/lib/company-templates/documents/publish-preflight";
 
 type PublishDialogProps = {
   onClose: () => void;
@@ -43,7 +43,7 @@ export function CompanyTemplatePublishDialog({ onClose, onPublished, open, templ
     if (htmlFiles[0]) formData.set("htmlFile", htmlFiles[0]);
     if (guideFiles[0]) formData.set("guideFile", guideFiles[0]);
     try {
-      if (htmlFiles[0]) await verifyTemplateSaveProtocol(htmlFiles[0]);
+      if (htmlFiles[0]) await verifyTemplateUsability(htmlFiles[0]);
       const response = await fetch("/api/company-templates/publish", { method: "POST", body: formData });
       const result = await response.json() as { error?: string; ok?: boolean; receipt?: { version_number?: number } };
       if (!response.ok || result.ok !== true || !result.receipt?.version_number) {
