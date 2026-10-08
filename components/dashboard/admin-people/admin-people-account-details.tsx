@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { DocumentEntry } from "@/components/dashboard/document-library/document-entry";
 
 import { useTranslations } from "next-intl";
 
@@ -42,6 +43,8 @@ export function AdminPeopleAccountDetails({
 
   return (
     <div className="min-w-0 space-y-4">
+      {/* 用人员编号打开默认资料夹，员工改名不改变文件归属。 */}
+      <DocumentEntry userId={person.user_id} />
       <DetailSection
         items={[
           {

@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusBadge } from "@/components/ui/status-badge";
+import { DocumentEntry } from "@/components/dashboard/document-library/document-entry";
 
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
@@ -80,6 +81,8 @@ export function WholesaleCustomerDetails({
   ];
   return (
     <div className="space-y-5">
+      {/* 未注册客户也按客户档案编号保存资料；关联账号后仍打开同一归属。 */}
+      <DocumentEntry customerId={customer.id} />
       {canEdit ? (
         <div className="flex flex-wrap justify-end gap-2">
           <Button

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { PageReveal } from "@/components/motion/page-reveal";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -45,6 +45,7 @@ export default async function BusinessUnavailablePage({
   const locale = normalizeLocale(localeValue);
   const isTourismAddress = business === "tourism";
   const copy = getUnavailableCopy(locale, isTourismAddress);
+  const documentText = await getTranslations("Documents");
 
   return (
     <PageReveal className="min-h-screen">
@@ -52,6 +53,8 @@ export default async function BusinessUnavailablePage({
         <PublicStateCard
           actions={
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-center">
+              {/* 即使没有已开通业务，账号仍能进入本人资料库。 */}
+              {role && <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")} href={`${getDefaultWorkspaceBasePath(role)}/documents`}>{documentText("title")}</Link>}
               {role && role !== "client" ? (
                 <>
                   {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}

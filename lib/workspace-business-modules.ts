@@ -33,6 +33,7 @@ export type WorkspaceWholesaleSectionKey =
   (typeof workspaceWholesaleSectionKeys)[number];
 
 export type WorkspaceGlobalNavSegment =
+  | "documents"
   | "accounts"
   | "announcements"
   | "company-templates"
@@ -52,6 +53,7 @@ export type WorkspaceNavSegment =
   | WorkspaceWholesaleSectionKey;
 
 export type WorkspaceNavLabelKey =
+  | "documents"
   | "accounts"
   | "announcements"
   | "companyTemplates"

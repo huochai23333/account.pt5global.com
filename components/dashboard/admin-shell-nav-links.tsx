@@ -10,6 +10,7 @@ import {
   ContactRound,
   GitBranchPlus,
   Home,
+  FolderOpen,
   HeartPulse,
   LayoutTemplate,
   LoaderCircle,
@@ -35,6 +36,8 @@ import { useAdminShellNavigation } from "./use-admin-shell-navigation";
 
 // 图标与链接外观放在独立模块，桌面侧栏和手机菜单共用同一套入口。
 export const ADMIN_NAV_ICONS: Record<WorkspaceNavSegment, LucideIcon> = {
+  // 统一资料入口在电脑侧栏和手机菜单中使用同一图标。
+  documents: FolderOpen,
   accounts: UserCog,
   announcements: Megaphone,
   "company-templates": LayoutTemplate,

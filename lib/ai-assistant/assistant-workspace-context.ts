@@ -23,6 +23,7 @@ const ROLE_LABELS = {
 } as const satisfies Record<AppRole, string>;
 
 const NAV_LABELS = {
+  documents: "资料库",
   accounts: "账号管理",
   announcements: "公告管理",
   businessSettings: "业务设置",
@@ -55,6 +56,7 @@ const NAV_LABELS = {
 } as const satisfies Record<WorkspaceNavLabelKey, string>;
 
 const NAV_ENTRY_DESCRIPTIONS = {
+  documents: "按当前权限查看和管理员工、客户的资料文件夹",
   accounts: "管理系统登录账号、身份、状态和城市",
   announcements: "发布和管理系统公告",
   businessSettings: "维护当前业务内的价格、佣金和相关规则",

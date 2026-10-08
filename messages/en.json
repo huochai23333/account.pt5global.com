@@ -525,7 +525,8 @@
       "settlementReleases": "Settlement Releases",
       "logistics": "Logistics",
       "customerInventoryOrders": "Inventory Orders",
-      "wholesaleOrders": "Wholesale Orders"
+      "wholesaleOrders": "Wholesale Orders",
+      "documents": "Documents"
     },
     "business": {
       "noAccess": "This account does not have any visible business yet.",
@@ -4548,7 +4549,8 @@
       "loading": "Loading",
       "precision": "Precision",
       "elegance": "Elegance",
-      "humanity": "Humanity"
+      "humanity": "Humanity",
+      "documentsView": "View documents"
     },
     "components_dashboard_admin_people_admin_people_sections": {
       "text002": " Remark:",
@@ -5317,5 +5319,60 @@
       "company_template_publish_failed": "The template was not uploaded. Try again later.",
       "company_template_manage_failed": "The template status was not confirmed. Refresh and try again."
     }
+  },
+  "Documents": {
+    "title": "Documents",
+    "view": "View documents",
+    "archive": "Person or customer",
+    "folder": "Current folder",
+    "folders": "Document folders",
+    "myDocuments": "My documents",
+    "name": "Name",
+    "search": "Search files",
+    "upload": "Upload documents",
+    "download": "Download",
+    "preview": "Preview",
+    "rename_file": "Rename file",
+    "move_file": "Move file",
+    "delete_file": "Delete file",
+    "create_folder": "New subfolder",
+    "rename_folder": "Rename folder",
+    "delete_folder": "Delete folder",
+    "destination": "Destination folder",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "working": "Working",
+    "loading": "Loading documents",
+    "empty": "There are no files in this folder yet.",
+    "limits": "Images, PDF, office documents, text, ZIP and video. Images under 5MB, video under 30MB, other files up to 20MB.",
+    "readOnly": "You can view and download these documents.",
+    "deleteWarning": "Permanently delete \"{name}\"? This cannot be undone.",
+    "shareWarning": "I confirm sharing this file with this customer, who will be able to view and download it.",
+    "previous": "Previous",
+    "next": "Next",
+    "pagination": "Page {page}, {total} files",
+    "pending": "Documents requiring attention",
+    "reconcile": "Check original operation",
+    "uploadAgain": "Select the file to upload again",
+    "zones": {
+      "personal": "Personal documents",
+      "staff_internal": "Internal documents",
+      "customer_internal": "Internal documents",
+      "shared": "Shared documents"
+    },
+    "errors": {
+      "saved": "Documents saved.",
+      "forbidden": "These documents are unavailable. Check your access or return to your documents.",
+      "invalid": "Check the file format and name, then try again.",
+      "size": "The file is too large. Reduce its size as described above.",
+      "conflict": "The documents have changed. Refresh and try again.",
+      "folderNotEmpty": "Move or delete the files and subfolders first.",
+      "defaultFolder": "Default folders must be kept and cannot be changed or deleted.",
+      "shareConfirmation": "Confirm sharing these documents with the customer first.",
+      "partial": "Some documents still need attention. Check the original operations.",
+      "unconfirmed": "Completion has not been confirmed. Check the original operation.",
+      "savedRefreshing": "Documents saved, but the page could not refresh. Load the documents again."
+    },
+    "fileSize": "{size} KB"
   }
 }

@@ -138,7 +138,8 @@ function createWorkspaceRouteConfig({
   return {
     authRole,
     basePath,
-    globalNavItems,
+    // 资料库为账号通用能力，不跟随任何单一业务模块的启用状态。
+    globalNavItems: [...globalNavItems, { segment: "documents", labelKey: "documents" }],
     initials,
     navGroups: getWorkspaceBusinessNavGroups(routeSegment),
     pageVariants: {
@@ -256,6 +257,7 @@ const WORKSPACE_ROUTE_CONFIG_BY_BASE_PATH = {
 const workspaceRouteSegmentSet = new Set<string>(workspaceRouteSegments);
 const workspaceWholesaleSectionKeySet = new Set<string>(workspaceWholesaleSectionKeys);
 const workspaceGlobalNavSegmentSet = new Set<string>([
+  "documents",
   "accounts",
   "announcements",
   "company-templates",

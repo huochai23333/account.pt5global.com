@@ -8,6 +8,7 @@ import { MetricCard } from "@/components/ui/data-display";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import type { DashboardMyCopy } from "./dashboard-shared-my-copy";
+import { DocumentEntry } from "@/components/dashboard/document-library/document-entry";
 import { DashboardMySectionShell, DashboardMyStatGrid, type DashboardMyStatItem } from "./dashboard-my-section-ui";
 import type { DashboardSharedMyState } from "./use-dashboard-shared-my-state";
 
@@ -51,6 +52,8 @@ export function ProfileInfoSection({ copy, onEditProfile, stats, ui }: {
       title={copy.profileInfoTitle}
     >
       <DashboardMyStatGrid stats={stats} />
+      {/* 本人资料入口与认证照片分开，通用文件不进入认证审核流程。 */}
+      <div className="mt-4"><DocumentEntry /></div>
     </DashboardMySectionShell>
   );
 }

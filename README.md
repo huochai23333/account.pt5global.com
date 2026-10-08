@@ -546,6 +546,37 @@ PT5-dropshipping-web/
 
 互动 HTML 通过带严格 CSP 的独立响应装入沙箱 iframe，允许模板自身的内联交互、图片粘贴、文件选择、打印、下载及打开产品链接，但不授予同源权限。点击“开始使用”后，链接在跳转期间显示打开中的状态；进入模板路由后由页面占位提示继续显示等待，随后由正文载入提示接管。查看器每次只请求一份正文：服务端完成权限和原始哈希核对后，在响应中加入就绪通知；父页只接受当前 iframe 窗口、沙箱来源与本次随机标识均匹配的通知。错误文档不能结束等待，15 秒内未收到通知会显示重新打开入口；重试或切换设备会换用新标识，手机仍只显示电脑端提示。正文接口不提供 HEAD，避免重复读取内容。站点其他路径拒绝被 iframe 嵌入；仅模板正文与指南接口允许本站嵌入，并继续用 `frame-ancestors 'self'` 和沙箱限制访问。模板正文、指南、版本元数据、RLS 和管理员 RPC 位于相邻 Supabase 仓库的 `company_templates` 与 `company_template_versions` 迁移中；先在本地 Docker 应用并验证迁移，再运行网页端测试。
 
+## 统一资料库
+
+所有岗位的 `/<workspace>/documents` 提供资料保存；个人资料、管理员人员详情及批发客户详情的“查看资料”直接打开对应档案。没有业务板块授权的员工也能管理自己的“本人资料”。页面只组装界面，查询、上传核对、目录状态、弹窗、文件列表及逐项上传结果位于 `components/dashboard/document-library/`，服务端校验与对象操作位于 `lib/document-library/`。
+
+| 区域 | 查看与下载 | 上传、改名、建目录、移动、删除 |
+| --- | --- | --- |
+| 员工本人资料 | 本人、管理员 | 本人、管理员 |
+| 员工内部资料 | 管理员 | 管理员 |
+| 客户内部资料 | 沿用批发客户目录的现有阅读授权 | 沿用客户管理授权 |
+| 客户共享资料 | 已授权内部人员、客户本人 | 已授权内部管理人员 |
+
+管理员管理全部档案；财务、业务员使用现有客户授权，现有只读岗位仍只读。数据库和私有 Storage 均复核当前身份，先过滤隐藏区域再返回目录、文件及搜索数量。预览和下载通过登录接口重新读取权限，使用 `private, no-store`。默认目录不能删除、改名或移动；自建目录只允许删除空目录；移动限同一档案，进入客户共享区前明确确认。
+
+支持常用图片、PDF、Word、Excel、PPT、CSV、UTF-8 TXT、ZIP、MP4/MOV/WebM/MKV/AVI。图片小于 5MB，视频小于 30MB，其他文件不超过 20MB；服务端校验文件头、大小与 SHA-256。同名上传保留不同记录及对象。删除需确认并永久删除；预览仅支持图片和 PDF。报价单及公司模板文件可下载后上传，认证照片和订单附件继续各自业务流程。
+
+资料档案以人员或客户 UUID 归属，改名不会改变目录归属。未注册客户也有资料夹；关联注册账号时数据库事务合并相同区域及目录，同名文件增加序号并保留原对象。存在文件时阻止直接删除客户档案。
+
+`/api/document-library` 查询与目录/文件管理、`/upload` 上传、`/reconcile` 原操作核对及 `/files/[id]/content` 内容读取组成接口。每次写入使用固定操作编号，返回记录编号、版本和影响行数；页面再独立读取凭证，刷新真实列表。上传需确认真实字节及完整登记，删除需确认对象与记录均消失，部分完成显示逐项结果。断线操作保留在当前账号的浏览器会话中，可继续核对。Supabase 的 `document-library-cleanup` 每小时处理超过 24 小时的未完成文件；失败凭证保留，未清理对象继续等待后续清理。
+
+先在同级 Supabase 仓库的本地 Docker 应用 `20261008015350_document_library.sql`。Web 和 Supabase 同时需要服务密钥，但浏览器只持有登录会话；新增资料使用独立私有 `document-library` bucket。资料迁移与清理函数先本地验证，GitHub、Supabase Cloud 与网站部署分别交付。
+
+资料库验证命令：
+
+```bash
+node --experimental-strip-types --test scripts/document-cleanup.test.mjs
+npx playwright test --config=tests/contracts/playwright.config.ts tests/contracts/document-library.spec.ts
+npx playwright test tests/e2e/document-library.spec.ts tests/e2e/document-library-permissions.spec.ts tests/e2e/document-library-linking.spec.ts tests/e2e/document-library-cleanup.spec.ts tests/e2e/document-library-faults.spec.ts tests/e2e/document-library-boundaries.spec.ts --workers=1
+```
+
+真实页面测试使用本地隔离账号，从页面完成关键管理操作，另用数据库与 Storage 查询验证最终记录、版本和对象，再刷新页面；后台清理测试准备中断阶段夹具并调用同一清理引擎，独立核对对象消失、失败凭证与已完成文件保留。清理引擎测试和 Edge 入口/定时调度实跑是不同验证范围。
+
 ## 测试与验证
 
 代码改动后固定检查：

@@ -525,7 +525,8 @@
       "settlementReleases": "结汇发布",
       "logistics": "物流管理",
       "customerInventoryOrders": "库存订单",
-      "wholesaleOrders": "批发订单"
+      "wholesaleOrders": "批发订单",
+      "documents": "资料库"
     },
     "business": {
       "noAccess": "当前账号暂无可见业务",
@@ -4548,7 +4549,8 @@
       "loading": "加载中",
       "precision": "精准",
       "elegance": "优雅",
-      "humanity": "温度"
+      "humanity": "温度",
+      "documentsView": "查看资料"
     },
     "components_dashboard_admin_people_admin_people_sections": {
       "text002": " 备注：",
@@ -5317,5 +5319,60 @@
       "company_template_publish_failed": "模板没有上传成功，请稍后重试。",
       "company_template_manage_failed": "模板状态没有确认更新，请刷新后重试。"
     }
+  },
+  "Documents": {
+    "title": "资料库",
+    "view": "查看资料",
+    "archive": "人员或客户",
+    "folder": "当前文件夹",
+    "folders": "资料文件夹",
+    "myDocuments": "我的资料",
+    "name": "名称",
+    "search": "搜索文件",
+    "upload": "上传资料",
+    "download": "下载",
+    "preview": "预览",
+    "rename_file": "重命名文件",
+    "move_file": "移动文件",
+    "delete_file": "删除文件",
+    "create_folder": "新建子文件夹",
+    "rename_folder": "重命名文件夹",
+    "delete_folder": "删除文件夹",
+    "destination": "目标文件夹",
+    "cancel": "取消",
+    "confirm": "确认",
+    "working": "正在处理",
+    "loading": "正在读取资料",
+    "empty": "这个文件夹暂时没有文件。",
+    "limits": "支持图片、PDF、办公文档、文本、ZIP和视频。图片小于5MB，视频小于30MB，其他文件不超过20MB。",
+    "readOnly": "你可以查看和下载这里的资料。",
+    "deleteWarning": "确认永久删除“{name}”？删除后无法恢复。",
+    "shareWarning": "我确认将此文件共享给该客户，客户将可以查看和下载。",
+    "previous": "上一页",
+    "next": "下一页",
+    "pagination": "第 {page} 页，共 {total} 个文件",
+    "pending": "需要继续处理的资料",
+    "reconcile": "继续核对",
+    "uploadAgain": "请重新选择文件上传",
+    "zones": {
+      "personal": "本人资料",
+      "staff_internal": "内部资料",
+      "customer_internal": "内部资料",
+      "shared": "共享资料"
+    },
+    "errors": {
+      "saved": "资料已保存。",
+      "forbidden": "这份资料暂时无法查看，请确认账号权限或返回我的资料。",
+      "invalid": "文件格式或名称不符合要求，请检查后重试。",
+      "size": "文件太大，请按页面说明压缩后上传。",
+      "conflict": "资料已经发生变化，请刷新后重新操作。",
+      "folderNotEmpty": "请先移走或删除文件及子文件夹。",
+      "defaultFolder": "默认文件夹需要保留，不能修改或删除。",
+      "shareConfirmation": "请先确认将资料共享给客户。",
+      "partial": "部分资料尚未处理完成，请继续核对。",
+      "unconfirmed": "尚未确认处理完成，请继续核对原操作。",
+      "savedRefreshing": "资料已保存，页面暂时未能刷新，请重新读取资料。"
+    },
+    "fileSize": "{size} KB"
   }
 }

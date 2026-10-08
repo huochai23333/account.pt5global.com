@@ -37,5 +37,22 @@
   {"operationId":"system-health-alert-write","trigger":"管理员在系统运行页面确认异常提醒","completionEvidence":"RPC 返回同一提醒编号和已确认状态","timeoutSeconds":30,"retryDelaysSeconds":[],"idempotency":"提醒编号","failureMessage":"提醒状态没有确认保存。","ownerRole":"administrator","sources":["components/dashboard/system-health/system-health-client.tsx","lib/system-operation-health.ts"]},
   {"operationId":"auth-account-lifecycle","trigger":"用户注册、确认邮箱、找回或修改密码、退出当前浏览器账号","completionEvidence":"注册、验证码确认和改密返回权威用户编号；找回邮件只登记为请求已接受；改密后退出重新读取为空会话；浏览器退出完成本地会话和 Cookie 清理","timeoutSeconds":60,"retryDelaysSeconds":[],"idempotency":"邮箱、验证码或当前会话编号","failureMessage":"账号操作没有确认完成。","ownerRole":"authenticated","sources":["app/auth/confirm/route.ts","components/auth/forgot-password-form.tsx","components/auth/login-form.tsx","components/auth/use-forgot-password-view-model.ts","components/auth/use-register-wizard.ts","components/dashboard/dashboard-shared-my/use-dashboard-password-reset.ts","lib/auth-operation-receipts.ts","lib/browser-auth-session.ts"]},
     {"operationId":"company-template-publish","trigger":"管理员新建模板、上传版本、回退版本或切换启用状态","completionEvidence":"RPC 返回模板编号、版本编号、递增修订号和内容哈希，并独立重读当前版本和状态一致","timeoutSeconds":30,"retryDelaysSeconds":[],"idempotency":"模板编号、版本编号和预期修订号","failureMessage":"公司模板没有确认发布。","ownerRole":"administrator","sources":["lib/company-templates/repository.ts","app/api/company-templates/publish/route.ts","app/api/company-templates/manage/route.ts","components/dashboard/company-templates/company-template-publish-dialog.tsx","components/dashboard/company-templates/company-templates-client.tsx"]},
-  {"operationId":"exchange-rate-recalculation","trigger":"管理员从汇率页预览并执行历史重新核算","completionEvidence":"核算运行编号、逐笔修改前快照及差额、实际影响行数；订单及关联记录逐笔事务更新；独立重读终态后刷新一致","timeoutSeconds":120,"retryDelaysSeconds":[],"idempotency":"预览令牌、订单与报价完整快照版本；已执行令牌返回原凭证","failureMessage":"历史核算尚未完成，请刷新凭证并核对失败明细。","ownerRole":"administrator","sources":["lib/exchange-rate-recalculation.ts"]}
+  {"operationId":"exchange-rate-recalculation","trigger":"管理员从汇率页预览并执行历史重新核算","completionEvidence":"核算运行编号、逐笔修改前快照及差额、实际影响行数；订单及关联记录逐笔事务更新；独立重读终态后刷新一致","timeoutSeconds":120,"retryDelaysSeconds":[],"idempotency":"预览令牌、订单与报价完整快照版本；已执行令牌返回原凭证","failureMessage":"历史核算尚未完成，请刷新凭证并核对失败明细。","ownerRole":"administrator","sources":["lib/exchange-rate-recalculation.ts"]},
+  {
+    "operationId": "document-library",
+    "trigger": "资料库页面上传、目录及文件管理、断线后继续核对",
+    "completionEvidence": "记录编号和版本、真实Storage对象路径及内容指纹；删除后对象和登记均消失；部分完成为partial_failed",
+    "timeoutSeconds": 90,
+    "retryDelaysSeconds": [],
+    "idempotency": "按账号和操作UUID复用原请求，核对相同payload",
+    "failureMessage": "尚未确认处理完成，请继续核对原操作。",
+    "ownerRole": "administrator / 员工本人 / 已授权客户管理人员",
+    "sources": [
+      "lib/document-library/storage-mutations.ts",
+      "app/api/document-library/route.ts",
+      "app/api/document-library/upload/route.ts",
+      "app/api/document-library/reconcile/route.ts",
+      "components/dashboard/document-library/use-document-actions.ts"
+    ]
+  }
 ]
