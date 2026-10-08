@@ -26,7 +26,8 @@ export function DocumentEditor({document,workspace,hasGuide}:{document:TemplateD
     <Surface padding="compact" className="flex flex-col gap-3"><h2 className="break-words text-lg font-bold">{name}</h2><p className="text-sm text-content-muted">{document.template_name} · {t("privateNotice")}</p>
       {hasGuide?<Link className="text-sm font-semibold text-primary" href={`/${workspace}/company-templates/documents/${document.id}/guide`}>{t("guide")}</Link>:null}
       <div className="flex flex-wrap items-center gap-2"><Button variant="outline" onClick={back}>{t("back")}</Button>{desktop?<><Button disabled={load?.status!=="ready"||save.status==="conflict"} onClick={saveNow}>{t("save")}</Button><DocumentActions document={{...document,name}} workspace={workspace} getRevision={()=>save.revision.current} getState={exportNow} beforeRename={saveNow} onChanged={changed} disabled={load?.status!=="ready"||save.status==="saving"} conflict={save.status==="conflict"}/></>:null}</div>
-      {desktop?<p role="status" aria-live="polite" className="text-sm">{t(`status.${save.status}`)}</p>:null}
+      {/* 窗口加载已经失败时，应给出重试提示，不能仍显示“正在打开文档”。 */}
+      {desktop?<p role="status" aria-live="polite" className="text-sm">{load?.status==="failed"?viewer("loadFailed"):t(`status.${save.status}`)}</p>:null}
       {save.error?<p role="alert" className="text-sm text-status-danger">{t(`errors.${save.error}`)}</p>:null}
       {actionError?<p role="alert">{t("errors.document_failed")}</p>:null}
       {save.status==="failed"?<Button onClick={saveNow}>{t("retry")}</Button>:null}
