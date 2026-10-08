@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>客户资料模板</title>
+<style>body{font:16px system-ui;margin:24px}label{display:grid;gap:8px;margin-bottom:20px}input,textarea{font:inherit;padding:12px;max-width:600px}</style>
+</head><body><h1>客户资料</h1><label>客户名称<input id="customer"></label><label>备注<textarea id="notes"></textarea></label>
+<script>
+// 模板负责填写数据；系统负责账号权限、自动保存和多窗口冲突检测。
+window.PT5Template={
+  version:1,
+  exportState:function(){return {customer:document.getElementById('customer').value,notes:document.getElementById('notes').value};},
+  importState:function(state){
+    if(typeof state.customer!=='string'||typeof state.notes!=='string')throw new Error('Invalid state');
+    // 使用 value 写入用户内容，不把填写值拼进 HTML 或脚本。
+    document.getElementById('customer').value=state.customer;document.getElementById('notes').value=state.notes;
+  },
+  subscribe:function(notify){document.addEventListener('input',notify);return function(){document.removeEventListener('input',notify);};}
+};
+</script></body></html>

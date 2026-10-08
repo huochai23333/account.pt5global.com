@@ -5266,14 +5266,15 @@
       "close": "关闭",
       "cancel": "取消",
       "publish": "上传并启用",
-      "publishing": "正在上传"
+      "publishing": "正在上传",
+      "preview": "预览模板"
     },
     "fields": {
       "name": "模板名称",
       "slug": "模板标识",
       "description": "模板说明",
       "htmlFile": "互动 HTML",
-      "htmlHint": "仅支持 UTF-8 的单文件 HTML，最大 5 MB。",
+      "htmlHint": "支持保存和恢复填写内容的 UTF-8 单文件 HTML，最大 5 MB。",
       "guideFile": "使用指南 HTML（可选）",
       "guideHint": "没有使用指南时可以留空。",
       "guideKeepHint": "留空会继续使用当前版本的指南。"
@@ -5296,7 +5297,7 @@
     },
     "viewer": {
       "guideTitle": "模板使用指南",
-      "refreshNotice": "刷新页面会重新载入当前模板，正在填写的内容不会保留。",
+      "refreshNotice": "从公司模板新建个人文档后，填写内容会自动保存。",
       "desktopOnly": "公司模板请在电脑上填写和打印。",
       "loading": "正在打开模板，请稍候…",
       "loadFailed": "模板暂时没有打开，请重试。",
@@ -5317,7 +5318,54 @@
       "company_template_publish_receipt_invalid": "模板没有返回可核对的发布结果。",
       "company_template_publish_not_confirmed": "模板发布后未能核对最终版本。",
       "company_template_publish_failed": "模板没有上传成功，请稍后重试。",
-      "company_template_manage_failed": "模板状态没有确认更新，请刷新后重试。"
+      "company_template_manage_failed": "模板状态没有确认更新，请刷新后重试。",
+      "company_template_save_protocol_invalid": "模板未通过填写内容恢复检查，请按制作说明完善后重试。"
+    },
+    "documents": {
+      "tabs": "模板分类",
+      "company": "公司模板",
+      "title": "我的文档",
+      "privateNotice": "仅自己可见，填写内容保存在本人账号中。",
+      "create": "新建文档",
+      "opening": "正在新建并打开，请稍候…",
+      "rename": "重命名",
+      "copy": "另存一份",
+      "delete": "删除",
+      "deleteNotice": "删除后无法恢复，请确认是否删除这份文档。",
+      "name": "文档名称",
+      "confirm": "确认",
+      "cancel": "取消",
+      "search": "搜索文档名称",
+      "loading": "正在读取文档…",
+      "empty": "还没有文档，请从公司模板新建一份。",
+      "edit": "继续编辑",
+      "more": "加载更多",
+      "retry": "重试",
+      "save": "保存",
+      "back": "返回我的文档",
+      "reload": "重新打开最新内容",
+      "leaveNotice": "还有内容未保存，确定离开吗？",
+      "reloadNotice": "重新打开会放弃当前未保存内容。你也可以先另存一份。",
+      "status": {
+        "loading": "正在打开文档…",
+        "unsaved": "有内容尚未保存",
+        "saving": "正在保存…",
+        "saved": "已保存",
+        "failed": "保存失败，请重试",
+        "conflict": "这份文档已在其他窗口修改，请重新打开最新内容，或将当前内容另存一份。"
+      },
+      "errors": {
+        "document_conflict": "这份文档已在其他窗口修改，请重新打开后重试。",
+        "document_missing": "没有找到这份文档，请返回列表查看。",
+        "document_forbidden": "你暂时无法使用这份文档。",
+        "document_too_large": "填写内容和图片合计不能超过 10 MiB，请减少图片大小后重试。",
+        "document_unsupported": "这份模板暂时无法保存，请联系模板管理员。",
+        "document_invalid": "请检查文档名称和填写内容后重试。",
+        "document_not_confirmed": "暂时无法确认保存结果，请重试。",
+        "document_failed": "操作未完成，请保持页面打开并重试。"
+      },
+      "guide": "使用指南",
+      "leaveTitle": "尚有未保存内容"
     }
   },
   "Documents": {

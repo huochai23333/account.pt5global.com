@@ -17,8 +17,8 @@ for (const role of ["administrator", "salesman"] as const) {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(`${prefix}leads`);
       const aside = page.locator("aside").first();
-      // 桌面侧栏直接展示全部板块，标题不再控制收起或展开。
-      await expect(aside.getByText(locale === "zh" ? "批发业务" : "Wholesale Business", { exact: true })).toBeVisible();
+      // 桌面侧栏统一排列入口，中英文均不再显示额外的业务分组标题。
+      await expect(aside.getByText(locale === "zh" ? "批发业务" : "Wholesale Business", { exact: true })).toHaveCount(0);
       await expect(aside.getByRole("button", { name: locale === "zh" ? "批发业务" : "Wholesale Business", exact: true })).toHaveCount(0);
 
       const desktopLinks = aside.locator(`a[href^="${prefix}"]`);

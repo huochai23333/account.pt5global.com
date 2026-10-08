@@ -43,7 +43,8 @@ export function AdminShellDesktopNav({
         HIDDEN_NAV_SCROLLBAR_CLASS,
       )}
     >
-      {globalItems.map((item) => (
+      {/* 全局入口和有权限的业务入口放在同一列，共用行高与缩进；分组资料仍供手机菜单使用。 */}
+      {items.map((item) => (
         <DesktopAdminNavLink
           handleNavClick={handleNavClick}
           item={item}
@@ -59,30 +60,6 @@ export function AdminShellDesktopNav({
           {emptyGroupsLabel}
         </p>
       ) : null}
-
-      {groups.map((group) => {
-        return (
-          <div className="space-y-1" key={group.key}>
-            {/* 分组名称只是阅读提示；所有有权限的入口始终可点击。 */}
-            <p className="mx-1 px-4 py-3 text-sm font-semibold text-content-muted/76">
-              {group.label}
-            </p>
-            <div className="space-y-1 pl-3 pt-1">
-              {group.items.map((item) => (
-                <DesktopAdminNavLink
-                  compact
-                  handleNavClick={handleNavClick}
-                  item={item}
-                  key={item.href}
-                  pathname={pathname}
-                  prefetchRoute={prefetchRoute}
-                  resolvedPendingHref={resolvedPendingHref}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
     </nav>
   );
 }

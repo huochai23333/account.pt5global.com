@@ -95,7 +95,7 @@ test.describe("workspace entrypoint regression", () => {
       name: "批发订单",
     });
 
-    await expect(wholesaleGroupLabel).toBeVisible();
+    await expect(wholesaleGroupLabel).toHaveCount(0);
     await expect(sidebar.getByRole("button", { name: "批发业务" })).toHaveCount(0);
     await expect(wholesaleOrdersLink).toBeVisible();
     await page.goto("/admin/home");

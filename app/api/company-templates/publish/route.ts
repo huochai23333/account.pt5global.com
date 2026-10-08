@@ -14,6 +14,8 @@ export async function POST(request: Request) {
     const html = await validateHtmlFile(form.get("htmlFile"));
     const guide = await validateHtmlFile(form.get("guideFile"), { optional: true });
     if (!html) throw new Error("company_template_file_required");
+    // 文件必须明确提供填写数据接口；实际导出/恢复由发布弹窗在隔离窗口里验证。
+    if (!html.content.includes("PT5Template") || !["exportState","importState","subscribe"].every(key=>html.content.includes(key))) throw new Error("company_template_save_protocol_invalid");
 
     const templateId = readUuid(form, "templateId");
     const versionId = readUuid(form, "versionId");
@@ -71,6 +73,7 @@ function getErrorCode(cause: unknown) {
     "company_template_file_document", "company_template_file_unsafe", "company_template_slug_invalid",
     "company_template_details_invalid", "company_template_publish_receipt_invalid",
     "company_template_publish_not_confirmed",
+    "company_template_save_protocol_invalid",
   ];
   return known.find((code) => message.includes(code)) ?? "company_template_publish_failed";
 }

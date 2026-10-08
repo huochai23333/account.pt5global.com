@@ -75,14 +75,13 @@ type NavLinkProps = {
 };
 
 export function DesktopAdminNavLink({
-  compact = false,
   handleNavClick,
   isFocusable = true,
   item,
   pathname,
   prefetchRoute,
   resolvedPendingHref,
-}: NavLinkProps & { compact?: boolean; isFocusable?: boolean }) {
+}: NavLinkProps & { isFocusable?: boolean }) {
   const Icon = ADMIN_NAV_ICONS[item.icon];
   const isActive = pathname === item.href;
   const isPending = resolvedPendingHref === item.href && !isActive;
@@ -95,11 +94,11 @@ export function DesktopAdminNavLink({
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "mx-1 flex items-center gap-3 rounded-record-card px-4 py-3 text-sm transition-all duration-200",
-        compact ? "py-2.5" : "",
+        // 选中和等待跳转时只改变颜色，不横向移动，保证整列图标与文字始终对齐。
         isActive
-          ? "translate-x-1 bg-primary text-white shadow-surface-interactive"
+          ? "bg-primary text-white shadow-surface-interactive"
           : isPending
-            ? "translate-x-1 bg-surface-inset text-brand-hover shadow-surface-interactive"
+            ? "bg-surface-inset text-brand-hover shadow-surface-interactive"
             : "text-content-muted/72 hover:bg-surface-inset hover:text-content-muted",
       )}
       href={item.href}

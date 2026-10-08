@@ -76,7 +76,7 @@ test.describe("finance business access", () => {
     ).toHaveCount(0);
     await expect(
       desktopSidebar.getByText("批发业务", { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       desktopSidebar.getByRole("link", { name: "公司费用" }),
     ).toBeVisible();

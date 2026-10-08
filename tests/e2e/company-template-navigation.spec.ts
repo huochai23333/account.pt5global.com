@@ -5,7 +5,7 @@ import { expectNoPageOverflow } from "./helpers/company-template-actions";
 
 const SEEDED_TEMPLATE_ID = "a3200000-0000-4000-8000-000000000001";
 
-test("开始使用在跳转和正文载入期间持续显示等待提示", async ({ page }) => {
+test("模板预览在跳转和正文载入期间持续显示等待提示", async ({ page }) => {
   await loginAs(page, "salesman");
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -18,7 +18,7 @@ test("开始使用在跳转和正文载入期间持续显示等待提示", async
     await route.continue();
   });
   await page.goto("/salesman/company-templates");
-  await page.getByRole("link", { name: "开始使用" }).first().click();
+  await page.getByRole("link", { name: "预览模板" }).first().click();
   await expect(page.getByRole("status").filter({ hasText: "正在打开模板，请稍候…" })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/salesman/company-templates/${SEEDED_TEMPLATE_ID}$`));
   await expect(page.frameLocator("iframe").getByText("PT5 Dropshipping", { exact: true })).toBeVisible();

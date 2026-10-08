@@ -78,14 +78,16 @@ test.describe("legacy tourism business shutdown", () => {
 
     const sidebar = page.locator("aside").first();
     await expect(sidebar.getByText("旅游业务", { exact: true })).toHaveCount(0);
-    await expect(sidebar.getByText("批发业务", { exact: true })).toBeVisible();
+    await expect(sidebar.getByText("批发业务", { exact: true })).toHaveCount(0);
+    await expect(sidebar.locator('a[href="/admin/wholesale/orders"]')).toBeVisible();
 
     await page.goto("/auth/sign-out?next=%2Flogin");
     await page.getByRole("button", { name: "退出登录" }).click();
     await loginAs(page, "salesman");
     await page.goto("/salesman/home");
     await expect(page.getByText("旅游业务", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("批发业务", { exact: true })).not.toHaveCount(0);
+    await expect(sidebar.getByText("批发业务", { exact: true })).toHaveCount(0);
+    await expect(sidebar.locator('a[href="/salesman/wholesale/orders"]')).toBeVisible();
   });
 
   for (const role of [

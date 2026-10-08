@@ -3,11 +3,10 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { loginAs, type RegressionRole } from "./helpers/auth";
-import { fillQuotationRow, fillPublishDialog, htmlFile, publishMultipart, requireLocalAdminClient, readTemplateBySlug, readVersion, countTemplates, countVersions, deleteTemplate, sha256, clickStableTemplateButton, expectNoPageOverflow } from "./helpers/company-template-actions";
+import { fillQuotationRow, fillPublishDialog, htmlFile, publishMultipart, requireLocalAdminClient, readTemplateBySlug, readVersion, countTemplates, countVersions, deleteTemplate, sha256, clickStableTemplateButton, expectNoPageOverflow, withDocumentProtocol } from "./helpers/company-template-actions";
 
 const SEEDED_TEMPLATE_ID = "a3200000-0000-4000-8000-000000000001";
-const SEEDED_VERSION_ID = "a3200000-0000-4000-8000-000000000002";
-const SEEDED_HTML_HASH = "483d7f0a338fde91d5fa77bf4ec6325df044bd40cbeff91e07f13b98fab1062c";
+const SEEDED_VERSION_ID = "a3200000-0000-4000-8000-000000000003";
 const INTERNAL_ROLES: RegressionRole[] = [
   "administrator",
   "manager",
@@ -19,7 +18,7 @@ const INTERNAL_ROLES: RegressionRole[] = [
 ];
 
 const SIMPLE_HTML = (heading: string) =>
-  `<!doctype html><html><head><meta charset="utf-8"><title>${heading}</title></head><body><h1>${heading}</h1><button onclick="document.body.dataset.clicked='yes'">Use</button></body></html>`;
+  withDocumentProtocol(`<!doctype html><html><head><meta charset="utf-8"><title>${heading}</title></head><body><h1>${heading}</h1><button onclick="document.body.dataset.clicked='yes'">Use</button></body></html>`);
 
 test.describe("公司模板", () => {
   test("没有业务工作区的岗位在手机服务说明页不显示模板入口", async ({ page }) => {
@@ -131,7 +130,7 @@ test.describe("公司模板", () => {
     });
   }
 
-  test("v32 可增加目的地和产品、上传图片、计算金额并触发打印", async ({ page }) => {
+  test("v33 可增加目的地和产品、上传图片、计算金额并触发打印", async ({ page }) => {
     test.setTimeout(120_000);
     // 使用产品已有的“减少动态效果”偏好，让跨 iframe 滚动即时完成。
     // Chrome 的滚动动画期间命中区域可能滞后于 DOM 坐标；真实按钮与业务断言保持原样。
@@ -145,7 +144,7 @@ test.describe("公司模板", () => {
     });
     const account = await loginAs(page, "salesman");
     await page.goto(`${account.workspacePath}/company-templates`);
-    await page.getByRole("link", { name: "开始使用" }).click();
+    await page.getByRole("link", { name: "预览模板" }).click();
     const listResponse = await page.request.get(`${account.workspacePath}/company-templates`);
     expect(listResponse.headers()["x-frame-options"]).toBe("DENY");
     const contentResponse = await page.request.get(`/api/company-templates/${SEEDED_TEMPLATE_ID}/content`);
@@ -153,7 +152,7 @@ test.describe("公司模板", () => {
     expect(contentResponse.headers()["content-security-policy"]).toContain("connect-src 'none'");
     // 正文要能装入本站 iframe；其他页面仍由全站规则拒绝嵌入。
     expect(contentResponse.headers()["x-frame-options"]).toBe("SAMEORIGIN");
-    expect(contentResponse.headers()["x-template-sha256"]).toBe(SEEDED_HTML_HASH);
+    expect(contentResponse.headers()["x-template-sha256"]).toBe((await readVersion(requireLocalAdminClient(), SEEDED_VERSION_ID)).html_sha256);
     const sandbox = await page.locator("iframe").getAttribute("sandbox");
     expect(sandbox).toContain("allow-scripts");
     expect(sandbox).toContain("allow-downloads");
@@ -177,7 +176,7 @@ test.describe("公司模板", () => {
       await fillQuotationRow(frame, index);
     }
 
-    // 第一行额外走真实文件选择流程，确认 v32 的本地图片读取仍可用。
+    // 第一行额外走真实文件选择流程，确认 v33 的本地图片读取仍可用。
     await frame.locator(".photo").first().click();
     await frame.locator("body").evaluate(() => {
       (window as unknown as { ensurePhotoFile: () => void }).ensurePhotoFile();
@@ -218,7 +217,7 @@ test.describe("公司模板", () => {
 
     await page.goto(`${account.workspacePath}/company-templates`);
     await expect(page.getByText("公司模板请在电脑上填写和打印。")).toBeVisible();
-    await expect(page.getByRole("link", { name: "开始使用" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "预览模板" })).toHaveCount(0);
   });
 
   test("模板脚本中的 HTML 片段不影响实际正文就绪和交互", async ({ page }) => {
@@ -226,7 +225,7 @@ test.describe("公司模板", () => {
     const slug = `template-html-fragment-${Date.now()}`;
     const name = `脚本片段模板 ${Date.now()}`;
     // 报价单的打印脚本可能包含结束标签字符串，不能把它当成文档的真正结束标签。
-    const html = '<!doctype html><html><body><script>const printableEnd = "</body>";</script><h1>Fragment quotation</h1><button onclick="document.getElementById(\'result\').textContent=printableEnd">Use</button><p id="result"></p></body></html>';
+    const html = withDocumentProtocol('<!doctype html><html><body><script>const printableEnd = "</body>";</script><h1>Fragment quotation</h1><button onclick="document.getElementById(\'result\').textContent=printableEnd">Use</button><p id="result"></p></body></html>');
     let templateId: string | null = null;
     try {
       await loginAs(page, "administrator");
@@ -240,7 +239,7 @@ test.describe("公司模板", () => {
       templateId = saved.id;
       expect(saved).toMatchObject({ revision: 1, status: "active" });
       expect((await readVersion(admin, saved.current_version_id)).html_sha256).toBe(sha256(html));
-      await page.locator("article").filter({ hasText: name }).getByRole("link", { name: "开始使用" }).click();
+      await page.locator("article").filter({ hasText: name }).getByRole("link", { name: "预览模板" }).click();
       const frame = page.frameLocator("iframe");
       await expect(frame.getByRole("heading", { name: "Fragment quotation" })).toBeVisible();
       await expect(page.getByRole("status")).toHaveCount(0);
@@ -289,7 +288,7 @@ test.describe("公司模板", () => {
       });
 
       const article = page.locator("article").filter({ hasText: name });
-      await article.getByRole("link", { name: "开始使用" }).click();
+      await article.getByRole("link", { name: "预览模板" }).click();
       await expect(page.frameLocator("iframe").getByRole("heading", { name: `Template v1 ${marker}` })).toBeVisible();
       await page.getByRole("link", { name: "使用指南" }).click();
       await expect(page.frameLocator("iframe").getByRole("heading", { name: `Guide ${marker}` })).toBeVisible();
@@ -336,7 +335,7 @@ test.describe("公司模板", () => {
       await expect(page.getByText("模板已停用。")).toBeVisible();
       const disabled = await readTemplateBySlug(admin, slug);
       expect(disabled).toMatchObject({ revision: 4, status: "inactive" });
-      await expect(page.locator("article").filter({ hasText: name }).getByRole("link", { name: "开始使用" })).toHaveCount(0);
+      await expect(page.locator("article").filter({ hasText: name }).getByRole("link", { name: "预览模板" })).toHaveCount(0);
 
     await page.setViewportSize({ height: 844, width: 390 });
     await expectNoPageOverflow(page);
@@ -451,6 +450,7 @@ test.describe("公司模板", () => {
   test("故意篡改当前版本哈希后内容接口拒绝返回 HTML", async ({ page }) => {
     const admin = requireLocalAdminClient();
     await loginAs(page, "salesman");
+    const originalHash = (await readVersion(admin, SEEDED_VERSION_ID)).html_sha256;
     try {
       const { error } = await admin.from("company_template_versions")
         .update({ html_sha256: "0".repeat(64) }).eq("id", SEEDED_VERSION_ID);
@@ -460,7 +460,7 @@ test.describe("公司模板", () => {
       expect(await response.text()).toBe("Template verification failed");
     } finally {
       const { error } = await admin.from("company_template_versions")
-        .update({ html_sha256: SEEDED_HTML_HASH }).eq("id", SEEDED_VERSION_ID);
+        .update({ html_sha256: originalHash }).eq("id", SEEDED_VERSION_ID);
       if (error) throw error;
     }
   });

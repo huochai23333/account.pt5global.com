@@ -5266,14 +5266,15 @@
       "close": "Close",
       "cancel": "Cancel",
       "publish": "Upload and enable",
-      "publishing": "Uploading"
+      "publishing": "Uploading",
+      "preview": "Preview template"
     },
     "fields": {
       "name": "Template name",
       "slug": "Template ID",
       "description": "Description",
       "htmlFile": "Interactive HTML",
-      "htmlHint": "Use one UTF-8 HTML file up to 5 MB.",
+      "htmlHint": "UTF-8 single-file HTML supporting saving and restoring entries, up to 5 MB.",
       "guideFile": "HTML guide (optional)",
       "guideHint": "Leave blank when no guide is needed.",
       "guideKeepHint": "Leave blank to keep the current guide."
@@ -5296,7 +5297,7 @@
     },
     "viewer": {
       "guideTitle": "Template guide",
-      "refreshNotice": "Refreshing reloads the current template and clears entries on this page.",
+      "refreshNotice": "Create a personal document to automatically save your entries.",
       "desktopOnly": "Please fill in and print company templates on a computer.",
       "loading": "Opening template…",
       "loadFailed": "The template did not open. Please try again.",
@@ -5317,7 +5318,54 @@
       "company_template_publish_receipt_invalid": "The upload did not return a verifiable result.",
       "company_template_publish_not_confirmed": "The published version could not be confirmed.",
       "company_template_publish_failed": "The template was not uploaded. Try again later.",
-      "company_template_manage_failed": "The template status was not confirmed. Refresh and try again."
+      "company_template_manage_failed": "The template status was not confirmed. Refresh and try again.",
+      "company_template_save_protocol_invalid": "This template failed the entry restoration check. Please follow the authoring guide and retry."
+    },
+    "documents": {
+      "tabs": "Template categories",
+      "company": "Company templates",
+      "title": "My documents",
+      "privateNotice": "Only visible to you. Your entries are saved to your account.",
+      "create": "New document",
+      "opening": "Creating and opening…",
+      "rename": "Rename",
+      "copy": "Save a copy",
+      "delete": "Delete",
+      "deleteNotice": "This document cannot be recovered after deletion. Please confirm.",
+      "name": "Document name",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "search": "Search document names",
+      "loading": "Loading documents…",
+      "empty": "No documents yet. Create one from a company template.",
+      "edit": "Continue editing",
+      "more": "Load more",
+      "retry": "Retry",
+      "save": "Save",
+      "back": "Back to my documents",
+      "reload": "Open the latest content",
+      "leaveNotice": "Some changes are not saved. Leave anyway?",
+      "reloadNotice": "Reopening will discard your unsaved changes. You can save a copy first.",
+      "status": {
+        "loading": "Opening document…",
+        "unsaved": "Unsaved changes",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "failed": "Could not save. Please retry.",
+        "conflict": "This document was changed in another window. Open the latest content or save your changes as a copy."
+      },
+      "errors": {
+        "document_conflict": "This document was changed in another window. Reopen it and retry.",
+        "document_missing": "Document not found. Please return to the list.",
+        "document_forbidden": "You cannot access this document.",
+        "document_too_large": "Entries and images must total no more than 10 MiB. Reduce image sizes and retry.",
+        "document_unsupported": "This template cannot save entries yet. Please contact the template administrator.",
+        "document_invalid": "Check the document name and entries, then retry.",
+        "document_not_confirmed": "We could not confirm the saved content. Please retry.",
+        "document_failed": "The operation did not finish. Keep this page open and retry."
+      },
+      "guide": "User guide",
+      "leaveTitle": "Unsaved changes"
     }
   },
   "Documents": {

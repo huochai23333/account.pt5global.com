@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
         headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
         source: "/api/company-templates/:templateId/content",
       },
+      {
+        // 本人的文档正文与指南仍然只允许本站嵌入，正文响应继续提供 CSP 沙箱。
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+        source: "/api/company-template-documents/:documentId/content",
+      },
     ];
   },
   images: {

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { loginAs } from "./helpers/auth";
-import { countVersions, deleteTemplate, publishMultipart, requireLocalAdminClient } from "./helpers/company-template-actions";
+import { countVersions, deleteTemplate, withDocumentProtocol, publishMultipart, requireLocalAdminClient } from "./helpers/company-template-actions";
 
 // 此用例验证卡片独立展开，不要求两个版本记录互斥。预期来自原生 details 的独立操作语义。
 test("two template histories keep their own open state and height after clicks and reload", async ({ page, baseURL }) => {
@@ -25,7 +25,7 @@ test("two template histories keep their own open state and height after clicks a
           multipart: {
             ...publishMultipart({ templateId: fixture.id, versionId, slug: fixture.slug,
               expectedRevision: version === 1 ? "" : "1",
-              html: `<!doctype html><html><body><h1>Isolation fixture v${version}</h1></body></html>` }),
+              html: withDocumentProtocol(`<!doctype html><html><head></head><body><h1>Isolation fixture v${version}</h1></body></html>`) }),
             name: "Template isolation fixture",
             description: "Two fixed versions for independent card interaction",
           },

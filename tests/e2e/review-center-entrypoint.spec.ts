@@ -20,16 +20,17 @@ test.describe("global review center entrypoint", () => {
     await expect(reviewLink).toHaveAttribute("href", "/admin/reviews");
     await expect(reviewLink).toHaveCount(1);
 
-    // 审核中心属于全局入口，应位于业务板块标题之前。
+    // 审核中心属于全局入口，应位于业务入口之前；全部入口在同一层排列。
     const topLevelLabels = await navigation
-      .locator(":scope > a, :scope > div > p")
+      .locator(":scope > a")
       .allTextContents();
     const labels = topLevelLabels.map((label) => label.trim());
     expect(labels[0]).toBe("首页");
     expect(labels.indexOf("审核中心")).toBeGreaterThan(0);
-    expect(labels.indexOf("审核中心")).toBeLessThan(labels.indexOf("批发业务"));
+    expect(labels.indexOf("线索")).toBeGreaterThan(0);
+    expect(labels.indexOf("审核中心")).toBeLessThan(labels.indexOf("线索"));
 
-    await expect(wholesaleGroupLabel).toBeVisible();
+    await expect(wholesaleGroupLabel).toHaveCount(0);
     await expect(sidebar.getByRole("button", { name: "批发业务", exact: true })).toHaveCount(0);
     await expect(reviewLink).toBeVisible();
 

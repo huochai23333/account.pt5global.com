@@ -111,6 +111,11 @@ export function sha256(value: string) {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
+/** 合成互动模板也必须实现新发布契约；只记录其测试交互涉及的两个值。 */
+export function withDocumentProtocol(html: string) {
+  return html + `<script>window.PT5Template={version:1,exportState:function(){return {clicked:document.body.dataset.clicked||'',result:document.getElementById('result')?.textContent||''};},importState:function(s){document.body.dataset.clicked=s.clicked;var p=document.getElementById('result');if(p)p.textContent=s.result;},subscribe:function(fn){document.addEventListener('click',fn);return function(){document.removeEventListener('click',fn);};}};</script>`;
+}
+
 /** 外页平滑滚动会改变 iframe 的点击坐标；等待按钮连续三次稳定后仍执行真实点击。 */
 export async function clickStableTemplateButton(page: Page, frame: FrameLocator, name: string) {
   const button = frame.getByRole("button", { name, exact: true }).first();
