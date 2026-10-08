@@ -6,6 +6,7 @@
 
 - 复用 localhost:3100 的现有开发服务，没有启动第二个服务；数据库为本地 Docker supabase_db_pt5-dropshipping。
 - 专用迁移先在事务中预演，包含把已有提成设为已结算的夹具，确认重算后结算状态、时间和人员不变。故意破坏客户支付金额时，校验拒绝并回滚；随后正常应用本次迁移。最终修订的快照列、函数和审计校验也已在本地事务执行。
+- 显式BEGIN/COMMIT的最终整份迁移另在独立本地数据库 `pt5_wholesale_revision_verify_20261008` 完整通过。副本使用本地数据和云端现有12个函数定义恢复修改前状态，额外制造一条已结算历史记录；34断言及独立只读校验全部通过，结算凭证变化0。复制时保留应用ACL，省略无权修改的Supabase系统角色默认权限项；共享本地库权限另经原始SQL及真实页面验证。切换版本前暂时关闭旧计算触发器，替换后恢复新触发器，不提供旧规则兜底。
 - 本地迁移历史原有 20261001072039、20261002053000 两条缺项。没有补跑无关迁移；本次单独执行并登记 20261008093757。云端这两条已存在，CLI 对照仓库文件的远端历史仅缺本次迁移。
 - 专项 SQL `wholesale_customer_commission_and_fees.sql`：34 条断言通过，0 失败。覆盖截止前一刻、整点、之后、创建时间不可回填、分类不可改、全款前零提成、老客户毛利/新客户服务费、亏损、费用篡改、零成本、逐项舍入、成本和客户变更、已结算记录冻结、旧订单版本不变、新订单用新比例、发布去重、版本冲突及退役规则不可发布。
 - 7 个 SQL 回归文件全部通过：business_parameter_versions、wholesale_order_direct_edits、wholesale_order_creation_idempotency、wholesale_order_page、wholesale_client_access_and_order_lists、finance_wholesale_permissions、wholesale_settlement_releases。参数回归包含预约生效和取消。每个文件在事务中回滚自己的测试数据。
@@ -81,6 +82,6 @@
 
 用户授权顺序：本地验证通过 → 上传两个仓库本次改动 → 云端迁移。云端预读仍为51老客户、103订单、96全款，已结算提成0，预计80比例/71金额变化。CLI migration list确认仅本次缺少；include-all dry-run也只列本次文件，无无关待发布迁移。
 
-发布结果：待本次实际上传和云端执行后填写。
+两个仓库首次上传：Web b7eafe642ac394fea1795d3b216f78d88807ad67；Supabase 61754ac4743b8d714e0e0f12b89e10a35b15cab4。首次Cloud执行因CLI未开启事务，在第0条LOCK语句停止；独立读取确认新增费用列0、审计表不存在、迁移记录0、103订单和80个待调整比例均保留。该迁移未在Cloud发布，随后补齐显式事务及切换旧触发器的控制，并在独立本地副本完整验证。最终Cloud执行结果待回读填写。
 
 未执行两份需要重置共享参数历史的原有Playwright文件：business-parameter-settings.spec.ts、business-parameter-order-lock.spec.ts。其新规则字段已更新，未冒充已通过；本次使用不重置共享历史的独立6场景和真实SQL回归验证规则。全量E2E套件未运行。预约时间的自然流逝、英文实际浏览器布局、生产网站页面及Hostinger部署尚未验证；预约解析已通过本地SQL，英文文案结构检查已通过。旅游服务计算不在本次修改范围。
