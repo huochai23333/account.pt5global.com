@@ -1,0 +1,32 @@
+{
+  "audit_run": {
+    "id": "8667109f-a673-4353-845b-e09c29ab8de1",
+    "cutoff_at": "2026-10-07T16:00:00+00:00",
+    "created_at": "2026-10-08T10:40:12.175971+00:00",
+    "order_count": 103,
+    "completed_at": "2026-10-08T10:40:20.128014+00:00",
+    "customer_count": 51,
+    "commission_count": 103,
+    "rate_change_count": 80,
+    "validation_result": {
+      "fee_mismatches": 0,
+      "commission_mismatches": 0,
+      "order_snapshot_mismatches": 0,
+      "profit_or_payment_changes": 0,
+      "settlement_credential_changes": 0
+    },
+    "amount_change_count": 71
+  },
+  "fee_mismatches": 0,
+  "rule_mismatches": 0,
+  "cohort_mismatches": 0,
+  "current_order_count": 103,
+  "snapshot_mismatches": 0,
+  "commission_mismatches": 0,
+  "fully_collected_count": 96,
+  "current_customer_count": 51,
+  "missing_after_snapshots": 0,
+  "profit_or_payment_changes": 0,
+  "unit_gross_profit_columns": 0,
+  "settlement_credential_changes": 0
+}
