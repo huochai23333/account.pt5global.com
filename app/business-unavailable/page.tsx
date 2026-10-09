@@ -53,8 +53,8 @@ export default async function BusinessUnavailablePage({
         <PublicStateCard
           actions={
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-center">
-              {/* 即使没有已开通业务，账号仍能进入本人资料库。 */}
-              {role && <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")} href={`${getDefaultWorkspaceBasePath(role)}/documents`}>{documentText("title")}</Link>}
+              {/* 没有已开通业务的账号仍可在电脑端进入本人资料库，与工作台入口一致。 */}
+              {role && <span className={styles.documentAction}><Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")} href={`${getDefaultWorkspaceBasePath(role)}/documents`}>{documentText("title")}</Link></span>}
               {role && role !== "client" ? (
                 <>
                   {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}

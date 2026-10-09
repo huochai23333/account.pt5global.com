@@ -2,6 +2,17 @@
   display: none;
 }
 
+/* 此页不加载工作台样式；资料库单独声明与侧栏一致的 1024px 分界。 */
+.documentAction {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .documentAction {
+    display: inline-flex;
+  }
+}
+
 /* 停用说明页单独加载样式；明确声明断点，避免全局隐藏类覆盖模板入口。 */
 @media (min-width: 48rem) {
   .desktopAction {

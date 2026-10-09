@@ -27,7 +27,8 @@ export function AdminShellNav({
     return (
       <AdminShellMobileNav
         emptyGroupsLabel={emptyGroupsLabel}
-        globalItems={globalItems}
+        // 资料库只提供电脑端入口；过滤后，手机菜单的当前板块名称也不会选中资料库。
+        globalItems={globalItems.filter((item) => item.icon !== "documents")}
         groups={groups}
       />
     );
