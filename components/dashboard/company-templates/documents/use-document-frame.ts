@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { TemplateDocument } from "@/lib/company-templates/documents/model";
+import { documentRestoreBudget } from "@/lib/company-templates/documents/restore-budget";
 /** 父页只接受当前 iframe 的沙箱来源与随机标识；恢复验证完成后才允许编辑和保存。 */
 export function useDocumentFrame(document: TemplateDocument, receive:(state:Record<string,unknown>)=>void, dirty:()=>void, readState:()=>Record<string,unknown>) {
   const frame=useRef<HTMLIFrameElement>(null);const [desktop,setDesktop]=useState(false);const [attempt,setAttempt]=useState(0);
@@ -11,7 +12,7 @@ export function useDocumentFrame(document: TemplateDocument, receive:(state:Reco
     if(!desktop)return;
     const token=crypto.randomUUID();setLoad({token,src:`/api/company-template-documents/${document.id}/content?loadToken=${token}`,status:"loading"});
     const fail=()=>setLoad(current=>current?.token===token?{...current,status:"failed"}:current);
-    const timer=setTimeout(fail,15000);
+    const timer=setTimeout(fail,documentRestoreBudget(readState()));
     const message=(event:MessageEvent)=>{
       if(event.source!==frame.current?.contentWindow||event.origin!=="null"||!event.data||event.data.token!==token)return;
       const value=event.data;

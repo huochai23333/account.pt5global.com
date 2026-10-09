@@ -11,7 +11,7 @@ test.use({ trace: 'off', video: 'off' });
 const ordinary = '<html><head><title>New work template</title></head><body><input id="qty" type="number"><input id="price" type="number"><button id="calc">计算</button><output id="total"></output><script>document.getElementById("calc").onclick=function(){document.getElementById("total").textContent=String(Number(document.getElementById("qty").value)*Number(document.getElementById("price").value));};</script></body></html>';
 
 for (const source of ['new', 'invoice'] as const) {
-  test(`不修改${source === 'new' ? '全新 HTML' : '老板原发票'}即可发布、打开、填写与计算`, async ({ page }) => {
+  test(`不修改${source === 'new' ? '全新 HTML' : '老板原发票'}即可发布、自动保存、恢复并继续计算`, async ({ page }) => {
     test.setTimeout(120000);
     const admin = requireLocalAdminClient(); const marker = `Original HTML ${source} ${randomUUID()}`;
     const html = source === 'invoice' ? readFileSync('output/template-repair-invoice.html', 'utf8') : ordinary;
@@ -28,15 +28,15 @@ for (const source of ['new', 'invoice'] as const) {
       await dialog.getByRole('button', { name: '上传并启用', exact: true }).click(); await expect(dialog).toBeHidden({ timeout: 30000 });
       const { data: template, error } = await admin.from('company_templates').select('id,current_version_id,revision').eq('name', marker).single();
       if (error) throw error; templateId = template.id;
-      const { data: version, error: versionError } = await admin.from('company_template_versions').select('html_content,html_sha256,supports_personal_documents').eq('id', template.current_version_id).single();
+      const { data: version, error: versionError } = await admin.from('company_template_versions').select('html_content,html_sha256').eq('id', template.current_version_id).single();
       if (versionError) throw versionError;
       // 最终凭证必须证明上传的每一个字符与文件哈希相同，而不只是返回了发布成功。
-      expect(version.html_content).toBe(html); expect(version.html_sha256).toBe(sha256(html)); expect(version.supports_personal_documents).toBe(false);
+      expect(version.html_content).toBe(html); expect(version.html_sha256).toBe(sha256(html));
       const card = page.locator('article').filter({ hasText: marker });
-      await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(0);
-      await card.getByRole('link', { name: '开始使用', exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/company-templates/${templateId}$`));
-      await expect(page.getByText('这份模板的填写内容只保留在当前页面，请在关闭或刷新前打印或下载。')).toBeVisible();
+      await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
+      await card.getByRole('button', { name: '新建文档', exact: true }).click();
+      await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); const id=page.url().split('/').pop()!;
+      await expectDocumentSaved(page);
       const frame = page.frameLocator('iframe');
       if (source === 'new') {
         await frame.locator('#qty').fill('2'); await frame.locator('#price').fill('12.5'); await frame.getByRole('button', { name: '计算', exact: true }).click();
@@ -52,15 +52,27 @@ for (const source of ['new', 'invoice'] as const) {
         await expect(frame.locator('#needBadge')).toHaveText('✓ 必填已齐');
         await clickStableTemplateButton(page, frame, '打印 / 另存为 PDF'); await expect(frame.locator('body')).toHaveAttribute('data-print-requested', 'yes');
       }
+      await expectDocumentContains(page,id,source === 'new' ? '12.5' : 'Original duplicated product');
+      const saved=await readPersonalDocument(id); expect(saved.state.format).toBe('pt5.form.v1'); expect(saved.revision).toBeGreaterThan(1);
       await page.screenshot({ path: `output/original-html-${source}-desktop.png` });
       await page.reload(); await expect(page.getByRole('status').filter({ hasText: '正在打开模板' })).toHaveCount(0, { timeout: 20000 });
-      await expect(frame.locator(source === 'new' ? '#qty' : '#toName')).toBeVisible();
+      await expectDocumentSaved(page);
+      await expect(frame.locator(source === 'new' ? '#qty' : '#toName')).toHaveValue(source === 'new' ? '2' : 'Original HTML acceptance');
+      if(source === 'new'){await expect(frame.locator('#total')).toHaveText('25');await frame.locator('#qty').fill('3');await frame.getByRole('button',{name:'计算',exact:true}).click();await expect(frame.locator('#total')).toHaveText('37.5');}
+      else {await expect(frame.locator('#tbody tr.prow')).toHaveCount(4);await frame.locator('#tbody .qty').first().fill('3');await expect(frame.locator('#totAmt')).toHaveValue('62.50');}
+      await page.getByRole('button',{name:'保存',exact:true}).click();await expectDocumentSaved(page);
+      await page.reload();await expectDocumentSaved(page);
+      await expect(frame.locator(source === 'new' ? '#total' : '#totAmt'))[source === 'new' ? 'toHaveText' : 'toHaveValue'](source === 'new' ? '37.5' : '62.50');
       const { count: documentCount } = await admin.from('company_template_documents').select('id', { count: 'exact', head: true }).eq('template_id', templateId);
-      expect(documentCount).toBe(0);
+      expect(documentCount).toBe(1);
       await page.setViewportSize({ width: 375, height: 812 }); await expectNoPageOverflow(page); await expect(page.locator('iframe')).toHaveCount(0);
       await page.screenshot({ path: `output/original-html-${source}-mobile.png` }); expect(errors).toEqual([]); expect(consoleErrors).toEqual([]);
-      writeFileSync(`output/original-html-${source}-evidence.json`, JSON.stringify({ template, originalHash: version.html_sha256, documentsCreated: documentCount, errors, consoleErrors }, null, 2));
-    } finally { await admin.from('company_templates').delete().eq('name', marker); }
+      writeFileSync(`output/original-html-${source}-evidence.json`, JSON.stringify({ template, originalHash: version.html_sha256, documentId:id,revision:(await readPersonalDocument(id)).revision,documentsCreated: documentCount, errors, consoleErrors }, null, 2));
+    } finally {
+      // 个人文档会保留版本引用；先清理本次文档，再删除本次临时模板，不能忽略外键失败。
+      if (templateId) await admin.from('company_template_documents').delete().eq('template_id', templateId);
+      const { error } = await admin.from('company_templates').delete().eq('name', marker); if (error) throw error;
+    }
   });
 }
 
@@ -70,7 +82,7 @@ test('初始化失败的原 HTML 不启用，也不改写原文件', async ({ pa
   await page.getByRole('button', { name: '新建模板', exact: true }).click(); const dialog = page.getByRole('dialog');
   await fillPublishDialog(dialog, { html: '<html><body><script>throw Error("Initialization failed")</script></body></html>', name: 'Broken HTML', slug });
   await dialog.getByRole('button', { name: '上传并启用', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('模板未能正常打开');
+  await expect(dialog.getByRole('alert')).toContainText('检查');
   const { count } = await admin.from('company_templates').select('id', { count: 'exact', head: true }).eq('slug', slug); expect(count).toBe(0);
 });
 
@@ -90,15 +102,15 @@ test('模板版本切换使用入口，已有个人文档仍恢复原版', async
   }
   try {
     await publish(ordinary, true); const card = page.locator('article').filter({ hasText: marker });
-    await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(0);
+    await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
     const second = await publish(savable); expect(second.revision).toBe(2);
     await card.getByRole('button', { name: '新建文档', exact: true }).click(); await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);
     const id = page.url().split('/').pop()!; ids.push(id); await expectDocumentSaved(page);
     await page.frameLocator('iframe').locator('#customer').fill('Pinned capability document'); await expectDocumentContains(page, id, 'Pinned capability document');
     const saved = await readPersonalDocument(id); expect(saved.template_version_id).toBe(second.current_version_id);
     const third = await publish(ordinary); expect(third.revision).toBe(3);
-    await page.reload(); await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(0);
-    await expect(card.getByRole('link', { name: '开始使用', exact: true })).toBeVisible();
+    await page.reload(); await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
+    await expect(card.getByRole('button', { name: '新建文档', exact: true })).toBeVisible();
     await page.goto(`/admin/company-templates/documents/${id}`); await expectDocumentSaved(page);
     await expect(page.frameLocator('iframe').locator('#customer')).toHaveValue('Pinned capability document');
     expect((await readPersonalDocument(id)).template_version_id).toBe(second.current_version_id);

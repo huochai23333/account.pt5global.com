@@ -16,16 +16,15 @@ export function CompanyTemplateViewer({ guide, template, text, workspace }: {
   workspace: string;
 }) {
   const src = `/api/company-templates/${template.id}/content${guide ? "?kind=guide" : ""}`;
-  // 使用原文件展示和交互；保存是当前版本的可选能力，不通过编辑模板内容实现。
-  const canSave = template.currentVersion.supports_personal_documents;
+  // 预览继续使用原文，保存必须进入独立个人文档，避免改动共享模板。
   return <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-4">
     <Surface as="div" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" padding="compact">
       <div className="min-w-0">
         <h2 className="break-words text-lg font-bold text-content-strong">{guide ? text("viewer.guideTitle") : template.name}</h2>
-        <p className="text-sm text-content-muted">{text(canSave ? "viewer.refreshNotice" : "viewer.pageOnlyNotice")}</p>
+        <p className="text-sm text-content-muted">{text("viewer.refreshNotice")}</p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        {!guide && canSave ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace}/> : null}
+        {!guide ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace}/> : null}
         <Link className={cn(buttonVariants({ variant: "outline", size: "compact" }))} href={`/${workspace}/company-templates`}><ArrowLeft className="size-4" />{text("actions.back")}</Link>
         {!guide && template.currentVersion.guide_sha256 ? <Link className={cn(buttonVariants({ variant: "secondary", size: "compact" }))} href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
       </div>

@@ -33,8 +33,7 @@ export function CompanyTemplateCard({
   workspace: string;
 }) {
   const usable = template.status === "active";
-  // 按当前版本选择使用入口，不能让没有保存能力的 HTML 点击后才报“无法保存”。
-  const canSave = template.currentVersion.supports_personal_documents;
+  // 全部工作模板由网站提供个人保存入口，预览不创建个人记录。
   return (
     <RecordCard className="flex min-w-0 flex-col" surface="inset">
       <div className="flex min-w-0 items-start justify-between gap-3">
@@ -52,13 +51,12 @@ export function CompanyTemplateCard({
         <div><dt className="text-content-muted">{text("labels.file")}</dt><dd className="mt-1 truncate font-semibold" title={template.currentVersion.source_filename}>{template.currentVersion.source_filename}</dd></div>
       </dl>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {usable && canSave ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace}/> : null}
-        {usable ? <CompanyTemplateOpenLink href={`/${workspace}/company-templates/${template.id}`} label={text(canSave ? "actions.preview" : "actions.open")} loading={text("viewer.loading")}/> : null}
+        {usable ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace}/> : null}
+        {usable ? <CompanyTemplateOpenLink href={`/${workspace}/company-templates/${template.id}`} label={text("actions.preview")} loading={text("viewer.loading")}/> : null}
         {usable && template.currentVersion.guide_sha256 ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-content-strong" href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
         {isAdmin ? <Button disabled={busy} onClick={() => onPublish(template)} size="compact" type="button" variant="outline"><Upload className="size-4" />{text("actions.newVersion")}</Button> : null}
         {isAdmin ? <Button disabled={busy} loading={managingKey === `${template.id}:status`} onClick={() => onToggleStatus(template)} size="compact" type="button" variant="ghost"><Power className="size-4" />{text(usable ? "actions.disable" : "actions.enable")}</Button> : null}
       </div>
-      {usable && !canSave ? <p className="mt-3 text-xs leading-5 text-content-muted">{text("viewer.pageOnlyNotice")}</p> : null}
       {isAdmin && template.versions.length > 1 ? (
         <details className="mt-5 border-t border-border-subtle pt-4">
           <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-content-strong"><History className="size-4" />{text("actions.history")}</summary>

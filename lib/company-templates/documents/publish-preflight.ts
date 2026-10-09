@@ -1,13 +1,10 @@
 import { documentBridge } from "./frame-bridge";
 import { validateHtmlFile } from "../validation";
-import { addCompanyTemplateReadySignal } from "../frame-document";
-import { isCompanyTemplateReadyMessage } from "../frame-protocol";
-/** 原文件只用于校验，不改写上传内容。普通 HTML 检查打开；自带保存能力时额外检查恢复往返。 */
+/** 全部模板执行真实保存恢复检查；通用采集只装入检查窗口，上传原文保持不变。 */
 export async function verifyTemplateUsability(file: File) {
   const validated=await validateHtmlFile(file);if(!validated)throw new Error("company_template_file_required");
   const html=validated.content;const token=crypto.randomUUID();
-  const saving=html.includes("PT5Template");
-  const failure=saving?"company_template_save_protocol_invalid":"company_template_open_check_failed";
+  const failure="company_template_save_protocol_invalid";
   const frame=document.createElement("iframe");frame.hidden=true;
   frame.setAttribute("sandbox","allow-scripts");
   const policy="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob: http: https:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
@@ -19,13 +16,12 @@ export async function verifyTemplateUsability(file: File) {
   parsed.head.prepend(guard);
   const meta=parsed.createElement("meta");meta.httpEquiv="Content-Security-Policy";meta.content=policy;parsed.head.prepend(meta);
   const preview=`<!doctype html>${parsed.documentElement.outerHTML}`;
-  frame.srcdoc=saving?documentBridge(preview,token,window.location.origin):addCompanyTemplateReadySignal(preview,token);
+  frame.srcdoc=documentBridge(preview,token,window.location.origin);
   return new Promise<void>((resolve,reject)=>{
     function cleanup(){clearTimeout(timer);window.removeEventListener("message",message);frame.remove();}
     function message(event:MessageEvent){
       if(event.source!==frame.contentWindow||event.origin!=="null"||event.data?.token!==token)return;
       if(event.data.type==="pt5.template.preflight-error"){cleanup();reject(new Error(failure));return;}
-      if(!saving&&isCompanyTemplateReadyMessage(event.data,token)){cleanup();resolve();return;}
       if(event.data.type==="pt5.document.boot")frame.contentWindow?.postMessage({type:"pt5.document.initialize",token,state:{}},"*");
       if(event.data.type==="pt5.document.ready"){cleanup();resolve();}
       if(event.data.type==="pt5.document.error"){cleanup();reject(new Error(failure));}

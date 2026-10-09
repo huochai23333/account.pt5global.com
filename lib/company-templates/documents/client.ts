@@ -9,5 +9,5 @@ export async function writeDocument(input: DocumentMutation) {
 }
 export function documentErrorKey(cause: unknown) {
   const value = cause instanceof Error ? cause.message : "";
-  return ["document_conflict","document_missing","document_forbidden","document_too_large","document_unsupported","document_invalid","document_not_confirmed"].includes(value) ? value : "document_failed";
+  return ["document_conflict","document_missing","document_forbidden","document_too_large","document_invalid","document_not_confirmed"].includes(value) ? value : "document_failed";
 }

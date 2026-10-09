@@ -27,6 +27,6 @@ export async function readDocumentMutation(request: Request): Promise<DocumentMu
 }
 export function documentFailure(cause: unknown) {
   const message = readCompanyTemplateErrorMessage(cause);
-  const error = ["document_conflict","document_missing","document_forbidden","document_too_large","document_unsupported","document_invalid","document_not_confirmed"].find((code) => message.includes(code)) ?? (message.includes("forbidden") ? "document_forbidden" : "document_failed");
+  const error = ["document_conflict","document_missing","document_forbidden","document_too_large","document_invalid","document_not_confirmed"].find((code) => message.includes(code)) ?? (message.includes("forbidden") ? "document_forbidden" : "document_failed");
   return Response.json({ ok: false, error }, { status: error === "document_conflict" ? 409 : error === "document_forbidden" ? 403 : error === "document_missing" ? 404 : 400 });
 }

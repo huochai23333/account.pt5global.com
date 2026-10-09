@@ -5255,7 +5255,7 @@
   },
   "CompanyTemplates": {
     "title": "Company Templates",
-    "description": "Use work templates published by the company. Templates with saving support can create personal documents; print or download other templates after filling them in.",
+    "description": "Use company-published work templates. Personal documents save automatically so you can continue editing later.",
     "status": {
       "active": "In use",
       "inactive": "Inactive",
@@ -5288,7 +5288,7 @@
       "slug": "Template ID",
       "description": "Description",
       "htmlFile": "Interactive HTML",
-      "htmlHint": "UTF-8 single-file HTML, up to 5 MB. The uploaded file stays unchanged. Templates with built-in saving support can also create personal documents.",
+      "htmlHint": "UTF-8 single-file HTML, up to 5 MB. Uploaded files remain unchanged; the website saves your personal entries.",
       "guideFile": "HTML guide (optional)",
       "guideHint": "Leave blank when no guide is needed.",
       "guideKeepHint": "Leave blank to keep the current guide."
@@ -5312,7 +5312,6 @@
     "viewer": {
       "guideTitle": "Template guide",
       "refreshNotice": "Create a personal document to automatically save your entries.",
-      "pageOnlyNotice": "Entries in this template stay on this page. Print or download them before closing or refreshing.",
       "desktopOnly": "Please fill in and print company templates on a computer.",
       "loading": "Opening template…",
       "loadFailed": "The template did not open. Please try again.",
@@ -5375,7 +5374,6 @@
         "document_missing": "Document not found. Please return to the list.",
         "document_forbidden": "You cannot access this document.",
         "document_too_large": "Entries and images must total no more than 10 MiB. Reduce image sizes and retry.",
-        "document_unsupported": "This template cannot save entries yet. Please contact the template administrator.",
         "document_invalid": "Check the document name and entries, then retry.",
         "document_not_confirmed": "We could not confirm the saved content. Please retry.",
         "document_failed": "The operation did not finish. Keep this page open and retry."

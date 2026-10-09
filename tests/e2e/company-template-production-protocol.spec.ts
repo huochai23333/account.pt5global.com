@@ -15,8 +15,7 @@ for (const kind of ['quotation', 'invoice'] as const) {
     const admin = requireLocalAdminClient(); const ids: string[] = []; let templateId = '';
     const marker = `Protocol repair ${kind} ${randomUUID()}`;
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-    let html = readFileSync(`output/template-repair-${kind}.html`, 'utf8');
-    if (kind === 'invoice') html += '<script>' + readFileSync('../PT5-dropshipping-supabase/templates/invoice-document-adapter.js', 'utf8') + '</script>';
+    const html = readFileSync(`output/template-repair-${kind}.html`, 'utf8');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await loginAs(page, 'administrator');
     try {
@@ -52,7 +51,7 @@ for (const kind of ['quotation', 'invoice'] as const) {
         await expect(frame.locator('body')).toHaveClass(/portrait/);
         await clickStableTemplateButton(page, frame, '⧉');
         await expect(frame.locator('#tbody tr.prow')).toHaveCount(4);
-        await expect.poll(async () => (await readPersonalDocument(id)).state.rows.length).toBe(4);
+        await expect.poll(async () => (await readPersonalDocument(id)).state.actions.length).toBeGreaterThan(0);
         await expectDocumentSaved(page);
         await page.reload(); await expectDocumentSaved(page);
         await expect(frame.locator('#tbody tr.prow')).toHaveCount(4);
@@ -64,7 +63,7 @@ for (const kind of ['quotation', 'invoice'] as const) {
         await frame.locator('#tbody .calcsel').nth(1).selectOption('custom');
         await frame.locator('#sealFile').setInputFiles({ name: 'test.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') });
         await expectDocumentContains(page, id, 'Test value');
-        await expect.poll(async () => (await readPersonalDocument(id)).state.fields.sealData.value).toMatch(/^data:image\/png;base64,/);
+        await expect.poll(async () => (await readPersonalDocument(id)).state.images.find((image: {src:string})=>image.src.startsWith('data:image/png;base64,')).src).toMatch(/^data:image\/png;base64,/);
         await page.reload(); await expectDocumentSaved(page);
         await expect(frame.locator('#tbody .calcsel').nth(1)).toHaveValue('custom');
         await expect(frame.locator('#tbody .amt').nth(1)).toHaveValue('1.75');

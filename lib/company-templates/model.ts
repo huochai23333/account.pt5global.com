@@ -7,7 +7,6 @@ export type CompanyTemplateVersion = {
   published_at: string;
   published_by: string | null;
   source_filename: string;
-  supports_personal_documents: boolean;
   template_id: string;
   version_number: number;
 };

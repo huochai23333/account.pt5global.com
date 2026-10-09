@@ -3,7 +3,6 @@ import { requireCompanyTemplateApiAccess } from "@/lib/company-templates/access"
 import { readCompanyTemplateErrorMessage } from "@/lib/company-templates/display-error";
 import { publishCompanyTemplateVersion } from "@/lib/company-templates/repository";
 import { normalizeTemplateSlug, validateHtmlFile } from "@/lib/company-templates/validation";
-import { declaresTemplateSaveProtocol } from "@/lib/company-templates/save-capability";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -15,8 +14,7 @@ export async function POST(request: Request) {
     const html = await validateHtmlFile(form.get("htmlFile"));
     const guide = await validateHtmlFile(form.get("guideFile"), { optional: true });
     if (!html) throw new Error("company_template_file_required");
-    // 普通 HTML 不需要改文件补接口；只有主动声明保存能力的文件才检查接口完整性。
-    if (html.content.includes("PT5Template") && !declaresTemplateSaveProtocol(html.content)) throw new Error("company_template_save_protocol_invalid");
+    // 保存检查在隔离窗口执行，不能用文件里的单词猜测能力而误拒正常原文。
 
     const templateId = readUuid(form, "templateId");
     const versionId = readUuid(form, "versionId");

@@ -5255,7 +5255,7 @@
   },
   "CompanyTemplates": {
     "title": "公司模板",
-    "description": "使用公司统一发布的工作模板。可保存的模板可以新建个人文档；其他模板请在填写后及时打印或下载。",
+    "description": "使用公司统一发布的工作模板。新建个人文档后，填写内容自动保存，可随时继续编辑。",
     "status": {
       "active": "使用中",
       "inactive": "已停用",
@@ -5288,7 +5288,7 @@
       "slug": "模板标识",
       "description": "模板说明",
       "htmlFile": "互动 HTML",
-      "htmlHint": "UTF-8 单文件 HTML，最大 5 MB。保留上传文件原样，自带保存功能的模板还可新建个人文档。",
+      "htmlHint": "UTF-8 单文件 HTML，最大 5 MB。保留上传文件原样，由网站保存个人填写内容。",
       "guideFile": "使用指南 HTML（可选）",
       "guideHint": "没有使用指南时可以留空。",
       "guideKeepHint": "留空会继续使用当前版本的指南。"
@@ -5312,7 +5312,6 @@
     "viewer": {
       "guideTitle": "模板使用指南",
       "refreshNotice": "从公司模板新建个人文档后，填写内容会自动保存。",
-      "pageOnlyNotice": "这份模板的填写内容只保留在当前页面，请在关闭或刷新前打印或下载。",
       "desktopOnly": "公司模板请在电脑上填写和打印。",
       "loading": "正在打开模板，请稍候…",
       "loadFailed": "模板暂时没有打开，请重试。",
@@ -5375,7 +5374,6 @@
         "document_missing": "没有找到这份文档，请返回列表查看。",
         "document_forbidden": "你暂时无法使用这份文档。",
         "document_too_large": "填写内容和图片合计不能超过 10 MiB，请减少图片大小后重试。",
-        "document_unsupported": "这份模板暂时无法保存，请联系模板管理员。",
         "document_invalid": "请检查文档名称和填写内容后重试。",
         "document_not_confirmed": "暂时无法确认保存结果，请重试。",
         "document_failed": "操作未完成，请保持页面打开并重试。"
