@@ -431,6 +431,11 @@
     "emailDeliveryFailed": "The reset email could not be sent. Confirm the email can receive messages or contact an administrator."
   },
   "DashboardShell": {
+    "navSearch": {
+      "label": "Search sections",
+      "clear": "Clear search",
+      "empty": "No matching sections"
+    },
     "brandTitle": "Management System",
     "logout": "Sign Out",
     "serviceUnavailable": "The service is temporarily unavailable. Please try again later.",
