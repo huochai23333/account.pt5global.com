@@ -573,12 +573,15 @@ PT5-dropshipping-web/
 
 `/api/document-library` 查询与目录/文件管理、`/upload` 上传、`/reconcile` 原操作核对及 `/files/[id]/content` 内容读取组成接口。每次写入使用固定操作编号，返回记录编号、版本和影响行数；页面再独立读取凭证，刷新真实列表。上传需确认真实字节及完整登记，删除需确认对象与记录均消失，部分完成显示逐项结果。断线操作保留在当前账号的浏览器会话中，可继续核对。Supabase 的 `document-library-cleanup` 每小时处理超过 24 小时的未完成文件；失败凭证保留，未清理对象继续等待后续清理。
 
+资料库写入的来源检查复用站点公开地址策略：生产环境比较浏览器来源与受校验的 `NEXT_PUBLIC_SITE_URL`，忽略服务器内部监听地址及转发头；开发环境允许实际的 localhost/127.0.0.1 端口。部署时该配置必须与浏览器正式入口一致，避免新建目录、上传与继续核对被误判为权限不足。
+
 先在同级 Supabase 仓库的本地 Docker 应用 `20261008015350_document_library.sql`。Web 和 Supabase 同时需要服务密钥，但浏览器只持有登录会话；新增资料使用独立私有 `document-library` bucket。资料迁移与清理函数先本地验证，GitHub、Supabase Cloud 与网站部署分别交付。
 
 资料库验证命令：
 
 ```bash
 node --experimental-strip-types --test scripts/document-cleanup.test.mjs
+node --experimental-strip-types --test scripts/document-library-origin.test.mjs
 npx playwright test --config=tests/contracts/playwright.config.ts tests/contracts/document-library.spec.ts
 npx playwright test tests/e2e/document-library.spec.ts tests/e2e/document-library-permissions.spec.ts tests/e2e/document-library-linking.spec.ts tests/e2e/document-library-cleanup.spec.ts tests/e2e/document-library-faults.spec.ts tests/e2e/document-library-boundaries.spec.ts --workers=1
 ```
