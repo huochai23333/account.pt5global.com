@@ -8,6 +8,6 @@ export async function readDocumentLibrary(supabase: SupabaseClient, selection: D
     p_query: selection.query || "", p_page: selection.page || 1,
   });
   if (error) throw error;
-  if (!data?.archiveId || !Array.isArray(data.folders) || !Array.isArray(data.files)) throw new Error("unconfirmed");
+  if (!data?.archiveId || !Array.isArray(data.folders) || !Array.isArray(data.files) || !Array.isArray(data.items)) throw new Error("unconfirmed");
   return data as DocumentLibrary;
 }

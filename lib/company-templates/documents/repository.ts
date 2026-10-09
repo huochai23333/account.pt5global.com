@@ -4,8 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { withRequestTimeout } from "@/lib/request-timeout";
 import { canonicalState, type DocumentMutation, type DocumentReceipt, type TemplateDocument, type TemplateDocumentSummary } from "./model";
 
-const FIELDS = "id,name,template_name,template_id,template_version_id,revision,state_sha256,updated_at";
-/** 始终使用当前用户客户端；RLS 不给管理员他人文档的特权。 */
+const FIELDS = "id,name,template_name,template_id,template_version_id,folder_id,revision,state_sha256,updated_at";
+/** 当前用户客户端按文件夹实时授权读取；列表摘要不携带填写内容。 */
 export async function listTemplateDocuments(db: SupabaseClient, search = "", offset = 0) {
   let query = db.from("company_template_documents").select(FIELDS).order("updated_at", { ascending: false }).order("id").range(offset, offset + 49);
   if (search) query = query.ilike("name", `%${search.replace(/[\\%_]/g, "\\$&")}%`);
@@ -16,7 +16,11 @@ export async function listTemplateDocuments(db: SupabaseClient, search = "", off
 export async function readTemplateDocument(db: SupabaseClient, id: string) {
   const { data, error } = await withRequestTimeout(db.from("company_template_documents").select(`${FIELDS},state`).eq("id", id).maybeSingle());
   if (error) throw error;
-  return data as TemplateDocument | null;
+  if (!data) return null;
+  const location = await withRequestTimeout(db.rpc("template_document_location", { p_document: id }));
+  if (location.error) throw location.error;
+  if (!location.data || location.data.folder_id !== data.folder_id) throw new Error("document_not_confirmed");
+  return {...data, location: location.data} as TemplateDocument;
 }
 export async function mutateTemplateDocument(db: SupabaseClient, input: DocumentMutation) {
   const { data, error } = await withRequestTimeout(db.rpc("mutate_company_template_document", { _request: input }));
@@ -26,7 +30,8 @@ export async function mutateTemplateDocument(db: SupabaseClient, input: Document
   const confirmed = await readTemplateDocument(db, input.documentId);
   if (!receipt.deleted && confirmed && confirmed.revision > receipt.revision) throw new Error("document_conflict");
   // 写入回执必须与独立查询一致，断线后重试也不能把已经删除或再次修改的内容显示为保存成功。
-  if (receipt.deleted ? confirmed !== null : !confirmed || confirmed.revision !== receipt.revision || confirmed.state_sha256 !== receipt.state_sha256) throw new Error("document_not_confirmed");
+  if (receipt.deleted ? confirmed !== null : !confirmed || confirmed.revision !== receipt.revision || confirmed.state_sha256 !== receipt.state_sha256 || confirmed.folder_id !== receipt.folder_id) throw new Error("document_not_confirmed");
+  if (!receipt.deleted && input.folderId && receipt.folder_id !== input.folderId) throw new Error("document_not_confirmed");
   if (confirmed && input.state && canonicalState(confirmed.state) !== canonicalState(input.state)) throw new Error("document_not_confirmed");
   if (confirmed && input.name && confirmed.name !== input.name.trim()) throw new Error("document_not_confirmed");
   return { document: confirmed, receipt };

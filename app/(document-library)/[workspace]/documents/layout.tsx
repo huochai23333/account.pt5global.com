@@ -8,5 +8,5 @@ import "../../../workspace.css";
 export default async function DocumentLayout({ children, params }: { children: ReactNode; params: Promise<{ workspace: string }> }) {
   const { workspace } = await params;
   const { config, businesses } = await requireDocumentWorkspace(workspace);
-  return <AdminShell config={config} workspaceBusinessAccess={businesses}><ScopedIntlProvider namespaces={["Documents", "DashboardFramework"]}>{children}</ScopedIntlProvider></AdminShell>;
+  return <AdminShell config={config} workspaceBusinessAccess={businesses}><ScopedIntlProvider namespaces={["Documents", "CompanyTemplates", "DashboardFramework"]}>{children}</ScopedIntlProvider></AdminShell>;
 }

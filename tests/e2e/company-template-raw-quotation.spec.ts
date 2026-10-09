@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
@@ -21,8 +22,8 @@ test("老板未加接口的原报价单保存多目的地、动态产品、文�
     const dialog = page.getByRole("dialog"); await fillPublishDialog(dialog, { html, name: marker, slug: `raw-quotation-${randomUUID()}` });
     await dialog.getByRole("button", { name: "上传并启用", exact: true }).click(); await expect(dialog).toBeHidden({ timeout: 30000 });
     const { data: template, error } = await admin.from("company_templates").select("id,current_version_id").eq("name", marker).single(); if (error) throw error; templateId = template.id;
-    await page.locator("article").filter({ hasText: marker }).getByRole("button", { name: "新建文档", exact: true }).click();
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); id = page.url().split("/").pop()!; await expectDocumentSaved(page);
+    await page.locator("article").filter({ hasText: marker }).getByRole("button", { name: "新建文档", exact: true }).click();await confirmDocumentFolder(page);
+    await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/); id = page.url().split("/").pop()!; await expectDocumentSaved(page);
     const frame = page.frameLocator("iframe"); await frame.locator("#client").fill("Raw quotation restored"); await frame.locator("#qDate").fill("2020-01-02");
     await fillQuotationRow(frame, 0); await clickStableTemplateButton(page, frame, "+ Add product"); await fillQuotationRow(frame, 1);
     await clickStableTemplateButton(page, frame, "+ Add destination"); await fillQuotationRow(frame, 2);
@@ -34,7 +35,7 @@ test("老板未加接口的原报价单保存多目的地、动态产品、文�
     await expect(frame.locator(".o-tot").first()).toHaveText(total); await expect(frame.locator(".f-imgdata").first()).toHaveValue(/^data:image\/png;base64,/);
     await frame.locator(".f-cny").first().fill("200"); await expect(frame.locator(".o-tot").first()).not.toHaveText(total);
     await clickStableTemplateButton(page, frame, "+ Add product"); await expect(frame.locator("tr.prow")).toHaveCount(4);
-    await page.getByRole("button", { name: "保存", exact: true }).click(); await expectDocumentSaved(page); const saved = await readPersonalDocument(id);
+    await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentSaved(page); const saved = await readPersonalDocument(id);
     await page.reload(); await expectDocumentSaved(page); await expect(frame.locator(".f-cny").first()).toHaveValue("200"); await expect(frame.locator("tr.prow")).toHaveCount(4);
     const { data: version } = await admin.from("company_template_versions").select("html_content,html_sha256").eq("id", template.current_version_id).single();
     expect(version?.html_content).toBe(html); expect(version?.html_sha256).toBe(sha256(html)); expect(errors).toEqual([]);

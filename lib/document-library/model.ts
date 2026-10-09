@@ -3,8 +3,10 @@ export type DocumentArchive = { id: string; user_id: string | null; customer_id:
 export type DocumentZone = "personal" | "staff_internal" | "customer_internal" | "shared";
 export type DocumentFolder = { id: string; archive_id: string; parent_id: string | null; zone: DocumentZone; name: string; system_key: string | null; version: number; can_manage: boolean };
 export type DocumentFile = { id: string; folder_id: string; name: string; original_name: string; mime_type: string; size_bytes: number; sha256: string; storage_path: string; uploaded_by: string; status: "pending" | "ready" | "deleting" | "failed"; version: number; created_at: string };
+/** 两类资料的正文保存方式不同；列表用明确的种类分派操作，不能把模板当作上传对象删除。 */
+export type DocumentLibraryItem = {kind: "file"; file: DocumentFile} | {kind: "template"; document: import("@/lib/company-templates/documents/model").TemplateDocumentSummary};
 export type DocumentReceipt = { operationId: string; action: string; status: "pending" | "succeeded" | "partial_failed" | "failed"; affectedCount: number; record: DocumentFile | DocumentFolder };
-export type DocumentLibrary = { archiveId: string; folderId: string; canManage: boolean; archives: DocumentArchive[]; folders: DocumentFolder[]; files: DocumentFile[]; total: number; operations: DocumentReceipt[] };
+export type DocumentLibrary = { archiveId: string; folderId: string; canManage: boolean; archives: DocumentArchive[]; folders: DocumentFolder[]; files: DocumentFile[]; items: DocumentLibraryItem[]; total: number; operations: DocumentReceipt[] };
 export type DocumentSelection = { user?: string; customer?: string; folder?: string; query?: string; page?: number };
 export const DOCUMENT_BUCKET = "document-library";
 

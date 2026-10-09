@@ -14,6 +14,6 @@ export default async function CompanyTemplatesLayout({ children, params }: {
   const { workspace } = await params;
   const { businesses, config } = await requireCompanyTemplateWorkspace(workspace);
   return <AdminShell config={config} workspaceBusinessAccess={businesses}>
-    <ScopedIntlProvider namespaces={["CompanyTemplates"]}>{children}</ScopedIntlProvider>
+    <ScopedIntlProvider namespaces={["CompanyTemplates", "Documents"]}>{children}</ScopedIntlProvider>
   </AdminShell>;
 }

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { DocumentLibrary, DocumentSelection } from "@/lib/document-library/model";
 import { DocumentDirectories } from "./document-directories";
-import { DocumentFiles } from "./document-files";
+import { DocumentLibraryItems } from "./document-library-items";
 import { DocumentDialogs, type DocumentDialogTarget } from "./document-dialogs";
 import { DocumentToolbar } from "./document-toolbar";
 import { useDocumentLibrary } from "./use-document-library";
@@ -30,7 +30,7 @@ export function DocumentLibraryClient({ initial, selection, userId }: { initial:
       <DocumentDirectories data={data} disabled={actions.busy} select={(next) => void library.load(next)} />
       <div className="min-w-0 space-y-5">
         <DocumentToolbar key={folder.id} folder={folder} canManage={data.canManage} busy={actions.busy} query={library.selection.query ?? ""} search={(query) => void library.load({ ...library.selection, query, page: 1 })} open={setDialog} upload={(files) => void actions.upload(folder.id, files)} />
-        <DocumentFiles files={data.files} canManage={data.canManage} busy={actions.busy} onAction={(action, file) => setDialog({ action, file })} />
+        <DocumentLibraryItems items={data.items} canManage={data.canManage} busy={actions.busy} onFileAction={(action, file) => setDialog({ action, file })} reload={()=>void library.load()} />
         <div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={actions.busy || (library.selection.page ?? 1) <= 1} onClick={() => void library.load({ ...library.selection, page: (library.selection.page ?? 1) - 1 })}>{t("previous")}</Button><span>{t("pagination", { page: library.selection.page ?? 1, total: data.total })}</span><Button variant="outline" disabled={actions.busy || (library.selection.page ?? 1) * 20 >= data.total} onClick={() => void library.load({ ...library.selection, page: (library.selection.page ?? 1) + 1 })}>{t("next")}</Button></div>
         <DocumentPendingOperations receipts={data.operations} intents={actions.outstanding} busy={actions.busy} reconcile={(receipt) => void actions.reconcile(receipt)} />
       </div>

@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
@@ -34,8 +35,8 @@ for (const source of ['new', 'invoice'] as const) {
       expect(version.html_content).toBe(html); expect(version.html_sha256).toBe(sha256(html));
       const card = page.locator('article').filter({ hasText: marker });
       await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
-      await card.getByRole('button', { name: '新建文档', exact: true }).click();
-      await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); const id=page.url().split('/').pop()!;
+      await card.getByRole('button', { name: '新建文档', exact: true }).click();await confirmDocumentFolder(page);
+      await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/); const id=page.url().split('/').pop()!;
       await expectDocumentSaved(page);
       const frame = page.frameLocator('iframe');
       if (source === 'new') {
@@ -60,7 +61,7 @@ for (const source of ['new', 'invoice'] as const) {
       await expect(frame.locator(source === 'new' ? '#qty' : '#toName')).toHaveValue(source === 'new' ? '2' : 'Original HTML acceptance');
       if(source === 'new'){await expect(frame.locator('#total')).toHaveText('25');await frame.locator('#qty').fill('3');await frame.getByRole('button',{name:'计算',exact:true}).click();await expect(frame.locator('#total')).toHaveText('37.5');}
       else {await expect(frame.locator('#tbody tr.prow')).toHaveCount(4);await frame.locator('#tbody .qty').first().fill('3');await expect(frame.locator('#totAmt')).toHaveValue('62.50');}
-      await page.getByRole('button',{name:'保存',exact:true}).click();await expectDocumentSaved(page);
+      await page.getByRole('button',{name:'保存',exact:true}).click();await confirmDocumentFolder(page);await expectDocumentSaved(page);
       await page.reload();await expectDocumentSaved(page);
       await expect(frame.locator(source === 'new' ? '#total' : '#totAmt'))[source === 'new' ? 'toHaveText' : 'toHaveValue'](source === 'new' ? '37.5' : '62.50');
       const { count: documentCount } = await admin.from('company_template_documents').select('id', { count: 'exact', head: true }).eq('template_id', templateId);
@@ -104,14 +105,14 @@ test('模板版本切换使用入口，已有个人文档仍恢复原版', async
     await publish(ordinary, true); const card = page.locator('article').filter({ hasText: marker });
     await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
     const second = await publish(savable); expect(second.revision).toBe(2);
-    await card.getByRole('button', { name: '新建文档', exact: true }).click(); await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);
+    await card.getByRole('button', { name: '新建文档', exact: true }).click();await confirmDocumentFolder(page); await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/);
     const id = page.url().split('/').pop()!; ids.push(id); await expectDocumentSaved(page);
     await page.frameLocator('iframe').locator('#customer').fill('Pinned capability document'); await expectDocumentContains(page, id, 'Pinned capability document');
     const saved = await readPersonalDocument(id); expect(saved.template_version_id).toBe(second.current_version_id);
     const third = await publish(ordinary); expect(third.revision).toBe(3);
     await page.reload(); await expect(card.getByRole('button', { name: '新建文档', exact: true })).toHaveCount(1);
     await expect(card.getByRole('button', { name: '新建文档', exact: true })).toBeVisible();
-    await page.goto(`/admin/company-templates/documents/${id}`); await expectDocumentSaved(page);
+    await page.goto(`/admin/documents/templates/${id}`); await expectDocumentSaved(page);
     await expect(page.frameLocator('iframe').locator('#customer')).toHaveValue('Pinned capability document');
     expect((await readPersonalDocument(id)).template_version_id).toBe(second.current_version_id);
   } finally {

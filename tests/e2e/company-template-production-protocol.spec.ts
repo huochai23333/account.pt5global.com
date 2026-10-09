@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
@@ -26,8 +27,8 @@ for (const kind of ['quotation', 'invoice'] as const) {
       await expect(dialog).toBeHidden({ timeout: 30000 });
       const { data: template, error } = await admin.from('company_templates').select('id,current_version_id,revision').eq('name', marker).single();
       if (error) throw error; templateId = template.id;
-      await page.locator('article').filter({ hasText: marker }).getByRole('button', { name: '新建文档', exact: true }).click();
-      await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); const id = page.url().split('/').pop()!; ids.push(id);
+      await page.locator('article').filter({ hasText: marker }).getByRole('button', { name: '新建文档', exact: true }).click();await confirmDocumentFolder(page);
+      await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/); const id = page.url().split('/').pop()!; ids.push(id);
       await expectDocumentSaved(page); const frame = page.frameLocator('iframe');
       const value = 'Protocol restored ' + kind;
       await frame.locator(kind === 'quotation' ? '#client' : '#toName').fill(value);
@@ -90,8 +91,8 @@ test('正文未确认时停止等待并禁止保存，重新打开后从真实�
   // HTTP 200 与 iframe load 都不能代替就绪握手；没有接口的正文不应触发空文档写入。
   await page.route('**/api/company-template-documents/*/content?*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>Unconfirmed document</body></html>' }));
   try {
-    await page.goto('/salesman/company-templates'); await page.getByRole('button', { name: '新建文档', exact: true }).first().click();
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); const id = page.url().split('/').pop()!; ids.push(id);
+    await page.goto('/salesman/company-templates'); await page.getByRole('button', { name: '新建文档', exact: true }).first().click();await confirmDocumentFolder(page);
+    await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/); const id = page.url().split('/').pop()!; ids.push(id);
     await expect(page.getByRole('button', { name: '重新打开', exact: true })).toBeVisible({ timeout: 22000 });
     await expect(page.getByRole('status').filter({ hasText: '正在打开文档' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '保存', exact: true })).toBeDisabled();

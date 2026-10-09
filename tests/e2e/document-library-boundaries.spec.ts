@@ -18,7 +18,7 @@ test("空目录可从页面删除，非空目录、跨档案移动和并发旧�
     await page.getByRole("button", { name: "新建子文件夹", exact: true }).click(); let dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}子目录`); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     const folder = (await readLibrary(page)).folders.find((item) => item.name === `${prefix}子目录`)!; expect(folder.zone).toBe("personal");
     await chooseDocumentFolder(page, folder.name); await uploadDocumentFiles(page, [`${prefix}并发.txt`]);
-    await page.getByRole("button", { name: "删除文件夹", exact: true }).click(); dialog = page.getByRole("dialog"); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog.getByRole("alert")).toContainText("请先移走或删除文件及子文件夹。"); await dialog.getByRole("button", { name: "取消", exact: true }).click();
+    await page.getByRole("button", { name: "删除文件夹", exact: true }).click(); dialog = page.getByRole("dialog"); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog.getByRole("alert")).toContainText("请先移走或删除资料及子文件夹。"); await dialog.getByRole("button", { name: "取消", exact: true }).click();
     const file = (await authoritativeFiles([`${prefix}并发.txt`]))[0];
     // 两个并发修改携带相同旧版本，只能有一个影响一行；重试同一操作仍返回原凭证。
     const bodies = [1, 2].map((number) => ({ operationId: randomUUID(), action: "rename_file", payload: { fileId: file.id, version: file.version, name: `${prefix}并发${number}.txt` } }));

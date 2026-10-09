@@ -21,7 +21,7 @@ function loadCheck(production, configuredOrigin = 'https://account.pt5global.com
   return exports.checkDocumentOrigin;
 }
 
-for (const path of ['/api/document-library', '/api/document-library/upload', '/api/document-library/reconcile']) {
+for (const path of ['/api/document-library', '/api/document-library/upload', '/api/document-library/reconcile', '/api/company-template-documents']) {
   test(`正式域名经过内部地址转发仍可写入 ${path}`, () => {
     const check = loadCheck(true);
     assert.doesNotThrow(() => check(new Request(`http://0.0.0.0:3000${path}`, {

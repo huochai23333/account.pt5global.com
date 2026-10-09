@@ -23,11 +23,13 @@ for (const production of [true, false]) {
       './company-config': { companyConfig: { defaultPublicOrigin: 'https://account.pt5global.com' }, getCompanyPublicOrigin: () => 'https://account.pt5global.com' },
       './public-site-origin-policy': policy,
     }, environment);
-    const bridge = load('../lib/company-templates/documents/frame-bridge.ts', {});
+    // 通用采集层也使用真实实现，仅加载函数定义；这里不运行浏览器表单恢复。
+    const adapter = load('../lib/company-templates/documents/generic-adapter.ts', {});
+    const bridge = load('../lib/company-templates/documents/frame-bridge.ts', {'./generic-adapter': adapter});
     const route = load('../app/api/company-template-documents/[documentId]/content/route.ts', {
       '@/lib/public-site-origin': publicOrigin,
       '@/lib/company-templates/documents/api': { documentAccess: async () => ({}), documentFailure: () => new Response('failed', { status: 500 }) },
-      '@/lib/company-templates/documents/repository': { readTemplateDocument: async () => ({ id: 'probe' }), readDocumentHtml: async () => '<html><body>Document</body></html>' },
+      '@/lib/company-templates/documents/repository': { readTemplateDocument: async () => ({ id: 'probe', location: {can_manage: true} }), readDocumentHtml: async () => '<html><body>Document</body></html>' },
       '@/lib/company-templates/documents/frame-bridge': bridge,
       '@/lib/company-templates/content-security': { TEMPLATE_CONTENT_SECURITY_POLICY: "sandbox allow-scripts; connect-src 'none'" },
       '@/lib/company-templates/frame-document': { addCompanyTemplateReadySignal: html => html },

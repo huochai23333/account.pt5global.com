@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import { randomUUID } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
@@ -18,8 +19,8 @@ test("普通模板恢复闭包行、对话框回答、多选、可编辑文字�
     const dialog = page.getByRole("dialog"); await fillPublishDialog(dialog, { html: genericTemplateFixture, name: marker, slug: `generic-${randomUUID()}` });
     await dialog.getByRole("button", { name: "上传并启用", exact: true }).click(); await expect(dialog).toBeHidden({ timeout: 30000 });
     const { data: template, error } = await admin.from("company_templates").select("id,current_version_id").eq("name", marker).single(); if (error) throw error; templateId = template.id;
-    await page.locator("article").filter({ hasText: marker }).getByRole("button", { name: "新建文档", exact: true }).click();
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/); id = page.url().split("/").pop()!; await expectDocumentSaved(page);
+    await page.locator("article").filter({ hasText: marker }).getByRole("button", { name: "新建文档", exact: true }).click();await confirmDocumentFolder(page);
+    await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/); id = page.url().split("/").pop()!; await expectDocumentSaved(page);
     const frame = page.frameLocator("iframe");
     await frame.locator("#customer").fill("Generic state acceptance"); await frame.locator("#note").fill("Multiline\nnote");
     await frame.locator("#editable").fill("Editable text"); await frame.locator("#include").check(); await frame.locator("#choices").selectOption(["a", "c"]);
@@ -39,7 +40,7 @@ test("普通模板恢复闭包行、对话框回答、多选、可编辑文字�
     await expect(frame.locator("#picture")).toHaveAttribute("src", /^data:image\/png;base64,/); expect(dialogs).toHaveLength(dialogCount);
     await frame.locator(".amount").nth(1).fill("40"); await expect(frame.locator("#sum")).toHaveText("66");
     await frame.locator("#add").click(); await frame.locator(".amount").nth(2).fill("10"); await expect(frame.locator("#sum")).toHaveText("77");
-    await page.getByRole("button", { name: "保存", exact: true }).click(); await expectDocumentSaved(page);
+    await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentSaved(page);
     const after = await readPersonalDocument(id); expect(after.revision).toBeGreaterThan(before.revision);
     await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#sum")).toHaveText("77"); await expect(frame.locator(".amount")).toHaveCount(3);
     // 只破坏本地这份夹具的权威记录，证明查库断言能发现错误保存，再从真实页面恢复正确值。
@@ -48,7 +49,7 @@ test("普通模板恢复闭包行、对话框回答、多选、可编辑文字�
     const { error: faultError } = await admin.from("company_template_documents").update({ state: broken }).eq("id", id); if (faultError) throw faultError;
     let detected = false; try { expect((await readPersonalDocument(id)).state).toEqual(correct.state); } catch { detected = true; }
     expect(detected).toBe(true); await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#customer")).toHaveValue("Incorrect persisted customer");
-    await frame.locator("#customer").fill("Generic state acceptance"); await page.getByRole("button", { name: "保存", exact: true }).click(); await expectDocumentContains(page, id, "Generic state acceptance");
+    await frame.locator("#customer").fill("Generic state acceptance"); await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentContains(page, id, "Generic state acceptance");
     expect((await readPersonalDocument(id)).state).toEqual(correct.state); await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#customer")).toHaveValue("Generic state acceptance");
     const { data: original } = await admin.from("company_template_versions").select("html_content,html_sha256").eq("id", template.current_version_id).single();
     expect(original?.html_content).toBe(genericTemplateFixture); expect(original?.html_sha256).toBe(sha256(genericTemplateFixture)); expect(errors).toEqual([]);

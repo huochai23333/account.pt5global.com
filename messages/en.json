@@ -5255,7 +5255,7 @@
   },
   "CompanyTemplates": {
     "title": "Company Templates",
-    "description": "Use company-published work templates. Personal documents save automatically so you can continue editing later.",
+    "description": "Use company-published work templates. Choose a folder to create a document. Your entries save automatically so you can continue editing later.",
     "status": {
       "active": "In use",
       "inactive": "Inactive",
@@ -5311,7 +5311,7 @@
     },
     "viewer": {
       "guideTitle": "Template guide",
-      "refreshNotice": "Create a personal document to automatically save your entries.",
+      "refreshNotice": "Choose a folder and create a document to automatically save your entries.",
       "desktopOnly": "Please fill in and print company templates on a computer.",
       "loading": "Opening template…",
       "loadFailed": "The template did not open. Please try again.",
@@ -5339,8 +5339,8 @@
     "documents": {
       "tabs": "Template categories",
       "company": "Company templates",
-      "title": "My documents",
-      "privateNotice": "Only visible to you. Your entries are saved to your account.",
+      "title": "Template documents",
+      "privateNotice": "Folder permissions determine who can view and edit this document.",
       "create": "New document",
       "opening": "Creating and opening…",
       "rename": "Rename",
@@ -5357,7 +5357,7 @@
       "more": "Load more",
       "retry": "Retry",
       "save": "Save",
-      "back": "Back to my documents",
+      "back": "Back to folder",
       "reload": "Open the latest content",
       "leaveNotice": "Some changes are not saved. Leave anyway?",
       "reloadNotice": "Reopening will discard your unsaved changes. You can save a copy first.",
@@ -5367,19 +5367,34 @@
         "saving": "Saving…",
         "saved": "Saved",
         "failed": "Could not save. Please retry.",
-        "conflict": "This document was changed in another window. Open the latest content or save your changes as a copy."
+        "conflict": "This document has newer changes. Open the latest content or save your changes as a copy."
       },
       "errors": {
-        "document_conflict": "This document was changed in another window. Reopen it and retry.",
+        "document_conflict": "This document has newer changes. Reopen it and retry.",
         "document_missing": "Document not found. Please return to the list.",
         "document_forbidden": "You cannot access this document.",
         "document_too_large": "Entries and images must total no more than 10 MiB. Reduce image sizes and retry.",
         "document_invalid": "Check the document name and entries, then retry.",
         "document_not_confirmed": "We could not confirm the saved content. Please retry.",
-        "document_failed": "The operation did not finish. Keep this page open and retry."
+        "document_failed": "The operation did not finish. Keep this page open and retry.",
+        "document_share_confirmation": "Please confirm sharing this document with the customer."
       },
       "guide": "User guide",
-      "leaveTitle": "Unsaved changes"
+      "leaveTitle": "Unsaved changes",
+      "move": "Move",
+      "chooseSaveFolder": "Choose a save folder",
+      "folderLoading": "Loading available folders…",
+      "noFolders": "No writable folders are available. Please check your access.",
+      "archiveSearch": "Search staff or customers",
+      "chooseArchive": "Choose a staff member or customer",
+      "chooseFolder": "Choose a folder",
+      "shareNotice": "I confirm sharing this document with this customer so they can view and download it.",
+      "folderNotice": "Saved in: {name}",
+      "readOnly": "You can view this document, print it or save it as a PDF.",
+      "readOnlyReady": "Document opened for viewing",
+      "print": "Print or save as PDF",
+      "type": "Template document",
+      "viewDocument": "View document"
     }
   },
   "Documents": {
@@ -5390,7 +5405,7 @@
     "folders": "Document folders",
     "myDocuments": "My documents",
     "name": "Name",
-    "search": "Search files",
+    "search": "Search documents",
     "upload": "Upload documents",
     "download": "Download",
     "preview": "Preview",
@@ -5412,7 +5427,7 @@
     "shareWarning": "I confirm sharing this file with this customer, who will be able to view and download it.",
     "previous": "Previous",
     "next": "Next",
-    "pagination": "Page {page}, {total} files",
+    "pagination": "Page {page}, {total} items",
     "pending": "Documents requiring attention",
     "reconcile": "Check original operation",
     "uploadAgain": "Select the file to upload again",

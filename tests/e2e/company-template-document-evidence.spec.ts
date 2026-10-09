@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import {expect,test} from "@playwright/test";
 import {loginAs} from "./helpers/auth";
 import {requireLocalAdminClient} from "./helpers/company-template-actions";
@@ -15,7 +16,7 @@ test("独立业务断言能识别错误记录，恢复后重新保存通过",asy
     expect(detected,"authoritative comparison must reject the wrong persisted result").toBe(true);
     await page.reload();await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("Evidence wrong client");
     // 从真实页面重新填写并保存，恢复正确结果，最后再刷新核对。
-    await page.frameLocator("iframe").locator("#client").fill("Evidence correct client");await page.getByRole("button",{name:"保存",exact:true}).click();await expectDocumentContains(page,id,"Evidence correct client");
+    await page.frameLocator("iframe").locator("#client").fill("Evidence correct client");await page.getByRole("button",{name:"保存",exact:true}).click();await confirmDocumentFolder(page);await expectDocumentContains(page,id,"Evidence correct client");
     const restored=await readPersonalDocument(id);expect(restored.revision).toBeGreaterThan(correct.revision);expect(restored.state).toEqual(correct.state);await page.reload();await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("Evidence correct client");
   }finally{await admin.from("company_template_documents").delete().in("id",ids);}
 });

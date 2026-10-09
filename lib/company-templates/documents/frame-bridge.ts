@@ -1,8 +1,8 @@
 import { installGenericTemplateAdapter } from "./generic-adapter";
 
 /** 共用沙箱桥：原文件不变，普通模板在运行时采集数据，本站保存权限仍留在父页。 */
-export function documentBridge(content: string, token: string, parentOrigin: string) {
-  const config = JSON.stringify({ token, parentOrigin }).replace(/</g, "\\u003c");
+export function documentBridge(content: string, token: string, parentOrigin: string, readOnly = false) {
+  const config = JSON.stringify({ token, parentOrigin, readOnly }).replace(/</g, "\\u003c");
   return content + `<script>(function(){
     (${installGenericTemplateAdapter.toString()})();
     var config=${config}, initialized=false,initializing=false,timer;
@@ -21,10 +21,11 @@ export function documentBridge(content: string, token: string, parentOrigin: str
           var expected=Object.keys(state).length?state:await snapshot();
           await api.importState(expected);
           if(canonical(await snapshot())!==canonical(expected))throw Error('roundtrip');
-          api.subscribe(function(){if(!initialized)return;send('dirty');clearTimeout(timer);timer=setTimeout(async function(){try{send('state',{state:await snapshot()});}catch(e){send('error');}},100);});
-          initialized=true;send('ready',{state:await snapshot()});
+          api.subscribe(function(){if(!initialized||config.readOnly)return;send('dirty');clearTimeout(timer);timer=setTimeout(async function(){try{send('state',{state:await snapshot()});}catch(e){send('error');}},100);});
+          initialized=true;if(config.readOnly)document.body.inert=true;send('ready',{state:await snapshot()});
         }
         if(event.data.type==='pt5.document.export'&&initialized)send('state',{state:await snapshot(),requestId:event.data.requestId});
+        if(event.data.type==='pt5.document.print'&&initialized&&config.readOnly)window.print();
       }catch(e){send('error',{reason:e instanceof Error?e.message:'invalid'});}
     });
     window.addEventListener('load',function(){send('boot');},{once:true});

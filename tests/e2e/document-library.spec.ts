@@ -25,7 +25,7 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
     const first = files[0]; let card = page.locator(`[data-document-file="${first.id}"]`);
     await card.getByRole("button", { name: "重命名文件", exact: true }).click(); dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}新名称.txt`); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     files = await authoritativeFiles([`${prefix}新名称.txt`]); expect(files[0].id).toBe(first.id); expect(files[0].version).toBe(first.version + 1); expect(files[0].storage_path).toBe(first.storage_path);
-    await page.getByRole("textbox", { name: "搜索文件" }).fill("新名称"); await page.getByRole("button", { name: "搜索文件", exact: true }).click(); await expect(page.locator('[data-document-file]')).toHaveCount(1);
+    await page.getByRole("textbox", { name: "搜索资料" }).fill("新名称"); await page.getByRole("button", { name: "搜索资料", exact: true }).click(); await expect(page.locator('[data-document-file]')).toHaveCount(1);
     card = page.locator(`[data-document-file="${first.id}"]`); await card.getByRole("button", { name: "移动文件", exact: true }).click(); dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "本人资料", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     const moved = (await authoritativeFiles([`${prefix}新名称.txt`]))[0]; expect(moved.folder_id).not.toBe(folder.id); expect(moved.storage_path).toBe(first.storage_path);
     await chooseDocumentFolder(page, "本人资料"); await uploadDocumentFiles(page, [`${prefix}预览.pdf`], documentPdf(), "application/pdf");

@@ -1,3 +1,4 @@
+import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import {randomUUID} from "node:crypto";
 import {expect,test,type Page} from "@playwright/test";
 import {loginAs} from "./helpers/auth";
@@ -39,7 +40,7 @@ test("断线重试防重、业务失败与未保存离开提醒",async({page})=>
     await page.route("**/api/company-template-documents",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({ok:false,error:"document_failed"})}));
     await frame.locator("#client").fill("Business failure content");await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible();expect((await readPersonalDocument(id)).revision).toBe(committed.revision);
     await page.getByRole("link",{name:"公司模板",exact:true}).first().click();await page.getByRole("dialog",{name:"尚有未保存内容"}).getByRole("button",{name:"暂不操作",exact:true}).click();await expect(page).toHaveURL(new RegExp(id+"$"));await expect(frame.locator("#client")).toHaveValue("Business failure content");
-    await page.unroute("**/api/company-template-documents");await page.getByRole("button",{name:"保存",exact:true}).click();await expectDocumentContains(page,id,"Business failure content");
+    await page.unroute("**/api/company-template-documents");await page.getByRole("button",{name:"保存",exact:true}).click();await confirmDocumentFolder(page);await expectDocumentContains(page,id,"Business failure content");
     await page.reload();await expect(frame.locator("#client")).toHaveValue("Business failure content");
   }finally{await admin.from("company_template_documents").delete().in("id",ids);}
 });
@@ -49,12 +50,12 @@ test("多窗口冲突保留当前内容并可另存一份",async({page})=>{
   try{
     const id=await openNewDocument(page,ids);second=await page.context().newPage();await second.goto(page.url());await expectDocumentSaved(second);
     await page.frameLocator("iframe").locator("#client").fill("First window authoritative");await expectDocumentContains(page,id,"First window authoritative");
-    await second.frameLocator("iframe").locator("#client").fill("Second window unsaved");await expect(second.getByRole("status").filter({hasText:"其他窗口修改"})).toBeVisible();expect(JSON.stringify((await readPersonalDocument(id)).state)).toContain("First window authoritative");
+    await second.frameLocator("iframe").locator("#client").fill("Second window unsaved");await expect(second.getByRole("status").filter({hasText:"已有新修改"})).toBeVisible();expect(JSON.stringify((await readPersonalDocument(id)).state)).toContain("First window authoritative");
     await second.getByRole("button",{name:"另存一份",exact:true}).click();const dialog=second.getByRole("dialog");await dialog.getByLabel("文档名称").fill("Conflict copy");await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(second).not.toHaveURL(new RegExp(id+"$"));const copyId=second.url().split("/").pop()!;ids.push(copyId);await expectDocumentContains(second,copyId,"Second window unsaved");
     await page.reload();await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("First window authoritative");
     // 两种冲突处理都从页面验证：另存后再制造一次冲突，选择重新打开数据库最新内容。
     await second.goto(page.url());await expectDocumentSaved(second);await page.frameLocator("iframe").locator("#client").fill("Latest other window content");await expectDocumentContains(page,id,"Latest other window content");
-    await second.frameLocator("iframe").locator("#client").fill("Explicitly discarded edit");await expect(second.getByRole("status").filter({hasText:"其他窗口修改"})).toBeVisible();
+    await second.frameLocator("iframe").locator("#client").fill("Explicitly discarded edit");await expect(second.getByRole("status").filter({hasText:"已有新修改"})).toBeVisible();
     second.once("dialog",async prompt=>{await prompt.accept();});await second.getByRole("button",{name:"重新打开最新内容",exact:true}).click();await second.getByRole("dialog",{name:"尚有未保存内容"}).getByRole("button",{name:"确认操作",exact:true}).click();
     await expect(second.frameLocator("iframe").locator("#client")).toHaveValue("Latest other window content");await expectDocumentSaved(second);expect(JSON.stringify((await readPersonalDocument(id)).state)).toContain("Latest other window content");
   }finally{await second?.close();await admin.from("company_template_documents").delete().in("id",ids);}
@@ -66,11 +67,11 @@ test("模板更新和停用不改变个人文档绑定的版本",async({page,bro
   const {data:seed,error}=await admin.from("company_template_versions").select("html_content").eq("id","a3200000-0000-4000-8000-000000000003").single();if(error)throw error;
   const publish=async(versionId:string,revision:string,html:string)=>{const response=await managerPage.request.post("/api/company-templates/publish",{multipart:{templateId,versionId,expectedRevision:revision,name:marker,slug:`doc-version-${templateId}`,description:"Document version test",htmlFile:{name:"version.html",mimeType:"text/html",buffer:Buffer.from(html)}}});expect(response.ok()).toBe(true);};
   try{
-    await publish(v1,"",seed.html_content);await loginAs(page,"salesman");await page.goto("/salesman/company-templates");await page.locator("article").filter({hasText:marker}).getByRole("button",{name:"新建文档",exact:true}).click();await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);const id=page.url().split("/").pop()!;ids.push(id);await expectDocumentSaved(page);
+    await publish(v1,"",seed.html_content);await loginAs(page,"salesman");await page.goto("/salesman/company-templates");await page.locator("article").filter({hasText:marker}).getByRole("button",{name:"新建文档",exact:true}).click();await confirmDocumentFolder(page);await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/);const id=page.url().split("/").pop()!;ids.push(id);await expectDocumentSaved(page);
     await page.frameLocator("iframe").locator("#client").fill("Pinned document client");await expectDocumentContains(page,id,"Pinned document client");await publish(v2,"1",seed.html_content+"<!-- second version -->");
-    await page.goto("/salesman/company-templates");await page.locator("article").filter({hasText:marker}).getByRole("button",{name:"新建文档",exact:true}).click();await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);const newId=page.url().split("/").pop()!;ids.push(newId);await expectDocumentSaved(page);expect((await readPersonalDocument(newId)).template_version_id).toBe(v2);
+    await page.goto("/salesman/company-templates");await page.locator("article").filter({hasText:marker}).getByRole("button",{name:"新建文档",exact:true}).click();await confirmDocumentFolder(page);await expect(page).toHaveURL(/\/documents\/templates\/[a-f0-9-]+$/);const newId=page.url().split("/").pop()!;ids.push(newId);await expectDocumentSaved(page);expect((await readPersonalDocument(newId)).template_version_id).toBe(v2);
     await managerPage.goto("/admin/company-templates");await managerPage.locator("article").filter({hasText:marker}).getByRole("button",{name:"停用",exact:true}).click();await expect.poll(async()=>{const {data}=await admin.from("company_templates").select("status").eq("id",templateId).single();return data?.status;}).toBe("inactive");
-    await page.goto(`/salesman/company-templates/documents/${id}`);await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("Pinned document client");await page.frameLocator("iframe").locator("#client").fill("Edited after disabled");await expectDocumentContains(page,id,"Edited after disabled");expect((await readPersonalDocument(id)).template_version_id).toBe(v1);
+    await page.goto(`/salesman/documents/templates/${id}`);await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("Pinned document client");await page.frameLocator("iframe").locator("#client").fill("Edited after disabled");await expectDocumentContains(page,id,"Edited after disabled");expect((await readPersonalDocument(id)).template_version_id).toBe(v1);
     await page.reload();await expect(page.frameLocator("iframe").locator("#client")).toHaveValue("Edited after disabled");
   }finally{await admin.from("company_template_documents").delete().in("id",ids);await deleteTemplate(admin,templateId);await manager.close();}
 });
@@ -94,7 +95,7 @@ test("超时与零行写入不能显示已保存，伪造消息不能修改数�
     await page.route("**/api/company-template-documents",async route=>{await new Promise(resolve=>setTimeout(resolve,31000));await route.abort("timedout").catch(()=>{});});
     await page.frameLocator("iframe").locator("#client").fill("Timeout pending content");await expect(page.getByRole("status").filter({hasText:"正在保存"})).toBeVisible();await expect(page.getByRole("status").filter({hasText:/^已保存$/})).toHaveCount(0);await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible({timeout:40000});
     expect((await readPersonalDocument(id)).revision).toBe(original.revision);await page.unroute("**/api/company-template-documents");
-    await page.getByRole("button",{name:"保存",exact:true}).click();await expectDocumentContains(page,id,"Timeout pending content");
+    await page.getByRole("button",{name:"保存",exact:true}).click();await confirmDocumentFolder(page);await expectDocumentContains(page,id,"Timeout pending content");
     await admin.from("company_template_documents").delete().eq("id",id);
     await page.frameLocator("iframe").locator("#client").fill("Deleted record cannot be saved");await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible();await expect(page.getByRole("alert").filter({hasText:"没有找到"})).toBeVisible();const {count}=await admin.from("company_template_documents").select("id",{count:"exact",head:true}).eq("id",id);expect(count).toBe(0);
   }finally{await admin.from("company_template_documents").delete().in("id",ids);}
