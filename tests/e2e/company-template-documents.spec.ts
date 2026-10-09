@@ -1,4 +1,5 @@
 import {confirmDocumentFolder} from "./helpers/company-template-documents";
+import {openItemMenu,confirmDeletion} from "./helpers/document-explorer";
 import {expect,test,type Page} from "@playwright/test";
 import {writeFileSync} from "node:fs";
 import {loginAs} from "./helpers/auth";
@@ -8,6 +9,8 @@ async function openNew(page:Page,ids:string[]){await page.goto("/salesman/compan
 async function readDocument(id:string){const {data,error}=await requireLocalAdminClient().from("company_template_documents").select("*").eq("id",id).single();if(error)throw error;return data;}
 async function saved(page:Page,id:string,value:string){await expect.poll(async()=>JSON.stringify((await readDocument(id)).state),{timeout:15000}).toContain(value);await expect(page.getByRole("status").filter({hasText:/^已保存$/})).toBeVisible();}
 // 操作从真实页面发起，独立管理客户端只读取最终凭证和清理精确的测试编号。
+test.use({video:"off"});
+
 test("个人报价文档完整保存、恢复、管理和隔离",async({page,browser})=>{
   test.setTimeout(180000);const admin=requireLocalAdminClient();const ids:string[]=[];const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
   const frameworkWarnings:string[]=[];page.on("console",message=>{if(["warning","error"].includes(message.type())&&/hydration|hydrated|React.*error|Server Component|Invalid hook/i.test(message.text()))frameworkWarnings.push(message.text());});
@@ -33,9 +36,9 @@ test("个人报价文档完整保存、恢复、管理和隔离",async({page,bro
     await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));await page.screenshot({path:"output/company-template-documents-desktop.png"});
     await page.getByRole("button",{name:"重命名",exact:true}).click();let dialog=page.getByRole("dialog");await dialog.getByLabel("文档名称").fill("Document E2E renamed");await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(page.getByRole("heading",{name:"Document E2E renamed"})).toBeVisible();expect((await readDocument(id)).name).toBe("Document E2E renamed");
     await expect(page.getByRole("status").filter({hasText:/^已保存$/})).toBeVisible();await page.getByRole("button",{name:"另存一份",exact:true}).click();dialog=page.getByRole("dialog");await dialog.getByLabel("文档名称").fill("Document E2E copy");await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(page).not.toHaveURL(new RegExp(id+"$"));const copyId=page.url().split("/").pop()!;ids.push(copyId);await expect(frame.locator("#client")).toHaveValue("Document E2E Client");expect((await readDocument(copyId)).state).toEqual((await readDocument(id)).state);
-    const other=await browser.newContext();const otherPage=await other.newPage();await loginAs(otherPage,"administrator");await otherPage.goto(`/admin/documents?user=55555555-5555-4555-8555-555555555555&folder=${before.folder_id}`);await expect(otherPage.getByRole("heading",{name:"Document E2E renamed"})).toBeVisible();expect((await otherPage.request.get(`/api/company-template-documents/${id}/content?loadToken=11111111-1111-4111-8111-111111111111`)).status()).toBe(200);await other.close();
-    await page.getByRole("button",{name:"返回所在文件夹"}).click();await page.getByRole("textbox",{name:"搜索资料"}).fill("Document E2E copy");await expect(page.getByRole("heading",{name:"Document E2E copy"})).toBeVisible();await page.locator("article").filter({has:page.getByRole("heading",{name:"Document E2E copy",exact:true})}).getByRole("button",{name:"删除",exact:true}).click();await page.getByRole("dialog").getByRole("button",{name:"确认",exact:true}).click();await expect.poll(async()=>{const {count}=await admin.from("company_template_documents").select("id",{count:"exact",head:true}).eq("id",copyId);return count;}).toBe(0);
-    await page.reload();await expect(page.getByRole("heading",{name:"Document E2E copy",exact:true})).toHaveCount(0);
+    const other=await browser.newContext();const otherPage=await other.newPage();await loginAs(otherPage,"administrator");await otherPage.goto(`/admin/documents?user=55555555-5555-4555-8555-555555555555&folder=${before.folder_id}`);await expect(otherPage.getByText("Document E2E renamed",{exact:true})).toBeVisible();expect((await otherPage.request.get(`/api/company-template-documents/${id}/content?loadToken=11111111-1111-4111-8111-111111111111`)).status()).toBe(200);await other.close();
+    await page.getByRole("button",{name:"返回所在文件夹"}).click();await page.getByRole("textbox",{name:"搜索资料"}).fill("Document E2E copy");await page.getByRole("button",{name:"搜索资料",exact:true}).click();await expect(page.locator(`[data-template-document="${copyId}"]`)).toBeVisible();await openItemMenu(page,page.locator(`[data-template-document="${copyId}"]`),"删除");await confirmDeletion(page);await expect.poll(async()=>{const {count}=await admin.from("company_template_documents").select("id",{count:"exact",head:true}).eq("id",copyId);return count;}).toBe(0);
+    await page.reload();await expect(page.locator(`[data-template-document="${copyId}"]`)).toHaveCount(0);
     for(const width of [320,360,390]){await page.setViewportSize({width,height:844});await expectNoPageOverflow(page);}await page.screenshot({path:"output/company-template-documents-mobile.png"});
     expect(errors).toEqual([]);expect(frameworkWarnings).toEqual([]);await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
     // 交付凭证只保留编号、修订与哈希，不导出填写内容或登录资料。

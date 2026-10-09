@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { appendFileSync } from "node:fs";
 import { getRegressionAccount, type RegressionRole } from "./accounts";
 import { getLocalSupabaseAdminClient, readLocalEnvValue } from "./local-supabase-admin";
-import type { DocumentFile, DocumentLibrary } from "@/lib/document-library/model";
+import type { DocumentFile, ExplorerLibrary } from "@/lib/document-library/model";
 import { loginAs } from "./auth";
 
 /** 测试只允许连接本地 Docker，清理只按本次随机前缀和实际记录编号执行。 */
@@ -24,15 +24,26 @@ export async function documentReader(role: RegressionRole) {
   const result = await client.auth.signInWithPassword({ email: account.email, password: account.password });
   if (result.error) throw new Error("local_test_login_failed"); return client;
 }
-export async function readLibrary(page: Page): Promise<DocumentLibrary> {
+export async function readLibrary(page: Page): Promise<ExplorerLibrary> {
   const response = await page.request.get(`/api/document-library${new URL(page.url()).search}`);
   expect(response.ok()).toBe(true); return response.json();
 }
 export async function chooseDocumentFolder(page: Page, name: string) {
-  const suffix = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$");
-  if ((page.viewportSize()?.width ?? 1440) >= 1024) await page.getByRole("navigation", { name: "资料文件夹" }).getByRole("button", { name: suffix }).click();
-  else { await page.getByRole("combobox", { name: "当前文件夹" }).click(); await page.getByRole("option", { name: suffix }).click(); }
-  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  // 详情页链接采用客户端导航；等网址和真实页面出现后才读取当前档案，避免误读上一页。
+  await expect(page).toHaveURL(/\/documents(?:[/?#]|$)/);
+  await expect(page.getByRole("heading",{name:"资料库",exact:true})).toBeVisible();
+  // 桌面直接使用目录树；窄屏从路径回到档案，再逐级双击目录。
+  const tree=page.getByRole("tree",{name:"资料文件夹"});
+  if(await tree.isVisible())await tree.getByRole("button",{name,exact:true}).click();
+  else {
+    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&(name==="本人资料"?item.zone==="personal":name==="共享资料"?item.zone==="shared":item.zone.endsWith("internal")));expect(folder).toBeTruthy();
+    const archive=data.archives.find(item=>item.id===folder!.archive_id)!;
+    await page.getByRole("navigation",{name:"当前位置"}).getByRole("button",{name:archive.name,exact:true}).click();
+    const parents=[folder!];let current=folder!;while(current.parent_id){current=data.folders.find(item=>item.id===current.parent_id)!;parents.unshift(current);}
+    for(const parent of parents)await page.locator(`[data-explorer-item="${parent.id}"]`).dblclick();
+  }
+  await expect(page.getByRole("button",{name:"上传资料",exact:true})).toBeEnabled();
+  const data=await readLibrary(page);const current=data.folders.find(item=>item.id===data.folderId);expect(current?.name===name||Boolean(current?.system_key)).toBe(true);
 }
 export async function uploadDocumentFiles(page: Page, names: string[], buffer = Buffer.from("真实资料\n", "utf8"), mime = "text/plain") {
   await page.locator('input[type="file"]').setInputFiles(names.map((name) => ({ name, mimeType: mime, buffer })));
@@ -54,6 +65,10 @@ export async function confirmFileObjects(files: DocumentFile[]) {
 }
 export async function cleanupDocuments(prefix: string) {
   const admin = documentAdmin();
+  // 批次会保护未完成目录；仅释放本次命名前缀的批次后，才清理自己的文件夹。
+  const batches=await admin.from("document_batches").select("id,manifest");
+  const owned=(batches.data??[]).filter(batch=>batch.manifest.some((entry:{record:{name:string}})=>entry.record.name.startsWith(prefix)));
+  if(owned.length){const reader=await documentReader("administrator");for(const batch of owned)await reader.rpc("document_batch_release",{p_id:batch.id});}
   const files = await admin.from("document_files").select("id,storage_path").like("original_name", `${prefix}%`);
   if (files.error) throw files.error;
   for (const file of files.data ?? []) {
@@ -67,9 +82,11 @@ export async function cleanupDocuments(prefix: string) {
     if (!folders.data?.length) break;
     for (const folder of folders.data) await admin.from("document_folders").delete().eq("id", folder.id);
   }
-  const ops = await admin.from("document_operations").select("id,payload");
-  const ids = ops.data?.filter((operation) => typeof operation.payload?.name === "string" && operation.payload.name.startsWith(prefix)).map((operation) => operation.id) ?? [];
+  const ops = await admin.from("document_operations").select("id,payload,receipt");
+  // 删除操作只携带文件编号；即使记录已删除，也须按原凭证中的测试前缀清理，不能影响下一用例。
+  const ids = ops.data?.filter((operation) => [operation.payload?.name,operation.receipt?.record?.name,operation.receipt?.record?.original_name].some(name=>typeof name==="string"&&name.startsWith(prefix))).map((operation) => operation.id) ?? [];
   if (ids.length) await admin.from("document_operations").delete().in("id", ids);
+  if(owned.length)await admin.from("document_batches").delete().in("id",owned.map(batch=>batch.id));
 }
 export async function checkDocumentViewport(page: Page, width: number, name: string) {
   await page.setViewportSize({ width, height: 900 });

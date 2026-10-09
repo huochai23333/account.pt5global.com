@@ -561,9 +561,9 @@ PT5-dropshipping-web/
 
 2026-10-09 已发布至 `https://account.pt5global.com`：Cloud 207 项迁移一致，原有 12 份文档的数量及全内容指纹保持一致。线上已从页面验证新建选目录、自动保存、换目录保存、指定目录复制、资料库移动/重命名、刷新恢复及双窗口冲突，并独立查库核对位置、修订、内容哈希和实际影响行数。桌面与手机目录弹窗已检查；线上多角色权限及异常链路的范围区分见上述交付记录。
 
-## 统一资料库
+## 文件资源管理器资料库
 
-所有岗位的 `/<workspace>/documents` 提供资料保存；个人资料、管理员人员详情及批发客户详情的“查看资料”直接打开对应档案。资料库只提供电脑端入口：手机菜单、详情页和业务暂停页在工作台电脑端分界（1024px）以下隐藏资料库入口。没有业务板块授权的员工也能在电脑端管理自己的“本人资料”。页面只组装界面，查询、上传核对、目录状态、弹窗、文件列表及逐项上传结果位于 `components/dashboard/document-library/`，服务端校验与对象操作位于 `lib/document-library/`。
+所有岗位的 `/<workspace>/documents` 提供资料保存；个人资料、管理员人员详情及批发客户详情的“查看资料”直接打开对应档案。资料库只提供电脑端入口：手机菜单、详情页和业务暂停页在工作台电脑端分界（1024px）以下隐藏资料库入口。没有业务板块授权的员工也能在电脑端管理自己的“本人资料”。首页按权限展示“我的资料、人员资料、客户资料”。左侧目录树可展开，右侧同时显示直属文件夹、上传文件及模板文档；只有三者都没有时才显示空目录。顶部提供返回、前进、上一级、可点击路径和当前位置及下级搜索；网址保存位置、搜索、排序和页码，刷新后恢复。详细列表默认按名称排列，文件夹优先，可选类型、日期及图标视图。人员、客户入口支持名称搜索。页面只组装界面，目录导航、选择、快捷键、拖放、弹窗及批量执行位于 `components/dashboard/document-library/`，服务端校验与对象操作位于 `lib/document-library/`。
 
 | 区域 | 查看与下载 | 上传、改名、建目录、移动、删除 |
 | --- | --- | --- |
@@ -572,28 +572,39 @@ PT5-dropshipping-web/
 | 客户内部资料 | 沿用批发客户目录的现有阅读授权 | 沿用客户管理授权 |
 | 客户共享资料 | 已授权内部人员、客户本人 | 已授权内部管理人员 |
 
-管理员管理全部档案；财务、业务员使用现有客户授权，现有只读岗位仍只读。数据库和私有 Storage 均复核当前身份，先过滤隐藏区域再返回目录、文件及搜索数量。预览和下载通过登录接口重新读取权限，使用 `private, no-store`。默认目录不能删除、改名或移动；自建目录只允许删除不含文件、模板文档及子目录的空目录；上传文件移动限同一档案，模板文档可在有管理权限的档案之间移动，进入客户共享区前明确确认。
+管理员管理全部档案；财务、业务员使用现有客户授权，现有只读岗位仍只读。数据库和私有 Storage 均复核当前身份，先过滤隐藏区域再返回目录、文件及搜索数量。预览和下载通过登录接口重新读取权限，使用 `private, no-store`。默认目录不能删除、改名或移动；文件、模板文档及自建目录可跨有管理权限的档案移动；整树移动在数据库事务中更新全部后代归属、区域和版本，保留对象、编号、模板版本及填写内容，旧窗口不能覆盖。禁止移入自身或后代，同名文件夹须先重命名，不自动合并。移动到客户共享区前明确展示接收档案与清单，并要求勾选确认。
 
 支持常用图片、PDF、Word、Excel、PPT、CSV、UTF-8 TXT、ZIP、MP4/MOV/WebM/MKV/AVI。图片小于 5MB，视频小于 30MB，其他文件不超过 20MB；服务端校验文件头、大小与 SHA-256。同名上传保留不同记录及对象。删除需确认并永久删除；预览仅支持图片和 PDF。模板填写文档可直接保存到文件夹，导出的报价单及公司模板文件也可上传，认证照片和订单附件继续各自业务流程。
 
 资料档案以人员或客户 UUID 归属，改名不会改变目录归属。未注册客户也有资料夹；关联注册账号时数据库事务合并相同区域及目录，同名文件增加序号并保留原对象。存在文件时阻止直接删除客户档案。
 
-`/api/document-library` 查询与目录/文件管理、`/upload` 上传、`/reconcile` 原操作核对及 `/files/[id]/content` 内容读取组成接口。每次写入使用固定操作编号，返回记录编号、版本和影响行数；页面再独立读取凭证，刷新真实列表。上传需确认真实字节及完整登记，删除需确认对象与记录均消失，部分完成显示逐项结果。断线操作保留在当前账号的浏览器会话中，可继续核对。Supabase 的 `document-library-cleanup` 每小时处理超过 24 小时的未完成文件；失败凭证保留，未清理对象继续等待后续清理。
+单击选择、双击打开；图片及 PDF 预览，其他文件下载，模板继续编辑并保留“另存一份”。复选框、Ctrl 多选、Shift 连选和当前页全选可批量移动、删除、下载；切换位置、搜索及分页清空选择。支持拖入文件上传、条目拖到目录、剪切粘贴及 Enter/F2/Delete/Ctrl+X/V，输入框保留正常快捷键。上传限制在选文件和拖入时提示。
+
+删除非空目录前列出完整路径与三类数量，永久删除需要明确确认；清单变化必须重新读取并确认。递归删除期间目录树禁止上传、保存及移动。先核对文件对象、资料记录，再按叶子到父目录删除；失败保留未完成目录，显示逐项明细并保存 `partial_failed`。断线后从数据库原批次继续，完成项不重复执行，每次重新核对权限；明确结束批次才解除剩余目录保护。
+
+批量下载为 ZIP，保留文件夹层级，同名上传记录各自保留。一次最多 100 个上传文件、合计 200 MiB；打包逐项核对权限、实际字节及完整清单，缺失对象不交付完整下载。模板不进入 ZIP，需单独打开打印或另存 PDF。
+
+`/api/document-library` 查询与目录/文件管理，`/manifest` 授权确认清单、`/batch` 持久化操作与状态、`/download` ZIP 下载，`/upload` 上传、`/reconcile` 原操作核对及 `/files/[id]/content` 内容读取组成接口。每次写入使用固定操作编号，返回记录编号、版本和影响行数；页面再独立读取凭证，刷新真实列表。上传需确认真实字节及完整登记，删除需确认对象与记录均消失，部分完成显示逐项结果。断线操作保留在当前账号的浏览器会话中，可继续核对。Supabase 的 `document-library-cleanup` 每小时处理超过 24 小时的未完成文件；失败凭证保留，未清理对象继续等待后续清理。
 
 资料库写入的来源检查复用站点公开地址策略：生产环境比较浏览器来源与受校验的 `NEXT_PUBLIC_SITE_URL`，忽略服务器内部监听地址及转发头；开发环境允许实际的 localhost/127.0.0.1 端口。部署时该配置必须与浏览器正式入口一致，避免新建目录、上传与继续核对被误判为权限不足。
 
-先在同级 Supabase 仓库的本地 Docker 应用 `20261008015350_document_library.sql`。Web 和 Supabase 同时需要服务密钥，但浏览器只持有登录会话；新增资料使用独立私有 `document-library` bucket。资料迁移与清理函数先本地验证，GitHub、Supabase Cloud 与网站部署分别交付。
+先在同级 Supabase 仓库的本地 Docker 应用基础迁移及 `20261009091636_document_explorer.sql`。Web 和 Supabase 同时需要服务密钥，但浏览器只持有登录会话；新增资料使用独立私有 `document-library` bucket。资料迁移与清理函数先本地验证，GitHub、Supabase Cloud 与网站部署分别交付。
 
 资料库验证命令：
 
-```bash
+```powershell
 node --experimental-strip-types --test scripts/document-cleanup.test.mjs
 node --experimental-strip-types --test scripts/document-library-origin.test.mjs
+node --experimental-strip-types --test scripts/document-archive-paths.test.mjs
 npx playwright test --config=tests/contracts/playwright.config.ts tests/contracts/document-library.spec.ts
-npx playwright test tests/e2e/document-library.spec.ts tests/e2e/document-library-permissions.spec.ts tests/e2e/document-library-linking.spec.ts tests/e2e/document-library-cleanup.spec.ts tests/e2e/document-library-faults.spec.ts tests/e2e/document-library-boundaries.spec.ts --workers=1
+$env:PLAYWRIGHT_SKIP_WEB_SERVER = "1"
+$env:E2E_DOCUMENT_CHROME = "1"
+npx playwright test tests/e2e/document-explorer.spec.ts tests/e2e/document-explorer-recovery.spec.ts tests/e2e/document-explorer-preview.spec.ts --workers=1
 ```
 
 真实页面测试使用本地隔离账号，从页面完成关键管理操作，另用数据库与 Storage 查询验证最终记录、版本和对象，再刷新页面；后台清理测试准备中断阶段夹具并调用同一清理引擎，独立核对对象消失、失败凭证与已完成文件保留。清理引擎测试和 Edge 入口/定时调度实跑是不同验证范围。
+
+本地改版范围、失败与续办检查、数据库凭证、响应式和品牌清理见 [文件资源管理器验收报告](docs/document-explorer.md)。
 
 ## 测试与验证
 

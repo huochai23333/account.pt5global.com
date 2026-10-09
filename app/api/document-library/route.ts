@@ -1,6 +1,7 @@
 import { requireDocumentApi } from "@/lib/document-library/access";
 import { checkDocumentOrigin, documentError, readDocumentBody } from "@/lib/document-library/http";
-import { readDocumentLibrary } from "@/lib/document-library/repository";
+import {readExplorer} from "@/lib/document-library/explorer-repository";
+import {parseDocumentSelection} from "@/lib/document-library/selection";
 import { completeDocumentDelete } from "@/lib/document-library/storage-mutations";
 import { requireDocumentReceipt } from "@/lib/document-library/model";
 
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
   try {
     const { supabase } = await requireDocumentApi();
     const params = new URL(request.url).searchParams;
-    return Response.json(await readDocumentLibrary(supabase, { user: params.get("user") ?? undefined, customer: params.get("customer") ?? undefined, folder: params.get("folder") ?? undefined, query: params.get("query") ?? undefined, page: Number(params.get("page")) || 1 }), { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json(await readExplorer(supabase,parseDocumentSelection(params)), { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return documentError(error); }
 }
 export async function POST(request: Request) {

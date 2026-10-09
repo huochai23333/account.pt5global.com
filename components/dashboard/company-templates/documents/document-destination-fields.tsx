@@ -3,7 +3,7 @@ import {useTranslations} from "next-intl";
 import {Field, Input, ChoiceField} from "@/components/ui/form-controls";
 import {Select} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
-import {folderLabel} from "@/components/dashboard/document-library/document-directories";
+import {folderLabel} from "@/components/dashboard/document-library/folder-label";
 import type {DocumentFolder} from "@/lib/document-library/model";
 import type {DestinationController} from "./use-document-destinations";
 /** 字段只渲染选择和提示，目录加载及共享确认状态由独立控制器负责。 */

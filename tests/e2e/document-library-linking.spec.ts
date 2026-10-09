@@ -9,6 +9,8 @@ function clearFixtureCustomers(prefix: string) {
   execFileSync("docker", ["exec", "-i", "supabase_db_pt5-dropshipping", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], { input: `delete from public.wholesale_customers where unique_name like '${prefix}%';`, stdio: ["pipe", "pipe", "pipe"] });
 }
 
+test.use({video:"off"});
+
 test("未注册客户资料在页面关联账号后合并，文件保留且阻止删除有资料的客户", async ({ page }) => {
   test.setTimeout(150_000); const prefix = `docs-link-${Date.now()}-`; const admin = documentAdmin();
   let userId: string | undefined, customerId: string | undefined;
@@ -17,7 +19,7 @@ test("未注册客户资料在页面关联账号后合并，文件保留且阻�
     expect(created.error).toBeNull(); userId = created.data.user!.id;
     // 注册触发器可能已建立批发档案；只清理本测试账号的空档案，保留注册账号资料夹。
     clearFixtureCustomers(prefix);
-    await documentLogin(page, "administrator"); await page.goto(`/admin/documents?user=${userId}`); await chooseDocumentFolder(page, "共享资料"); await uploadDocumentFiles(page, [`${prefix}同名.txt`]);
+    await documentLogin(page, "administrator"); await page.goto(`/admin/documents?user=${userId}&scope=folder`); await chooseDocumentFolder(page, "共享资料"); await uploadDocumentFiles(page, [`${prefix}同名.txt`]);
     const registeredArchive = (await readLibrary(page)).archiveId;
     await page.goto("/admin/wholesale/customers"); await page.getByRole("button", { name: "新增客户" }).click();
     let dialog = page.getByRole("dialog", { name: "新增批发客户" }); await dialog.getByLabel("客户唯一标识名称").fill(`${prefix}未注册`); await dialog.getByRole("button", { name: "保存客户", exact: true }).click(); await expect(dialog).toHaveCount(0);
@@ -33,7 +35,7 @@ test("未注册客户资料在页面关联账号后合并，文件保留且阻�
     await expect.poll(async () => (await admin.from("wholesale_customers").select("registered_user_id").eq("id", customerId).single()).data?.registered_user_id).toBe(userId);
     const archives = await admin.from("document_archives").select("id,user_id,customer_id").eq("customer_id", customerId); expect(archives.data).toHaveLength(1); expect(archives.data![0].id).toBe(registeredArchive);
     const files = await admin.from("document_files").select("id,name,storage_path,folder_id").like("original_name", `${prefix}%`); expect(files.data).toHaveLength(2); expect(new Set(files.data!.map((file) => file.name)).size).toBe(2); expect(files.data!.every((file) => file.name.endsWith(".txt"))).toBe(true); expect(files.data!.map((file) => file.storage_path).sort()).toEqual(paths);
-    await page.goto(`/admin/documents?user=${userId}`); await chooseDocumentFolder(page, "共享资料"); await page.reload(); await expect(page.locator('[data-document-file]')).toHaveCount(2);
+    await page.goto(`/admin/documents?user=${userId}&scope=folder`); await chooseDocumentFolder(page, "共享资料"); await page.reload(); await expect(page.locator('[data-document-file]')).toHaveCount(2);
     // 默认目录初始化再次触发，仍保持唯一档案和两个默认区域。
     // 角色表也刻意禁用服务密钥直写；只重复本测试账号已有角色，不改动业务授权。
     if (!/^[a-f0-9-]{36}$/.test(userId!)) throw new Error("fixture_scope_required");

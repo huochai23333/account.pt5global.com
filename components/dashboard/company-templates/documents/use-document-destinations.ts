@@ -2,13 +2,13 @@
 import {useCallback, useEffect, useState} from "react";
 import type {DocumentArchive, DocumentFolder} from "@/lib/document-library/model";
 /** 可选目录来自服务端授权后的数据；搜索只改变显示，不赋予新的保存权限。 */
-export function useDocumentDestinations(currentFolderId?: string) {
+export function useDocumentDestinations(currentFolderId?: string, enabled = true) {
   const [data, setData] = useState<{archives: DocumentArchive[]; folders: DocumentFolder[]}>({archives: [], folders: []});
   const [folderId, setFolderId] = useState(currentFolderId ?? "");
   const [archiveId, setArchiveId] = useState("");
   const [query, setQuery] = useState("");
   const [confirmShare, setConfirmShare] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(false);
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError(false);
@@ -24,7 +24,7 @@ export function useDocumentDestinations(currentFolderId?: string) {
     } catch { if (!signal?.aborted) setError(true); }
     finally { if (!signal?.aborted) setLoading(false); }
   }, [currentFolderId]);
-  useEffect(() => {const controller = new AbortController(); void load(controller.signal); return () => controller.abort();}, [load]);
+  useEffect(() => {if (!enabled) return; const controller = new AbortController(); void load(controller.signal); return () => controller.abort();}, [load, enabled]);
   const folder = data.folders.find(item => item.id === folderId);
   // 手动保存及另存到共享目录都要确认；自动保存不经过此选择器。
   const sharing = folder?.zone === "shared";

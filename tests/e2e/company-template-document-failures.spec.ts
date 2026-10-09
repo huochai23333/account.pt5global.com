@@ -1,3 +1,4 @@
+import {holdDocumentWrites} from "./helpers/document-write-lock";
 import {confirmDocumentFolder} from "./helpers/company-template-documents";
 import {randomUUID} from "node:crypto";
 import {expect,test,type Page} from "@playwright/test";
@@ -92,9 +93,9 @@ test("超时与零行写入不能显示已保存，伪造消息不能修改数�
     const token=new URL((await page.locator("iframe").getAttribute("src"))!,page.url()).searchParams.get("loadToken");
     await page.evaluate(token=>window.postMessage({type:"pt5.document.state",token,state:{forged:true}},"*"),token);
     expect((await readPersonalDocument(id)).revision).toBe(original.revision);
-    await page.route("**/api/company-template-documents",async route=>{await new Promise(resolve=>setTimeout(resolve,31000));await route.abort("timedout").catch(()=>{});});
-    await page.frameLocator("iframe").locator("#client").fill("Timeout pending content");await expect(page.getByRole("status").filter({hasText:"正在保存"})).toBeVisible();await expect(page.getByRole("status").filter({hasText:/^已保存$/})).toHaveCount(0);await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible({timeout:40000});
-    expect((await readPersonalDocument(id)).revision).toBe(original.revision);await page.unroute("**/api/company-template-documents");
+    // 真实请求在数据库锁前等待，等待超时后仍保留内容和原操作号。
+    const release=await holdDocumentWrites();
+    try{await page.frameLocator("iframe").locator("#client").fill("Timeout pending content");await expect(page.getByRole("status").filter({hasText:"正在保存"})).toBeVisible();await expect(page.getByRole("status").filter({hasText:/^已保存$/})).toHaveCount(0);await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible({timeout:40000});expect((await readPersonalDocument(id)).revision).toBe(original.revision);}finally{await release();}
     await page.getByRole("button",{name:"保存",exact:true}).click();await confirmDocumentFolder(page);await expectDocumentContains(page,id,"Timeout pending content");
     await admin.from("company_template_documents").delete().eq("id",id);
     await page.frameLocator("iframe").locator("#client").fill("Deleted record cannot be saved");await expect(page.getByRole("status").filter({hasText:"保存失败"})).toBeVisible();await expect(page.getByRole("alert").filter({hasText:"没有找到"})).toBeVisible();const {count}=await admin.from("company_template_documents").select("id",{count:"exact",head:true}).eq("id",id);expect(count).toBe(0);

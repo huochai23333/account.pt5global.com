@@ -55,8 +55,8 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
       sessionStorage.removeItem(key);
       return { ok: true };
     } catch (error) {
-      if (error instanceof Error && ["forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder", "shareConfirmation"].includes(error.message)) sessionStorage.removeItem(key);
-      const reason = error instanceof Error && ["forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder", "shareConfirmation", "partial"].includes(error.message) ? error.message : "unconfirmed";
+      if (error instanceof Error && ["busy","folderNameConflict","forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder", "shareConfirmation"].includes(error.message)) sessionStorage.removeItem(key);
+      const reason = error instanceof Error && ["busy","folderNameConflict","forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder", "shareConfirmation", "partial"].includes(error.message) ? error.message : "unconfirmed";
       setMessage(reason);
       return { ok: false, error: reason };
     } finally { restore();
