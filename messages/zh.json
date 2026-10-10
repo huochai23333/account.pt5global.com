@@ -5461,6 +5461,10 @@
     },
     "fileSize": "{size} KB",
     "explorer": {
+      "operationDetails": "操作明细",
+      "uploadSummary": "上传结果：已完成 {done} / {total} 项",
+      "activityDetails": "查看明细",
+      "retryLoad": "重新加载",
       "home": "资料库首页",
       "mine": "我的资料",
       "myDocuments": "我的资料",

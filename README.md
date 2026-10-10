@@ -565,6 +565,8 @@ PT5-dropshipping-web/
 
 所有岗位的 `/<workspace>/documents` 提供资料保存；个人资料、管理员人员详情及批发客户详情的“查看资料”直接打开对应档案。资料库只提供电脑端入口：手机菜单、详情页和业务暂停页在工作台电脑端分界（1024px）以下隐藏资料库入口。没有业务板块授权的员工也能在电脑端管理自己的“本人资料”。首页按权限展示“我的资料、人员资料、客户资料”。左侧目录树可展开，右侧同时显示直属文件夹、上传文件及模板文档；只有三者都没有时才显示空目录。顶部提供返回、前进、上一级、可点击路径和当前位置及下级搜索；网址保存位置、搜索、排序和页码，刷新后恢复。详细列表默认按名称排列，文件夹优先，可选类型、日期及图标视图。人员、客户入口支持名称搜索。页面只组装界面，目录导航、选择、快捷键、拖放、弹窗及批量执行位于 `components/dashboard/document-library/`，服务端校验与对象操作位于 `lib/document-library/`。
 
+切换目录、搜索、排序、翻页和操作后的刷新只更新右侧文件区，左侧目录树及手动展开状态保留；读取期间显示加载动画，加载途中使用浏览器返回不会被较晚的旧查询覆盖。普通读取失败在右侧提供“重新加载”，权限撤回则清除此前显示的资料。桌面文件区按窗口高度分配空间并独立滚动；窄屏保留文件区高度，长路径在路径栏内滚动。成功上传和批量处理显示可展开的结果摘要，失败与未完成明细默认展开，明细列表独立滚动；通知放在文件区下方，不挤占浏览高度。选中条目后显示批量工具，工具栏保持高度，按钮较多时在本行横向滚动，双击过程中条目保持原位。
+
 | 区域 | 查看与下载 | 上传、改名、建目录、移动、删除 |
 | --- | --- | --- |
 | 员工本人资料 | 本人、管理员 | 本人、管理员 |
@@ -600,11 +602,14 @@ npx playwright test --config=tests/contracts/playwright.config.ts tests/contract
 $env:PLAYWRIGHT_SKIP_WEB_SERVER = "1"
 $env:E2E_DOCUMENT_CHROME = "1"
 npx playwright test tests/e2e/document-explorer.spec.ts tests/e2e/document-explorer-recovery.spec.ts tests/e2e/document-explorer-preview.spec.ts --workers=1
+npx playwright test tests/e2e/document-explorer-loading.spec.ts --workers=1
 ```
 
 真实页面测试使用本地隔离账号，从页面完成关键管理操作，另用数据库与 Storage 查询验证最终记录、版本和对象，再刷新页面；后台清理测试准备中断阶段夹具并调用同一清理引擎，独立核对对象消失、失败凭证与已完成文件保留。清理引擎测试和 Edge 入口/定时调度实跑是不同验证范围。
 
 本地改版范围、失败与续办检查、数据库凭证、响应式和品牌清理见 [文件资源管理器验收报告](docs/document-explorer.md)。
+
+局部加载、通知收起及视图空间的验证见 [资料库加载与布局验证](docs/document-explorer-loading.md)。
 
 ## 测试与验证
 

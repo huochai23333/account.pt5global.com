@@ -9,10 +9,11 @@ export async function createFolder(page:Page,name:string){
  await dialog.getByRole("textbox").fill(name);await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(dialog).toHaveCount(0);
  const result=await documentAdmin().from("document_folders").select("*").eq("name",name).eq("parent_id",parent).single();expect(result.error).toBeNull();return result.data!;
 }
-export async function chooseRow(page:Page,id:string){await page.locator(`[data-explorer-item="${id}"]`).click();}
+/** 查询后的条目会先显示，再解除操作锁；必须等可交互状态，不以旧 DOM 存在代替就绪。 */
+export async function chooseRow(page:Page,id:string){const row=page.locator(`[data-explorer-item="${id}"]`);await expect(row.getByRole("checkbox")).toBeEnabled();await row.click();}
 /** 老流程也走新版的可见菜单，不能为了保留断言在产品中恢复已移除的按钮。 */
 export async function openItemMenu(page:Page,row:Locator,action:string){await row.click({button:"right"});await page.getByRole("menuitem",{name:action,exact:true}).click();}
-export async function enterFolder(page:Page,id:string){await page.locator(`[data-explorer-item="${id}"]`).dblclick();await expect(page).toHaveURL(new RegExp(`folder=${id}`));}
+export async function enterFolder(page:Page,id:string){const row=page.locator(`[data-explorer-item="${id}"]`);await expect(row.getByRole("checkbox")).toBeEnabled();await row.dblclick();await expect(page).toHaveURL(new RegExp(`folder=${id}`));await expect(page.locator('[data-document-content]')).toHaveAttribute("aria-busy","false");}
 export async function confirmDeletion(page:Page){const dialog=page.getByRole("dialog");await dialog.getByRole("checkbox",{name:/我确认永久删除/}).check();await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(dialog).toHaveCount(0,{timeout:60000});}
 export async function clean(prefix:string){
  const reader=await documentReader("administrator");const batches=await documentAdmin().from("document_batches").select("id,manifest");

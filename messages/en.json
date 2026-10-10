@@ -5461,6 +5461,10 @@
     },
     "fileSize": "{size} KB",
     "explorer": {
+      "operationDetails": "Operation details",
+      "uploadSummary": "Uploads: {done} of {total} completed",
+      "activityDetails": "View details",
+      "retryLoad": "Try again",
       "home": "Library home",
       "mine": "My documents",
       "myDocuments": "My documents",
