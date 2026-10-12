@@ -34,7 +34,6 @@ export function documentError(error: unknown) {
     : /conflict|duplicate key/.test(message) ? "conflict"
     : /folder_not_empty/.test(message) ? "folderNotEmpty"
     : /default_folder/.test(message) ? "defaultFolder"
-    : /share_confirmation/.test(message) ? "shareConfirmation"
     : /archiveSize/.test(message) ? "archiveSize" : /templateDownload/.test(message) ? "templateDownload" : /busy/.test(message) ? "busy" : /size/.test(message) ? "size" : /invalid/.test(message) ? "invalid" : "unconfirmed";
   return Response.json({ error: key }, { status: key === "forbidden" ? 403 : 400, headers: { "Cache-Control": "private, no-store" } });
 }

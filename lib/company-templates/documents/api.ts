@@ -16,7 +16,6 @@ export async function readDocumentMutation(request: Request): Promise<DocumentMu
   if (body.action === "copy" && !UUID.test(body.sourceId ?? "")) throw new Error("document_invalid");
   if (["create","copy","move"].includes(body.action) && !UUID.test(body.folderId ?? "")) throw new Error("document_invalid");
   if (body.folderId !== undefined && !UUID.test(body.folderId)) throw new Error("document_invalid");
-  if (body.confirmShare !== undefined && typeof body.confirmShare !== "boolean") throw new Error("document_invalid");
   if (["rename","save","move","delete"].includes(body.action) && (!Number.isInteger(body.expectedRevision) || Number(body.expectedRevision) < 1)) throw new Error("document_invalid");
   if (["create","rename","copy"].includes(body.action) && (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 120)) throw new Error("document_invalid");
   if (body.action === "save" || body.state !== undefined) {
@@ -27,10 +26,10 @@ export async function readDocumentMutation(request: Request): Promise<DocumentMu
     ...(body.expectedRevision !== undefined ? { expectedRevision: body.expectedRevision } : {}),
     ...(body.name !== undefined ? { name: body.name.trim() } : {}),
     ...(body.templateId ? { templateId: body.templateId } : {}), ...(body.sourceId ? { sourceId: body.sourceId } : {}), ...(body.state ? { state: body.state } : {}),
-    ...(body.folderId ? {folderId: body.folderId} : {}), ...(body.confirmShare !== undefined ? {confirmShare: body.confirmShare} : {}) };
+    ...(body.folderId ? {folderId: body.folderId} : {}) };
 }
 export function documentFailure(cause: unknown) {
   const message = readCompanyTemplateErrorMessage(cause);
-  const error = ["document_conflict","document_missing","document_forbidden","document_too_large","document_invalid","document_not_confirmed","document_share_confirmation"].find((code) => message.includes(code)) ?? (message.includes("forbidden") ? "document_forbidden" : "document_failed");
+  const error = ["document_conflict","document_missing","document_forbidden","document_too_large","document_invalid","document_not_confirmed"].find((code) => message.includes(code)) ?? (message.includes("forbidden") ? "document_forbidden" : "document_failed");
   return Response.json({ ok: false, error }, { status: error === "document_conflict" ? 409 : error === "document_forbidden" ? 403 : error === "document_missing" ? 404 : 400 });
 }

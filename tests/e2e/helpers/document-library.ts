@@ -39,7 +39,7 @@ export async function chooseDocumentFolder(page: Page, name: string) {
   const tree=page.getByRole("tree",{name:"资料文件夹"});
   if(await tree.isVisible())await tree.getByRole("button",{name,exact:true}).click();
   else {
-    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&(name==="个人文件夹"?item.zone==="personal":name==="共享资料"?item.zone==="shared":item.zone.endsWith("internal")));expect(folder).toBeTruthy();
+    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&name==="资料文件夹");expect(folder).toBeTruthy();
     const archive=data.archives.find(item=>item.id===folder!.archive_id)!;
     await page.getByRole("navigation",{name:"当前位置"}).getByRole("button",{name:archive.name,exact:true}).click();
     const parents=[folder!];let current=folder!;while(current.parent_id){current=data.folders.find(item=>item.id===current.parent_id)!;parents.unshift(current);}

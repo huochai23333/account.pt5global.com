@@ -5381,8 +5381,7 @@
         "document_too_large": "Entries and images must total no more than 10 MiB. Reduce image sizes and retry.",
         "document_invalid": "Check the document name and entries, then retry.",
         "document_not_confirmed": "We could not confirm the saved content. Please retry.",
-        "document_failed": "The operation did not finish. Keep this page open and retry.",
-        "document_share_confirmation": "Please confirm sharing this document with the customer."
+        "document_failed": "The operation did not finish. Keep this page open and retry."
       },
       "guide": "User guide",
       "leaveTitle": "Unsaved changes",
@@ -5395,14 +5394,12 @@
       "folderSearchResults": "Folder search results",
       "folderSelected": "Save location: {path}",
       "folderUp": "Up one folder",
-      "shareNoticeFor": "I confirm saving to shared documents for {name}, accessible to authorized staff.",
       "chooseSaveFolder": "Choose a save folder",
       "folderLoading": "Loading available folders…",
       "noFolders": "No writable folders are available. Please check your access.",
       "archiveSearch": "Search staff, customers or folders",
       "chooseArchive": "Choose a staff member or customer",
       "chooseFolder": "Choose a folder",
-      "shareNotice": "I confirm sharing this document with this customer so they can view and download it.",
       "folderNotice": "Saved in: {name}",
       "readOnly": "You can view this document, print it or save it as a PDF.",
       "readOnlyReady": "Document opened for viewing",
@@ -5438,7 +5435,6 @@
     "limits": "Images, PDF, office documents, text, ZIP and video. Images under 5MB, video under 30MB, other files up to 20MB.",
     "readOnly": "You can view and download these documents.",
     "deleteWarning": "Permanently delete \"{name}\"? This cannot be undone.",
-    "shareWarning": "I confirm sharing this file with this customer, who will be able to view and download it.",
     "previous": "Previous",
     "next": "Next",
     "pagination": "Page {page}, {total} items",
@@ -5446,9 +5442,7 @@
     "reconcile": "Check original operation",
     "uploadAgain": "Select the file to upload again",
     "zones": {
-      "personal": "Personal folder",
-      "customer_internal": "Internal documents",
-      "shared": "Shared documents"
+      "personal": "Documents folder"
     },
     "errors": {
       "saved": "Documents saved.",
@@ -5458,7 +5452,6 @@
       "conflict": "The documents have changed. Refresh and try again.",
       "folderNotEmpty": "Move or delete the files and subfolders first.",
       "defaultFolder": "Default folders must be kept and cannot be changed or deleted.",
-      "shareConfirmation": "Confirm sharing these documents with the customer first.",
       "partial": "Some documents still need attention. Check the original operations.",
       "unconfirmed": "Completion has not been confirmed. Check the original operation.",
       "savedRefreshing": "Documents saved, but the page could not refresh. Load the documents again.",
@@ -5521,7 +5514,6 @@
       "manifestCounts": "Includes {folders} folders, {files} files and {templates} template documents.",
       "permanentDelete": "I confirm permanent deletion of the listed documents and all contents of the selected folders. This cannot be undone.",
       "destinationNotice": "Move or save to: {path}",
-      "share": "I confirm sharing all selected documents with {name}. This customer will be able to view and download them.",
       "templateDownloadNotice": "Open the {count} template documents separately to print or save as PDF. The ZIP contains uploaded files.",
       "zipLimits": "Up to 100 uploaded files and 200 MB per ZIP.",
       "reloadManifest": "Reload the list and confirm again",

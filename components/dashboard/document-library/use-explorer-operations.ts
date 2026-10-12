@@ -9,10 +9,10 @@ import {writeDocument} from "@/lib/company-templates/documents/client";
 export function useExplorerOperations(userId:string,data:ExplorerLibrary|null,refresh:()=>Promise<boolean>){
  const single=useDocumentActions(userId,refresh);const batches=useExplorerBatches(userId,refresh);const [downloading,setDownloading]=useState(false);const [downloadError,setDownloadError]=useState("");
  async function submit(target:ExplorerDialogTarget,value:ExplorerDialogSubmission){
-  const {name,destinationId,confirmShare,manifest,operationId}=value;const item=target.item;
+  const {name,destinationId,manifest,operationId}=value;const item=target.item;
   if(target.action==="move"||target.action==="delete"||target.action==="copy"){
    if(!manifest)throw new Error("unconfirmed");
-   const done=await batches.start(target.action,target.items,manifest,destinationId,confirmShare,operationId,name);
+   const done=await batches.start(target.action,target.items,manifest,destinationId,operationId,name);
    if(!done)throw new Error(batches.getError()||"unconfirmed");return true;
   }
   if(target.action==="create")return single.command("create_folder",{folderId:destinationId||target.folder?.id||data?.folderId,name});

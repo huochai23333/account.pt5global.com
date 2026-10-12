@@ -31,7 +31,7 @@ export function useDocumentSave(document: TemplateDocument) {
         while (alive.current && (pending.current || force || canonicalState(latest.current)!==confirmed.current)) {
           if (!pending.current) {
             pending.current={action:"save",documentId:document.id,operationId:crypto.randomUUID(),expectedRevision:revision.current,state:latest.current,
-              ...(choice?{folderId:choice.folderId,confirmShare:choice.confirmShare}:{})};
+              ...(choice?{folderId:choice.folderId}:{})};
             force=false;
           }
           setStatus("saving"); const saved=await writeDocument(pending.current);
@@ -47,7 +47,7 @@ export function useDocumentSave(document: TemplateDocument) {
         if (code==="document_conflict") {conflict.current=true; pending.current=null; setStatus("conflict");}
         else {
           // 明确未写入的校验错误可调整后新提交；响应丢失必须保留原编号核对。
-          if (["document_too_large","document_forbidden","document_share_confirmation","document_invalid","document_missing"].includes(code)) pending.current=null;
+          if (["document_too_large","document_forbidden","document_invalid","document_missing"].includes(code)) pending.current=null;
           setStatus("failed");
         }
         setError(code); return false;

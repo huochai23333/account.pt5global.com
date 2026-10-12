@@ -12,7 +12,7 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   try {
     await documentLogin(page, "administrator"); await page.goto("/admin/documents?scope=folder");
-    await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "个人文件夹", exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "资料文件夹", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "新建子文件夹", exact: true }).click();
     let dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}合同`); await dialog.getByRole("button", { name: "确认", exact: true }).click();
     await expect(dialog).toHaveCount(0);
@@ -29,9 +29,9 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
     await openItemMenu(page, card, "重命名"); dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}新名称.txt`); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     files = await authoritativeFiles([`${prefix}新名称.txt`]); expect(files[0].id).toBe(first.id); expect(files[0].version).toBe(first.version + 1); expect(files[0].storage_path).toBe(first.storage_path);
     await page.getByRole("textbox", { name: "搜索资料" }).fill("新名称"); await page.getByRole("button", { name: "搜索资料", exact: true }).click(); await expect(page.locator('[data-document-file]')).toHaveCount(1);
-    card = page.locator(`[data-document-file="${first.id}"]`); await openItemMenu(page, card, "移动到"); dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "个人文件夹", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
+    card = page.locator(`[data-document-file="${first.id}"]`); await openItemMenu(page, card, "移动到"); dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "资料文件夹", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     const moved = (await authoritativeFiles([`${prefix}新名称.txt`]))[0]; expect(moved.folder_id).not.toBe(folder.id); expect(moved.storage_path).toBe(first.storage_path);
-    await chooseDocumentFolder(page, "个人文件夹"); await uploadDocumentFiles(page, [`${prefix}预览.pdf`], documentPdf(), "application/pdf");
+    await chooseDocumentFolder(page, "资料文件夹"); await uploadDocumentFiles(page, [`${prefix}预览.pdf`], documentPdf(), "application/pdf");
     const pdf = (await authoritativeFiles([`${prefix}预览.pdf`]))[0]; await openItemMenu(page, page.locator(`[data-document-file="${pdf.id}"]`), "打开");
     await expect(page.getByRole("dialog").locator("iframe")).toHaveAttribute("src", `/api/document-library/files/${pdf.id}/content?preview=1`);
     const response = await page.request.get(`/api/document-library/files/${pdf.id}/content?preview=1`); expect(response.status()).toBe(200); expect(response.headers()["cache-control"]).toBe("private, no-store"); expect(response.headers()["content-type"]).toBe("application/pdf");
@@ -63,7 +63,7 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
   } finally { await cleanupDocuments(prefix); }
 });
 
-test("员工与管理员管理同一个个人文件夹，无业务员工也能进入", async ({ page }) => {
+test("员工与管理员管理同一个资料文件夹，无业务员工也能进入", async ({ page }) => {
   test.setTimeout(120000); const prefix=`docs-employee-${Date.now()}-`;
   try {
     const employee=await documentUser("operator");

@@ -17,9 +17,9 @@ export function DocumentCreateButton({ templateId, templateName, workspace,curre
   useEffect(()=>{const media=window.matchMedia("(min-width: 768px)");const update=()=>setDesktop(media.matches);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update);},[]);
   async function create(choice: FolderSaveChoice) {
     if (busyRef.current) return; busyRef.current=true;setBusy(true);setError("");
-    intent.current ??= {action:"create",documentId:crypto.randomUUID(),operationId:crypto.randomUUID(),templateId,name:templateName.slice(0,100)+" "+new Date().toLocaleDateString("sv-SE"),folderId:choice.folderId,confirmShare:choice.confirmShare};
+    intent.current ??= {action:"create",documentId:crypto.randomUUID(),operationId:crypto.randomUUID(),templateId,name:templateName.slice(0,100)+" "+new Date().toLocaleDateString("sv-SE"),folderId:choice.folderId};
     try { const result=await writeDocument(intent.current); router.push(templateDocumentHref(workspace,result.receipt.document_id)); }
-    catch(cause) {const key=documentErrorKey(cause);setError(key);if(["document_forbidden","document_invalid","document_share_confirmation","document_missing"].includes(key))intent.current=null;busyRef.current=false;setBusy(false);}
+    catch(cause) {const key=documentErrorKey(cause);setError(key);if(["document_forbidden","document_invalid","document_missing"].includes(key))intent.current=null;busyRef.current=false;setBusy(false);}
   }
   if(!desktop)return null;
   return <div className="grid gap-2"><Button disabled={busy} loading={busy} onClick={()=>{intent.current=null;setError("");setOpen(true);}}>{t(busy?"opening":"create")}</Button>{open?<DocumentFolderDialog title={t("chooseSaveFolder")} currentFolderId={currentFolderId} busy={busy} error={error} close={()=>setOpen(false)} submit={create}/>:null}</div>;

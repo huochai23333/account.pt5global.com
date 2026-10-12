@@ -5381,8 +5381,7 @@
         "document_too_large": "填写内容和图片合计不能超过 10 MiB，请减少图片大小后重试。",
         "document_invalid": "请检查文档名称和填写内容后重试。",
         "document_not_confirmed": "暂时无法确认保存结果，请重试。",
-        "document_failed": "操作未完成，请保持页面打开并重试。",
-        "document_share_confirmation": "请先确认将文档共享给客户。"
+        "document_failed": "操作未完成，请保持页面打开并重试。"
       },
       "guide": "使用指南",
       "leaveTitle": "尚有未保存内容",
@@ -5395,14 +5394,12 @@
       "folderSearchResults": "文件夹搜索结果",
       "folderSelected": "保存位置：{path}",
       "folderUp": "返回上一级文件夹",
-      "shareNoticeFor": "我确认放入 {name} 的共享资料，具有该档案权限的内部工作人员可以查看和管理。",
       "chooseSaveFolder": "选择保存文件夹",
       "folderLoading": "正在读取可保存的文件夹…",
       "noFolders": "暂无可保存的文件夹，请确认账号权限。",
       "archiveSearch": "搜索人员、客户或文件夹",
       "chooseArchive": "请选择人员或客户",
       "chooseFolder": "请选择文件夹",
-      "shareNotice": "我确认将此文档共享给该客户，客户将可以查看和下载。",
       "folderNotice": "保存在：{name}",
       "readOnly": "你可以查看此文档，也可以打印或另存为 PDF。",
       "readOnlyReady": "文档已打开，仅可查看",
@@ -5438,7 +5435,6 @@
     "limits": "支持图片、PDF、办公文档、文本、ZIP和视频。图片小于5MB，视频小于30MB，其他文件不超过20MB。",
     "readOnly": "你可以查看和下载这里的资料。",
     "deleteWarning": "确认永久删除“{name}”？删除后无法恢复。",
-    "shareWarning": "我确认将此文件共享给该客户，客户将可以查看和下载。",
     "previous": "上一页",
     "next": "下一页",
     "pagination": "第 {page} 页，共 {total} 项资料",
@@ -5446,9 +5442,7 @@
     "reconcile": "继续核对",
     "uploadAgain": "请重新选择文件上传",
     "zones": {
-      "personal": "个人文件夹",
-      "customer_internal": "内部资料",
-      "shared": "共享资料"
+      "personal": "资料文件夹"
     },
     "errors": {
       "saved": "资料已保存。",
@@ -5458,7 +5452,6 @@
       "conflict": "资料已经发生变化，请刷新后重新操作。",
       "folderNotEmpty": "请先移走或删除资料及子文件夹。",
       "defaultFolder": "默认文件夹需要保留，不能修改或删除。",
-      "shareConfirmation": "请先确认将资料共享给客户。",
       "partial": "部分资料尚未处理完成，请继续核对。",
       "unconfirmed": "尚未确认处理完成，请继续核对原操作。",
       "savedRefreshing": "资料已保存，页面暂时未能刷新，请重新读取资料。",
@@ -5521,7 +5514,6 @@
       "manifestCounts": "包含 {folders} 个文件夹、{files} 个文件和 {templates} 份模板文档。",
       "permanentDelete": "我确认永久删除所列资料及文件夹中的全部内容，删除后无法恢复。",
       "destinationNotice": "移动或保存到：{path}",
-      "share": "我确认将所选全部资料共享给{name}，该客户将可以查看和下载。",
       "templateDownloadNotice": "其中 {count} 份模板文档请单独打开后打印或另存为 PDF，压缩包包含上传文件。",
       "zipLimits": "每次打包最多 100 个上传文件，总大小不超过 200 MB。",
       "reloadManifest": "重新读取清单并确认",

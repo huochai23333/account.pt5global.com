@@ -8,7 +8,7 @@ export type TemplateDocument = TemplateDocumentSummary & { state: Record<string,
 export type DocumentMutation = {
   action: "create" | "save" | "rename" | "copy" | "move" | "delete";
   documentId: string; operationId: string; expectedRevision?: number;
-  templateId?: string; sourceId?: string; name?: string; state?: Record<string, unknown>; folderId?: string; confirmShare?: boolean;
+  templateId?: string; sourceId?: string; name?: string; state?: Record<string, unknown>; folderId?: string;
 };
 export type DocumentReceipt = { document_id: string; folder_id: string; revision: number; state_sha256: string; affected_rows: number; deleted: boolean };
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
