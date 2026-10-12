@@ -8,8 +8,9 @@ export type DocumentAction="rename"|"copy"|"move"|"delete";
 export function useDocumentActions(document:TemplateDocumentSummary,getRevision:()=>number,getState?:()=>Promise<Record<string,unknown>>,beforeRename?:()=>Promise<boolean>,onChanged?:(document:TemplateDocument|null)=>void,onDialogChange?:(open:boolean)=>void){
   const [action,setAction]=useState<DocumentAction|null>(null);const [name,setName]=useState(document.name);
   const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  const [recovering,setRecovering]=useState(false);
   const intent=useRef<DocumentMutation|null>(null);const running=useRef(false);
-  function open(next:DocumentAction){intent.current=null;setError("");setName(next==="copy"?document.name.slice(0,115)+" (2)":document.name);setAction(next);onDialogChange?.(true);}
+  function open(next:DocumentAction){intent.current=null;setRecovering(false);setError("");setName(next==="copy"?document.name.slice(0,115)+" (2)":document.name);setAction(next);onDialogChange?.(true);}
   async function submit(choice?:FolderSaveChoice){
     if(!action||running.current)return null;running.current=true;setBusy(true);setError("");
     try{
@@ -19,8 +20,8 @@ export function useDocumentActions(document:TemplateDocumentSummary,getRevision:
         intent.current={action,operationId:crypto.randomUUID(),documentId:action==="copy"?crypto.randomUUID():document.id,
           ...(action==="copy"?{sourceId:document.id}:{expectedRevision:getRevision()}),...(["rename","copy"].includes(action)?{name:choice?.name??name}:{}),...(state?{state}:{}),...(choice?{folderId:choice.folderId}:{})};
       }
-      const result=await writeDocument(intent.current);onChanged?.(result.document);setAction(null);onDialogChange?.(false);return result;
-    }catch(cause){const key=documentErrorKey(cause);setError(key);if(["document_invalid","document_forbidden","document_too_large"].includes(key))intent.current=null;return null;}finally{running.current=false;setBusy(false);}
+      const result=await writeDocument(intent.current);onChanged?.(result.document);setAction(null);if(action!=="copy")onDialogChange?.(false);return result;
+    }catch(cause){const key=documentErrorKey(cause);setError(key);if(["document_name_conflict","document_invalid","document_forbidden","document_too_large"].includes(key))intent.current=null;setRecovering(Boolean(intent.current));return null;}finally{running.current=false;setBusy(false);}
   }
-  return{action,name,setName,busy,error,open,close:()=>{if(!running.current){setAction(null);onDialogChange?.(false);}},submit};
+  return{action,name,setName,busy,error,recovering,open,close:()=>{if(!running.current){setAction(null);onDialogChange?.(false);}},submit};
 }

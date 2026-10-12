@@ -531,7 +531,7 @@
       "logistics": "物流管理",
       "customerInventoryOrders": "库存订单",
       "wholesaleOrders": "批发订单",
-      "documents": "资料库"
+      "documents": "我的文档"
     },
     "business": {
       "noAccess": "当前账号暂无可见业务",
@@ -5349,7 +5349,7 @@
       "create": "新建文档",
       "opening": "正在新建并打开，请稍候…",
       "rename": "重命名",
-      "copy": "另存一份",
+      "copy": "另存为",
       "delete": "删除",
       "deleteNotice": "删除后无法恢复，请确认是否删除这份文档。",
       "name": "文档名称",
@@ -5381,7 +5381,8 @@
         "document_too_large": "填写内容和图片合计不能超过 10 MiB，请减少图片大小后重试。",
         "document_invalid": "请检查文档名称和填写内容后重试。",
         "document_not_confirmed": "暂时无法确认保存结果，请重试。",
-        "document_failed": "操作未完成，请保持页面打开并重试。"
+        "document_failed": "操作未完成，请保持页面打开并重试。",
+        "document_name_conflict": "这个文件夹已有同名文档，请换一个文件名。"
       },
       "guide": "使用指南",
       "leaveTitle": "尚有未保存内容",
@@ -5405,11 +5406,38 @@
       "readOnlyReady": "文档已打开，仅可查看",
       "print": "打印或另存为 PDF",
       "type": "模板文档",
-      "viewDocument": "查看文档"
+      "viewDocument": "查看文档",
+      "saveAs": "另存为",
+      "recoveryNotice": "上次保存的结果还未确认，重试会继续使用当前文件名和位置。",
+      "fileName": "文件名",
+      "fileType": "保存类型：{type}",
+      "saveAsSearch": "搜索当前文件夹及下级",
+      "saveAsTree": "保存位置目录树",
+      "saveAsFiles": "文件夹和文件",
+      "saveAsEmpty": "这个文件夹暂时没有文档，可以保存在这里。",
+      "newFolderName": "文件夹名称",
+      "folderExpand": "展开或收起{name}",
+      "draftNotice": "云端草稿，仅自己可见。另存为后进入我的文档。",
+      "draftBack": "返回模板列表",
+      "myDrafts": "我的草稿",
+      "draftSearch": "搜索我的草稿",
+      "continueDraft": "继续制作",
+      "deleteDraft": "删除草稿",
+      "deleteDraftNotice": "确认永久删除草稿“{name}”？填写内容将无法恢复。",
+      "noDrafts": "暂无草稿，选择一个模板开始制作。",
+      "draftPromoted": "此草稿已另存为文档。",
+      "draftStatus": {
+        "loading": "正在打开草稿…",
+        "unsaved": "草稿尚未保存",
+        "saving": "正在保存草稿…",
+        "saved": "草稿已保存",
+        "failed": "草稿保存未完成，请重试。",
+        "conflict": "草稿已有新修改，请重新打开后继续。"
+      }
     }
   },
   "Documents": {
-    "title": "资料库",
+    "title": "我的文档",
     "view": "查看资料",
     "archive": "人员或客户",
     "folder": "当前文件夹",
@@ -5466,7 +5494,7 @@
       "uploadSummary": "上传结果：已完成 {done} / {total} 项",
       "activityDetails": "查看明细",
       "retryLoad": "重新加载",
-      "home": "资料库首页",
+      "home": "我的文档首页",
       "mine": "我的资料",
       "myDocuments": "我的资料",
       "employees": "人员资料",

@@ -2,9 +2,8 @@
 import {useCallback, useEffect, useRef, useState} from "react";
 import {canonicalState, type DocumentMutation, type TemplateDocument} from "@/lib/company-templates/documents/model";
 import {writeDocument, documentErrorKey} from "@/lib/company-templates/documents/client";
-import type {FolderSaveChoice} from "./document-folder-dialog";
 export type SaveStatus = "loading"|"unsaved"|"saving"|"saved"|"failed"|"conflict";
-/** 自动保存和手动归档共用一条串行通道，内容和位置由同一事务更新。 */
+/** 自动保存和普通保存共用串行通道，均更新当前位置；普通保存即使内容未改也核对当前修订。 */
 export function useDocumentSave(document: TemplateDocument) {
   const latest = useRef(document.state); const confirmed = useRef(canonicalState(document.state));
   const revision = useRef(document.revision); const pending = useRef<DocumentMutation|null>(null);
@@ -19,26 +18,25 @@ export function useDocumentSave(document: TemplateDocument) {
     generation.current++; dirtyRef.current=true; setDirty(true);
     if (!running.current && !conflict.current) setStatus("unsaved");
   }, [writable]);
-  const flush = useCallback(async (choice?: FolderSaveChoice): Promise<boolean> => {
+  const flush = useCallback(async (manual = false): Promise<boolean> => {
     if (!writable || conflict.current) return false;
-    // 弹窗确认先等待在途请求，再使用最新修订提交位置，避免与自动保存互相覆盖。
+    // 普通保存先等待在途请求，再用最新修订提交内容，避免与自动保存互相覆盖。
     while (running.current) await running.current;
     if (conflict.current) return false;
     if (timer.current) clearTimeout(timer.current);
     const work = async () => {
-      let force = Boolean(choice); setError("");
+      let force = manual; setError("");
       try {
         while (alive.current && (pending.current || force || canonicalState(latest.current)!==confirmed.current)) {
           if (!pending.current) {
-            pending.current={action:"save",documentId:document.id,operationId:crypto.randomUUID(),expectedRevision:revision.current,state:latest.current,
-              ...(choice?{folderId:choice.folderId}:{})};
+            pending.current={action:"save",documentId:document.id,operationId:crypto.randomUUID(),expectedRevision:revision.current,state:latest.current};
             force=false;
           }
           setStatus("saving"); const saved=await writeDocument(pending.current);
           revision.current=saved.receipt.revision; confirmed.current=canonicalState(pending.current.state); pending.current=null;
           if (saved.document) setLocation(saved.document.location);
           if (snapshotGeneration.current===generation.current && canonicalState(latest.current)===confirmed.current) {dirtyRef.current=false; setDirty(false);}
-          if (!choice && paused.current) break;
+          if (!manual && paused.current) break;
         }
         if (alive.current) setStatus(dirtyRef.current?"unsaved":"saved");
         return !dirtyRef.current && !pending.current;
@@ -65,13 +63,6 @@ export function useDocumentSave(document: TemplateDocument) {
     if (!paused.current) timer.current=setTimeout(()=>void flush(),1000);
   }, [flush,writable]);
   const pause = useCallback(() => {paused.current=true; if(timer.current) clearTimeout(timer.current);}, []);
-  const cancelFolderSubmission = useCallback(() => {
-    if (!pending.current?.folderId) return;
-    // 取消未确认的归档后不再重送移动意图。新提交只保存内容，仍带原修订：
-    // 如果之前的请求已经落库，则触发冲突要求重新打开，不能猜测结果或覆盖他人修改。
-    pending.current={action:"save",documentId:document.id,operationId:crypto.randomUUID(),expectedRevision:revision.current,state:latest.current};
-    dirtyRef.current=true;setDirty(true);setError("");setStatus("unsaved");
-  }, [document.id]);
   const resume = useCallback(() => {paused.current=false; if (dirtyRef.current || pending.current) timer.current=setTimeout(()=>void flush(),1000);}, [flush]);
   const acceptRevision = useCallback((value: number) => {revision.current=value;}, []);
   const acceptLocation = useCallback((value: TemplateDocument["location"]) => {setLocation(value);}, []);
@@ -83,5 +74,5 @@ export function useDocumentSave(document: TemplateDocument) {
     window.addEventListener("online",online); window.addEventListener("beforeunload",leave);
     return ()=>{alive.current=false; if(timer.current)clearTimeout(timer.current); window.removeEventListener("online",online); window.removeEventListener("beforeunload",leave);};
   }, [flush]);
-  return {status,error,dirty,receive,markDirty,flush,revision,acceptRevision,acceptLocation,readState,pause,resume,cancelFolderSubmission,location};
+  return {status,error,dirty,receive,markDirty,flush,revision,acceptRevision,acceptLocation,readState,pause,resume,location};
 }

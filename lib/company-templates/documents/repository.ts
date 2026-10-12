@@ -36,7 +36,7 @@ export async function mutateTemplateDocument(db: SupabaseClient, input: Document
   if (confirmed && input.name && confirmed.name !== input.name.trim()) throw new Error("document_not_confirmed");
   return { document: confirmed, receipt };
 }
-export async function readDocumentHtml(db: SupabaseClient, document: TemplateDocument, guide=false) {
+export async function readDocumentHtml(db: SupabaseClient, document: Pick<TemplateDocument,"template_id"|"template_version_id">, guide=false) {
   const { data, error } = await withRequestTimeout(db.from("company_template_versions").select("html_content,html_sha256,guide_html_content,guide_sha256").eq("id", document.template_version_id).eq("template_id", document.template_id).maybeSingle());
   if (error) throw error;
   const content=guide?data?.guide_html_content:data?.html_content;const hash=guide?data?.guide_sha256:data?.html_sha256;
@@ -44,4 +44,4 @@ export async function readDocumentHtml(db: SupabaseClient, document: TemplateDoc
   if (createHash("sha256").update(content, "utf8").digest("hex") !== hash) throw new Error("document_integrity");
   return content as string;
 }
-export async function hasDocumentGuide(db:SupabaseClient,document:TemplateDocument){const {data,error}=await db.from("company_template_versions").select("guide_sha256").eq("id",document.template_version_id).single();if(error)throw error;return Boolean(data.guide_sha256);}
+export async function hasDocumentGuide(db:SupabaseClient,document:Pick<TemplateDocument,"template_version_id">){const {data,error}=await db.from("company_template_versions").select("guide_sha256").eq("id",document.template_version_id).single();if(error)throw error;return Boolean(data.guide_sha256);}

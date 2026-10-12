@@ -61,7 +61,7 @@ for (const source of ['new', 'invoice'] as const) {
       await expect(frame.locator(source === 'new' ? '#qty' : '#toName')).toHaveValue(source === 'new' ? '2' : 'Original HTML acceptance');
       if(source === 'new'){await expect(frame.locator('#total')).toHaveText('25');await frame.locator('#qty').fill('3');await frame.getByRole('button',{name:'计算',exact:true}).click();await expect(frame.locator('#total')).toHaveText('37.5');}
       else {await expect(frame.locator('#tbody tr.prow')).toHaveCount(4);await frame.locator('#tbody .qty').first().fill('3');await expect(frame.locator('#totAmt')).toHaveValue('62.50');}
-      await page.getByRole('button',{name:'保存',exact:true}).click();await confirmDocumentFolder(page);await expectDocumentSaved(page);
+      await page.getByRole('button',{name:'保存',exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);await expectDocumentSaved(page);
       await page.reload();await expectDocumentSaved(page);
       await expect(frame.locator(source === 'new' ? '#total' : '#totAmt'))[source === 'new' ? 'toHaveText' : 'toHaveValue'](source === 'new' ? '37.5' : '62.50');
       const { count: documentCount } = await admin.from('company_template_documents').select('id', { count: 'exact', head: true }).eq('template_id', templateId);

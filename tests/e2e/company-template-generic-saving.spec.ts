@@ -40,7 +40,7 @@ test("普通模板恢复闭包行、对话框回答、多选、可编辑文字�
     await expect(frame.locator("#picture")).toHaveAttribute("src", /^data:image\/png;base64,/); expect(dialogs).toHaveLength(dialogCount);
     await frame.locator(".amount").nth(1).fill("40"); await expect(frame.locator("#sum")).toHaveText("66");
     await frame.locator("#add").click(); await frame.locator(".amount").nth(2).fill("10"); await expect(frame.locator("#sum")).toHaveText("77");
-    await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentSaved(page);
+    await page.getByRole("button", { name: "保存", exact: true }).click();await expect(page.getByRole("dialog")).toHaveCount(0); await expectDocumentSaved(page);
     const after = await readPersonalDocument(id); expect(after.revision).toBeGreaterThan(before.revision);
     await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#sum")).toHaveText("77"); await expect(frame.locator(".amount")).toHaveCount(3);
     // 只破坏本地这份夹具的权威记录，证明查库断言能发现错误保存，再从真实页面恢复正确值。
@@ -49,7 +49,7 @@ test("普通模板恢复闭包行、对话框回答、多选、可编辑文字�
     const { error: faultError } = await admin.from("company_template_documents").update({ state: broken }).eq("id", id); if (faultError) throw faultError;
     let detected = false; try { expect((await readPersonalDocument(id)).state).toEqual(correct.state); } catch { detected = true; }
     expect(detected).toBe(true); await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#customer")).toHaveValue("Incorrect persisted customer");
-    await frame.locator("#customer").fill("Generic state acceptance"); await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentContains(page, id, "Generic state acceptance");
+    await frame.locator("#customer").fill("Generic state acceptance"); await page.getByRole("button", { name: "保存", exact: true }).click();await expect(page.getByRole("dialog")).toHaveCount(0); await expectDocumentContains(page, id, "Generic state acceptance");
     expect((await readPersonalDocument(id)).state).toEqual(correct.state); await page.reload(); await expectDocumentSaved(page); await expect(frame.locator("#customer")).toHaveValue("Generic state acceptance");
     const { data: original } = await admin.from("company_template_versions").select("html_content,html_sha256").eq("id", template.current_version_id).single();
     expect(original?.html_content).toBe(genericTemplateFixture); expect(original?.html_sha256).toBe(sha256(genericTemplateFixture)); expect(errors).toEqual([]);

@@ -18,6 +18,7 @@ type DashboardDialogProps = {
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
+  contentClassName?: string;
 };
 
 const DIALOG_FOCUSABLE_SELECTOR = [
@@ -45,6 +46,7 @@ export function DashboardDialog({
   description,
   actions,
   children,
+  contentClassName,
 }: DashboardDialogProps) {
   const uiText = useTranslations("UiText.shared");
   const titleId = useId();
@@ -243,7 +245,8 @@ export function DashboardDialog({
               </Button>
             </div>
 
-            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-8">
+            {/* 文件选择器需要把路径和文件名同时留在视口，业务可缩小内容留白，其他弹窗沿用默认间距。 */}
+            <div className={`min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain ${contentClassName??"px-4 py-5 sm:px-8 sm:py-8"}`}>
               {children}
             </div>
 

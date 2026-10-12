@@ -531,7 +531,7 @@
       "logistics": "Logistics",
       "customerInventoryOrders": "Inventory Orders",
       "wholesaleOrders": "Wholesale Orders",
-      "documents": "Documents"
+      "documents": "My documents"
     },
     "business": {
       "noAccess": "This account does not have any visible business yet.",
@@ -5349,7 +5349,7 @@
       "create": "New document",
       "opening": "Creating and opening…",
       "rename": "Rename",
-      "copy": "Save a copy",
+      "copy": "Save as",
       "delete": "Delete",
       "deleteNotice": "This document cannot be recovered after deletion. Please confirm.",
       "name": "Document name",
@@ -5381,7 +5381,8 @@
         "document_too_large": "Entries and images must total no more than 10 MiB. Reduce image sizes and retry.",
         "document_invalid": "Check the document name and entries, then retry.",
         "document_not_confirmed": "We could not confirm the saved content. Please retry.",
-        "document_failed": "The operation did not finish. Keep this page open and retry."
+        "document_failed": "The operation did not finish. Keep this page open and retry.",
+        "document_name_conflict": "This folder already contains a document with that name. Choose another name."
       },
       "guide": "User guide",
       "leaveTitle": "Unsaved changes",
@@ -5405,11 +5406,38 @@
       "readOnlyReady": "Document opened for viewing",
       "print": "Print or save as PDF",
       "type": "Template document",
-      "viewDocument": "View document"
+      "viewDocument": "View document",
+      "saveAs": "Save as",
+      "recoveryNotice": "The previous save is not confirmed. Retrying will use this file name and location.",
+      "fileName": "File name",
+      "fileType": "Save as type: {type}",
+      "saveAsSearch": "Search this folder and subfolders",
+      "saveAsTree": "Save location tree",
+      "saveAsFiles": "Folders and files",
+      "saveAsEmpty": "This folder is empty. You can save here.",
+      "newFolderName": "Folder name",
+      "folderExpand": "Expand or collapse {name}",
+      "draftNotice": "Private cloud draft. Save as a document to add it to My documents.",
+      "draftBack": "Back to templates",
+      "myDrafts": "My drafts",
+      "draftSearch": "Search my drafts",
+      "continueDraft": "Continue editing",
+      "deleteDraft": "Delete draft",
+      "deleteDraftNotice": "Permanently delete draft \"{name}\"? Your entries cannot be recovered.",
+      "noDrafts": "No drafts yet. Choose a template to get started.",
+      "draftPromoted": "This draft has been saved as a document.",
+      "draftStatus": {
+        "loading": "Opening draft…",
+        "unsaved": "Draft has unsaved changes",
+        "saving": "Saving draft…",
+        "saved": "Draft saved",
+        "failed": "Draft could not be saved. Please retry.",
+        "conflict": "This draft has changed. Reopen it to continue."
+      }
     }
   },
   "Documents": {
-    "title": "Documents",
+    "title": "My documents",
     "view": "View documents",
     "archive": "Person or customer",
     "folder": "Current folder",
@@ -5466,7 +5494,7 @@
       "uploadSummary": "Uploads: {done} of {total} completed",
       "activityDetails": "View details",
       "retryLoad": "Try again",
-      "home": "Library home",
+      "home": "My documents home",
       "mine": "My documents",
       "myDocuments": "My documents",
       "employees": "Staff documents",

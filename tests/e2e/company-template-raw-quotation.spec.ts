@@ -35,7 +35,7 @@ test("老板未加接口的原报价单保存多目的地、动态产品、文�
     await expect(frame.locator(".o-tot").first()).toHaveText(total); await expect(frame.locator(".f-imgdata").first()).toHaveValue(/^data:image\/png;base64,/);
     await frame.locator(".f-cny").first().fill("200"); await expect(frame.locator(".o-tot").first()).not.toHaveText(total);
     await clickStableTemplateButton(page, frame, "+ Add product"); await expect(frame.locator("tr.prow")).toHaveCount(4);
-    await page.getByRole("button", { name: "保存", exact: true }).click();await confirmDocumentFolder(page); await expectDocumentSaved(page); const saved = await readPersonalDocument(id);
+    await page.getByRole("button", { name: "保存", exact: true }).click();await expect(page.getByRole("dialog")).toHaveCount(0); await expectDocumentSaved(page); const saved = await readPersonalDocument(id);
     await page.reload(); await expectDocumentSaved(page); await expect(frame.locator(".f-cny").first()).toHaveValue("200"); await expect(frame.locator("tr.prow")).toHaveCount(4);
     const { data: version } = await admin.from("company_template_versions").select("html_content,html_sha256").eq("id", template.current_version_id).single();
     expect(version?.html_content).toBe(html); expect(version?.html_sha256).toBe(sha256(html)); expect(errors).toEqual([]);

@@ -34,7 +34,7 @@ export async function readLibrary(page: Page): Promise<ExplorerLibrary> {
 export async function chooseDocumentFolder(page: Page, name: string) {
   // 详情页链接采用客户端导航；等网址和真实页面出现后才读取当前档案，避免误读上一页。
   await expect(page).toHaveURL(/\/documents(?:[/?#]|$)/);
-  await expect(page.getByRole("heading",{name:"资料库",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"我的文档",exact:true})).toBeVisible();
   // 桌面直接使用目录树；窄屏从路径回到档案，再逐级双击目录。
   const tree=page.getByRole("tree",{name:"资料文件夹"});
   if(await tree.isVisible())await tree.getByRole("button",{name,exact:true}).click();
@@ -93,7 +93,7 @@ export async function cleanupDocuments(prefix: string) {
 }
 export async function checkDocumentViewport(page: Page, width: number, name: string) {
   await page.setViewportSize({ width, height: 900 });
-  await expect(page.getByRole("heading", { name: "资料库", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   // 开发工具按钮也位于 nextjs-portal；只把真正的错误覆盖层视为失败。
   await expect(page.locator("nextjs-portal [data-nextjs-dialog-overlay]")).toHaveCount(0);

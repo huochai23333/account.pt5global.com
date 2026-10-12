@@ -13,6 +13,7 @@ import {useExplorerController} from "./use-explorer-controller";
 import {itemManageable} from "./explorer-helpers";
 import {DocumentUploadResults} from "./document-upload-results";
 import {DocumentPendingOperations} from "./document-pending-operations";
+import {ExplorerTemplateSaveAs} from "./explorer-template-save-as";
 /** 页面只组装文件管理器；目录、选择、弹窗、上传与批量凭证各有独立模块。 */
 export function DocumentLibraryClient({initial,selection:initialSelection,userId}:{initial:ExplorerLibrary|null;selection:DocumentSelection;userId:string}){
  const t=useTranslations("Documents");const c=useExplorerController(initial,initialSelection,userId);const {data,selection,loading,error}=c.library;const {single,batches}=c.operations;
@@ -39,6 +40,6 @@ export function DocumentLibraryClient({initial,selection:initialSelection,userId
   <DocumentUploadResults results={single.uploadResults}/>
   {data&&<DocumentPendingOperations receipts={data.operations} intents={single.outstanding} busy={c.busy} reconcile={receipt=>void single.reconcile(receipt)}/>}
   <ExplorerBatchResults batches={visibleBatches} busy={c.busy} resume={id=>void batches.resume(id)} release={id=>void batches.release(id)}/>
-  {c.dialog&&<ExplorerDialog target={c.dialog} busy={c.busy} close={()=>c.setDialog(null)} submit={c.submit}/>}
+  {c.dialog&&(c.dialog.action==="copy"&&c.dialog.item?.kind==="template"?<ExplorerTemplateSaveAs item={c.dialog.item} close={()=>{c.selection.clear();c.setDialog(null);}} refresh={c.library.refresh}/>:<ExplorerDialog target={c.dialog} busy={c.busy} close={()=>c.setDialog(null)} submit={c.submit}/>)}
  </section>;
 }

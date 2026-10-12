@@ -29,5 +29,7 @@ export function documentBridge(content: string, token: string, parentOrigin: str
       }catch(e){send('error',{reason:e instanceof Error?e.message:'invalid'});}
     });
     window.addEventListener('load',function(){send('boot');},{once:true});
+    // 保存命令由父页执行，模板沙箱不能自行决定存储位置；其他编辑快捷键不接管。
+    window.addEventListener('keydown',function(event){if(!config.readOnly&&initialized&&(event.ctrlKey||event.metaKey)&&!event.altKey&&event.key.toLowerCase()==='s'){event.preventDefault();send('save-shortcut',{copy:event.shiftKey});}});
   })();</script>`;
 }

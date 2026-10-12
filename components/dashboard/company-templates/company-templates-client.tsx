@@ -10,14 +10,17 @@ import type { CompanyTemplateSummary } from "@/lib/company-templates/model";
 
 import { useCompanyTemplateManagement } from "./use-company-template-management";
 import { CompanyTemplateCard } from "./company-template-card";
+import {DraftList} from "./documents/draft-list";
+import type {DraftListData} from "./documents/use-draft-list";
 import { CompanyTemplatePublishDialog } from "./company-template-publish-dialog";
 
 /** 列表客户端统一管理弹窗、页面反馈和刷新；初始模板数据仍由服务端页面在权限校验后读取。 */
-export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace,initialFolderId }: {
+export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace,initialFolderId,initialDrafts }: {
   initialTemplates: CompanyTemplateSummary[];
   isAdmin: boolean;
   workspace: string;
   initialFolderId?: string;
+  initialDrafts: DraftListData;
 }) {
   const { t, pending, managingKey, feedback, publishTarget, setPublishTarget, desktop, refresh, manage } = useCompanyTemplateManagement();
 
@@ -26,6 +29,7 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace,in
       feedback={feedback}
       header={<DashboardListHeader actions={isAdmin && desktop ? <Button onClick={() => setPublishTarget(null)}><Plus className="size-4" />{t("actions.create")}</Button> : null} description={t("description")} title={t("title")} />}
     >
+      {desktop&&<DraftList initial={initialDrafts} workspace={workspace}/>}
       {!desktop ? <p className="rounded-xl bg-surface-inset p-5 text-sm text-content-muted">{t("viewer.desktopOnly")}</p> : initialTemplates.length ? (
         // 每张卡片按自己的内容高度排列；展开一侧的版本记录时，另一侧不应跟着变长。
         <div className="grid min-w-0 items-start gap-5 xl:grid-cols-2">

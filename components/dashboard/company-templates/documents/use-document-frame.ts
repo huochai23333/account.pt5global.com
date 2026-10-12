@@ -1,21 +1,26 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { TemplateDocument } from "@/lib/company-templates/documents/model";
+import type {TemplateDraft} from "@/lib/company-templates/documents/draft-model";
 import { documentRestoreBudget } from "@/lib/company-templates/documents/restore-budget";
 /** 父页只接受当前 iframe 的沙箱来源与随机标识；恢复验证完成后才允许编辑和保存。 */
-export function useDocumentFrame(document: TemplateDocument, receive:(state:Record<string,unknown>)=>void, dirty:()=>void, readState:()=>Record<string,unknown>) {
+export function useDocumentFrame(document: TemplateDocument|TemplateDraft, receive:(state:Record<string,unknown>)=>void, dirty:()=>void, readState:()=>Record<string,unknown>) {
+  // 窗口与保存控制器创建完毕后才绑定命令，避免两者在初始化时循环引用。
+  const command=useRef<((copy:boolean)=>void)|undefined>(undefined);
+  const bindSaveShortcut=useCallback((callback:(copy:boolean)=>void)=>{command.current=callback;return()=>{command.current=undefined;};},[]);
   const frame=useRef<HTMLIFrameElement>(null);const [desktop,setDesktop]=useState(false);const [attempt,setAttempt]=useState(0);
   const [load,setLoad]=useState<{token:string;src:string;status:"loading"|"ready"|"failed"}|null>(null);
   const exporter=useRef<{id:string;resolve:(s:Record<string,unknown>)=>void;reject:()=>void;timer:ReturnType<typeof setTimeout>}|null>(null);
   useEffect(()=>{const media=window.matchMedia("(min-width: 768px)");const update=()=>setDesktop(media.matches);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update);},[]);
   useEffect(()=>{
     if(!desktop)return;
-    const token=crypto.randomUUID();setLoad({token,src:`/api/company-template-documents/${document.id}/content?loadToken=${token}`,status:"loading"});
+    const token=crypto.randomUUID();const endpoint="owner_id" in document?"company-template-document-drafts":"company-template-documents";setLoad({token,src:`/api/${endpoint}/${document.id}/content?loadToken=${token}`,status:"loading"});
     const fail=()=>setLoad(current=>current?.token===token?{...current,status:"failed"}:current);
     const timer=setTimeout(fail,documentRestoreBudget(readState()));
     const message=(event:MessageEvent)=>{
       if(event.source!==frame.current?.contentWindow||event.origin!=="null"||!event.data||event.data.token!==token)return;
       const value=event.data;
+      if(value.type==="pt5.document.save-shortcut"){command.current?.(value.copy===true);return;}
       if(value.type==="pt5.document.boot")frame.current?.contentWindow?.postMessage({type:"pt5.document.initialize",token,state:readState()},"*");
       if(value.type==="pt5.document.error"){fail();return;}
       if(value.type==="pt5.document.dirty")dirty();
@@ -35,5 +40,5 @@ export function useDocumentFrame(document: TemplateDocument, receive:(state:Reco
     const id=crypto.randomUUID();exporter.current={id,resolve,reject:()=>reject(new Error("document_failed")),timer:setTimeout(()=>{exporter.current=null;reject(new Error("document_failed"));},5000)};
     frame.current.contentWindow.postMessage({type:"pt5.document.export",token:load.token,requestId:id},"*");
   }),[load]);
-  return{frame,desktop,load,exportNow,retry:()=>setAttempt(v=>v+1)};
+  return{frame,desktop,load,exportNow,bindSaveShortcut,retry:()=>setAttempt(v=>v+1)};
 }
