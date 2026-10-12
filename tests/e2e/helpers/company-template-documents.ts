@@ -13,7 +13,7 @@ export async function confirmDocumentFolder(page:Page, folderId?:string) {
   const dialog=page.getByRole("dialog");await expect(dialog.getByRole("status")).toHaveCount(0);
   await dialog.getByRole("combobox",{name:"人员或客户",exact:true}).click();await page.getByRole("option",{name:archive.name,exact:true}).click();
   const names:string[]=[];let current=folder;
-  while(current){names.unshift(current.system_key?(current.zone==="personal"?"本人资料":current.zone==="shared"?"共享资料":"内部资料"):current.name);current=data.folders.find((item:{id:string})=>item.id===current.parent_id);}
+  while(current){names.unshift(current.system_key?(current.zone==="personal"?"个人文件夹":current.zone==="shared"?"共享资料":"内部资料"):current.name);current=data.folders.find((item:{id:string})=>item.id===current.parent_id);}
   await dialog.getByRole("combobox",{name:"目标文件夹",exact:true}).click();await page.getByRole("option",{name:names.join(" / "),exact:true}).click();
   if(folder.zone==="shared")await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button",{name:"确认",exact:true}).click();

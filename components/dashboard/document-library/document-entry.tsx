@@ -12,6 +12,8 @@ export function DocumentEntry({ userId, customerId }: { userId?: string; custome
   const base = getWorkspaceBasePath(usePathname());
   // 详情页使用已加载的共享文案，不要求人员、客户页面加载整套资料库消息。
   const t = useTranslations("UiText.shared");
+  // 客户不使用资料库；个人资料页与内部详情共用按钮时，也必须隐藏入口。
+  if (base === "/client") return null;
   const params = new URLSearchParams(customerId ? { customer: customerId } : userId ? { user: userId } : {});
   // 人员、客户和本人详情共用这一入口，统一跟随工作台的电脑端导航分界。
   return <Link className={cn(buttonVariants({ size: "compact", variant: "outline" }), "hidden lg:inline-flex")} href={`${base}/documents${params.size ? `?${params}` : ""}`}><FolderOpen className="size-4" aria-hidden />{t("documentsView")}</Link>;

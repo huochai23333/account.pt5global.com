@@ -8,7 +8,10 @@ import { loginAs } from "./auth";
 
 /** 测试只允许连接本地 Docker，清理只按本次随机前缀和实际记录编号执行。 */
 export function documentAdmin() { const admin = getLocalSupabaseAdminClient(); if (!admin) throw new Error("local_supabase_required"); return admin; }
+const noticeHandlers=new WeakSet<Page>();
 export async function documentLogin(page: Page, role: RegressionRole) {
+  // 无业务岗位先进入停用说明，公告可能在下一页才出现；从真实按钮确认，避免遮住资料操作。
+  if(!noticeHandlers.has(page)){noticeHandlers.add(page);await page.addLocatorHandler(page.getByRole("button",{name:"我知道了",exact:true}),async button=>{await button.click();});}
   // 同一浏览器切换角色必须先清除认证 Cookie，登录页否则会把旧身份送回原工作台。
   await page.context().clearCookies(); await loginAs(page, role);
 }
@@ -36,7 +39,7 @@ export async function chooseDocumentFolder(page: Page, name: string) {
   const tree=page.getByRole("tree",{name:"资料文件夹"});
   if(await tree.isVisible())await tree.getByRole("button",{name,exact:true}).click();
   else {
-    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&(name==="本人资料"?item.zone==="personal":name==="共享资料"?item.zone==="shared":item.zone.endsWith("internal")));expect(folder).toBeTruthy();
+    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&(name==="个人文件夹"?item.zone==="personal":name==="共享资料"?item.zone==="shared":item.zone.endsWith("internal")));expect(folder).toBeTruthy();
     const archive=data.archives.find(item=>item.id===folder!.archive_id)!;
     await page.getByRole("navigation",{name:"当前位置"}).getByRole("button",{name:archive.name,exact:true}).click();
     const parents=[folder!];let current=folder!;while(current.parent_id){current=data.folders.find(item=>item.id===current.parent_id)!;parents.unshift(current);}

@@ -2,6 +2,7 @@ import "server-only";
 import type {SupabaseClient} from "@supabase/supabase-js";
 import {verifyBatch} from "./batch-verification";
 import {completeDocumentDelete} from "./storage-mutations";
+import {continueCopy} from "./copy-batches";
 import {requireDocumentReceipt,type DocumentBatch,type BatchResult} from "./model";
 
 export async function readBatch(db:SupabaseClient,id:string):Promise<DocumentBatch>{
@@ -15,6 +16,7 @@ export async function continueBatch(db:SupabaseClient,actor:string,id:string):Pr
   const batch=await readBatch(db,id);
   if(batch.request.released)throw new Error("conflict");
   if(batch.status==="succeeded")return batch;
+  if(batch.action==="copy")return continueCopy(db,actor,batch);
   const completed=new Set(batch.results.filter(r=>r.status==="succeeded").map(r=>`${r.kind}:${r.id}`));
   const entries=batch.manifest.filter(e=>!completed.has(`${e.kind}:${e.id}`)).sort((a,b)=>{
     // 先删实际资料，后删叶子目录；父目录只有内容全部核对清空后才会被数据库允许删除。

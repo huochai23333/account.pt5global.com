@@ -25,7 +25,7 @@ export function useExplorerBatches(userId:string,refresh:()=>Promise<boolean>){
   }catch(cause){failure.current=cause instanceof Error?cause.message:"unconfirmed";setError(failure.current);await refresh();return false;}
   finally{running.current=false;setBusy(false);}
  }
- async function start(action:"move"|"delete",items:ExplorerTarget[],manifest:DocumentManifest,destinationId?:string,confirmShare=false,id=crypto.randomUUID()){return run(id,{action,items,destinationId,confirmShare},manifest.digest);}
+ async function start(action:"move"|"delete"|"copy",items:ExplorerTarget[],manifest:DocumentManifest,destinationId?:string,confirmShare=false,id=crypto.randomUUID(),name?:string){return run(id,{action,items,destinationId,confirmShare,...(name?{name}:{})},manifest.digest);}
  async function release(id:string){
   if(running.current)return;setBusy(true);
   try{const response=await fetch("/api/document-library/batch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,release:true})});if(!response.ok)throw new Error("unconfirmed");setBatch(null);sessionStorage.removeItem(`PT5.document.batch.${userId}`);await refresh();}catch{setError("unconfirmed");}finally{setBusy(false);}

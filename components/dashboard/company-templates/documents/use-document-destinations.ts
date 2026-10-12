@@ -30,7 +30,9 @@ export function useDocumentDestinations(currentFolderId?: string, enabled = true
   const sharing = folder?.zone === "shared";
   function selectArchive(id: string) {setArchiveId(id); setFolderId(""); setConfirmShare(false);}
   function selectFolder(id: string) {setFolderId(id); setConfirmShare(false);}
+  // 搜索结果可以来自别人的档案；同时更新档案与目录，不能把新目录套在旧档案下。
+  function openFolder(id: string) {const target=data.folders.find(item=>item.id===id);if(!target)return;setArchiveId(target.archive_id);setFolderId(id);setQuery("");setConfirmShare(false);}
   return {data, folderId, archiveId, query, setQuery, confirmShare, setConfirmShare, loading, error, load,
-    selectArchive, selectFolder, sharing, valid: !loading && !error && Boolean(folder) && (!sharing || confirmShare)};
+    selectArchive, selectFolder, openFolder, sharing, valid: !loading && !error && Boolean(folder) && (!sharing || confirmShare)};
 }
 export type DestinationController = ReturnType<typeof useDocumentDestinations>;

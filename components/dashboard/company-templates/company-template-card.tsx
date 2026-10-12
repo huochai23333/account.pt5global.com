@@ -21,6 +21,7 @@ export function CompanyTemplateCard({
   template,
   text,
   workspace,
+  initialFolderId,
 }: {
   busy: boolean;
   isAdmin: boolean;
@@ -31,6 +32,7 @@ export function CompanyTemplateCard({
   template: CompanyTemplateSummary;
   text: (key: string, values?: Record<string, string | number>) => string;
   workspace: string;
+  initialFolderId?: string;
 }) {
   const usable = template.status === "active";
   // 全部工作模板由网站提供个人保存入口，预览不创建个人记录。
@@ -51,7 +53,7 @@ export function CompanyTemplateCard({
         <div><dt className="text-content-muted">{text("labels.file")}</dt><dd className="mt-1 truncate font-semibold" title={template.currentVersion.source_filename}>{template.currentVersion.source_filename}</dd></div>
       </dl>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {usable ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace}/> : null}
+        {usable ? <DocumentCreateButton templateId={template.id} templateName={template.name} workspace={workspace} currentFolderId={initialFolderId}/> : null}
         {usable ? <CompanyTemplateOpenLink href={`/${workspace}/company-templates/${template.id}`} label={text("actions.preview")} loading={text("viewer.loading")}/> : null}
         {usable && template.currentVersion.guide_sha256 ? <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-content-strong" href={`/${workspace}/company-templates/${template.id}/guide`}><BookOpen className="size-4" />{text("actions.guide")}</Link> : null}
         {isAdmin ? <Button disabled={busy} onClick={() => onPublish(template)} size="compact" type="button" variant="outline"><Upload className="size-4" />{text("actions.newVersion")}</Button> : null}

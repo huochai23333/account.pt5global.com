@@ -10,7 +10,8 @@ import {DOCUMENT_ACCEPT} from "@/lib/document-library/browser-policy";
 import type {ExplorerLibrary,DocumentSelection,DocumentFolder} from "@/lib/document-library/model";
 import {folderLabel} from "./folder-label";
 import {folderSubject} from "./explorer-helpers";
-export type ExplorerAction="open"|"rename"|"move"|"delete"|"copy"|"download"|"cut"|"paste"|"create";
+import {ExplorerNewDocumentLink} from "./explorer-new-document-link";
+export type ExplorerAction="open"|"rename"|"move"|"delete"|"copy"|"duplicate"|"download"|"cut"|"paste"|"create"|"newDocument"|"refresh";
 /** 工具栏只调度；选择与写入状态分别由专用 hook 维护。 */
 export function ExplorerToolbar({data,selection,view,setView,navigate,refresh,action,upload,selected,manageable,canPaste,downloadable,busy}:{data:ExplorerLibrary;selection:DocumentSelection;view:"list"|"grid";setView:(v:"list"|"grid")=>void;navigate:(s:DocumentSelection)=>void;refresh:()=>void;action:(a:ExplorerAction)=>void;upload:(files:File[])=>void;selected:number;manageable:boolean;canPaste:boolean;downloadable:boolean;busy:boolean}){
  const t=useTranslations("Documents");const folder=data.folders.find(f=>f.id===data.folderId);const archive=data.archives.find(a=>a.id===data.archiveId);const parents:DocumentFolder[]=[];let current=folder;const seen=new Set<string>();
@@ -40,11 +41,14 @@ export function ExplorerToolbar({data,selection,view,setView,navigate,refresh,ac
  </div>
  {/* 选中后不能换行推走条目，否则双击的第二次点击会落到别处；固定高度也容纳横向滚动条。 */}
  <div className="flex h-16 min-w-0 items-center gap-2 overflow-x-auto overscroll-x-contain">
+  {data.folders.some(folder=>folder.can_manage)&&<ExplorerNewDocumentLink folderId={data.canManage?data.folderId:null} busy={busy}/>}
+  {!data.canManage&&data.folders.some(folder=>folder.can_manage)&&<Button variant="outline" disabled={busy} onClick={()=>action("create")}>{t("create_folder")}</Button>}
   {data.canManage&&<><div className="shrink-0" title={t("limits")}><DashboardFilePicker accept={DOCUMENT_ACCEPT} multiple disabled={busy} label={t("upload")} onFiles={upload}/></div><Button variant="outline" disabled={busy} onClick={()=>action("create")}>{t("create_folder")}</Button></>}
   <span className="shrink-0 whitespace-nowrap text-sm text-content-muted">{t("explorer.selected",{count:selected})}</span>
   {/* 批量按钮按选择出现，空间不足时在本行滚动，不改变文件区位置。 */}
   {selected>0&&<><Button variant="outline" disabled={busy||!selected||!downloadable} onClick={()=>action("download")}>{t("download")}</Button>
   <Button variant="outline" disabled={busy||!selected||!manageable} onClick={()=>action("cut")}>{t("explorer.cut")}</Button>
+  <Button variant="outline" disabled={busy||!selected||!manageable} onClick={()=>action("copy")}>{t("explorer.copy")}</Button>
   <Button variant="outline" disabled={busy||!selected||!manageable} onClick={()=>action("move")}>{t("explorer.move")}</Button>
   <Button variant="outline" disabled={busy||!selected||!manageable} onClick={()=>action("delete")}>{t("explorer.delete")}</Button>
   <Button variant="outline" disabled={busy||selected!==1||!manageable} onClick={()=>action("rename")}>{t("explorer.rename")}</Button></>}

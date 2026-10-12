@@ -8,7 +8,7 @@ import type { DocumentMutation } from "@/lib/company-templates/documents/model";
 import {DocumentFolderDialog, type FolderSaveChoice} from "./document-folder-dialog";
 import {templateDocumentHref} from "@/lib/company-templates/documents/navigation";
 /** 创建编号保留到得到最终凭证，失败重试不会多建一份空白文档。 */
-export function DocumentCreateButton({ templateId, templateName, workspace }: { templateId: string; templateName: string; workspace: string }) {
+export function DocumentCreateButton({ templateId, templateName, workspace,currentFolderId }: { templateId: string; templateName: string; workspace: string;currentFolderId?:string }) {
   const t = useTranslations("CompanyTemplates.documents"); const router = useRouter();
   const intent = useRef<DocumentMutation | null>(null); const busyRef = useRef(false);
   const [busy,setBusy] = useState(false); const [error,setError] = useState("");
@@ -22,5 +22,5 @@ export function DocumentCreateButton({ templateId, templateName, workspace }: { 
     catch(cause) {const key=documentErrorKey(cause);setError(key);if(["document_forbidden","document_invalid","document_share_confirmation","document_missing"].includes(key))intent.current=null;busyRef.current=false;setBusy(false);}
   }
   if(!desktop)return null;
-  return <div className="grid gap-2"><Button disabled={busy} loading={busy} onClick={()=>{intent.current=null;setError("");setOpen(true);}}>{t(busy?"opening":"create")}</Button>{open?<DocumentFolderDialog title={t("chooseSaveFolder")} busy={busy} error={error} close={()=>setOpen(false)} submit={create}/>:null}</div>;
+  return <div className="grid gap-2"><Button disabled={busy} loading={busy} onClick={()=>{intent.current=null;setError("");setOpen(true);}}>{t(busy?"opening":"create")}</Button>{open?<DocumentFolderDialog title={t("chooseSaveFolder")} currentFolderId={currentFolderId} busy={busy} error={error} close={()=>setOpen(false)} submit={create}/>:null}</div>;
 }

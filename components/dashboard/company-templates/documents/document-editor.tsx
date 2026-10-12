@@ -44,6 +44,7 @@ export function DocumentEditor({document,workspace,hasGuide}:{document:TemplateD
       {load?.status!=="ready"?<div role="status" className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface-panel p-4"><p>{viewer(load?.status==="failed"?"loadFailed":"loading")}</p>{load?.status==="failed"?<Button onClick={()=>void reopen(false)}>{viewer("retry")}</Button>:null}</div>:null}
       {load?<iframe ref={iframeRef} key={load.token} src={load.src} title={name} sandbox="allow-scripts allow-forms allow-modals allow-downloads allow-popups" referrerPolicy="no-referrer" className="h-[calc(100vh-16rem)] min-h-[680px] w-full bg-surface-panel"/>:null}
     </Surface>}
-    {folderSave.open?<DocumentFolderDialog title={t("chooseSaveFolder")} currentFolderId={save.location.folder_id} busy={folderSave.busy} error={folderSave.failed?"document_failed":save.error} close={folderSave.close} submit={folderSave.submit}/>:null}
+    {/* 视口改变后窗口可能重新加载；准备完成前不能提交，避免把未读取的内容当作保存结果。 */}
+    {folderSave.open?<DocumentFolderDialog title={t("chooseSaveFolder")} currentFolderId={save.location.folder_id} canSubmit={load?.status==="ready"} busy={folderSave.busy} error={folderSave.failed?"document_failed":save.error} close={folderSave.close} submit={folderSave.submit}/>:null}
   </section>;
 }

@@ -9,6 +9,6 @@ export async function POST(request:Request){try{
  const {supabase,userId}=await requireDocumentApi();checkDocumentOrigin(request);
  const body=JSON.parse((await readDocumentBody(request,65536)).toString("utf8"));
  if(body.release){const result=await supabase.rpc("document_batch_release",{p_id:body.id});if(result.error)throw result.error;return Response.json(await readBatch(supabase,body.id));}
- if(body.request){const result=await supabase.rpc("document_batch_start",{p_id:body.id,p_request:body.request,p_digest:body.digest});if(result.error)throw result.error;}
+ if(body.request){const result=await supabase.rpc(body.request.action==="copy"?"document_copy_start":"document_batch_start",{p_id:body.id,p_request:body.request,p_digest:body.digest});if(result.error)throw result.error;}
  return Response.json(await continueBatch(supabase,userId,body.id),{headers:{"Cache-Control":"private, no-store"}});
 }catch(error){return documentError(error);}}

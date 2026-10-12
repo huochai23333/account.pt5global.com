@@ -6,11 +6,12 @@ import {Button} from "@/components/ui/button";
 import {folderLabel} from "@/components/dashboard/document-library/folder-label";
 import type {DocumentFolder} from "@/lib/document-library/model";
 import type {DestinationController} from "./use-document-destinations";
+import {DocumentFolderBrowser} from "./document-folder-browser";
 /** 字段只渲染选择和提示，目录加载及共享确认状态由独立控制器负责。 */
 export function DocumentDestinationFields({selection, busy}: {selection: DestinationController; busy: boolean}) {
   const t = useTranslations("CompanyTemplates.documents"); const library = useTranslations("Documents");
   const {data, query, archiveId, folderId} = selection;
-  const archives = data.archives.filter(item => item.id === archiveId || item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const archives = data.archives;
   function path(folder: DocumentFolder) {
     const names = [folderLabel(folder, library)]; const visited = new Set([folder.id]); let parentId = folder.parent_id;
     while (parentId && !visited.has(parentId)) {
@@ -24,7 +25,8 @@ export function DocumentDestinationFields({selection, busy}: {selection: Destina
       <Field label={t("archiveSearch")}><Input autoFocus disabled={busy} value={query} maxLength={120} onChange={event => selection.setQuery(event.target.value)}/></Field>
       <Field label={library("archive")}><Select aria-label={library("archive")} disabled={busy} value={archiveId || null} placeholder={t("chooseArchive")} options={archives.map(item => ({value: item.id, label: item.name}))} onValueChange={selection.selectArchive}/></Field>
       <Field label={library("destination")}><Select aria-label={library("destination")} disabled={busy || !archiveId} value={folderId || null} placeholder={t("chooseFolder")} options={data.folders.filter(item => item.archive_id === archiveId).map(item => ({value: item.id, label: path(item)}))} onValueChange={selection.selectFolder}/></Field>
-      {selection.sharing ? <ChoiceField type="checkbox" label={t("shareNotice")} disabled={busy} checked={selection.confirmShare} onChange={event => selection.setConfirmShare(event.target.checked)}/> : null}
+      <DocumentFolderBrowser selection={selection} busy={busy}/>
+      {selection.sharing ? <ChoiceField type="checkbox" label={t("shareNoticeFor",{name:data.archives.find(item=>item.id===archiveId)?.name??""})} disabled={busy} checked={selection.confirmShare} onChange={event => selection.setConfirmShare(event.target.checked)}/> : null}
     </>}
   </div>;
 }

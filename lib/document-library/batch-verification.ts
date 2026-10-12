@@ -1,10 +1,12 @@
 import "server-only";
 import {getSupabaseServiceRoleClient} from "@/lib/supabase-admin-server";
 import {DOCUMENT_BUCKET,type DocumentBatch} from "./model";
+import {verifyCopy} from "./copy-verification";
 /** 当前用户已通过批次授权后，再按固定清单独立查记录；不将管理客户端读取结果直接发给浏览器。 */
 export async function verifyBatch(batch:DocumentBatch){
  if(batch.status!=="succeeded")return;
  if(batch.results.length!==batch.manifest.length||batch.results.some(r=>r.status!=="succeeded"))throw new Error("unconfirmed");
+ if(batch.action==="copy"){await verifyCopy(batch);return;}
  const db=getSupabaseServiceRoleClient();const entries=batch.action==="move"?batch.snapshot:batch.manifest;
  const actualRows=new Map<string,Record<string,unknown>>();
  for(const kind of ["file","folder","template"] as const){

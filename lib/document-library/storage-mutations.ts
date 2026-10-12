@@ -20,6 +20,11 @@ export async function uploadDocument(supabase: SupabaseClient, actor: string, op
   });
   if (error) throw error;
   const receipt = requireDocumentReceipt(data, operationId, false);
+  return completeReservedDocumentUpload(supabase,actor,receipt,bytes,file.name);
+}
+/** 原上传与复制共用实际对象核对；已有上传编号在断线重送时保持不变。 */
+export async function completeReservedDocumentUpload(supabase:SupabaseClient,actor:string,receipt:DocumentReceipt,bytes:Uint8Array,inspectionName:string){
+  const operationId=receipt.operationId;const inspection=inspectDocument(inspectionName,bytes);
   if (receipt.status === "succeeded") return requireDocumentReceipt(receipt, operationId);
   if (receipt.status === "failed") throw new Error("conflict");
   const record = receipt.record as DocumentFile;
@@ -38,7 +43,7 @@ export async function uploadDocument(supabase: SupabaseClient, actor: string, op
     }
     const actual = await bucket.download(record.storage_path);
     if (actual.error || !actual.data || actual.data.size !== record.size_bytes) throw actual.error ?? new Error("unconfirmed");
-    const actualInspection = inspectDocument(file.name, new Uint8Array(await actual.data.arrayBuffer()));
+    const actualInspection = inspectDocument(inspectionName, new Uint8Array(await actual.data.arrayBuffer()));
     if (actualInspection.sha256 !== record.sha256) throw new Error("unconfirmed");
     return await finish(operationId, actor, true);
   } catch {

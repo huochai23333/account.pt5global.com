@@ -10,17 +10,16 @@ export function useExplorerOperations(userId:string,data:ExplorerLibrary|null,re
  const single=useDocumentActions(userId,refresh);const batches=useExplorerBatches(userId,refresh);const [downloading,setDownloading]=useState(false);const [downloadError,setDownloadError]=useState("");
  async function submit(target:ExplorerDialogTarget,value:ExplorerDialogSubmission){
   const {name,destinationId,confirmShare,manifest,operationId}=value;const item=target.item;
-  if(target.action==="move"||target.action==="delete"){
+  if(target.action==="move"||target.action==="delete"||target.action==="copy"){
    if(!manifest)throw new Error("unconfirmed");
-   const done=await batches.start(target.action,target.items,manifest,destinationId,confirmShare,operationId);
+   const done=await batches.start(target.action,target.items,manifest,destinationId,confirmShare,operationId,name);
    if(!done)throw new Error(batches.getError()||"unconfirmed");return true;
   }
-  if(target.action==="create")return single.command("create_folder",{folderId:data?.folderId,name});
+  if(target.action==="create")return single.command("create_folder",{folderId:destinationId||target.folder?.id||data?.folderId,name});
   if(target.action==="rename"&&item?.kind==="folder")return single.command("rename_folder",{folderId:item.id,version:item.folder.version,name});
   if(target.action==="rename"&&item?.kind==="file")return single.command("rename_file",{fileId:item.id,version:item.file.version,name});
-  if(item?.kind==="template"&&(target.action==="rename"||target.action==="copy")){
-   const copy=target.action==="copy";
-   await writeDocument({action:target.action,operationId,documentId:copy?operationId:item.id,expectedRevision:copy?undefined:item.document.revision,sourceId:copy?item.id:undefined,name,folderId:copy?destinationId:undefined,confirmShare});
+  if(item?.kind==="template"&&target.action==="rename"){
+   await writeDocument({action:"rename",operationId,documentId:item.id,expectedRevision:item.document.revision,name});
    if(!await refresh())throw new Error("unconfirmed");return true;
   }
   if(target.action==="download"){

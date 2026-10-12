@@ -1,7 +1,7 @@
 import {openItemMenu} from "./helpers/document-explorer";
 import { expect, test } from "@playwright/test";
 import { setTestLocale } from "./helpers/auth";
-import { authoritativeFiles, checkDocumentViewport, chooseDocumentFolder, cleanupDocuments, confirmFileObjects, documentAdmin, documentLogin, documentPdf, documentReader, documentUser, readLibrary, uploadDocumentFiles } from "./helpers/document-library";
+import { authoritativeFiles, checkDocumentViewport, chooseDocumentFolder, cleanupDocuments, confirmFileObjects, documentAdmin, documentLogin, documentPdf, documentUser, readLibrary, uploadDocumentFiles } from "./helpers/document-library";
 
 test.use({video:"off"});
 
@@ -12,7 +12,7 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   try {
     await documentLogin(page, "administrator"); await page.goto("/admin/documents?scope=folder");
-    await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "本人资料", exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "个人文件夹", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "新建子文件夹", exact: true }).click();
     let dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}合同`); await dialog.getByRole("button", { name: "确认", exact: true }).click();
     await expect(dialog).toHaveCount(0);
@@ -29,9 +29,9 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
     await openItemMenu(page, card, "重命名"); dialog = page.getByRole("dialog"); await dialog.getByRole("textbox", { name: "名称" }).fill(`${prefix}新名称.txt`); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     files = await authoritativeFiles([`${prefix}新名称.txt`]); expect(files[0].id).toBe(first.id); expect(files[0].version).toBe(first.version + 1); expect(files[0].storage_path).toBe(first.storage_path);
     await page.getByRole("textbox", { name: "搜索资料" }).fill("新名称"); await page.getByRole("button", { name: "搜索资料", exact: true }).click(); await expect(page.locator('[data-document-file]')).toHaveCount(1);
-    card = page.locator(`[data-document-file="${first.id}"]`); await openItemMenu(page, card, "移动到"); dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "本人资料", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
+    card = page.locator(`[data-document-file="${first.id}"]`); await openItemMenu(page, card, "移动到"); dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "个人文件夹", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
     const moved = (await authoritativeFiles([`${prefix}新名称.txt`]))[0]; expect(moved.folder_id).not.toBe(folder.id); expect(moved.storage_path).toBe(first.storage_path);
-    await chooseDocumentFolder(page, "本人资料"); await uploadDocumentFiles(page, [`${prefix}预览.pdf`], documentPdf(), "application/pdf");
+    await chooseDocumentFolder(page, "个人文件夹"); await uploadDocumentFiles(page, [`${prefix}预览.pdf`], documentPdf(), "application/pdf");
     const pdf = (await authoritativeFiles([`${prefix}预览.pdf`]))[0]; await openItemMenu(page, page.locator(`[data-document-file="${pdf.id}"]`), "打开");
     await expect(page.getByRole("dialog").locator("iframe")).toHaveAttribute("src", `/api/document-library/files/${pdf.id}/content?preview=1`);
     const response = await page.request.get(`/api/document-library/files/${pdf.id}/content?preview=1`); expect(response.status()).toBe(200); expect(response.headers()["cache-control"]).toBe("private, no-store"); expect(response.headers()["content-type"]).toBe("application/pdf");
@@ -63,29 +63,14 @@ test("资料库：建目录、上传同名文件、重命名、移动、搜索�
   } finally { await cleanupDocuments(prefix); }
 });
 
-test("员工本人资料与管理员内部资料隔离，无业务员工也能进入", async ({ page }) => {
-  test.setTimeout(120_000); const prefix = `docs-employee-${Date.now()}-`;
+test("员工与管理员管理同一个个人文件夹，无业务员工也能进入", async ({ page }) => {
+  test.setTimeout(120000); const prefix=`docs-employee-${Date.now()}-`;
   try {
-    const employee = await documentUser("operator");
-    await documentLogin(page, "administrator"); await page.goto(`/admin/documents?user=${employee}&scope=folder`); await chooseDocumentFolder(page, "内部资料"); await uploadDocumentFiles(page, [`${prefix}人事.txt`]);
-    const internal = (await authoritativeFiles([`${prefix}人事.txt`]))[0];
-    await documentLogin(page, "operator"); await page.goto("/operator/documents?scope=folder"); await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "本人资料", exact: true })).toBeVisible();
-    const library = await readLibrary(page); expect(library.folders.some((folder) => folder.zone === "staff_internal")).toBe(false); expect(library.archives.filter((archive) => archive.kind === "employee").every((archive) => archive.user_id === employee)).toBe(true);
-    expect((await page.request.get(`/api/document-library/files/${internal.id}/content`)).status()).toBe(403);
-    await uploadDocumentFiles(page, [`${prefix}本人.txt`]); const own = await authoritativeFiles([`${prefix}本人.txt`]); expect(own[0].uploaded_by).toBe(employee); await confirmFileObjects(own);
-    await documentLogin(page, "administrator"); await page.goto(`/admin/documents?user=${employee}&scope=folder`);
-    await openItemMenu(page, page.locator(`[data-document-file="${own[0].id}"]`), "移动到"); const dialog = page.getByRole("dialog"); await dialog.getByRole("combobox", { name: "目标文件夹" }).click(); await page.getByRole("option", { name: "内部资料", exact: true }).click(); await dialog.getByRole("button", { name: "确认", exact: true }).click(); await expect(dialog).toHaveCount(0);
-    // 原上传凭证也按当前目录重新授权，不泄露转入内部区域后的文件登记信息。
-    const employeeClient = await documentReader("operator"); const receipts = await employeeClient.from("document_operations").select("receipt").contains("receipt", { record: { id: own[0].id } }); expect(receipts.error).toBeNull(); expect(receipts.data).toEqual([]);
-    const originalOperation = await documentAdmin().from("document_operations").select("id,payload").eq("action", "reserve_upload").contains("receipt", { record: { id: own[0].id } }).single();
-    expect((await employeeClient.rpc("document_library_command", { p_operation: originalOperation.data!.id, p_action: "reserve_upload", p_payload: originalOperation.data!.payload })).error).not.toBeNull();
-    expect((await employeeClient.storage.from("document-library").download(own[0].storage_path)).error).not.toBeNull();
-    // 管理员删除员工上传的文件，也必须证明对象与登记均消失，不能仅测试删除自己上传的文件。
-    await chooseDocumentFolder(page, "内部资料"); await openItemMenu(page, page.locator(`[data-document-file="${own[0].id}"]`), "删除");
-    await page.getByRole("dialog").getByRole("checkbox",{name:/我确认永久删除/}).check();
-    await page.getByRole("dialog").getByRole("button", { name: "确认", exact: true }).click(); await expect(page.getByRole("dialog")).toHaveCount(0);
-    expect(await authoritativeFiles([`${prefix}本人.txt`])).toHaveLength(0); expect((await documentAdmin().storage.from("document-library").exists(own[0].storage_path)).data).toBe(false);
-    await documentLogin(page, "promoter"); await page.getByRole("link", { name: "资料库", exact: true }).click(); await expect(page).toHaveURL(/\/promoter\/documents/); await expect(page.getByRole("button",{name:"我知道了",exact:true})).toBeVisible();await page.getByRole("button",{name:"我知道了",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);await page.getByRole("listitem",{name:"我的资料",exact:true}).dblclick();await page.getByRole("listitem",{name:"本人资料",exact:true}).dblclick();await expect(page.getByRole("navigation", { name: "当前位置" }).getByRole("button", { name: "本人资料", exact: true })).toBeVisible();
-    await uploadDocumentFiles(page, [`${prefix}无业务.txt`]); await confirmFileObjects(await authoritativeFiles([`${prefix}无业务.txt`]));
-  } finally { await cleanupDocuments(prefix); }
+    const employee=await documentUser("operator");
+    await documentLogin(page,"administrator");await page.goto(`/admin/documents?user=${employee}&scope=folder`);await uploadDocumentFiles(page,[`${prefix}管理员.txt`]);const uploaded=(await authoritativeFiles([`${prefix}管理员.txt`]))[0];
+    await documentLogin(page,"operator");await page.goto("/operator/documents?scope=folder");const library=await readLibrary(page);expect(library.folders.filter(folder=>folder.system_key)).toHaveLength(1);expect(library.folders.every(folder=>folder.can_manage)).toBe(true);await expect(page.locator(`[data-document-file="${uploaded.id}"]`)).toBeVisible();expect((await page.request.get(`/api/document-library/files/${uploaded.id}/content`)).status()).toBe(200);
+    await uploadDocumentFiles(page,[`${prefix}员工.txt`]);const own=(await authoritativeFiles([`${prefix}员工.txt`]))[0];expect(own.uploaded_by).toBe(employee);await confirmFileObjects([own]);
+    await documentLogin(page,"administrator");await page.goto(`/admin/documents?user=${employee}&scope=folder`);await openItemMenu(page,page.locator(`[data-document-file="${own.id}"]`),"删除");await page.getByRole("dialog").getByRole("checkbox",{name:/我确认永久删除/}).check();await page.getByRole("dialog").getByRole("button",{name:"确认",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);expect(await authoritativeFiles([`${prefix}员工.txt`])).toHaveLength(0);expect((await documentAdmin().storage.from("document-library").exists(own.storage_path)).data).toBe(false);
+    await documentLogin(page,"promoter");await page.goto("/promoter/documents?scope=folder");await uploadDocumentFiles(page,[`${prefix}无业务.txt`]);await confirmFileObjects(await authoritativeFiles([`${prefix}无业务.txt`]));await page.reload();await expect(page.locator('[data-document-file]')).not.toHaveCount(0);
+  } finally {await cleanupDocuments(prefix);}
 });

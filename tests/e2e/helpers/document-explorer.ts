@@ -4,6 +4,7 @@ import {documentAdmin,documentReader,cleanupDocuments} from "./document-library"
 /** 验收操作全部来自真实页面；后台客户端仅用于独立核对及按测试前缀清理。 */
 export async function createFolder(page:Page,name:string){
  await expect(page.getByRole("button",{name:"新建子文件夹",exact:true})).toBeEnabled();
+ const announcement=page.getByRole("button",{name:"我知道了",exact:true});if(await announcement.isVisible()){await announcement.click();await expect(announcement).toHaveCount(0);}
  const parent=(await(await page.request.get(`/api/document-library${new URL(page.url()).search}`)).json()).folderId;expect(parent).toMatch(/^[a-f0-9-]{36}$/);
  await page.getByRole("button",{name:"新建子文件夹",exact:true}).click();const dialog=page.getByRole("dialog");
  await dialog.getByRole("textbox").fill(name);await dialog.getByRole("button",{name:"确认",exact:true}).click();await expect(dialog).toHaveCount(0);

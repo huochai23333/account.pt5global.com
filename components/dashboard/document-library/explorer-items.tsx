@@ -29,7 +29,7 @@ export function ExplorerItems({data,searching,view,ids,selected,select,toggleAll
    className={`relative min-w-0 rounded-lg border p-3 outline-offset-2 ${ids.has(item.id)?"border-primary bg-surface-interactive":"border-transparent hover:border-border-subtle hover:bg-surface-interactive"} ${view==="grid"?"space-y-3":"flex items-center gap-3"}`}
    onClick={event=>{if(!busy)select(item.id,event.ctrlKey||event.metaKey,event.shiftKey);}} onDoubleClick={()=>{if(!busy)open(item);}}
    onKeyDown={event=>{if(event.key==="ContextMenu"||(event.shiftKey&&event.key==="F10")){event.preventDefault();const box=event.currentTarget.getBoundingClientRect();showMenu(item,box.left,box.bottom);}}}
-   onContextMenu={event=>{event.preventDefault();if(!busy)showMenu(item,event.clientX,event.clientY);}}
+   onContextMenu={event=>{event.preventDefault();event.stopPropagation();if(!busy)showMenu(item,event.clientX,event.clientY);}}
    onDragStart={event=>{if(busy||!targets.length){event.preventDefault();return;}event.dataTransfer.setData("application/pt5-documents",JSON.stringify(targets));event.dataTransfer.effectAllowed="move";}}
    onDragOver={event=>{if(!busy&&item.kind==="folder"&&item.canManage&&event.dataTransfer.types.includes("application/pt5-documents")){event.preventDefault();event.dataTransfer.dropEffect="move";}}}
    onDrop={event=>{if(busy||item.kind!=="folder"||!item.canManage||!event.dataTransfer.types.includes("application/pt5-documents"))return;event.preventDefault();event.stopPropagation();try{const payload=JSON.parse(event.dataTransfer.getData("application/pt5-documents"));if(Array.isArray(payload))move(payload,item.folder);}catch{/* 不执行来源不明的拖放内容。 */}}}>

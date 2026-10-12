@@ -10,6 +10,8 @@ import { getServerSupabaseClient } from "@/lib/supabase-server";
 export async function requireDocumentWorkspace(workspace: string) {
   const config = getWorkspaceConfigByRouteSegment(workspace);
   if (!config) notFound();
+  // 客户没有资料库入口，直接访问工作区地址也不能读取页面数据。
+  if (config.authRole === "client") notFound();
   const auth = await getServerAuthContext();
   if (!auth.userId || auth.status !== "active") redirect("/login");
   if (!auth.role || !canAccessWorkspaceBasePath(auth.role, config.basePath)) redirectToWorkspaceAccessLimited();
@@ -17,6 +19,6 @@ export async function requireDocumentWorkspace(workspace: string) {
 }
 export async function requireDocumentApi() {
   const auth = await getServerAuthContext();
-  if (!auth.userId || auth.status !== "active" || !auth.role) throw new Error("forbidden");
+  if (!auth.userId || auth.status !== "active" || !auth.role || auth.role === "client") throw new Error("forbidden");
   return { userId: auth.userId, role: auth.role, supabase: await getServerSupabaseClient() };
 }

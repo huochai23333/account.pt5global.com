@@ -13,10 +13,11 @@ import { CompanyTemplateCard } from "./company-template-card";
 import { CompanyTemplatePublishDialog } from "./company-template-publish-dialog";
 
 /** 列表客户端统一管理弹窗、页面反馈和刷新；初始模板数据仍由服务端页面在权限校验后读取。 */
-export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }: {
+export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace,initialFolderId }: {
   initialTemplates: CompanyTemplateSummary[];
   isAdmin: boolean;
   workspace: string;
+  initialFolderId?: string;
 }) {
   const { t, pending, managingKey, feedback, publishTarget, setPublishTarget, desktop, refresh, manage } = useCompanyTemplateManagement();
 
@@ -39,6 +40,7 @@ export function CompanyTemplatesClient({ initialTemplates, isAdmin, workspace }:
             template={template}
             text={(key, values) => t(key, values)}
             workspace={workspace}
+            initialFolderId={initialFolderId}
           />)}
         </div>
       ) : (
