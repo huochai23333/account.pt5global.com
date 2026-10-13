@@ -99,7 +99,7 @@ export async function triggerManualExchangeRateFetch(
 
   const payload = data as (Partial<ManualExchangeRateFetchResult> & { operationId?: unknown; operationStatus?: unknown }) | null;
   if (typeof payload?.operationId !== "string" || !["succeeded", "partial_failed", "failed", "queued"].includes(String(payload.operationStatus))) {
-    throw new Error("汇率结果仍未确认，请稍后到系统运行页查看。");
+    throw new Error("汇率结果仍未确认，请稍后刷新当前页面查看。");
   }
   if (!payload.results?.length) throw new Error("没有已确认的汇率获取结果。");
   await verifyExchangeRateReceipts(supabase, payload.results.filter(item => item.ok));
@@ -149,7 +149,7 @@ export async function triggerHistoricalExchangeRateFetch(
   const hasVerifiedTerminalOrRetry = payload?.operationStatus === "succeeded"
     || (["partial_failed", "failed", "queued"].includes(String(payload?.operationStatus)) && Number(payload?.failedCount) > 0);
   if (typeof payload?.operationId !== "string" || !hasVerifiedTerminalOrRetry) {
-    throw new Error("历史汇率结果仍未确认，请稍后到系统运行页查看。");
+    throw new Error("历史汇率结果仍未确认，请稍后刷新当前页面查看。");
   }
   const results = Array.isArray(payload?.results) ? payload.results : [];
   if (!results.length) throw new Error("没有已确认的历史汇率获取结果。");

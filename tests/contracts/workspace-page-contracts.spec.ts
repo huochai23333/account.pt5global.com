@@ -6,7 +6,6 @@ import { expectWorkspacePageContent } from "../e2e/helpers/workspace-page-contra
 const fixtures = [
   ["accounts", "账号管理", '<label>搜索账号<input></label>'],
   ["announcements", "公告管理", '<button>新建公告</button>'],
-  ["feedback", "问题反馈与改进建议", '<label>搜索<input></label>'],
   ["reviews", "审核中心", '<button>资料修改 0</button>'],
   ["settings", "汇率", '<label>原始货币<input></label>'],
   ["company-expenses", "公司费用", '<label>所属月份<input></label>'],

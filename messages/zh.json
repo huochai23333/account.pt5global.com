@@ -489,17 +489,7 @@
       "settlementErrorNotSignedIn": "登录状态已经失效，请重新登录后再试。",
       "settlementErrorRequestConflict": "这次确认与原内容不一致，请重新发送原指令。",
       "settlementErrorRequestTooLarge": "这次确认内容太多，请重新发送一条简短指令。",
-      "settlementErrorServiceUnavailable": "这笔结汇暂时没有发布成功，内容已保留，可以稍后重试。",
-      "feedbackAction": "提交反馈",
-      "feedbackErrorDescription": "如果这个问题一直没有解决，可以把刚才的情况提交给管理员查看。",
-      "feedbackExplicitDescription": "你可以直接把这个问题提交给管理员查看，不用再去找反馈入口。",
-      "feedbackUnableDescription": "这件事需要人工确认，可以把刚才的对话提交给管理员查看。",
-      "feedbackDraftTitle": "工作台助手没有解决我的问题",
-      "feedbackDraftIntro": "我在使用工作台助手时遇到这个问题：",
-      "feedbackDraftUserQuestionLabel": "我的问题：",
-      "feedbackDraftAssistantLabel": "助手回复：",
-      "feedbackDraftErrorLabel": "当前情况：",
-      "feedbackDraftExpectation": "希望管理员协助确认或处理。"
+      "settlementErrorServiceUnavailable": "这笔结汇暂时没有发布成功，内容已保留，可以稍后重试。"
     },
     "nav": {
       "home": "首页",
@@ -518,12 +508,10 @@
       "vip": "VIP管理",
       "commission": "佣金",
       "settings": "系统设置",
-      "systemHealth": "系统运行",
       "businessSettings": "业务设置",
       "exchangeRates": "汇率",
       "tasks": "任务",
       "reviews": "审核中心",
-      "feedback": "反馈管理",
       "records": "操作记录",
       "salesLeads": "线索",
       "incentives": "提成",
@@ -598,28 +586,6 @@
       "empty": "当前暂无可查看的公告。",
       "loadError": "公告暂时没有加载成功，请稍后再试。",
       "readError": "公告已读状态暂时没有保存成功，请稍后再试。"
-    },
-    "feedback": {
-      "open": "提交反馈",
-      "title": "问题反馈",
-      "description": "请说明你遇到的问题或希望调整的地方，我们会查看并安排处理。",
-      "typeLabel": "反馈类型",
-      "types": {
-        "bug": "问题反馈",
-        "suggestion": "改进建议"
-      },
-      "titleLabel": "简短标题",
-      "titlePlaceholder": "例如：订单列表筛选不方便",
-      "contentLabel": "详细说明",
-      "contentPlaceholder": "请描述发生了什么、你原本期待怎样，或希望改进哪里。",
-      "cancel": "取消",
-      "submit": "提交反馈",
-      "titleTooShort": "请填写至少 2 个字的标题。",
-      "titleTooLong": "标题请控制在 100 个字以内。",
-      "contentTooShort": "请填写至少 10 个字的详细说明。",
-      "contentTooLong": "详细说明请控制在 2000 个字以内。",
-      "serviceUnavailable": "反馈暂时没有提交成功，请稍后再试。",
-      "success": "反馈已收到，我们会查看。"
     },
     "accountMenu": {
       "open": "打开账号菜单",
@@ -1434,10 +1400,6 @@
     "reviews": {
       "title": "审核中心",
       "description": "这里将处理资料审核、实名认证、风险复核和审批流。后续运营、经理与客户角色也可以从这里派生不同的审核视图。"
-    },
-    "feedback": {
-      "title": "反馈管理",
-      "description": "管理员在这里查看各角色提交的问题反馈和改进建议，并更新处理状态。"
     }
   },
   "BusinessVip": {
@@ -1869,71 +1831,6 @@
     },
     "noPermissionTitle": "无法管理公告",
     "noPermissionDescription": "当前账号没有公告管理权限。"
-  },
-  "WorkspaceFeedback": {
-    "metadata": {
-      "title": "反馈管理"
-    },
-    "types": {
-      "bug": "问题反馈",
-      "suggestion": "改进建议"
-    },
-    "statuses": {
-      "new": "待处理",
-      "inProgress": "处理中",
-      "resolved": "已完成",
-      "declined": "暂不处理"
-    },
-    "roles": {
-      "administrator": "管理员",
-      "client": "客户",
-      "finance": "财务",
-      "manager": "经理",
-      "operator": "运营",
-      "recruiter": "招聘员",
-      "promoter": "地推",
-      "salesman": "业务员"
-    },
-    "header": {
-      "title": "问题反馈与改进建议"
-    },
-    "summary": {
-      "total": "全部反馈",
-      "new": "待处理",
-      "inProgress": "处理中",
-      "resolved": "已完成"
-    },
-    "filters": {
-      "search": "搜索",
-      "searchPlaceholder": "搜索标题、说明、提交人或页面",
-      "type": "类型",
-      "status": "状态",
-      "allTypes": "全部类型",
-      "allStatuses": "全部状态"
-    },
-    "list": {
-      "title": "用户反馈",
-      "emptyTitle": "没有匹配的反馈",
-      "emptyDescription": "调整筛选条件后再查看，或等待用户提交新的反馈。",
-      "feedback": "反馈内容",
-      "submitter": "提交人",
-      "type": "类型",
-      "source": "来源页面",
-      "createdAt": "提交时间",
-      "status": "处理状态",
-      "statusAction": "调整处理状态"
-    },
-    "feedback": {
-      "statusSaved": "处理状态已更新。",
-      "statusError": "处理状态暂时没有保存成功，请稍后再试。"
-    },
-    "states": {
-      "noPermissionTitle": "无法管理反馈",
-      "noPermissionDescription": "当前账号没有反馈管理权限。"
-    },
-    "fallback": {
-      "notProvided": "未填写"
-    }
   },
   "DashboardShared": {
     "loading": "加载中",
@@ -3746,8 +3643,7 @@
     "summary": {
       "total": "记录总数",
       "account": "账号调整",
-      "profile": "资料审核",
-      "feedback": "反馈处理"
+      "profile": "资料审核"
     },
     "states": {
       "noPermissionTitle": "没有操作记录查看权限",
@@ -3755,7 +3651,7 @@
     },
     "filters": {
       "search": "搜索记录",
-      "searchPlaceholder": "搜索人员、邮箱、处理内容、来源页面",
+      "searchPlaceholder": "搜索人员、邮箱、处理内容",
       "category": "记录类型",
       "action": "处理动作",
       "allCategories": "全部类型",
@@ -3763,17 +3659,12 @@
     },
     "categories": {
       "account": "账号调整",
-      "profile": "资料审核",
-      "feedback": "反馈处理"
+      "profile": "资料审核"
     },
     "actions": {
       "accountChanged": "调整账号",
       "profileApproved": "通过资料修改",
-      "profileRejected": "拒绝资料修改",
-      "feedbackNew": "反馈待处理",
-      "feedbackInProgress": "反馈处理中",
-      "feedbackResolved": "反馈已处理",
-      "feedbackDeclined": "反馈不处理"
+      "profileRejected": "拒绝资料修改"
     },
     "list": {
       "title": "最近操作",
@@ -3793,9 +3684,6 @@
       "statusChange": "状态：{from} -> {to}",
       "nameChange": "姓名：{from} -> {to}",
       "cityChange": "城市：{from} -> {to}",
-      "feedbackTitle": "反馈：{title}",
-      "feedbackStatus": "处理状态：{status}",
-      "feedbackSource": "来源：{path}",
       "note": "备注：{note}",
       "noNote": "未填写备注"
     },
@@ -3813,12 +3701,6 @@
       "active": "正常",
       "inactive": "未启用",
       "suspended": "已停用"
-    },
-    "feedbackStatuses": {
-      "new": "新反馈",
-      "inProgress": "处理中",
-      "resolved": "已处理",
-      "declined": "不处理"
     },
     "fallback": {
       "notProvided": "待补充"
@@ -4517,7 +4399,7 @@
         "failed": "本次同步没有完成，系统会自动重试。",
         "needs_attention": "本次同步多次未完成，需要管理员处理。",
         "skipped": "本次没有需要同步的资料。",
-        "confirming": "同步结果仍在确认中，可稍后到系统运行页查看。"
+        "confirming": "同步结果仍在确认中，可稍后刷新当前页面查看。"
       }
     },
     "pagination": {
@@ -5038,41 +4920,6 @@
       "publishedAs": "发布时：{customerName}",
       "remainingAmount": "剩余 {amount}",
       "removedOrder": "订单已移除"
-    }
-  },
-  "SystemHealth": {
-    "metadata": {
-      "title": "系统运行"
-    },
-    "eyebrow": "实际完成情况",
-    "title": "系统运行",
-    "description": "这里展示后台任务真正完成的结果、重试次数和需要处理的问题。任务被安排或请求已送达，不会在这里算作成功。",
-    "refresh": "刷新状态",
-    "loadFailed": "运行状态暂时没有加载成功，请稍后重试。",
-    "acknowledgeFailed": "这条提醒暂时没有确认成功，请稍后重试。",
-    "attention": "需要处理",
-    "processing": "正在处理",
-    "registered": "已登记任务",
-    "alertsTitle": "需要处理的事项",
-    "noAlerts": "目前没有需要处理的系统问题。",
-    "occurrences": "已出现 {count} 次",
-    "acknowledge": "我已知晓",
-    "acknowledged": "已知晓",
-    "operationsTitle": "各项任务的最新结果",
-    "attempts": "尝试次数",
-    "resultCount": "完成数量",
-    "failedCount": "失败数量",
-    "completedAt": "实际完成时间",
-    "notCompleted": "尚未完成",
-    "status": {
-      "queued": "等待处理",
-      "running": "正在处理",
-      "succeeded": "已完成",
-      "partial_failed": "部分未完成",
-      "failed": "未完成",
-      "needs_attention": "需要处理",
-      "skipped": "无需处理",
-      "never_run": "尚未运行"
     }
   },
   "MailWorkspace": {

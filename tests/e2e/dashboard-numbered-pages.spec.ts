@@ -67,7 +67,7 @@ test("所有启用的完整列表均可渲染，并在两个宽度保持分页�
   test.setTimeout(240_000);
   await loginAs(page, "administrator");
   const cleanupRate = await prepareCurrentExchangeRateFixture();
-  const paths = ["accounts", "announcements", "feedback", "company-expenses", "reviews", "settings", "wholesale/leads",
+  const paths = ["accounts", "announcements", "company-expenses", "reviews", "settings", "wholesale/leads",
     "wholesale/customers", "wholesale/people", "wholesale/vip", "wholesale/referrals",
     "wholesale/commission", "wholesale/incentives", "wholesale/inventory-orders", "wholesale/settlement-releases"];
   const errors: string[] = [];

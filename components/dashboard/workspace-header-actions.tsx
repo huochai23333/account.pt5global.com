@@ -5,7 +5,6 @@ import type { AppRole } from "@/lib/auth-routing";
 
 import { WorkspaceAnnouncementAction } from "./workspace-announcement-action";
 import { WorkspaceAccountMenu } from "./workspace-account-menu";
-import { WorkspaceFeedbackButton } from "./workspace-feedback/workspace-feedback-button";
 
 type WorkspaceHeaderActionsProps = {
   accountLabel: string;
@@ -16,7 +15,7 @@ type WorkspaceHeaderActionsProps = {
 };
 
 /**
- * 顶栏只负责排列三个独立入口。公告读取、账号菜单和意见反馈各自维护状态，
+ * 顶栏只负责排列公告和账号入口；两个模块分别维护自己的读取与交互状态，
  * 后续修改任意一个入口时，不会再让顶栏组装组件同时承担多种业务职责。
  */
 export function WorkspaceHeaderActions({
@@ -31,7 +30,6 @@ export function WorkspaceHeaderActions({
       <WorkspaceAnnouncementAction
         initialAnnouncementsState={initialAnnouncementsState}
       />
-      <WorkspaceFeedbackButton />
       <WorkspaceAccountMenu
         accountLabel={accountLabel}
         initials={initials}

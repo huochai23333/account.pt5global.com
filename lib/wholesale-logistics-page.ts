@@ -215,13 +215,13 @@ export async function requestWholesaleLogisticsRefresh(
     || (receipt.operationStatus !== "succeeded"
       && receipt.operationStatus !== "skipped")
   ) {
-    throw new Error("最新物流数据仍在确认中，请稍后到系统运行页查看。");
+    throw new Error("最新物流数据仍在确认中，请稍后刷新当前页面查看。");
   }
 
   // 响应只用于定位运行编号；再次读取账本，避免将已排队、部分完成或伪成功响应当成完成。
   const run = await getOperationRun(supabase, receipt.operationId);
   if (run.operationKey !== "wholesale-logistics-sync") {
-    throw new Error("最新物流数据仍在确认中，请稍后到系统运行页查看。");
+    throw new Error("最新物流数据仍在确认中，请稍后刷新当前页面查看。");
   }
   if (receipt.operationStatus === "succeeded") {
     requireSucceededOperationRun(run, "最新物流数据尚未全部更新，请稍后查看。");

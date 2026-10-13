@@ -38,14 +38,12 @@ export type WorkspaceGlobalNavSegment =
   | "announcements"
   | "company-templates"
   | "company-expenses"
-  | "feedback"
   | "home"
   | "mail"
   | "my"
   | "reimbursements"
   | "reviews"
-  | "settings"
-  | "system-health";
+  | "settings";
 
 export type WorkspaceNavSegment =
   | WorkspaceGlobalNavSegment
@@ -71,12 +69,10 @@ export type WorkspaceNavLabelKey =
   | "team"
   | "commission"
   | "exchangeRates"
-  | "feedback"
   | "tasks"
   | "vip"
   | "reviews"
   | "settings"
-  | "systemHealth"
   | "incentives"
   | "settlementReleases"
   | "salesLeads"

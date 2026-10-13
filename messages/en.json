@@ -489,17 +489,7 @@
       "settlementErrorNotSignedIn": "Your sign-in has expired. Sign in again and retry.",
       "settlementErrorRequestConflict": "This confirmation no longer matches the original details. Send the instruction again.",
       "settlementErrorRequestTooLarge": "This confirmation contains too much content. Send a shorter instruction again.",
-      "settlementErrorServiceUnavailable": "This settlement was not published. The details are still here, so you can try again later.",
-      "feedbackAction": "Send Feedback",
-      "feedbackErrorDescription": "If this problem keeps blocking you, send the recent details to an administrator for review.",
-      "feedbackExplicitDescription": "You can send this problem to an administrator from here without looking for the feedback button.",
-      "feedbackUnableDescription": "This needs someone to confirm it. You can send the recent conversation to an administrator for review.",
-      "feedbackDraftTitle": "Workspace Assistant did not solve my problem",
-      "feedbackDraftIntro": "I ran into this while using Workspace Assistant:",
-      "feedbackDraftUserQuestionLabel": "My question: ",
-      "feedbackDraftAssistantLabel": "Assistant reply: ",
-      "feedbackDraftErrorLabel": "Current situation: ",
-      "feedbackDraftExpectation": "Please help confirm or handle it."
+      "settlementErrorServiceUnavailable": "This settlement was not published. The details are still here, so you can try again later."
     },
     "nav": {
       "home": "Home",
@@ -518,12 +508,10 @@
       "vip": "VIP Management",
       "commission": "Commission",
       "settings": "System Settings",
-      "systemHealth": "System Runs",
       "businessSettings": "Business Settings",
       "exchangeRates": "Exchange Rates",
       "tasks": "Tasks",
       "reviews": "Review Center",
-      "feedback": "Feedback",
       "records": "Operation Records",
       "salesLeads": "Leads",
       "incentives": "Incentives",
@@ -598,28 +586,6 @@
       "empty": "There are no announcements available right now.",
       "loadError": "Announcements could not be loaded. Please try again later.",
       "readError": "The read status could not be saved. Please try again later."
-    },
-    "feedback": {
-      "open": "Send Feedback",
-      "title": "Feedback",
-      "description": "Tell us about a problem you found or a change that would make your work easier.",
-      "typeLabel": "Feedback Type",
-      "types": {
-        "bug": "Problem",
-        "suggestion": "Improvement"
-      },
-      "titleLabel": "Short Title",
-      "titlePlaceholder": "Example: Order filters are hard to use",
-      "contentLabel": "Details",
-      "contentPlaceholder": "Describe what happened, what you expected, or what you would like improved.",
-      "cancel": "Cancel",
-      "submit": "Send Feedback",
-      "titleTooShort": "Enter a title with at least 2 characters.",
-      "titleTooLong": "Keep the title within 100 characters.",
-      "contentTooShort": "Enter details with at least 10 characters.",
-      "contentTooLong": "Keep the details within 2000 characters.",
-      "serviceUnavailable": "Feedback could not be sent. Please try again later.",
-      "success": "Feedback received. We will review it."
     },
     "accountMenu": {
       "open": "Open Account Menu",
@@ -1434,10 +1400,6 @@
     "reviews": {
       "title": "Review Center",
       "description": "This section will handle document review, identity verification, risk checks, and approval flows. It can later branch into role-specific review views for operators, managers, and clients."
-    },
-    "feedback": {
-      "title": "Feedback",
-      "description": "Administrators can review problems and improvement ideas submitted by every role, then update the handling status."
     }
   },
   "BusinessVip": {
@@ -1869,71 +1831,6 @@
     },
     "noPermissionTitle": "Cannot manage announcements",
     "noPermissionDescription": "The current account does not have announcement management permission."
-  },
-  "WorkspaceFeedback": {
-    "metadata": {
-      "title": "Feedback"
-    },
-    "types": {
-      "bug": "Problem",
-      "suggestion": "Improvement"
-    },
-    "statuses": {
-      "new": "New",
-      "inProgress": "In Progress",
-      "resolved": "Resolved",
-      "declined": "Declined"
-    },
-    "roles": {
-      "administrator": "Administrator",
-      "client": "Client",
-      "finance": "Finance",
-      "manager": "Manager",
-      "operator": "Operator",
-      "recruiter": "Recruiter",
-      "promoter": "Promoter",
-      "salesman": "Sales"
-    },
-    "header": {
-      "title": "Problems and Improvements"
-    },
-    "summary": {
-      "total": "All Feedback",
-      "new": "New",
-      "inProgress": "In Progress",
-      "resolved": "Resolved"
-    },
-    "filters": {
-      "search": "Search",
-      "searchPlaceholder": "Search title, details, submitter, or page",
-      "type": "Type",
-      "status": "Status",
-      "allTypes": "All Types",
-      "allStatuses": "All Statuses"
-    },
-    "list": {
-      "title": "User Feedback",
-      "emptyTitle": "No matching feedback",
-      "emptyDescription": "Adjust the filters or wait for users to send new feedback.",
-      "feedback": "Feedback",
-      "submitter": "Submitter",
-      "type": "Type",
-      "source": "Source Page",
-      "createdAt": "Submitted",
-      "status": "Status",
-      "statusAction": "Update handling status"
-    },
-    "feedback": {
-      "statusSaved": "Status updated.",
-      "statusError": "Status could not be saved. Please try again later."
-    },
-    "states": {
-      "noPermissionTitle": "Cannot manage feedback",
-      "noPermissionDescription": "The current account does not have feedback management permission."
-    },
-    "fallback": {
-      "notProvided": "Not provided"
-    }
   },
   "DashboardShared": {
     "loading": "loading",
@@ -3746,8 +3643,7 @@
     "summary": {
       "total": "Total records",
       "account": "Account changes",
-      "profile": "Profile reviews",
-      "feedback": "Feedback handling"
+      "profile": "Profile reviews"
     },
     "states": {
       "noPermissionTitle": "No access to operation records",
@@ -3755,7 +3651,7 @@
     },
     "filters": {
       "search": "Search records",
-      "searchPlaceholder": "Search people, email, action detail, or source page",
+      "searchPlaceholder": "Search people, email or actions",
       "category": "Record type",
       "action": "Action",
       "allCategories": "All types",
@@ -3763,17 +3659,12 @@
     },
     "categories": {
       "account": "Account change",
-      "profile": "Profile review",
-      "feedback": "Feedback handling"
+      "profile": "Profile review"
     },
     "actions": {
       "accountChanged": "Adjusted account",
       "profileApproved": "Approved profile update",
-      "profileRejected": "Rejected profile update",
-      "feedbackNew": "Marked feedback new",
-      "feedbackInProgress": "Marked feedback in progress",
-      "feedbackResolved": "Marked feedback resolved",
-      "feedbackDeclined": "Declined feedback"
+      "profileRejected": "Rejected profile update"
     },
     "list": {
       "title": "Recent Operations",
@@ -3793,9 +3684,6 @@
       "statusChange": "Status: {from} -> {to}",
       "nameChange": "Name: {from} -> {to}",
       "cityChange": "City: {from} -> {to}",
-      "feedbackTitle": "Feedback: {title}",
-      "feedbackStatus": "Handling status: {status}",
-      "feedbackSource": "Source: {path}",
       "note": "Note: {note}",
       "noNote": "No note provided"
     },
@@ -3813,12 +3701,6 @@
       "active": "Active",
       "inactive": "Inactive",
       "suspended": "Suspended"
-    },
-    "feedbackStatuses": {
-      "new": "New",
-      "inProgress": "In progress",
-      "resolved": "Resolved",
-      "declined": "Declined"
     },
     "fallback": {
       "notProvided": "Not provided"
@@ -4517,7 +4399,7 @@
         "failed": "This sync did not finish. The system will retry.",
         "needs_attention": "This sync repeatedly failed and needs administrator attention.",
         "skipped": "There was nothing to sync.",
-        "confirming": "The result is still being confirmed. Check System Runs later."
+        "confirming": "The result is still being confirmed. Refresh this page later."
       }
     },
     "pagination": {
@@ -5038,41 +4920,6 @@
       "publishedAs": "Posted as: {customerName}",
       "remainingAmount": "Remaining {amount}",
       "removedOrder": "Order removed"
-    }
-  },
-  "SystemHealth": {
-    "metadata": {
-      "title": "System Runs"
-    },
-    "eyebrow": "Verified completion",
-    "title": "System Runs",
-    "description": "See what background work actually finished, how many retries occurred, and what needs attention. Being scheduled or delivered does not count as success.",
-    "refresh": "Refresh status",
-    "loadFailed": "Run status could not be loaded. Try again shortly.",
-    "acknowledgeFailed": "This alert could not be acknowledged. Try again shortly.",
-    "attention": "Needs attention",
-    "processing": "Processing",
-    "registered": "Registered tasks",
-    "alertsTitle": "Items needing attention",
-    "noAlerts": "There are no system issues needing attention.",
-    "occurrences": "Occurred {count} times",
-    "acknowledge": "Acknowledge",
-    "acknowledged": "Acknowledged",
-    "operationsTitle": "Latest verified result for each task",
-    "attempts": "Attempts",
-    "resultCount": "Completed",
-    "failedCount": "Failed",
-    "completedAt": "Actual completion",
-    "notCompleted": "Not completed",
-    "status": {
-      "queued": "Waiting",
-      "running": "Processing",
-      "succeeded": "Completed",
-      "partial_failed": "Partly incomplete",
-      "failed": "Incomplete",
-      "needs_attention": "Needs attention",
-      "skipped": "No work needed",
-      "never_run": "Never run"
     }
   },
   "MailWorkspace": {

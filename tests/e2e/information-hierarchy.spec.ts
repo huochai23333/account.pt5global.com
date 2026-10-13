@@ -79,7 +79,6 @@ test.describe("全站信息层级与内容减负", () => {
     for (const route of [
       "/admin/wholesale/orders",
       "/admin/company-expenses",
-      "/admin/feedback",
       "/admin/announcements",
       "/admin/accounts",
       "/admin/wholesale/customers",

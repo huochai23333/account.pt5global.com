@@ -33,7 +33,6 @@ const NAV_LABELS = {
   customerInventoryOrders: "库存订单",
   customers: "客户管理",
   exchangeRates: "汇率",
-  feedback: "反馈管理",
   home: "首页",
   incentives: "提成",
   logistics: "物流管理",
@@ -48,7 +47,6 @@ const NAV_LABELS = {
   reviews: "审核",
   settlementReleases: "结汇发布",
   settings: "系统设置",
-  systemHealth: "系统运行",
   tasks: "任务",
   team: "团队",
   vip: "VIP管理",
@@ -67,7 +65,6 @@ const NAV_ENTRY_DESCRIPTIONS = {
     "查看客户库存采购订单、Order List、专属信贷、延期和还款",
   customers: "按当前业务查看和维护客户资料、客户标记或客户归属",
   exchangeRates: "查看币种汇率和历史记录；管理员还可以维护汇率和获取设置",
-  feedback: "管理员查看和跟进用户反馈",
   home: "查看问候、公告和当前提醒",
   incentives: "查看批发业务员提成、待结算金额和结算状态",
   logistics: "查看店小秘物流永久档案、店铺历史归属、缺失运费和分币种运费汇总",
@@ -82,7 +79,6 @@ const NAV_ENTRY_DESCRIPTIONS = {
   reviews: "处理资料和媒体审核",
   settlementReleases: "发布和认领批发客户结汇收款，并匹配到对应订单",
   settings: "查看汇率；管理员还可以维护汇率和获取设置",
-  systemHealth: "查看后台任务实际完成时间、重试次数和需要处理的系统问题",
   tasks: "查看、领取、提交或管理任务",
   team: "查看当前账号可见的团队范围",
   vip: "在对应业务内处理VIP申请、收款确认、充值记录和有效期调整",
@@ -97,7 +93,7 @@ const BUSINESS_LABELS = {
 const SYSTEM_UPDATE_GUIDES = [
   "当前工作台开放批发业务，使用独立的客户、订单、物流、提成和推荐功能。",
   "任务支持按目标角色发放、多人分别领取、分别提交审核；管理员可以设置提交任务时是否必须上传文件。",
-  "管理员可以通过操作记录核对重要处理动作，也可以通过反馈管理跟进用户提交的问题。",
+  "管理员可以通过操作记录核对账号调整和资料审核等重要处理动作。",
   "个人照片上传后的图片初审只是辅助检查，是否通过以审核结果和页面提示为准。",
   "注册或邀请码遇到问题时，引导用户确认推荐人发送的完整邀请码、返回登录，或联系管理员查看，不要把它说成系统故障。",
 ] as const;
@@ -265,7 +261,6 @@ function buildPageVariantGuide(pageVariants: WorkspacePageVariants) {
     pageVariants.settings
       ? "业务设置在对应业务侧栏内维护；外侧汇率页供内部账号查看，只有管理员可以维护和获取汇率。"
       : null,
-    pageVariants.feedback ? "反馈管理只用于管理员查看和处理用户反馈。" : null,
     pageVariants.operatorReimbursements
       ? "报销记录只用于运营记录自己的报销内容和金额，并把当前周期未报销记录标记为已报销。"
       : null,

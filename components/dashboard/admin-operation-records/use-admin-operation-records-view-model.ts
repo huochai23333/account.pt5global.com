@@ -14,7 +14,6 @@ import {
   operationRecordMatchesSearch,
   type OperationActionLabels,
   type OperationCategoryLabels,
-  type OperationFeedbackStatusLabels,
   type OperationRoleLabels,
   type OperationStatusLabels,
 } from "./admin-operation-records-display";
@@ -32,7 +31,6 @@ export function useAdminOperationRecordsViewModel({
   const categoryLabels = useMemo<OperationCategoryLabels>(
     () => ({
       account: t("categories.account"),
-      feedback: t("categories.feedback"),
       profile: t("categories.profile"),
     }),
     [t],
@@ -40,10 +38,6 @@ export function useAdminOperationRecordsViewModel({
   const actionLabels = useMemo<OperationActionLabels>(
     () => ({
       account_changed: t("actions.accountChanged"),
-      feedback_declined: t("actions.feedbackDeclined"),
-      feedback_in_progress: t("actions.feedbackInProgress"),
-      feedback_new: t("actions.feedbackNew"),
-      feedback_resolved: t("actions.feedbackResolved"),
       profile_approved: t("actions.profileApproved"),
       profile_rejected: t("actions.profileRejected"),
     }),
@@ -70,16 +64,6 @@ export function useAdminOperationRecordsViewModel({
     }),
     [t],
   );
-  const feedbackStatusLabels = useMemo<OperationFeedbackStatusLabels>(
-    () => ({
-      declined: t("feedbackStatuses.declined"),
-      in_progress: t("feedbackStatuses.inProgress"),
-      new: t("feedbackStatuses.new"),
-      resolved: t("feedbackStatuses.resolved"),
-    }),
-    [t],
-  );
-
   const filteredRecords = useMemo(() => {
     return initialData.records.filter((record) => {
       const categoryMatches =
@@ -113,7 +97,6 @@ export function useAdminOperationRecordsViewModel({
     categoryFilter,
     categoryLabels,
     categoryOptions: ADMIN_OPERATION_RECORD_CATEGORIES,
-    feedbackStatusLabels,
     filteredRecords,
     hasPermission: initialData.hasPermission,
     roleLabels,

@@ -8,25 +8,15 @@ import {
 import type { AppRole } from "./auth-routing";
 import { getCurrentSessionContext, type UserStatus } from "./user-self-service";
 import { normalizeOptionalString } from "./value-normalizers";
-import {
-  isWorkspaceFeedbackStatus,
-  type WorkspaceFeedbackStatus,
-} from "./workspace-feedback";
-
 export const ADMIN_OPERATION_RECORD_CATEGORIES = [
   "account",
   "profile",
-  "feedback",
 ] as const;
 
 export const ADMIN_OPERATION_RECORD_ACTIONS = [
   "account_changed",
   "profile_approved",
   "profile_rejected",
-  "feedback_in_progress",
-  "feedback_new",
-  "feedback_resolved",
-  "feedback_declined",
 ] as const;
 
 export type AdminOperationRecordCategory =
@@ -45,14 +35,13 @@ export type AdminOperationRecord = {
   actor: AdminOperationActor;
   category: AdminOperationRecordCategory;
   cityChange: OperationValueChange | null;
-  feedback: OperationFeedbackChange | null;
   id: string;
   nameChange: OperationValueChange | null;
   note: string | null;
   occurredAt: string;
   roleChange: OperationValueChange<AppRole | null> | null;
   statusChange: OperationValueChange<
-    UserStatus | WorkspaceFeedbackStatus | null
+    UserStatus | null
   > | null;
   subject: AdminOperationActor;
 };
@@ -65,11 +54,6 @@ export type AdminOperationRecordsPageData = {
 type OperationValueChange<T = string | null> = {
   from: T;
   to: T;
-};
-
-type OperationFeedbackChange = {
-  sourcePath: string;
-  title: string;
 };
 
 type ProfileChangeStatus = "approved" | "rejected" | "pending";
@@ -85,16 +69,6 @@ type ProfileChangeReviewHistoryRow = {
   status: ProfileChangeStatus;
   updated_at: string;
   user_id: string;
-};
-
-type FeedbackHistoryRow = {
-  id: string;
-  source_path: string;
-  status: WorkspaceFeedbackStatus;
-  status_updated_at: string;
-  status_updated_by_user_id: string | null;
-  submitted_by_user_id: string;
-  title: string;
 };
 
 type UserProfileSummary = {
@@ -123,23 +97,18 @@ export async function getAdminOperationRecordsPageData(
     };
   }
 
-  const [accountRows, profileRows, feedbackRows] = await Promise.all([
+  // 操作记录只汇总现有账号调整与资料审核，避免读取已移除板块的数据。
+  const [accountRows, profileRows] = await Promise.all([
     getAdminPeopleChangeLogDirectory(supabase),
     getProfileChangeReviewHistory(supabase),
-    getFeedbackStatusHistory(supabase),
   ]);
   const profiles = await getOperationUserProfiles(supabase, [
     ...profileRows.flatMap((row) => [row.user_id, row.reviewer_user_id]),
-    ...feedbackRows.flatMap((row) => [
-      row.submitted_by_user_id,
-      row.status_updated_by_user_id,
-    ]),
   ]);
 
   const records = [
     ...accountRows.map(toAccountOperationRecord),
     ...profileRows.map((row) => toProfileOperationRecord(row, profiles)),
-    ...feedbackRows.map((row) => toFeedbackOperationRecord(row, profiles)),
   ].sort((left, right) => {
     return (
       new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime() || right.id.localeCompare(left.id)
@@ -172,28 +141,6 @@ async function getProfileChangeReviewHistory(
   }
 
   return (data ?? []).filter(isProfileChangeReviewHistoryRow);
-}
-
-async function getFeedbackStatusHistory(
-  supabase: SupabaseClient,
-) {
-  const { data, error } = await queryCompleteDashboardRows(
-    supabase
-      .from("workspace_feedback")
-      .select(
-        "id,submitted_by_user_id,title,source_path,status,status_updated_at,status_updated_by_user_id",
-      )
-      .not("status_updated_by_user_id", "is", null)
-      .order("status_updated_at", { ascending: false })
-      .order("id", { ascending: false })
-      .returns<FeedbackHistoryRow[]>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? []).filter(isFeedbackHistoryRow);
 }
 
 async function getOperationUserProfiles(
@@ -250,7 +197,6 @@ function toAccountOperationRecord(
             to: row.next_city,
           }
         : null,
-    feedback: null,
     id: `account:${row.id}`,
     nameChange: null,
     note: row.note,
@@ -283,7 +229,6 @@ function toProfileOperationRecord(
       from: row.previous_city,
       to: row.requested_city,
     },
-    feedback: null,
     id: `profile:${row.id}`,
     nameChange: {
       from: row.previous_name,
@@ -295,47 +240,6 @@ function toProfileOperationRecord(
     statusChange: null,
     subject: toOperationActor(row.user_id, profiles),
   };
-}
-
-function toFeedbackOperationRecord(
-  row: FeedbackHistoryRow,
-  profiles: ReadonlyMap<string, UserProfileSummary>,
-): AdminOperationRecord {
-  return {
-    action: toFeedbackAction(row.status),
-    actor: toOperationActor(row.status_updated_by_user_id, profiles),
-    category: "feedback",
-    cityChange: null,
-    feedback: {
-      sourcePath: row.source_path,
-      title: row.title,
-    },
-    id: `feedback:${row.id}`,
-    nameChange: null,
-    note: null,
-    occurredAt: row.status_updated_at,
-    roleChange: null,
-    statusChange: {
-      from: "new",
-      to: row.status,
-    },
-    subject: toOperationActor(row.submitted_by_user_id, profiles),
-  };
-}
-
-function toFeedbackAction(
-  status: WorkspaceFeedbackStatus,
-): AdminOperationRecordAction {
-  switch (status) {
-    case "declined":
-      return "feedback_declined";
-    case "in_progress":
-      return "feedback_in_progress";
-    case "resolved":
-      return "feedback_resolved";
-    case "new":
-      return "feedback_new";
-  }
 }
 
 function toOperationActor(
@@ -361,18 +265,5 @@ function isProfileChangeReviewHistoryRow(
     typeof value.requested_city === "string" &&
     (value.status === "approved" || value.status === "rejected") &&
     typeof value.updated_at === "string"
-  );
-}
-
-function isFeedbackHistoryRow(
-  value: FeedbackHistoryRow,
-): value is FeedbackHistoryRow {
-  return (
-    typeof value.id === "string" &&
-    typeof value.submitted_by_user_id === "string" &&
-    typeof value.title === "string" &&
-    typeof value.source_path === "string" &&
-    typeof value.status_updated_at === "string" &&
-    isWorkspaceFeedbackStatus(value.status)
   );
 }

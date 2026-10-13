@@ -14,11 +14,6 @@ import * as FormControls from "@/components/ui/form-controls";
 import { MOTION_DURATION, MOTION_EASING } from "@/lib/motion-tokens";
 import { cn } from "@/lib/utils";
 
-import type { AiAssistantOpenFeedback } from "./ai-assistant-feedback-bridge";
-import {
-  AiAssistantFeedbackEntry,
-  type AiAssistantFeedbackEntryCopy,
-} from "./ai-assistant-feedback-entry";
 import { AiAssistantSettlementReleaseCard } from "./ai-assistant-settlement-release-card";
 import type {
   AiAssistantSettlementReleaseCopy,
@@ -27,7 +22,6 @@ import type {
 
 type AiAssistantPanelCopy = {
   close: string;
-  feedbackEntry: AiAssistantFeedbackEntryCopy;
   inputLabel: string;
   placeholder: string;
   reset: string;
@@ -50,7 +44,6 @@ type AiAssistantPanelProps = {
   onCancelSettlementRelease: (messageId: string) => void;
   onClose: () => void;
   onConfirmSettlementRelease: (messageId: string) => void;
-  onOpenFeedback: AiAssistantOpenFeedback;
   onInputChange: (value: string) => void;
   onReset: () => void;
   onSend: () => void;
@@ -67,7 +60,6 @@ export function AiAssistantPanel({
   onCancelSettlementRelease,
   onClose,
   onConfirmSettlementRelease,
-  onOpenFeedback,
   onInputChange,
   onReset,
   onSend,
@@ -208,15 +200,6 @@ export function AiAssistantPanel({
             </div>
           </MotionListItem>
         ) : null}
-
-        <MotionListItem key="assistant-feedback-entry">
-          <AiAssistantFeedbackEntry
-            copy={copy.feedbackEntry}
-            errorMessage={errorMessage}
-            messages={messages}
-            onOpenFeedback={onOpenFeedback}
-          />
-        </MotionListItem>
 
         <div ref={messageEndRef} />
       </MotionList>

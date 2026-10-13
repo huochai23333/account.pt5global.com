@@ -48,7 +48,6 @@ export function AdminOperationRecordsClient({
           paginationKey={JSON.stringify([viewModel.searchText, viewModel.categoryFilter, viewModel.actionFilter])}
             actionLabels={viewModel.actionLabels}
             categoryLabels={viewModel.categoryLabels}
-            feedbackStatusLabels={viewModel.feedbackStatusLabels}
             locale={locale}
             records={viewModel.filteredRecords}
             roleLabels={viewModel.roleLabels}

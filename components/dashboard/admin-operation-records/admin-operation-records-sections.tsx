@@ -141,7 +141,6 @@ export function OperationRecordsListSection({
   paginationKey,
   actionLabels,
   categoryLabels,
-  feedbackStatusLabels,
   locale,
   records,
   roleLabels,
@@ -150,7 +149,6 @@ export function OperationRecordsListSection({
   paginationKey: string;
   actionLabels: OperationRecordsViewModel["actionLabels"];
   categoryLabels: OperationRecordsViewModel["categoryLabels"];
-  feedbackStatusLabels: OperationRecordsViewModel["feedbackStatusLabels"];
   locale: Locale;
   records: AdminOperationRecord[];
   roleLabels: OperationRecordsViewModel["roleLabels"];
@@ -188,7 +186,6 @@ export function OperationRecordsListSection({
                     <OperationRecordRow
                       actionLabels={actionLabels}
                       categoryLabels={categoryLabels}
-                      feedbackStatusLabels={feedbackStatusLabels}
                       key={record.id}
                       locale={locale}
                       record={record}
@@ -210,7 +207,6 @@ export function OperationRecordsListSection({
 function OperationRecordRow({
   actionLabels,
   categoryLabels,
-  feedbackStatusLabels,
   locale,
   record,
   roleLabels,
@@ -218,7 +214,6 @@ function OperationRecordRow({
 }: {
   actionLabels: OperationRecordsViewModel["actionLabels"];
   categoryLabels: OperationRecordsViewModel["categoryLabels"];
-  feedbackStatusLabels: OperationRecordsViewModel["feedbackStatusLabels"];
   locale: Locale;
   record: AdminOperationRecord;
   roleLabels: OperationRecordsViewModel["roleLabels"];
@@ -258,7 +253,6 @@ function OperationRecordRow({
       </td>
       <td className="max-w-[340px] px-4 py-4 text-content-muted">
         <OperationRecordDetail
-          feedbackStatusLabels={feedbackStatusLabels}
           record={record}
           roleLabels={roleLabels}
           statusLabels={statusLabels}
@@ -269,12 +263,10 @@ function OperationRecordRow({
 }
 
 function OperationRecordDetail({
-  feedbackStatusLabels,
   record,
   roleLabels,
   statusLabels,
 }: {
-  feedbackStatusLabels: OperationRecordsViewModel["feedbackStatusLabels"];
   record: AdminOperationRecord;
   roleLabels: OperationRecordsViewModel["roleLabels"];
   statusLabels: OperationRecordsViewModel["statusLabels"];
@@ -296,19 +288,17 @@ function OperationRecordDetail({
           })}
         </p>
       ) : null}
-      {record.statusChange && record.category !== "feedback" ? (
+      {record.statusChange ? (
         <p>
           {t("detail.statusChange", {
             from: getStatusChangeLabel(
               record.statusChange.from,
               statusLabels,
-              feedbackStatusLabels,
               fallback,
             ),
             to: getStatusChangeLabel(
               record.statusChange.to,
               statusLabels,
-              feedbackStatusLabels,
               fallback,
             ),
           })}
@@ -329,26 +319,6 @@ function OperationRecordDetail({
             to: record.cityChange.to ?? fallback,
           })}
         </p>
-      ) : null}
-      {record.feedback ? (
-        <>
-          <p>{t("detail.feedbackTitle", { title: record.feedback.title })}</p>
-          {record.statusChange ? (
-            <p>
-              {t("detail.feedbackStatus", {
-                status: getStatusChangeLabel(
-                  record.statusChange.to,
-                  statusLabels,
-                  feedbackStatusLabels,
-                  fallback,
-                ),
-              })}
-            </p>
-          ) : null}
-          <p className="break-all">
-            {t("detail.feedbackSource", { path: record.feedback.sourcePath })}
-          </p>
-        </>
       ) : null}
       {record.note ? (
         <p>{t("detail.note", { note: record.note })}</p>

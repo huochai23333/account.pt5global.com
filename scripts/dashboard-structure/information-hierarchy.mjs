@@ -3,7 +3,6 @@
  * 这里接收主脚本已经解析好的 JSX 信息，不重复读取文件，也不会修改任何源码。
  */
 const SINGLE_CONTENT_LIST_FILES = new Set([
-  "components/dashboard/admin-feedback/admin-feedback-sections.tsx",
   "components/dashboard/admin-operation-records/admin-operation-records-sections.tsx",
   "components/dashboard/admin-tasks/admin-task-media-library-section.tsx",
   "components/dashboard/admin-tasks/admin-task-review-section.tsx",

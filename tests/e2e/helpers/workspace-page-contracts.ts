@@ -4,7 +4,6 @@ import { expect, type Page } from "@playwright/test";
 export const workspacePageContracts = {
   accounts: { title: "账号管理", label: "搜索账号" },
   announcements: { title: "公告管理", button: "新建公告" },
-  feedback: { title: "问题反馈与改进建议", label: "搜索" },
   reviews: { title: "审核中心", button: "资料修改" },
   settings: { title: "汇率", label: "原始货币" },
   "company-expenses": { title: "公司费用", label: "所属月份" },

@@ -57,7 +57,6 @@ const dashboardMaterialOwners = new Set([
   "components/dashboard/team-management/team-management-summary-sections.tsx",
   "components/dashboard/team-management/team-management-ui.tsx",
   "components/dashboard/workspace-customization-sidebar.tsx",
-  "components/dashboard/workspace-feedback/workspace-feedback-success-toast.tsx",
   "components/dashboard/workspace-loading-shell.tsx",
   "components/dashboard/workspace-account-menu.tsx",
   "components/dashboard/workspace-announcement-action.tsx",
