@@ -5,6 +5,7 @@ import type {
   WorkspaceWholesaleSectionKey,
 } from "./workspace-business-modules";
 
+// 提成与佣金共用单一入口，页内标签不再增加第二条侧栏链接。
 // 管理员和业务员按“线索 → 客户 → 订单”的业务过程排列；桌面与手机共用此顺序。
 const adminNavItems = createNavItems([
   ["leads", "salesLeads"],
@@ -16,8 +17,7 @@ const adminNavItems = createNavItems([
   ["people", "people"],
   ["vip", "vip"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
-  ["incentives", "incentives"],
+  ["commission", "wholesaleCommission"],
   ["settings", "businessSettings"],
 ]);
 const salesNavItems = createNavItems([
@@ -26,8 +26,7 @@ const salesNavItems = createNavItems([
   ["people", "people"],
   ["vip", "vip"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
-  ["incentives", "incentives"],
+  ["commission", "wholesaleCommission"],
 ]);
 const salesmanNavItems = createNavItems([
   ["leads", "salesLeads"],
@@ -38,20 +37,18 @@ const salesmanNavItems = createNavItems([
   ["logistics", "logistics"],
   ["vip", "vip"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
-  ["incentives", "incentives"],
+  ["commission", "wholesaleCommission"],
 ]);
 const clientNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
   ["inventory-orders", "customerInventoryOrders"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
+  ["commission", "wholesaleCommission"],
 ]);
 const managerNavItems = createNavItems([
   ["orders", "wholesaleOrders"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
-  ["incentives", "incentives"],
+  ["commission", "wholesaleCommission"],
 ]);
 const operatorNavItems = createNavItems([["orders", "wholesaleOrders"]]);
 const recruiterNavItems = createNavItems([["referrals", "referrals"]]);
@@ -65,8 +62,7 @@ const financeNavItems = createNavItems([
   ["customers", "customers"],
   ["vip", "vip"],
   ["referrals", "referrals"],
-  ["commission", "commission"],
-  ["incentives", "incentives"],
+  ["commission", "wholesaleCommission"],
 ]);
 
 export const wholesaleWorkspaceBusinessModule: WorkspaceBusinessModule = {

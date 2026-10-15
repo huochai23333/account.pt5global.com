@@ -9,7 +9,7 @@ for (const role of ["administrator", "salesman"] as const) {
     const workspace = role === "administrator" ? "admin" : role;
     const prefix = `/${workspace}/wholesale/`;
     const expected = ["leads", "customers", "orders", "inventory-orders", "settlement-releases", "logistics",
-      ...(role === "administrator" ? ["people"] : []), "vip", "referrals", "commission", "incentives",
+      ...(role === "administrator" ? ["people"] : []), "vip", "referrals", "commission",
       ...(role === "administrator" ? ["settings"] : [])];
 
     for (const locale of ["zh", "en"] as const) {

@@ -89,7 +89,7 @@ test("新客户从页面创建、分次收款、改成本，数据库提成和�
   await showOrder(page, order.order_number);
   await expect(page.getByTestId(`wholesale-order-row-${order.id}`)).toContainText("625.00");
   await expect(page.getByText("单位毛利", { exact: true })).toHaveCount(0);
-  await page.goto("/admin/wholesale/incentives");
+  await page.goto("/admin/wholesale/commission");
   const commissionRow = page.getByRole("row").filter({ hasText: order.order_number });
   await expect(commissionRow).toContainText("服务费提成基数");
   await expect(commissionRow).toContainText("62.50");

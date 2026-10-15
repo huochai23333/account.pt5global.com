@@ -10,7 +10,7 @@ import {
   canManageEveryWholesaleCustomer,
   canManageEveryWholesaleOrder,
 } from "@/lib/wholesale-role-permissions";
-import { WholesaleCommissionSection } from "./wholesale-commission-section";
+import { WholesaleCommissionPage } from "./wholesale-commission-page";
 import { WholesaleCustomersSection } from "./wholesale-customers-section";
 import { WholesaleLogisticsSection } from "./wholesale-logistics-section";
 import { WholesaleOrdersSection } from "./wholesale-orders-section";
@@ -147,19 +147,11 @@ export function WholesaleClient({
         />
       ) : null}
 
-      {initialData.section === "commission" ||
-      initialData.section === "incentives" ? (
-        <WholesaleCommissionSection
-          canAdmin={canAdmin}
-          commissionRuleSettings={initialData.commissionRuleSettings}
-          commissions={initialData.commissions}
-          customersById={customersById}
+      {initialData.section === "commission" ? (
+        <WholesaleCommissionPage
+          initialData={initialData}
           onSettleCommission={actions.settleCommission}
-          orders={initialData.orders}
           pendingKey={actions.pendingKey}
-          profilesById={profilesById}
-          referralRows={initialData.referralCommissionRows}
-          variant={initialData.section}
         />
       ) : null}
     </div>

@@ -1,0 +1,266 @@
+{
+  "title": "批发提成与佣金合并验证",
+  "date": "2026-10-15",
+  "result": "passed",
+  "qualityGate": {
+    "route": "Behavior",
+    "reason": "导航、标签状态、数据读取合并；额外回归现有提成结算的最终业务结果。"
+  },
+  "behavior": {
+    "route": "/{workspace}/wholesale/commission",
+    "removedRoute": "/{workspace}/wholesale/incentives",
+    "tabs": [
+      "业务员提成",
+      "客户推荐佣金"
+    ],
+    "query": "board=salesman|referrals",
+    "state": "切换保留各自筛选与分页；刷新和浏览器后退恢复当前标签。",
+    "customer": "仅加载推荐佣金；强行指定 salesman 标签也不返回或挂载内部提成数据。",
+    "readErrors": "两个标签分别报告加载错误并提供重新加载，失败不伪装为空记录。"
+  },
+  "interfaces": {
+    "added": [
+      "WholesaleCommissionBoard",
+      "WholesalePageData.commissionBoards",
+      "WholesalePageData.commissionBoardErrors",
+      "WholesalePageData.commissionPageError"
+    ],
+    "changed": "getWholesaleCommissionPageRows 由独立页面类型改为服务端确定的可用标签列表。",
+    "databaseSchema": "未改变数据库表、RLS、计算函数、结算接口；本地故障测试临时改名的函数已恢复。"
+  },
+  "checks": [
+    {
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "result": "passed"
+    },
+    {
+      "command": "node scripts/check-i18n.mjs",
+      "result": "passed"
+    },
+    {
+      "command": "node scripts/check-dashboard-structure.mjs",
+      "result": "passed"
+    },
+    {
+      "command": "node scripts/check-operation-contracts.mjs",
+      "result": "passed",
+      "contracts": 41
+    },
+    {
+      "command": "node --experimental-strip-types --test scripts/e2e-fixture-policy.test.mjs",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node node_modules/@playwright/test/cli.js test --config=tests/contracts/playwright.config.ts workspace-page-contracts.spec.ts --output=output/commission-merge/contracts-final --reporter=list",
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "note": "这是独立页面契约测试，真实应用验收另计。"
+    },
+    {
+      "command": "PLAYWRIGHT_SKIP_WEB_SERVER=1 node node_modules/@playwright/test/cli.js test tests/e2e/wholesale-commission-merge.spec.ts tests/e2e/wholesale-navigation-order.spec.ts tests/e2e/finance-business-access.spec.ts tests/e2e/wholesale-customer-commission-fees.spec.ts --grep '提成|中英文桌面|标签及金额|批发访问边界|真实查询失败|navigation starts|已移除的订单认领|财务和管理员看到|新客户从页面创建' --output=output/commission-merge/acceptance --trace=off --reporter=list",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "duration": "2.5 minutes",
+      "baseURL": "http://localhost:3000"
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next build --webpack",
+      "result": "passed",
+      "staticPages": 58
+    }
+  ],
+  "browser": {
+    "localImplementation": "passed",
+    "pageAndInteraction": "真实 Chrome 页面登录，导航、搜索、标签切换、筛选、分页、浏览器后退、重新加载、结算均通过。",
+    "locales": [
+      "zh",
+      "en"
+    ],
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 900
+      },
+      {
+        "width": 375,
+        "height": 812,
+        "purpose": "既有导航回归"
+      }
+    ],
+    "consoleAndOverlay": "合并页中英文主流程无浏览器 console error、pageerror 或 Next 错误遮罩。",
+    "rolesChecked": [
+      "administrator",
+      "salesman",
+      "finance",
+      "client"
+    ],
+    "existingBusinessBoundaryChecked": [
+      "manager",
+      "promoter"
+    ],
+    "screenshots": [
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\en-1440-referrals.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\en-1440-salesman.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\en-390-referrals.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\en-390-salesman.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\zh-1440-referrals.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\zh-1440-salesman.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\zh-390-referrals.png",
+      "C:\\code\\system\\PT5-dropshipping-web\\output\\commission-merge\\zh-390-salesman.png"
+    ],
+    "visualReview": "人工查看中文桌面提成和英文手机佣金的最终截图，标签文字、金额卡片及筛选控件可见；页面无水平溢出。"
+  },
+  "authoritativeEvidence": {
+    "database": "本地 Docker supabase_db_pt5-dropshipping",
+    "readPath": "独立 docker exec psql，推荐佣金核对使用相同账号的 authenticated 身份与 JWT claims。",
+    "readChecks": "管理员、业务员、财务的提成汇总；管理员、业务员、财务、客户的推荐佣金汇总和记录数量；刷新保持一致。",
+    "settlement": {
+      "id": "5282d2d3-bbbc-4c4e-a9a2-95c43d593f52",
+      "status": "settled",
+      "settled_at": "2026-10-15T05:22:46.653+00:00",
+      "timeoutSeconds": 15,
+      "reload": "状态与数据库一致，按钮禁用，同一订单仅一条提成记录且时间戳保持不变。",
+      "cleanup": "凭证所属临时订单及提成已在验收结束后删除。"
+    },
+    "rateFixture": "仅使用项目现有当天 USD 固定测试汇率夹具；不作为真实银行报价凭证，测试后已删除。"
+  },
+  "negativeCases": {
+    "passed": [
+      "佣金查询真实失败时仅佣金标签报错，提成仍可见；恢复函数后页面重试成功",
+      "搜索无匹配记录展示真实空状态",
+      "客户强行指定内部标签仍仅显示推荐佣金",
+      "未知标签使用当前身份默认标签",
+      "独立 incentives 页面显示不存在页面",
+      "业务员及财务无结算入口",
+      "浏览器注入 200 空数组回执时不显示结算成功，数据库仍为 pending",
+      "结算后重复访问及刷新不新增提成记录",
+      "经理及推广的未启用业务边界保持现状"
+    ],
+    "notApplicable": [
+      "本次没有新增批量写入或异步工作进程，批量部分完成和工作进程中断不适用。",
+      "没有新增必填表单、外部付款或消息发送，相关外部凭证不适用。"
+    ],
+    "notExecuted": [
+      "未额外注入连接中断或超时；本次结算接口保持现状。"
+    ]
+  },
+  "readme": {
+    "updatedSection": "批发查询与角色边界说明，第 227 行",
+    "changes": "统一入口、标签、查询参数、客户数据范围与独立错误反馈。"
+  },
+  "architecture": {
+    "split": "新增轻量页面组装组件；提成和推荐佣金的筛选与汇总分别移入 view-model hooks；标签状态独立 hook。",
+    "coreFiles": [
+      {
+        "file": "components/dashboard/admin-shell-nav-links.tsx",
+        "before": 177,
+        "after": 176
+      },
+      {
+        "file": "components/dashboard/wholesale/wholesale-client.tsx",
+        "before": 167,
+        "after": 159
+      },
+      {
+        "file": "components/dashboard/wholesale/wholesale-commission-section.tsx",
+        "before": 294,
+        "after": 210
+      },
+      {
+        "file": "components/dashboard/wholesale/wholesale-referral-commission-section.tsx",
+        "before": 326,
+        "after": 299
+      },
+      {
+        "file": "lib/ai-assistant/assistant-workspace-context.ts",
+        "before": 328,
+        "after": 328
+      },
+      {
+        "file": "lib/wholesale-commission-page.ts",
+        "before": 22,
+        "after": 37
+      },
+      {
+        "file": "lib/wholesale-types.ts",
+        "before": 214,
+        "after": 218
+      },
+      {
+        "file": "lib/wholesale.ts",
+        "before": 247,
+        "after": 259
+      },
+      {
+        "file": "lib/workspace-business-modules.ts",
+        "before": 247,
+        "after": 246
+      },
+      {
+        "file": "lib/workspace-wholesale-module.ts",
+        "before": 130,
+        "after": 126
+      },
+      {
+        "file": "components/dashboard/wholesale/use-wholesale-commission-board.ts",
+        "before": 0,
+        "after": 21
+      },
+      {
+        "file": "components/dashboard/wholesale/use-wholesale-incentive-view-model.ts",
+        "before": 0,
+        "after": 90
+      },
+      {
+        "file": "components/dashboard/wholesale/use-wholesale-referral-commission-view-model.ts",
+        "before": 0,
+        "after": 44
+      },
+      {
+        "file": "components/dashboard/wholesale/wholesale-commission-page.tsx",
+        "before": 0,
+        "after": 60
+      },
+      {
+        "file": "lib/wholesale-commission-boards.ts",
+        "before": 0,
+        "after": 12
+      }
+    ],
+    "over500Lines": false
+  },
+  "cleanup": {
+    "temporaryProbe": "tests/e2e/commission-read-probe.spec.ts 已删除",
+    "cacheFilesRemoved": 61,
+    "cacheBytesRemoved": 1465467244,
+    "temporaryOutputDirectoriesRemoved": 6,
+    "temporaryOutputBytesRemoved": 3082760,
+    "finalScreenshotsKept": 8,
+    "ownedOrderCountAfterCleanup": 0,
+    "commissionCountRestored": 100,
+    "temporaryExchangeRateCountAfterCleanup": 0,
+    "temporaryRenamedFunctionCountAfterCleanup": 0,
+    "developmentServer": "本次开发服务器已停止，未影响另一个项目的 3001 服务。",
+    "preserved": "原有 .next 目录、旧缓存、tsconfig.tsbuildinfo、原有导航截图及无法确认归属的文件均保留。"
+  },
+  "deliveryBoundaries": {
+    "local": "verified",
+    "database": "local readback verified",
+    "github": "未提交、未推送",
+    "supabaseCloud": "未修改",
+    "hosting": "未部署",
+    "fullRegressionAndVisualSnapshotSuite": "未运行全站完整回归或刷新全部视觉快照；已完成本次影响范围的真实页面验证。"
+  }
+}

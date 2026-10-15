@@ -1,5 +1,6 @@
 import type { UserStatus } from "./auth-metadata";
 import type { AppRole } from "./auth-routing";
+import type { WholesaleCommissionBoard } from "./wholesale-commission-boards";
 import type { CommissionRuleSetting } from "./commission-settings";
 import type { ExchangeRateRow } from "./exchange-rates";
 import type {
@@ -190,6 +191,9 @@ export type WholesaleProfile = {
 };
 
 export type WholesalePageData = {
+  commissionBoards: WholesaleCommissionBoard[];
+  commissionBoardErrors: Partial<Record<WholesaleCommissionBoard, string>>;
+  commissionPageError: string | null;
   currentUserId: string | null;
   currentRole: AppRole | null;
   commissionRuleSettings: CommissionRuleSetting[];

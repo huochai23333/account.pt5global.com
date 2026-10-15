@@ -7,7 +7,6 @@ import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
 import {
   Calculator,
   CalendarRange,
@@ -24,7 +23,6 @@ import {
 } from "@/components/dashboard/dashboard-section-panel";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { normalizeSearchText } from "@/lib/value-normalizers";
 import type { WholesaleCustomer } from "@/lib/wholesale";
 import type { WholesaleReferralCommissionRow } from "@/lib/wholesale-referral-commissions";
 import {
@@ -34,11 +32,12 @@ import {
 } from "./wholesale-display";
 import {
   WholesaleEmptyState,
-  WholesalePageShell,
   WholesaleStatGrid,
   WholesaleTd,
   WholesaleTh,
 } from "./wholesale-ui";
+import { useWholesaleReferralCommissionViewModel } from "./use-wholesale-referral-commission-view-model";
+
 const ALL = "all";
 export function WholesaleReferralCommissionSection({
   customersById,
@@ -47,65 +46,39 @@ export function WholesaleReferralCommissionSection({
   customersById: Map<string, WholesaleCustomer>;
   referralRows: WholesaleReferralCommissionRow[];
 }) {
+  const boardText = useTranslations("WholesaleBusiness.commissionBoards");
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_referral_commission_section",
   );
   const commissionText = useTranslations("Commission.settings");
-  const [search, setSearch] = useState("");
-  const [customerFilter, setCustomerFilter] = useState(ALL);
-  const filteredRows = useMemo(() => {
-    const searchValue = normalizeSearchText(search);
-    return referralRows.filter((row) => {
-      if (
-        customerFilter !== ALL &&
-        row.referrerCustomerId !== customerFilter &&
-        row.referredCustomerId !== customerFilter
-      ) {
-        return false;
-      }
-      if (!searchValue) return true;
-      return [
-        getCustomerName(customersById, row.referrerCustomerId),
-        getCustomerName(customersById, row.referredCustomerId),
-        row.orderNumbers.join(" "),
-        row.monthKey,
-      ].some((value) => normalizeSearchText(value).includes(searchValue));
-    });
-  }, [customerFilter, customersById, referralRows, search]);
-  const totalReferralCommission = referralRows.reduce(
-    (sum, row) => sum + (row.amount ?? 0),
-    0,
-  );
-  const chargedWaybillCount = referralRows.reduce(
-    (sum, row) => sum + row.waybillCount,
-    0,
-  );
-  const hasActiveFilters = search || customerFilter !== ALL;
+  const { search, setSearch, customerFilter, setCustomerFilter, filteredRows,
+    totalReferralCommission, chargedWaybillCount, hasActiveFilters } =
+    useWholesaleReferralCommissionViewModel(customersById, referralRows);
   return (
-    <WholesalePageShell title={uiText("attribute003")}>
+    <div className="space-y-6">
       <WholesaleStatGrid
         stats={[
           {
             icon: <CircleDollarSign className="size-4" />,
-            label: "佣金合计",
+            label: boardText("referralTotal"),
             tone: "success",
             value: formatCurrency(totalReferralCommission),
           },
           {
             icon: <CalendarRange className="size-4" />,
-            label: "月度记录",
+            label: boardText("monthlyRecords"),
             tone: "info",
             value: `${referralRows.length}`,
           },
           {
             icon: <ListFilter className="size-4" />,
-            label: "当前显示",
+            label: boardText("visibleRecords"),
             tone: "info",
             value: `${filteredRows.length}`,
           },
           {
             icon: <PackageCheck className="size-4" />,
-            label: "计佣运单",
+            label: boardText("waybills"),
             tone: "warning",
             value: `${chargedWaybillCount}`,
           },
@@ -283,7 +256,7 @@ export function WholesaleReferralCommissionSection({
           )}
         </DashboardPagedRecords>
       </DashboardListSection>
-    </WholesalePageShell>
+    </div>
   );
 }
 function ReferralCommissionBreakdown({

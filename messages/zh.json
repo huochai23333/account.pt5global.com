@@ -514,7 +514,7 @@
       "reviews": "审核中心",
       "records": "操作记录",
       "salesLeads": "线索",
-      "incentives": "提成",
+      "wholesaleCommission": "提成与佣金",
       "settlementReleases": "结汇发布",
       "logistics": "物流管理",
       "customerInventoryOrders": "库存订单",
@@ -1093,12 +1093,8 @@
         "description": "展示批发客户推荐关系，并用于汇总客户推荐佣金。"
       },
       "commission": {
-        "title": "批发佣金",
-        "description": "汇总批发客户推荐佣金和当前结算情况。"
-      },
-      "incentives": {
-        "title": "批发提成",
-        "description": "按批发订单毛利和订单金额统计业务员提成与结算状态。"
+        "title": "提成与佣金",
+        "description": "集中查看业务员提成、客户推荐佣金和结算情况。"
       },
       "settings": {
         "title": "批发业务参数中心",
@@ -1320,6 +1316,22 @@
       "displayOnly": "以上三项自动计算，仅用于费用展示，不改变毛利和客户应付金额。",
       "serviceFeeCommission": "服务费提成基数",
       "grossProfitCommission": "毛利提成基数"
+    },
+    "commissionBoards": {
+      "title": "提成与佣金",
+      "salesman": "业务员提成",
+      "referrals": "客户推荐佣金",
+      "loadError": "提成与佣金暂时没有加载成功，请刷新页面后重试。",
+      "retry": "重新加载",
+      "salesmanError": "业务员提成暂时没有加载成功，请刷新页面后重试。",
+      "referralsError": "客户推荐佣金暂时没有加载成功，请刷新页面后重试。",
+      "incentiveTotal": "提成合计",
+      "incentivePending": "待结算提成",
+      "incentiveRecords": "提成记录",
+      "visibleRecords": "当前显示",
+      "referralTotal": "佣金合计",
+      "monthlyRecords": "月度记录",
+      "waybills": "计佣运单"
     }
   },
   "WorkspaceSections": {

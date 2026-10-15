@@ -10,6 +10,7 @@ import {
 import { getRegressionAccount } from "./helpers/accounts";
 import { readLocalEnvValue } from "./helpers/local-supabase-admin";
 import { getWholesaleReferralCommissionRows } from "@/lib/wholesale-referral-commissions";
+import { prepareCurrentExchangeRateFixture } from "./helpers/current-exchange-rate-fixture";
 
 test("财务和管理员看到的推荐佣金与数据库一致，刷新后仍一致", async ({ page }) => {
   const supabaseUrl = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL");
@@ -17,6 +18,8 @@ test("财务和管理员看到的推荐佣金与数据库一致，刷新后仍�
   test.skip(!supabaseUrl || !anonKey || !/^http:\/\/(?:127\.0\.0\.1|localhost)(?::|\/)/i.test(supabaseUrl), "需要本地数据库核对推荐佣金。");
   if (!supabaseUrl || !anonKey) return;
 
+  const cleanupRate = await prepareCurrentExchangeRateFixture();
+  try {
   for (const role of ["finance", "administrator"] as const) {
     // 佣金函数按当前账号权限计算，独立查询也必须使用与页面相同的身份。
     const db = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
@@ -28,7 +31,7 @@ test("财务和管理员看到的推荐佣金与数据库一致，刷新后仍�
     const total = rows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
     const amount = new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total);
     await loginAs(page, role);
-    await page.goto(`/${role === "administrator" ? "admin" : role}/wholesale/commission`);
+    await page.goto(`/${role === "administrator" ? "admin" : role}/wholesale/commission?board=referrals`);
     const totalCard = page.locator('[data-slot="metric-card"]').filter({ hasText: "佣金合计" });
     const countCard = page.locator('[data-slot="metric-card"]').filter({ hasText: "月度记录" });
     await expect(totalCard).toContainText(amount);
@@ -39,6 +42,9 @@ test("财务和管理员看到的推荐佣金与数据库一致，刷新后仍�
     await expect(countCard).toContainText(String(rows.length));
     await page.goto("/auth/sign-out?next=%2Flogin");
     await page.getByRole("button", { name: "退出登录" }).click();
+  }
+  } finally {
+    await cleanupRate();
   }
 });
 
@@ -54,7 +60,6 @@ test.describe("finance business access", () => {
       "/finance/wholesale/vip",
       "/finance/wholesale/referrals",
       "/finance/wholesale/commission",
-      "/finance/wholesale/incentives",
     ]) {
       await page.goto(workspacePath);
       await expectWorkspaceShell(page);

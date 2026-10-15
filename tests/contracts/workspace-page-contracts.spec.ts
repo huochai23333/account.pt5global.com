@@ -16,8 +16,7 @@ const fixtures = [
   ["wholesale/people", "人员管理", '<label>搜索账号<input></label>'],
   ["wholesale/vip", "VIP管理", '<label>搜索客户<input></label>'],
   ["wholesale/referrals", "推荐树", '<label>搜索客户<input></label>'],
-  ["wholesale/commission", "佣金", '<label>搜索佣金<input></label>'],
-  ["wholesale/incentives", "提成", '<label>搜索提成<input></label>'],
+  ["wholesale/commission", "提成与佣金", '<label>搜索提成<input></label>'],
 ] as const;
 
 test.beforeEach(async ({ page }) => {
@@ -91,5 +90,5 @@ for (const width of [1440, 390]) {
 
 test("unregistered route must fail rather than fall back to shell", async ({ page }) => {
   await assert.rejects(expectWorkspacePageContent(page, "/admin/new-unregistered-page", 100), /Missing independent workspace page contract/);
-  expect(fixtures).toHaveLength(15);
+  expect(fixtures).toHaveLength(13);
 });

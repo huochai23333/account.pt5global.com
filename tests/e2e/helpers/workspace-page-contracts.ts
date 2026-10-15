@@ -14,8 +14,7 @@ export const workspacePageContracts = {
   "wholesale/people": { title: "人员管理", label: "搜索账号" },
   "wholesale/vip": { title: "VIP管理", label: "搜索客户" },
   "wholesale/referrals": { title: "推荐树", label: "搜索客户" },
-  "wholesale/commission": { title: "佣金", label: "搜索佣金" },
-  "wholesale/incentives": { title: "提成", label: "搜索提成" },
+  "wholesale/commission": { title: "提成与佣金", label: "搜索提成" },
 } as const;
 
 export async function expectWorkspacePageContent(page: Page, workspacePath: string, timeout = 10_000) {

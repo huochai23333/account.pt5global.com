@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import {
+  BadgeDollarSign,
   ArrowLeftRight,
   BadgeCheck,
-  BadgeDollarSign,
   ClipboardClock,
   ClipboardList,
   ContactRound,
@@ -43,7 +43,6 @@ export const ADMIN_NAV_ICONS: Record<WorkspaceNavSegment, LucideIcon> = {
   commission: WalletCards,
   customers: UsersRound,
   home: Home,
-  incentives: BadgeDollarSign,
   "inventory-orders": ClipboardList,
   logistics: Truck,
   mail: Mail,

@@ -69,7 +69,7 @@ test("所有启用的完整列表均可渲染，并在两个宽度保持分页�
   const cleanupRate = await prepareCurrentExchangeRateFixture();
   const paths = ["accounts", "announcements", "company-expenses", "reviews", "settings", "wholesale/leads",
     "wholesale/customers", "wholesale/people", "wholesale/vip", "wholesale/referrals",
-    "wholesale/commission", "wholesale/incentives", "wholesale/inventory-orders", "wholesale/settlement-releases"];
+    "wholesale/commission", "wholesale/inventory-orders", "wholesale/settlement-releases"];
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });

@@ -514,7 +514,7 @@
       "reviews": "Review Center",
       "records": "Operation Records",
       "salesLeads": "Leads",
-      "incentives": "Incentives",
+      "wholesaleCommission": "Incentives & Commissions",
       "settlementReleases": "Settlement Releases",
       "logistics": "Logistics",
       "customerInventoryOrders": "Inventory Orders",
@@ -1093,12 +1093,8 @@
         "description": "Show wholesale customer referral relationships and summarize customer referral commission."
       },
       "commission": {
-        "title": "Wholesale Commission",
-        "description": "Summarize wholesale customer referral commission and its current settlement status."
-      },
-      "incentives": {
-        "title": "Wholesale Incentives",
-        "description": "Calculate sales incentives from wholesale order profit and order amount, with settlement status."
+        "title": "Incentives & Commissions",
+        "description": "View salesperson incentives, customer referral commissions and settlement status."
       },
       "settings": {
         "title": "Wholesale Parameter Center",
@@ -1320,6 +1316,22 @@
       "displayOnly": "Calculated automatically for display. These fees do not change gross profit or the customer payment amount.",
       "serviceFeeCommission": "Service fee commission base",
       "grossProfitCommission": "Gross profit commission base"
+    },
+    "commissionBoards": {
+      "title": "Incentives & Commissions",
+      "salesman": "Salesperson Incentives",
+      "referrals": "Customer Referral Commissions",
+      "loadError": "Incentives and commissions could not be loaded. Please reload and try again.",
+      "retry": "Reload",
+      "salesmanError": "Salesperson incentives could not be loaded. Please reload and try again.",
+      "referralsError": "Customer referral commissions could not be loaded. Please reload and try again.",
+      "incentiveTotal": "Total incentives",
+      "incentivePending": "Pending incentives",
+      "incentiveRecords": "Incentive records",
+      "visibleRecords": "Showing",
+      "referralTotal": "Total commissions",
+      "monthlyRecords": "Monthly records",
+      "waybills": "Eligible waybills"
     }
   },
   "WorkspaceSections": {

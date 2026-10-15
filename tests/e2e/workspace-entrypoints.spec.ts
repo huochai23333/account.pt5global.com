@@ -47,7 +47,6 @@ const workspaceEntries: readonly WorkspaceEntry[] = [
       "/salesman/wholesale/vip",
       "/salesman/wholesale/referrals",
       "/salesman/wholesale/commission",
-      "/salesman/wholesale/incentives",
     ],
     role: "salesman",
   },

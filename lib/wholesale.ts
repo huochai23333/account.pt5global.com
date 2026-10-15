@@ -6,6 +6,7 @@ import {
   type CommissionRuleSetting,
 } from "./commission-settings";
 import { getWholesaleCommissionPageRows } from "./wholesale-commission-page";
+import { getWholesaleCommissionBoards } from "./wholesale-commission-boards";
 import { getWholesaleCustomers, queryWholesaleRows as queryRows } from "./wholesale-row-queries";
 import { getCurrentSessionContext } from "./current-session-context";
 import { getExchangeRates, type ExchangeRateRow } from "./exchange-rates";
@@ -125,6 +126,8 @@ export async function getWholesalePageData(
 
   return {
     ...baseData,
+    commissionBoardErrors: rows.commissionBoardErrors,
+    commissionPageError: rows.commissionPageError,
     commissionRuleSettings: rows.commissionRuleSettings,
     exchangeRates: rows.exchangeRates,
     ...scopedRows,
@@ -134,6 +137,8 @@ export async function getWholesalePageData(
 }
 
 type WholesaleSectionRows = {
+  commissionBoardErrors: WholesalePageData["commissionBoardErrors"];
+  commissionPageError: string | null;
   commissionRuleSettings: CommissionRuleSetting[];
   commissions: WholesaleCommission[];
   customers: WholesaleCustomer[];
@@ -154,7 +159,6 @@ async function getWholesaleSectionRows(
   currentRole: AppRole | null,
 ): Promise<WholesaleSectionRows> {
   const rows = createEmptyWholesaleSectionRows();
-  const canViewInternalFields = currentRole !== "client";
 
   if (section === "customers") {
     const [customers, profileResult] = await Promise.all([
@@ -184,8 +188,13 @@ async function getWholesaleSectionRows(
     return { ...rows, customers, referrals };
   }
 
-  if (section === "commission" || section === "incentives") {
-    return { ...rows, ...await getWholesaleCommissionPageRows(supabase, section, canViewInternalFields) };
+  if (section === "commission") {
+    try {
+      return { ...rows, ...await getWholesaleCommissionPageRows(supabase, getWholesaleCommissionBoards(currentRole)) };
+    } catch {
+      // 任一必要查询失败都明确报错，不能把默认空数组展示成没有业务记录。
+      return { ...rows, commissionPageError: "提成与佣金暂时没有加载成功，请刷新页面后重试。" };
+    }
   }
 
   return rows;
@@ -202,6 +211,7 @@ function createEmptyWholesalePageData({
 }): WholesalePageData {
   return {
     ...createEmptyWholesaleSectionRows(),
+    commissionBoards: section === "commission" ? getWholesaleCommissionBoards(currentRole) : [],
     currentRole,
     currentUserId,
     logisticsAssignments: [],
@@ -216,6 +226,8 @@ function createEmptyWholesalePageData({
 
 function createEmptyWholesaleSectionRows(): WholesaleSectionRows {
   return {
+    commissionBoardErrors: {},
+    commissionPageError: null,
     commissionRuleSettings: [],
     commissions: [],
     customers: [],

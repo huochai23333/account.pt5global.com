@@ -24,7 +24,6 @@ export const workspaceWholesaleSectionKeys = [
   "people",
   "referrals",
   "commission",
-  "incentives",
   "vip",
   "settings",
 ] as const;
@@ -73,7 +72,7 @@ export type WorkspaceNavLabelKey =
   | "vip"
   | "reviews"
   | "settings"
-  | "incentives"
+  | "wholesaleCommission"
   | "settlementReleases"
   | "salesLeads"
   | "logistics"
