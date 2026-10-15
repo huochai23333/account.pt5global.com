@@ -5310,7 +5310,7 @@
     "rename_file": "Rename file",
     "move_file": "Move file",
     "delete_file": "Delete file",
-    "create_folder": "New subfolder",
+    "create_folder": "New folder",
     "rename_folder": "Rename folder",
     "delete_folder": "Delete folder",
     "destination": "Destination folder",
@@ -5353,7 +5353,7 @@
       "uploadSummary": "Uploads: {done} of {total} completed",
       "activityDetails": "View details",
       "retryLoad": "Try again",
-      "home": "My documents home",
+      "home": "Documents home",
       "mine": "My documents",
       "myDocuments": "My documents",
       "employees": "Staff documents",
@@ -5412,7 +5412,11 @@
       "dropUpload": "Drop files to upload them to this folder.",
       "itemCompleted": "Completed",
       "itemChecking": "Checking",
-      "noResults": "No documents match your search."
+      "noResults": "No documents match your search.",
+      "publicDocuments": "Public documents",
+      "defaultFolder": "New folder",
+      "inlineName": "Name",
+      "retryName": "Check name again"
     }
   }
 }

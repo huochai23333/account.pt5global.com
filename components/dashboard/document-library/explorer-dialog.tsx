@@ -7,14 +7,14 @@ import {Input,Field,ChoiceField} from "@/components/ui/form-controls";
 import type {DocumentManifest,ExplorerTarget,ExplorerItem,DocumentFolder} from "@/lib/document-library/model";
 import {useDocumentDestinations} from "@/components/dashboard/company-templates/documents/use-document-destinations";
 import {DocumentDestinationFields} from "@/components/dashboard/company-templates/documents/document-destination-fields";
-export type ExplorerDialogTarget={action:"rename"|"move"|"delete"|"create"|"copy"|"preview"|"download";items:ExplorerTarget[];item?:ExplorerItem;folder?:DocumentFolder;destinationId?:string};
+export type ExplorerDialogTarget={action:"rename"|"move"|"delete"|"copy"|"preview"|"download";items:ExplorerTarget[];item?:ExplorerItem;folder?:DocumentFolder;destinationId?:string};
 export type ExplorerDialogSubmission={name:string;destinationId:string;manifest:DocumentManifest|null;operationId:string};
 /** 清单与目的地表单留在弹窗模块；目的地按当前权限核对，失败保留原输入和原批次编号。 */
 export function ExplorerDialog({target,busy,close,submit}:{target:ExplorerDialogTarget;busy:boolean;close:()=>void;submit:(value:ExplorerDialogSubmission)=>Promise<boolean>}){
  const t=useTranslations("Documents");const op=useRef<string>(crypto.randomUUID());const [name,setName]=useState(target.item?.name??"");const [manifest,setManifest]=useState<DocumentManifest|null>(null);const [loading,setLoading]=useState(["move","delete","download","copy"].includes(target.action));const [error,setError]=useState("");const [notice,setNotice]=useState(false);
  const sourceFolder=target.item?.kind==="file"?target.item.file.folder_id:target.item?.kind==="template"?target.item.document.folder_id:target.item?.kind==="folder"?target.item.folder.parent_id??undefined:undefined;
  // 默认展开来源档案；剪切粘贴和拖放则以用户刚进入的目的地为准。
- const needsDestination=target.action==="move"||target.action==="copy"||(target.action==="create"&&!target.folder);const dest=useDocumentDestinations(target.destinationId??sourceFolder,needsDestination);const [destinationId,setDestinationId]=useState(target.destinationId??sourceFolder??"");
+ const needsDestination=target.action==="move"||target.action==="copy";const dest=useDocumentDestinations(target.destinationId??sourceFolder,needsDestination);const [destinationId,setDestinationId]=useState(target.destinationId??sourceFolder??"");
  const destination=dest.data.folders.find(f=>f.id===destinationId);
  const loadManifest=useCallback(async(signal?:AbortSignal)=>{
   if(!["move","delete","download","copy"].includes(target.action))return;
@@ -28,7 +28,7 @@ export function ExplorerDialog({target,busy,close,submit}:{target:ExplorerDialog
  const forbiddenFolders=new Set(manifest?.entries.filter(e=>e.kind==="folder").map(e=>e.id));
  const destinations=dest.data.folders.filter(f=>!forbiddenFolders.has(f.id));
  const destinationValid=Boolean(destination)&&!forbiddenFolders.has(destinationId)&&!(target.action==="move"&&manifest?.entries.some(e=>e.path.length===1&&(e.kind==="folder"?e.record.parent_id===destinationId:e.folderId===destinationId)));
- const needsName=target.action==="rename"||target.action==="create"||(target.action==="copy"&&target.items.length===1);
+ const needsName=(target.action==="copy"&&target.items.length===1);
  const valid=!loading&&!busy&&(!needsDestination||destinationValid)&&(!needsName||Boolean(name.trim()))&&(target.action!=="delete"||notice)&&(target.action!=="download"||counts.files>0||counts.folders>0);
  return <DashboardDialog open onOpenChange={open=>{if(!open&&!busy)close();}} title={t(target.action==="preview"?"preview":`explorer.${target.action}`)} actions={<><Button variant="outline" disabled={busy} onClick={close}>{t("cancel")}</Button>{!preview&&<Button disabled={!valid} onClick={async()=>{
   setError("");try{if(await submit({name,destinationId,manifest,operationId:op.current}))close();}catch(cause){const message=cause instanceof Error?cause.message:"unconfirmed";setError(message.startsWith("document_")?message.replace("document_",""):message);}

@@ -5310,7 +5310,7 @@
     "rename_file": "重命名文件",
     "move_file": "移动文件",
     "delete_file": "删除文件",
-    "create_folder": "新建子文件夹",
+    "create_folder": "新建文件夹",
     "rename_folder": "重命名文件夹",
     "delete_folder": "删除文件夹",
     "destination": "目标文件夹",
@@ -5355,7 +5355,7 @@
       "retryLoad": "重新加载",
       "home": "我的文档首页",
       "mine": "我的资料",
-      "myDocuments": "我的资料",
+      "myDocuments": "我的文档",
       "employees": "人员资料",
       "customers": "客户资料",
       "locations": "资料位置",
@@ -5412,7 +5412,11 @@
       "dropUpload": "松开鼠标，将文件上传到当前文件夹。",
       "itemCompleted": "已完成",
       "itemChecking": "正在核对",
-      "noResults": "没有找到符合条件的资料。"
+      "noResults": "没有找到符合条件的资料。",
+      "publicDocuments": "公共文档",
+      "defaultFolder": "新建文件夹",
+      "inlineName": "名称",
+      "retryName": "重新核对名称"
     }
   }
 }

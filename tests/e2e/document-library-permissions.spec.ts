@@ -23,7 +23,7 @@ test("客户资料只有一个默认目录，内部协作和 Storage 均核对�
       await page.reload();await expect(page.locator(`[data-document-file="${file.id}"]`)).toBeVisible();
     }
     // 客户账号没有资料库权限，目录、搜索数量、正文及对象地址都必须拒绝。
-    await documentLogin(page,"client");await page.goto("/client/documents?scope=folder");await expect(page.locator(`[data-document-file="${file.id}"]`)).toHaveCount(0);await expect(page.getByRole("button",{name:"新建子文件夹"})).toHaveCount(0);
+    await documentLogin(page,"client");await page.goto("/client/documents?scope=folder");await expect(page.locator(`[data-document-file="${file.id}"]`)).toHaveCount(0);await expect(page.locator("[data-explorer-create]")).toHaveCount(0);
     expect((await page.request.get(`/api/document-library/files/${file.id}/content`)).status()).toBe(403);expect((await page.request.get(`/api/document-library?query=${prefix}`)).status()).toBe(403);
     const direct=await documentReader("client");for(const table of ["document_folders","document_files","company_template_documents","document_batches"]){const result=await direct.from(table).select("id");expect(result.error).toBeNull();expect(result.data).toEqual([]);}
     expect((await direct.storage.from("document-library").download(file.storage_path)).error).not.toBeNull();expect((await direct.storage.from("document-library").upload(`${randomUUID()}.txt`,Buffer.from("forged"))).error).not.toBeNull();

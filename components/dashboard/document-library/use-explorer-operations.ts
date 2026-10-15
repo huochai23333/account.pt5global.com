@@ -15,10 +15,10 @@ export function useExplorerOperations(userId:string,data:ExplorerLibrary|null,re
    const done=await batches.start(target.action,target.items,manifest,destinationId,operationId,name);
    if(!done)throw new Error(batches.getError()||"unconfirmed");return true;
   }
-  if(target.action==="create")return single.command("create_folder",{folderId:destinationId||target.folder?.id||data?.folderId,name});
-  if(target.action==="rename"&&item?.kind==="folder")return single.command("rename_folder",{folderId:item.id,version:item.folder.version,name});
-  if(target.action==="rename"&&item?.kind==="file")return single.command("rename_file",{fileId:item.id,version:item.file.version,name});
+  if(target.action==="rename"&&item?.kind==="folder")return Boolean(await single.write("rename_folder",{folderId:item.id,version:item.folder.version,name},operationId));
+  if(target.action==="rename"&&item?.kind==="file")return Boolean(await single.write("rename_file",{fileId:item.id,version:item.file.version,name},operationId));
   if(item?.kind==="template"&&target.action==="rename"){
+   single.clearFeedback();
    await writeDocument({action:"rename",operationId,documentId:item.id,expectedRevision:item.document.revision,name});
    if(!await refresh())throw new Error("unconfirmed");return true;
   }

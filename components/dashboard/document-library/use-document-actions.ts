@@ -36,8 +36,9 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
     if (!response.ok) throw new Error("unconfirmed");
     const actual = requireDocumentReceipt(await response.json(), operationId);
     if (actual.record.id !== expected.record.id || actual.record.version !== expected.record.version || actual.action !== expected.action) throw new Error("unconfirmed");
+    return actual;
   }
-  async function run(intent: Intent, file?: File): Promise<{ ok: boolean; error?: string }> {
+  async function run(intent: Intent, file?: File): Promise<{ ok: boolean; error?: string; receipt?: DocumentReceipt }> {
     const key = KEY + userId + "." + intent.operationId;
     sessionStorage.setItem(key, JSON.stringify(intent));
     try {
@@ -51,9 +52,9 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
       }
       const receipt = await response.json();
       if (!response.ok) throw new Error(receipt.error ?? "unconfirmed");
-      await confirmReceipt(receipt, intent.operationId);
+      const actual = await confirmReceipt(receipt, intent.operationId);
       sessionStorage.removeItem(key);
-      return { ok: true };
+      return { ok: true, receipt: actual };
     } catch (error) {
       if (error instanceof Error && ["busy","folderNameConflict","forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder"].includes(error.message)) sessionStorage.removeItem(key);
       const reason = error instanceof Error && ["busy","folderNameConflict","forbidden", "invalid", "size", "conflict", "folderNotEmpty", "defaultFolder", "partial"].includes(error.message) ? error.message : "unconfirmed";
@@ -70,6 +71,18 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
       const refreshed = await (done ? afterWrite() : refresh());
       if (done) { setSuccessful(refreshed); setMessage(refreshed ? "saved" : "savedRefreshing"); }
       return done;
+    } finally { setBusy(false); }
+  }
+  /** 行内新建必须拿到服务端分配的真实名称和编号；未知结果保留原意图供核对，不能重新创建。 */
+  async function write(action: string, payload: Record<string, unknown>, operationId: string) {
+    if (busy) throw new Error("busy");
+    setBusy(true); setMessage(""); setSuccessful(false);
+    try {
+      const result = await run({operationId, action, payload});
+      if (!result.ok || !result.receipt) throw new Error(result.error ?? "unconfirmed");
+      const refreshed = await refresh();
+      setSuccessful(refreshed); setMessage(refreshed ? "saved" : "savedRefreshing");
+      return result.receipt;
     } finally { setBusy(false); }
   }
   async function upload(folderId: string, files: File[]) {
@@ -92,7 +105,7 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
   async function reconcile(receipt: Pick<DocumentReceipt, "operationId">) {
     if (busy) return;
     setBusy(true); setMessage(""); setSuccessful(false);
-    let confirmed = false;
+    let confirmed = false; let finalRead = false;
     try {
       // 上传缺少原文件时不能声称重试完成；服务器核对已存在的真实对象即可完成原登记。
       const response = await fetch("/api/document-library/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ operationId: receipt.operationId }), signal: AbortSignal.timeout(90_000) });
@@ -103,7 +116,10 @@ export function useDocumentActions(userId: string, refresh: () => Promise<boolea
       confirmed = true;
       setMessage("saved"); setSuccessful(true);
     } catch { setMessage("unconfirmed"); }
-    finally { const refreshed = await refresh(); if (!refreshed) { setSuccessful(false); if (confirmed) setMessage("savedRefreshing"); } restore(); setBusy(false); }
+    finally { const refreshed = await refresh(); finalRead = refreshed; if (!refreshed) { setSuccessful(false); if (confirmed) setMessage("savedRefreshing"); } restore(); setBusy(false); }
+    return confirmed && finalRead;
   }
-  return { busy, message, successful, outstanding, uploadResults, command, upload, reconcile };
+  // 开始另一类写入前清除旧提示，不能让上一次保存成功冒充当前操作的结果。
+  function clearFeedback(){setMessage("");setSuccessful(false);}
+  return { clearFeedback, busy, message, successful, outstanding, uploadResults, command, write, upload, reconcile };
 }

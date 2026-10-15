@@ -7,6 +7,7 @@ export function explorerTarget(item:ExplorerItem):ExplorerTarget|null {
 }
 export function folderSubject(data:ExplorerLibrary,archiveId=data.archiveId):DocumentSelection {
  const archive=data.archives.find(a=>a.id===archiveId);
+ if(archive?.kind==="public")return {scope:"public"};
  return archive?.customer_id?{customer:archive.customer_id}:{user:archive?.user_id??undefined};
 }
 /** 路径只使用服务器返回的可见目录，隐藏区域不能在浏览器补全。 */

@@ -15,8 +15,8 @@ test("资源管理器：分类入口、直属目录、路径、双击、历史�
  test.setTimeout(120000);
  const prefix=`explorer-nav-${Date.now()}-`;await documentLogin(page,"administrator");
  try{
-  await page.goto("/admin/documents");await expect(page.locator('[data-explorer-kind="location"]')).toHaveCount(3);
-  await page.getByRole("listitem",{name:"我的资料",exact:true}).dblclick();await page.getByRole("listitem",{name:"资料文件夹",exact:true}).dblclick();
+  await page.goto("/admin/documents");await expect(page.locator('[data-explorer-kind="location"]')).toHaveCount(2);
+  await page.getByRole("listitem",{name:"我的文档",exact:true}).dblclick();await expect(page).toHaveURL(/scope=archive/);
   const folder=await createFolder(page,`${prefix}parent`);await expect(page.locator(`[data-explorer-item="${folder.id}"]`)).toBeVisible();await enterFolder(page,folder.id);
   const child=await createFolder(page,`${prefix}child`);await enterFolder(page,child.id);await uploadDocumentFiles(page,[`${prefix}find.txt`]);
   await page.getByRole("button",{name:"上一级",exact:true}).click();await expect(page.locator(`[data-explorer-item="${child.id}"]`)).toBeVisible();

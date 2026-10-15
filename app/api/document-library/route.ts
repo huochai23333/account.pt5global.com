@@ -3,6 +3,7 @@ import { checkDocumentOrigin, documentError, readDocumentBody } from "@/lib/docu
 import {readExplorer} from "@/lib/document-library/explorer-repository";
 import {parseDocumentSelection} from "@/lib/document-library/selection";
 import { completeDocumentDelete } from "@/lib/document-library/storage-mutations";
+import {verifyNamedDocument} from "@/lib/document-library/verify-named-document";
 import { requireDocumentReceipt } from "@/lib/document-library/model";
 
 export async function GET(request: Request) {
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     if (error) throw error;
     let receipt = requireDocumentReceipt(data, body.operationId, false);
     if (body.action === "delete_file") receipt = await completeDocumentDelete(supabase, userId, receipt);
+    await verifyNamedDocument(supabase,receipt,body.payload);
     return Response.json(receipt, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return documentError(error); }
 }

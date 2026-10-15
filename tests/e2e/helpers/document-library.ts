@@ -39,7 +39,7 @@ export async function chooseDocumentFolder(page: Page, name: string) {
   const tree=page.getByRole("tree",{name:"资料文件夹"});
   if(await tree.isVisible())await tree.getByRole("button",{name,exact:true}).click();
   else {
-    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&name==="资料文件夹");expect(folder).toBeTruthy();
+    const data=await readLibrary(page);const folder=data.folders.find(item=>item.name===name||item.system_key&&name==="我的文档");expect(folder).toBeTruthy();
     const archive=data.archives.find(item=>item.id===folder!.archive_id)!;
     await page.getByRole("navigation",{name:"当前位置"}).getByRole("button",{name:archive.name,exact:true}).click();
     const parents=[folder!];let current=folder!;while(current.parent_id){current=data.folders.find(item=>item.id===current.parent_id)!;parents.unshift(current);}
@@ -68,6 +68,11 @@ export async function confirmFileObjects(files: DocumentFile[]) {
 }
 export async function cleanupDocuments(prefix: string) {
   const admin = documentAdmin();
+  // 新建默认名称不带测试前缀：先以本次根目录编号圈定后代，再仅标记这些测试目录用于清理。
+  const allFolders = await admin.from("document_folders").select("id,parent_id,name,system_key");
+  const scopedIds = new Set((allFolders.data??[]).filter(f=>!f.system_key&&f.name.startsWith(prefix)).map(f=>f.id));
+  for(let step=0;step<100;step++){const added=(allFolders.data??[]).filter(f=>f.parent_id&&scopedIds.has(f.parent_id)&&!scopedIds.has(f.id));if(!added.length)break;for(const f of added)scopedIds.add(f.id);}
+  for(const f of allFolders.data??[])if(scopedIds.has(f.id)&&!f.name.startsWith(prefix))await admin.from("document_folders").update({name:prefix+f.id}).eq("id",f.id);
   // 批次会保护未完成目录；仅释放本次命名前缀的批次后，才清理自己的文件夹。
   const batches=await admin.from("document_batches").select("id,manifest");
   const owned=(batches.data??[]).filter(batch=>batch.manifest.some((entry:{record:{name:string}})=>entry.record.name.startsWith(prefix)));
@@ -87,7 +92,7 @@ export async function cleanupDocuments(prefix: string) {
   }
   const ops = await admin.from("document_operations").select("id,payload,receipt");
   // 删除操作只携带文件编号；即使记录已删除，也须按原凭证中的测试前缀清理，不能影响下一用例。
-  const ids = ops.data?.filter((operation) => [operation.payload?.name,operation.receipt?.record?.name,operation.receipt?.record?.original_name].some(name=>typeof name==="string"&&name.startsWith(prefix))).map((operation) => operation.id) ?? [];
+  const ids = ops.data?.filter((operation) => scopedIds.has(operation.receipt?.record?.id)||scopedIds.has(operation.payload?.folderId)||[operation.payload?.name,operation.receipt?.record?.name,operation.receipt?.record?.original_name].some(name=>typeof name==="string"&&name.startsWith(prefix))).map((operation) => operation.id) ?? [];
   if (ids.length) await admin.from("document_operations").delete().in("id", ids);
   if(owned.length)await admin.from("document_batches").delete().in("id",owned.map(batch=>batch.id));
 }

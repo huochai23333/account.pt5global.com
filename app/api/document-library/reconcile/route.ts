@@ -1,3 +1,4 @@
+import {verifyNamedDocument} from "@/lib/document-library/verify-named-document";
 import { requireDocumentApi } from "@/lib/document-library/access";
 import { checkDocumentOrigin, documentError, readDocumentBody } from "@/lib/document-library/http";
 import { reconcileDocument } from "@/lib/document-library/storage-mutations";
@@ -7,8 +8,9 @@ export async function GET(request: Request) {
   try {
     const { supabase, userId } = await requireDocumentApi();
     const operationId = new URL(request.url).searchParams.get("operationId");
-    const result = await supabase.from("document_operations").select("receipt").eq("id", operationId).eq("actor_id", userId).maybeSingle();
+    const result = await supabase.from("document_operations").select("receipt,payload").eq("id", operationId).eq("actor_id", userId).maybeSingle();
     if (result.error || !result.data) throw new Error("unconfirmed");
+    await verifyNamedDocument(supabase,result.data.receipt,result.data.payload);
     return Response.json(result.data.receipt, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return documentError(error); }
 }

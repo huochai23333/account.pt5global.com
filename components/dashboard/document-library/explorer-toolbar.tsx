@@ -13,13 +13,17 @@ import {folderSubject} from "./explorer-helpers";
 import {ExplorerNewDocumentLink} from "./explorer-new-document-link";
 export type ExplorerAction="open"|"rename"|"move"|"delete"|"copy"|"duplicate"|"download"|"cut"|"paste"|"create"|"newDocument"|"refresh";
 /** 工具栏只调度；选择与写入状态分别由专用 hook 维护。 */
-export function ExplorerToolbar({data,selection,view,setView,navigate,refresh,action,upload,selected,manageable,canPaste,downloadable,busy}:{data:ExplorerLibrary;selection:DocumentSelection;view:"list"|"grid";setView:(v:"list"|"grid")=>void;navigate:(s:DocumentSelection)=>void;refresh:()=>void;action:(a:ExplorerAction)=>void;upload:(files:File[])=>void;selected:number;manageable:boolean;canPaste:boolean;downloadable:boolean;busy:boolean}){
+export function ExplorerToolbar({userId,data,selection,view,setView,navigate,refresh,action,upload,selected,manageable,canPaste,downloadable,busy}:{userId:string;data:ExplorerLibrary;selection:DocumentSelection;view:"list"|"grid";setView:(v:"list"|"grid")=>void;navigate:(s:DocumentSelection)=>void;refresh:()=>void;action:(a:ExplorerAction)=>void;upload:(files:File[])=>void;selected:number;manageable:boolean;canPaste:boolean;downloadable:boolean;busy:boolean}){
  const t=useTranslations("Documents");const folder=data.folders.find(f=>f.id===data.folderId);const archive=data.archives.find(a=>a.id===data.archiveId);const parents:DocumentFolder[]=[];let current=folder;const seen=new Set<string>();
- while(current&&!seen.has(current.id)){seen.add(current.id);parents.unshift(current);current=data.folders.find(f=>f.id===current?.parent_id);}
+ while(current&&!seen.has(current.id)){seen.add(current.id);if(current.parent_id)parents.unshift(current);current=data.folders.find(f=>f.id===current?.parent_id);}
  const subject=folderSubject(data);const pathRef=useRef<HTMLElement>(null);
  // 长路径在自己的区域滚动，进入目录后显示末端；完整名称仍可读且各级均可点击。
  useEffect(()=>{const path=pathRef.current;if(!path)return;const scroll=()=>{path.scrollLeft=path.scrollWidth;};scroll();const observer=new ResizeObserver(scroll);observer.observe(path);return()=>observer.disconnect();},[data.folderId]);
- function up(){if(folder?.parent_id)navigate({...subject,scope:"folder",folder:folder.parent_id});else if(folder)navigate({...subject,scope:"archive"});else navigate({scope:"home"});}
+ // 根目录在界面上直接代表账户；上一级返回其分类，不再出现额外的资料目录层。
+ function up(){
+  if(folder?.parent_id){const parent=data.folders.find(f=>f.id===folder.parent_id);navigate({...subject,scope:parent?.parent_id?"folder":archive?.kind==="public"?"public":"archive",folder:parent?.parent_id?parent.id:undefined});}
+  else navigate({scope:archive?.kind==="public"||archive?.user_id===userId?"home":archive?.kind==="customer"?"customers":"employees"});
+ }
  return <div className="space-y-3 border-b border-border-subtle pb-3">
  <div className="flex min-w-0 flex-wrap items-center gap-2 lg:flex-nowrap">
   <Button size="icon" variant="outline" aria-label={t("explorer.back")} disabled={busy} onClick={()=>window.history.back()}><ArrowLeft aria-hidden className="size-4"/></Button>
@@ -27,9 +31,9 @@ export function ExplorerToolbar({data,selection,view,setView,navigate,refresh,ac
   <Button size="icon" variant="outline" aria-label={t("explorer.up")} disabled={busy||data.scope==="home"} onClick={up}><ArrowUp aria-hidden className="size-4"/></Button>
   {/* 桌面路径从剩余宽度分配，长名称只在路径内滚动，避免把导航按钮挤成三行。 */}
   <nav ref={pathRef} aria-label={t("explorer.path")} className="order-last flex basis-full min-w-0 flex-nowrap items-center gap-1 overflow-x-auto text-sm lg:order-none lg:basis-0 lg:flex-1">
-   <InteractiveButton className="min-h-11 shrink-0 rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({scope:"home"})}>{t("title")}</InteractiveButton>
+   <InteractiveButton className="min-h-11 shrink-0 rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({scope:"home"})}>{t("explorer.home")}</InteractiveButton>
    {(data.scope==="employees"||data.scope==="customers")&&<span>/ {t(`explorer.${data.scope}`)}</span>}
-   {(data.scope==="archive"||data.scope==="folder")&&<><span>/</span><InteractiveButton title={archive?.name} className="min-h-11 max-w-48 shrink-0 truncate whitespace-nowrap rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({...subject,scope:"archive"})}>{archive?.name}</InteractiveButton>{parents.map(f=><span key={f.id} className="inline-flex shrink-0 items-center gap-1"><span>/</span><InteractiveButton title={folderLabel(f,t)} className="min-h-11 max-w-48 truncate whitespace-nowrap rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({...subject,scope:"folder",folder:f.id})}>{folderLabel(f,t)}</InteractiveButton></span>)}</>}
+   {(data.scope==="archive"||data.scope==="folder"||data.scope==="public")&&<><span>/</span><InteractiveButton title={archive?.name} className="min-h-11 max-w-48 shrink-0 truncate whitespace-nowrap rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({...subject,scope:archive?.kind==="public"?"public":"archive"})}>{archive?.kind==="public"?t("explorer.publicDocuments"):archive?.user_id===userId?t("explorer.myDocuments"):archive?.name}</InteractiveButton>{parents.map(f=><span key={f.id} className="inline-flex shrink-0 items-center gap-1"><span>/</span><InteractiveButton title={folderLabel(f,t)} className="min-h-11 max-w-48 truncate whitespace-nowrap rounded px-2 text-primary" disabled={busy} onClick={()=>navigate({...subject,scope:"folder",folder:f.id})}>{folderLabel(f,t)}</InteractiveButton></span>)}</>}
   </nav>
   <Button size="icon" aria-label={t("explorer.refresh")} variant="outline" disabled={busy} onClick={refresh}><RefreshCw aria-hidden className="size-4"/></Button>
  </div>
@@ -42,8 +46,7 @@ export function ExplorerToolbar({data,selection,view,setView,navigate,refresh,ac
  {/* 选中后不能换行推走条目，否则双击的第二次点击会落到别处；固定高度也容纳横向滚动条。 */}
  <div className="flex h-16 min-w-0 items-center gap-2 overflow-x-auto overscroll-x-contain">
   {data.folders.some(folder=>folder.can_manage)&&<ExplorerNewDocumentLink folderId={data.canManage?data.folderId:null} busy={busy}/>}
-  {!data.canManage&&data.folders.some(folder=>folder.can_manage)&&<Button variant="outline" disabled={busy} onClick={()=>action("create")}>{t("create_folder")}</Button>}
-  {data.canManage&&<><div className="shrink-0" title={t("limits")}><DashboardFilePicker accept={DOCUMENT_ACCEPT} multiple disabled={busy} label={t("upload")} onFiles={upload}/></div><Button variant="outline" disabled={busy} onClick={()=>action("create")}>{t("create_folder")}</Button></>}
+  {data.canManage&&<><div className="shrink-0" title={t("limits")}><DashboardFilePicker accept={DOCUMENT_ACCEPT} multiple disabled={busy} label={t("upload")} onFiles={upload}/></div><Button data-explorer-create variant="outline" disabled={busy} onClick={()=>action("create")}>{t("create_folder")}</Button></>}
   <span className="shrink-0 whitespace-nowrap text-sm text-content-muted">{t("explorer.selected",{count:selected})}</span>
   {/* 批量按钮按选择出现，空间不足时在本行滚动，不改变文件区位置。 */}
   {selected>0&&<><Button variant="outline" disabled={busy||!selected||!downloadable} onClick={()=>action("download")}>{t("download")}</Button>

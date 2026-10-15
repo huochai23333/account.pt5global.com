@@ -1,5 +1,5 @@
 /** 文件归属来自档案和目录；网址中的编号只是选择条件，不代表访问授权。 */
-export type DocumentArchive = { id: string; user_id: string | null; customer_id: string | null; kind: "employee" | "customer"; name: string };
+export type DocumentArchive = { id: string; user_id: string | null; customer_id: string | null; kind: "employee" | "customer" | "public"; name: string };
 /** 所有档案使用一个资料目录，访问范围由档案类型和当前身份决定。 */
 export type DocumentZone = "personal";
 export type DocumentFolder = { id: string; archive_id: string; parent_id: string | null; zone: DocumentZone; name: string; system_key: string | null; created_at: string; version: number; can_manage: boolean; delete_batch_id?: string | null };
@@ -8,7 +8,7 @@ export type DocumentFile = { id: string; folder_id: string; name: string; origin
 export type DocumentLibraryItem = {kind: "file"; file: DocumentFile} | {kind: "template"; document: import("@/lib/company-templates/documents/model").TemplateDocumentSummary};
 export type DocumentReceipt = { operationId: string; action: string; status: "pending" | "succeeded" | "partial_failed" | "failed"; affectedCount: number; record: DocumentFile | DocumentFolder };
 export type DocumentLibrary = { archiveId: string; folderId: string; canManage: boolean; archives: DocumentArchive[]; folders: DocumentFolder[]; files: DocumentFile[]; items: DocumentLibraryItem[]; total: number; operations: DocumentReceipt[] };
-export type DocumentSelection = { user?: string; customer?: string; folder?: string; query?: string; page?: number; scope?: "home" | "employees" | "customers" | "archive" | "folder"; sort?: "name" | "type" | "date"; direction?: "asc" | "desc" };
+export type DocumentSelection = { user?: string; customer?: string; folder?: string; query?: string; page?: number; scope?: "home" | "employees" | "customers" | "archive" | "folder" | "public"; sort?: "name" | "type" | "date"; direction?: "asc" | "desc" };
 /** 虚拟分类与真实资料使用不同种类，分类入口不会被当成可删除的文件夹。 */
 export type ExplorerItem = (DocumentLibraryItem & {id: string; name: string; path: string[]; canManage: boolean})
  | {kind: "folder"; id: string; name: string; folder: DocumentFolder; path: string[]; canManage: boolean}
