@@ -7,7 +7,10 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import type { MonthlySettlementAllocatedUsdSummary } from "@/lib/wholesale-settlement-release-summary";
+import type {
+  MonthlySettlementAllocatedUsdSummary,
+  MonthlySettlementUnallocatedSummary,
+} from "@/lib/wholesale-settlement-release-summary";
 import type {
   WholesaleSettlementRelease,
   WholesaleSettlementReleaseAllocation,
@@ -19,10 +22,12 @@ import { WholesaleStatGrid } from "./wholesale-ui";
 export function WholesaleSettlementReleaseSummary({
   allocations,
   monthlyAllocatedUsd,
+  monthlyUnallocated,
   releases,
 }: {
   allocations: WholesaleSettlementReleaseAllocation[];
   monthlyAllocatedUsd: MonthlySettlementAllocatedUsdSummary | null;
+  monthlyUnallocated: MonthlySettlementUnallocatedSummary;
   releases: WholesaleSettlementRelease[];
 }) {
   const uiText = useTranslations(
@@ -45,8 +50,9 @@ export function WholesaleSettlementReleaseSummary({
 
   return (
     <WholesaleStatGrid
-      // 五张卡在宽屏排成三列，避免共用摘要网格的四列断点把长金额挤窄。
-      className="min-[1360px]:grid-cols-3"
+      // 断点与 Tailwind 默认值统一使用 rem，确保宽屏三列覆盖 sm 两列。
+      // 多币种金额在单张卡内换行，避免撑宽页面。
+      className="min-[85rem]:grid-cols-3 [&_[data-slot=metric-card]>div:last-child]:shrink [&_[data-slot=metric-card]>div:last-child]:whitespace-normal [&_[data-slot=metric-card]>div:last-child]:[overflow-wrap:anywhere]"
       stats={[
         {
           icon: <ReceiptText className="size-4" />,
@@ -75,6 +81,16 @@ export function WholesaleSettlementReleaseSummary({
             allocations,
             uiText("allAllocated"),
           ),
+        },
+        {
+          icon: <CircleDollarSign className="size-4" />,
+          label: uiText("statMonthlyUnallocatedAmount"),
+          tone: "warning",
+          value: monthlyUnallocated.amounts.length === 0
+            ? uiText("allAllocated")
+            : monthlyUnallocated.amounts
+                .map(({ currency, amount }) => formatCurrency(amount, currency))
+                .join(" / "),
         },
         {
           helper: monthlyUnavailable,

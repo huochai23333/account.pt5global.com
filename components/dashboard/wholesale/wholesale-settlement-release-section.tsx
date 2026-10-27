@@ -24,7 +24,10 @@ import type {
   WholesaleSettlementRelease,
   WholesaleSettlementReleaseAllocation,
 } from "@/lib/wholesale-settlement-releases";
-import type { MonthlySettlementAllocatedUsdSummary } from "@/lib/wholesale-settlement-release-summary";
+import type {
+  MonthlySettlementAllocatedUsdSummary,
+  MonthlySettlementUnallocatedSummary,
+} from "@/lib/wholesale-settlement-release-summary";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 import { WholesaleSettlementReleaseAllocationDialog } from "./wholesale-settlement-release-allocation-dialog";
 import { WholesaleSettlementReleaseCreateDialog } from "./wholesale-settlement-release-dialogs";
@@ -54,6 +57,7 @@ type WholesaleSettlementReleaseSectionProps = {
     submission: SettlementReleaseAllocationSubmission,
   ) => Promise<boolean>;
   monthlyAllocatedUsd: MonthlySettlementAllocatedUsdSummary | null;
+  monthlyUnallocated: MonthlySettlementUnallocatedSummary;
   orderSettlements: WholesaleOrderSettlement[];
   orders: WholesaleOrder[];
   pendingKey: string | null;
@@ -72,6 +76,7 @@ export function WholesaleSettlementReleaseSection({
   onCreateRelease,
   onSaveAllocations,
   monthlyAllocatedUsd,
+  monthlyUnallocated,
   orderSettlements,
   orders,
   pendingKey,
@@ -159,6 +164,7 @@ export function WholesaleSettlementReleaseSection({
       <WholesaleSettlementReleaseSummary
         allocations={allocations}
         monthlyAllocatedUsd={monthlyAllocatedUsd}
+        monthlyUnallocated={monthlyUnallocated}
         releases={releases}
       />
 

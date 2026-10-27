@@ -5,7 +5,9 @@ import type { AppRole } from "./auth-routing";
 import { getCurrentSessionContext } from "./current-session-context";
 import {
   getMonthlySettlementAllocatedUsdSummary,
+  getMonthlySettlementUnallocatedSummary,
   type MonthlySettlementAllocatedUsdSummary,
+  type MonthlySettlementUnallocatedSummary,
 } from "./wholesale-settlement-release-summary";
 import type {
   WholesaleCustomer,
@@ -70,6 +72,7 @@ export type WholesaleSettlementReleasePageData = {
   profiles: WholesaleProfile[];
   releases: WholesaleSettlementRelease[];
   monthlyAllocatedUsd: MonthlySettlementAllocatedUsdSummary | null;
+  monthlyUnallocated: MonthlySettlementUnallocatedSummary;
 };
 
 type QueryResult<T> = {
@@ -149,17 +152,20 @@ supabase.from("user_roles").select("id,role").order("id")),
     ...profile,
     role: roleByUserId.get(profile.user_id) ?? null,
   }));
+  const releases = readRows(releasesResult);
+  const allocations = readRows(allocationsResult);
 
   return {
-    allocations: readRows(allocationsResult),
+    allocations,
     currentRole,
     currentUserId,
     customers: readRows(customersResult),
     orders: readRows(ordersResult),
     orderSettlements: readRows(orderSettlementsResult),
     profiles,
-    releases: readRows(releasesResult),
+    releases,
     monthlyAllocatedUsd,
+    monthlyUnallocated: getMonthlySettlementUnallocatedSummary(releases, allocations),
   };
 }
 

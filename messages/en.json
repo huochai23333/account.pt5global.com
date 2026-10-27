@@ -4903,6 +4903,7 @@
       "allAllocated": "Fully allocated",
       "statAllocated": "Fully allocated",
       "statMonthlyAllocatedUsd": "Allocated this month (USD)",
+      "statMonthlyUnallocatedAmount": "Unallocated this month",
       "statMonthlyMissingRates": "{count} allocations need the USD rate for the payment date.",
       "statMonthlyUnavailable": "Unavailable",
       "statMonthlyUnavailableHelp": "We cannot verify this total right now. Please refresh later.",
