@@ -282,6 +282,15 @@
     "footerLinkLabel": "返回登录"
   },
   "LoginForm": {
+    "connectionInterrupted": "连接暂时中断，当前登录结果还未确认。请检查网络后检查登录状态，或重新提交。",
+    "finishPending": "登录后的资料暂时未能加载，已保留登录状态。请检查登录状态后继续。",
+    "checkingSession": "正在检查登录状态，请稍候…",
+    "checkSession": "检查登录状态",
+    "sessionExpired": "当前登录状态已失效，请重新登录。",
+    "accountInactive": "此账号目前无法使用，请联系管理员确认。",
+    "accountMismatch": "当前账号与本次选择不一致，请确认账号后重新登录。",
+    "accessUnavailable": "暂时无法确认账号的访问权限，请稍后检查登录状态。",
+    "recoveryBusy": "上一次登录请求还在结束处理中，请稍后检查登录状态。",
     "email": "电子邮箱",
     "password": "访问密码",
     "forgotPassword": "忘记密码？",

@@ -48,6 +48,14 @@ export function LoginForm({
           {login.error}
         </FeedbackNotice>
       ) : null}
+      {login.checkingSession ? (
+        <FeedbackNotice density="compact" tone="info">{t("checkingSession")}</FeedbackNotice>
+      ) : null}
+      {login.canRecover ? (
+        <Button className="min-h-11 w-full" disabled={login.submitting} onClick={login.recover} type="button" variant="outline">
+          {t("checkSession")}
+        </Button>
+      ) : null}
 
       <AuthField
         autoComplete="email"
@@ -97,7 +105,7 @@ export function LoginForm({
         size="large"
         type="submit"
       >
-        {login.submitting ? t("submitting") : t("submit")}
+        {login.submitting ? login.submittingLabel : t("submit")}
         {login.submitting ? (
           <LoaderCircle className="size-4 shrink-0 animate-spin" />
         ) : (

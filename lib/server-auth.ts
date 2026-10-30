@@ -8,8 +8,9 @@ import {
 } from "./auth-routing";
 import type { UserStatus } from "./auth-metadata";
 import { getVerifiedSessionContext } from "./verified-session-context";
+import { AuthFlowError } from "./auth-failure";
 import { getServerSupabaseClient } from "./supabase-server";
-import { getCurrentWorkspaceBusinessAccess } from "./workspace-business-access";
+import { getVerifiedWorkspaceBusinesses } from "./verified-workspace-business";
 import {
   BUSINESS_UNAVAILABLE_PATH,
   getSignedInWorkspaceDestination,
@@ -74,13 +75,14 @@ export async function redirectAuthenticatedUserToWorkspace() {
     return;
   }
 
-  if (status !== "active") {
+  if (status === "inactive" || status === "suspended") {
     redirect("/auth/sign-out?next=%2Flogin");
   }
+  if (status !== "active") throw new AuthFlowError("accessUnavailable");
 
   assertWorkspaceRole(role);
   const supabase = await getServerSupabaseClient();
-  const businesses = await getCurrentWorkspaceBusinessAccess(supabase);
+  const businesses = await getVerifiedWorkspaceBusinesses(supabase);
   redirect(getSignedInWorkspaceDestination(role, businesses));
 }
 
@@ -91,9 +93,10 @@ export async function requireWorkspaceAccess(expectedBasePath: string) {
     redirect(hasAuthCookie ? "/auth/sign-out?next=%2Flogin" : "/login");
   }
 
-  if (status !== "active") {
+  if (status === "inactive" || status === "suspended") {
     redirect("/auth/sign-out?next=%2Flogin");
   }
+  if (status !== "active") throw new AuthFlowError("accessUnavailable");
 
   assertWorkspaceRole(role);
 
@@ -102,7 +105,7 @@ export async function requireWorkspaceAccess(expectedBasePath: string) {
   }
 
   const supabase = await getServerSupabaseClient();
-  const businesses = await getCurrentWorkspaceBusinessAccess(supabase);
+  const businesses = await getVerifiedWorkspaceBusinesses(supabase);
 
   if (businesses.length === 0) {
     redirect(BUSINESS_UNAVAILABLE_PATH);

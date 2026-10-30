@@ -1,0 +1,77 @@
+[
+  {
+    "file": "components/auth/auth-form-panel.tsx",
+    "beforeLines": 93,
+    "afterLines": 94
+  },
+  {
+    "file": "components/auth/login-form.tsx",
+    "beforeLines": 109,
+    "afterLines": 117
+  },
+  {
+    "file": "components/auth/use-login-form-view-model.ts",
+    "beforeLines": 176,
+    "afterLines": 53
+  },
+  {
+    "file": "components/auth/use-login-recovery.ts",
+    "beforeLines": 0,
+    "afterLines": 74
+  },
+  {
+    "file": "components/auth/login-feedback.ts",
+    "beforeLines": 0,
+    "afterLines": 17
+  },
+  {
+    "file": "lib/auth-failure.ts",
+    "beforeLines": 0,
+    "afterLines": 44
+  },
+  {
+    "file": "lib/auth-request-transport.ts",
+    "beforeLines": 0,
+    "afterLines": 73
+  },
+  {
+    "file": "lib/login-context.ts",
+    "beforeLines": 0,
+    "afterLines": 31
+  },
+  {
+    "file": "lib/login-recovery.ts",
+    "beforeLines": 0,
+    "afterLines": 175
+  },
+  {
+    "file": "lib/verified-workspace-business.ts",
+    "beforeLines": 0,
+    "afterLines": 21
+  },
+  {
+    "file": "lib/verified-session-context.ts",
+    "beforeLines": 17,
+    "afterLines": 20
+  },
+  {
+    "file": "lib/server-auth.ts",
+    "beforeLines": 126,
+    "afterLines": 129
+  },
+  {
+    "file": "lib/supabase-proxy.ts",
+    "beforeLines": 150,
+    "afterLines": 169
+  },
+  {
+    "file": "lib/supabase-server.ts",
+    "beforeLines": 32,
+    "afterLines": 33
+  },
+  {
+    "file": "lib/supabase.ts",
+    "beforeLines": 42,
+    "afterLines": 47
+  }
+]

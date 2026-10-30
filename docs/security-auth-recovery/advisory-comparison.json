@@ -1,0 +1,505 @@
+{
+  "hostingerSource": "https://hpanel.hostinger.com/websites/account.pt5global.com/hosting-security/vulnerabilities",
+  "hostingerScannedAtDisplay": "2026-10-29 06:00",
+  "hostingerRows": 48,
+  "checkedAt": "2026-10-30T15:37:20.238Z",
+  "localKnownRangesRemaining": 0,
+  "items": [
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "critical",
+      "advisory": "GHSA-673q-mjm6-r5xr",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "critical",
+      "advisory": "GHSA-2464-fhr4-w9xw",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "proxy-addr",
+      "before": "2.0.7",
+      "severity": "critical",
+      "advisory": "CVE-2026-90711",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "critical",
+      "advisory": "GHSA-vcvr-r3jv-pc5j",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "high",
+      "advisory": "GHSA-f897-62hf-6gxq",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "body-parser",
+      "before": "2.3.0",
+      "severity": "high",
+      "advisory": "CVE-2026-111181",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "high",
+      "advisory": "CVE-2026-94482",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "high",
+      "advisory": "CVE-2026-111768",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "high",
+      "advisory": "CVE-2026-111767",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "high",
+      "advisory": "CVE-2026-104850",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "sharp",
+      "before": "0.35.4",
+      "severity": "high",
+      "advisory": "GHSA-wq5f-xc86-pv6w",
+      "installedAfter": [
+        "0.35.5"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "zod",
+      "before": "3.25.76",
+      "severity": "high",
+      "advisory": "CVE-2023-54404",
+      "installedAfter": [
+        "4.6.7"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "zod",
+      "before": "4.3.6",
+      "severity": "high",
+      "advisory": "CVE-2023-54404",
+      "installedAfter": [
+        "4.6.7"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "1.1.18",
+      "severity": "high",
+      "advisory": "CVE-2026-102278",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "5.0.9",
+      "severity": "high",
+      "advisory": "CVE-2026-102278",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "1.1.18",
+      "severity": "high",
+      "advisory": "CVE-2026-102276",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "5.0.9",
+      "severity": "high",
+      "advisory": "CVE-2026-102276",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "source-map-js",
+      "before": "1.2.1",
+      "severity": "high",
+      "advisory": "CVE-2026-93749",
+      "installedAfter": [
+        "1.2.2"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@hono/node-server",
+      "before": "2.0.12",
+      "severity": "moderate",
+      "advisory": "CVE-2026-118663",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "qs",
+      "before": "6.16.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-110816",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "nodemailer",
+      "before": "10.0.10",
+      "severity": "moderate",
+      "advisory": "GHSA-4ffr-jq9g-5ffx",
+      "installedAfter": [
+        "10.3.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "nodemailer",
+      "before": "10.0.10",
+      "severity": "moderate",
+      "advisory": "GHSA-g73g-hqqh-jr95",
+      "installedAfter": [
+        "10.3.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "nodemailer",
+      "before": "10.0.10",
+      "severity": "moderate",
+      "advisory": "GHSA-8c8m-p3m8-cjg8",
+      "installedAfter": [
+        "10.3.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "nodemailer",
+      "before": "10.0.10",
+      "severity": "moderate",
+      "advisory": "GHSA-m943-m63m-w62w",
+      "installedAfter": [
+        "10.3.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "nodemailer",
+      "before": "10.0.10",
+      "severity": "moderate",
+      "advisory": "GHSA-85x2-q946-cp5h",
+      "installedAfter": [
+        "10.3.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "fast-uri",
+      "before": "3.1.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-110306",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "fast-uri",
+      "before": "3.1.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-110180",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "ip-address",
+      "before": "10.7.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-111997",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-103004",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-111771",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "before": "1.30.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-111769",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "sanitize-html",
+      "before": "2.17.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-113661",
+      "installedAfter": [
+        "2.18.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "sanitize-html",
+      "before": "2.17.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-113654",
+      "installedAfter": [
+        "2.18.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "hono",
+      "before": "4.13.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-111757",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94544",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94543",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94486",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94485",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94484",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "next",
+      "before": "16.3.4",
+      "severity": "moderate",
+      "advisory": "CVE-2026-94483",
+      "installedAfter": [
+        "16.4.3"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "fast-uri",
+      "before": "3.1.7",
+      "severity": "moderate",
+      "advisory": "CVE-2026-86472",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "ip-address",
+      "before": "10.7.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-101912",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "ip-address",
+      "before": "10.7.0",
+      "severity": "moderate",
+      "advisory": "CVE-2026-101911",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "1.1.18",
+      "severity": "moderate",
+      "advisory": "CVE-2026-102277",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "brace-expansion",
+      "before": "5.0.9",
+      "severity": "moderate",
+      "advisory": "CVE-2026-102277",
+      "installedAfter": [
+        "1.1.21",
+        "5.0.12"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "fast-uri",
+      "before": "3.1.7",
+      "severity": "low",
+      "advisory": "CVE-2026-110095",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "fast-uri",
+      "before": "3.1.7",
+      "severity": "low",
+      "advisory": "CVE-2026-110725",
+      "installedAfter": [],
+      "localDisposition": "dependency_removed",
+      "hostingerRescan": "pending_deployment"
+    },
+    {
+      "package": "sanitize-html",
+      "before": "2.17.7",
+      "severity": "low",
+      "advisory": "CVE-2026-113657",
+      "installedAfter": [
+        "2.18.1"
+      ],
+      "localDisposition": "updated",
+      "hostingerRescan": "pending_deployment"
+    }
+  ]
+}

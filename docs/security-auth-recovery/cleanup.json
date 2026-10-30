@@ -1,0 +1,36 @@
+{
+  "cleanedAt": "2026-10-30T15:57:10.7173828Z",
+  "removedNewCacheFileCount": 17,
+  "removedNewCacheBytes": 713101560.0,
+  "removedNewCacheFiles": [
+    ".next\\cache\\images\\6SbvKZELyAHR89VOfWUq_xxCOeqT3RWcViga94nwlu4\\31536000.1824910368591.HSa0PVRxCcRJNwRpHKlqGaMobopvs5UCFiMiE_-Zh0c.Vy8iNGNkZGEtMWExOGQ2YTIxNWQi.webp",
+    ".next\\cache\\images\\NLNKnh-fjVkyfYa5HUWLnV3-lyOKib788rLvW15bgSA\\14400.1793388760403.RgwYTLzptHcMXxyYnXWyrb2t03qoF__m1gnu_Vfs994.Vy8iZTA3LTFhMDVlMGM3NTgxIg.webp",
+    ".next\\cache\\webpack\\client-production\\0.pack",
+    ".next\\cache\\webpack\\client-production\\1.pack",
+    ".next\\cache\\webpack\\client-production\\2.pack",
+    ".next\\cache\\webpack\\client-production\\3.pack",
+    ".next\\cache\\webpack\\client-production\\4.pack",
+    ".next\\cache\\webpack\\client-production\\index.pack",
+    ".next\\cache\\webpack\\client-production\\index.pack.old",
+    ".next\\cache\\webpack\\edge-server-production\\0.pack",
+    ".next\\cache\\webpack\\edge-server-production\\index.pack",
+    ".next\\cache\\webpack\\server-production\\0.pack",
+    ".next\\cache\\webpack\\server-production\\1.pack",
+    ".next\\cache\\webpack\\server-production\\2.pack",
+    ".next\\cache\\webpack\\server-production\\3.pack",
+    ".next\\cache\\webpack\\server-production\\index.pack",
+    ".next\\cache\\webpack\\server-production\\index.pack.old"
+  ],
+  "removedOwnedOutputDirectories": [
+    "output\\security-auth-recovery-results",
+    "output\\security-auth-recovery-style-check"
+  ],
+  "stoppedOwnedServerPid": 13604,
+  "preserved": [
+    "用户原始截图及日志",
+    "原有 .next 构建目录和较早缓存",
+    "原有 tsconfig.tsbuildinfo",
+    "其他共享缓存和备份",
+    "最终源文件与 docs/security-auth-recovery 验收证据"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "sourcePackage": "shadcn@4.1.0",
+  "sourceFile": "dist/tailwind.css",
+  "sourceTarball": "https://registry.npmjs.org/shadcn/-/shadcn-4.1.0.tgz",
+  "normalizedRuleSha256": "146941ac3ff65496fdf1cb306e697255328e4dadc7c105d66e36bb031b00f6d6",
+  "localFile": "app/ui-variants.css",
+  "equivalent": true,
+  "license": "MIT"
+}

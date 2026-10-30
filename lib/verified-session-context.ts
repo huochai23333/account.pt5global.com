@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { getCurrentAppAccessContext } from "./current-app-access-context";
 import { measureServerStage } from "./server-performance";
+import { isDefinitiveSessionFailure } from "./auth-failure";
 
 /**
  * 布局、业务数据和入口跳转共用这一份经过验证的身份。
@@ -11,6 +12,8 @@ import { measureServerStage } from "./server-performance";
 export const getVerifiedSessionContext = cache(async (supabase: SupabaseClient) =>
   measureServerStage("access.verified-session", async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
+    // 临时网络故障必须进入可重试错误页，不能把 null 传给上层并触发退出清理。
+    if (error && !isDefinitiveSessionFailure(error)) throw error;
     if (error || !user) return { user: null, role: null, status: null };
     const access = await getCurrentAppAccessContext(supabase);
     return { user, ...access };

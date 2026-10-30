@@ -1,0 +1,68 @@
+{
+  "outcome": "partial_failed",
+  "reason": "real_auth_and_independent_database_acceptance_pending_existing_admission",
+  "checks": {
+    "loginRecovery": {
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    "securityDependencies": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "publicBrowser": {
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mailSecurity": {
+      "passed": 9,
+      "failed": 0
+    },
+    "mailIntake": {
+      "passed": 12,
+      "failed": 0
+    },
+    "publicOrigin": {
+      "passed": 37,
+      "failed": 0
+    },
+    "authReceipts": {
+      "passed": 3,
+      "failed": 0
+    },
+    "templateSandbox": {
+      "passedScripts": 1,
+      "failedScripts": 0
+    },
+    "staticGates": {
+      "lint": "passed",
+      "typecheck": "passed",
+      "i18n": "passed",
+      "dashboardStructure": "passed",
+      "operationContracts": "passed",
+      "productionBuild": "passed"
+    },
+    "knownVulnerabilities": {
+      "production": 0,
+      "all": 0
+    },
+    "controlledFault": {
+      "expectedFailures": 1,
+      "productSourceEdited": false
+    }
+  },
+  "boundPackageLockSha256": "8aa54805f0b6ce65261193547866066a7014c1d9eea03c1c5d0704fac2f30939",
+  "cleanup": {
+    "cacheFiles": 17,
+    "cacheBytes": 713101560,
+    "outputDirectories": 2
+  },
+  "release": {
+    "github": "not_pushed",
+    "supabaseCloud": "not_changed",
+    "hostinger": "not_deployed"
+  }
+}

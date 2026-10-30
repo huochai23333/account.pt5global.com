@@ -282,6 +282,15 @@
     "footerLinkLabel": "Back to Sign In"
   },
   "LoginForm": {
+    "connectionInterrupted": "The connection was interrupted and your sign-in result is not yet confirmed. Check your connection, then check sign-in status or submit again.",
+    "finishPending": "Your workspace could not be loaded yet. Your sign-in has been kept. Check sign-in status to continue.",
+    "checkingSession": "Checking sign-in status, please wait…",
+    "checkSession": "Check sign-in status",
+    "sessionExpired": "Your sign-in is no longer valid. Please sign in again.",
+    "accountInactive": "This account is currently unavailable. Please contact your administrator.",
+    "accountMismatch": "The current account does not match your selection. Confirm the account and sign in again.",
+    "accessUnavailable": "Your account access could not be confirmed. Check sign-in status again shortly.",
+    "recoveryBusy": "The previous sign-in request is still finishing. Check sign-in status again shortly.",
     "connectionTimeout": "Sign-in took too long. Check your connection and try again.",
     "email": "Email",
     "password": "Password",

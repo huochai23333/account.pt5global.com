@@ -119,7 +119,17 @@ npm run test:e2e
 
 ## 环境变量
 
-浏览器使用 Supabase SDK 直接连接下方配置的项目地址；登录和页面查询都要求员工自己的网络能够访问该地址。服务端仍连接同一项目，登录 Cookie 由 SDK 管理。登录等待期间密码保持只读，显示/隐藏按钮仍可使用。本地验证使用既有开发服务与 Docker：`PLAYWRIGHT_SKIP_WEB_SERVER=1`、`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`，运行 `npx playwright test tests/e2e/auth-network.spec.ts tests/e2e/auth.spec.ts --workers=1`；浏览器直连回归从页面登录，独立核对认证身份和账号资料，再刷新验证身份。
+浏览器使用 Supabase SDK 直接连接下方配置的项目地址；登录和页面查询都要求员工自己的网络能够访问该地址。服务端仍连接同一项目，登录 Cookie 由 SDK 管理。密码请求最多等待 15 秒，一次登录／恢复流程最多等待 30 秒；只读身份和权限核验最多尝试两次，间隔 500 毫秒。连接中断后先检查已有会话，不自动再次提交密码；“检查登录状态”按钮和一次网络恢复事件可以继续核验。登录等待期间密码保持只读，显示／隐藏按钮仍可使用。
+
+登录和恢复必须由 Auth 服务核验身份，再使用数据库实际角色、账号状态和业务权限决定工作台。读取失败不会使用旧角色或默认业务继续跳转；临时网络错误保留会话，明确失效或账号停用才清理。内部 `partial_failed` 表示认证已完成而后续步骤尚未完成，页面仍提供恢复入口。脱敏失败日志以 `pt5.auth` 标记时间、随机操作编号、阶段、耗时和错误类别，不记录邮箱、密码、令牌、Cookie 或请求正文。
+
+`npm run test:login-recovery` 使用合成边界运行真实恢复与核验模块；`npm run test:security-dependencies` 验证邮件清洗、收件人集合和本机图片转换。`npm run test:public-login-recovery` 只复用已启动的 `http://localhost:3000` 服务，验证匿名页面的断线反馈、键盘操作及 1440/390/320px 布局；所有密码请求都在浏览器边界中止或返回合成错误，不创建真实会话。这些检查不替代真实认证验收。
+
+真实认证验收使用既有开发服务与本地 Docker，按 [测试准入与夹具要求](docs/real-e2e-blockers.md) 准备后，再运行 `PLAYWRIGHT_SKIP_WEB_SERVER=1 npx playwright test tests/e2e/auth-network.spec.ts tests/e2e/auth.spec.ts --workers=1`（PowerShell 使用对应环境变量设置）。从页面登录，独立核对认证用户、会话和数据库实际权限，再刷新工作台；当前受限的账号／管理员辅助入口不得通过替换实现绕过。
+
+### 依赖安全维护
+
+Next.js 和 eslint-config-next 保持同一固定版本；Supabase SDK、React 与本次安全补丁依赖均固定版本，并保存 npm 锁文件。升级后同时运行 `npm audit --omit=dev` 与 `npm audit`，按公告编号和实际依赖树核对，不能仅比较总数。shadcn 的状态变体样式保存在 `app/ui-variants.css`，来源和 MIT 许可见 [许可文件](docs/security-auth-recovery/shadcn-LICENSE.md)；已有组件使用这些本地样式，项目不再依赖生成组件用的命令行工具。安全修复及验收范围见 [依赖与登录恢复报告](docs/security-auth-recovery/report.md)。
 
 至少需要：
 

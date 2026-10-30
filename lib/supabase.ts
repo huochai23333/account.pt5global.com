@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAuthRequestTransport, registerAuthRequestTransport } from "./auth-request-transport";
 
 let supabaseClient: SupabaseClient | undefined;
 
@@ -27,7 +28,11 @@ export function getSupabaseClient() {
     const { supabaseUrl, supabaseKey } = getSupabaseEnv();
 
     // 浏览器直接连接配置的 Supabase 项目；登录 Cookie 仍由 SDK 在当前网站管理。
-    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey);
+    const transport = createAuthRequestTransport();
+    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, {
+      global: { fetch: transport.fetch },
+    });
+    registerAuthRequestTransport(supabaseClient, transport);
   }
 
   return supabaseClient;

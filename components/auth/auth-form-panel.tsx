@@ -36,7 +36,8 @@ export function AuthFormPanel({
       data-auth-region="form"
     >
       <div className="mx-auto flex min-w-0 w-full max-w-[580px] flex-1 flex-col px-6 py-8 sm:px-10 lg:px-14 lg:py-16">
-        <div className="mb-10 flex items-start justify-between gap-4">
+        {/* 极窄屏允许语言按钮换到下一行，避免品牌名称被挤成单字竖排。 */}
+        <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3 lg:hidden">
             <BrandMark priority />
             <div className="min-w-0 space-y-0.5">
