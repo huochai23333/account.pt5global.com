@@ -712,6 +712,8 @@ npx playwright test tests/e2e/template-drafts.spec.ts --workers=1
 - Start Command：`npm run start`
 - Output Directory：`.next`
 
+Hostinger 构建环境可能报告宿主机的全部 CPU，Next.js 据此启动过多页面构建进程而耗尽线程。`next.config.ts` 将 `experimental.cpus` 固定为 `2`，限制页面数据收集和生成阶段的构建进程数量；不改变线上请求处理方式。如果平台日志出现无法创建线程，应先核对实际并行进程数量及套餐资源，不要跳过类型检查或依赖审计。
+
 Git 推送约定：
 
 - 默认直接推送 `origin/main`。

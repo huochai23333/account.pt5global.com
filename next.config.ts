@@ -24,6 +24,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "::1"],
+  experimental: {
+    // 托管构建机可能报告远高于套餐限额的 CPU 数量；限制页面构建进程，避免耗尽可创建的线程。
+    // 仅影响构建阶段的并行度，线上请求仍由原有 Node.js 服务处理。
+    cpus: 2,
+  },
   async headers() {
     return [
       {
