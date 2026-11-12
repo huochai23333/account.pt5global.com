@@ -17,7 +17,7 @@ import {
 } from "@/components/dashboard/dashboard-shared-ui";
 import { Button } from "@/components/ui/button";
 import {
-  getTaskScopeLabel,
+  getTaskScopeWithTeamLabel,
   getTaskTypeLabel,
 } from "@/components/dashboard/tasks/tasks-display";
 
@@ -25,6 +25,10 @@ import {
   formatCommissionMoney,
   getCommissionSettlementStatusLabel,
 } from "./commission-display";
+import {
+  CommissionDetailLine,
+  getCommissionSettlementTone,
+} from "./admin-commission-record-utils";
 
 export function AdminTaskCommissionSection({
   onMarkAsPaid,
@@ -100,9 +104,7 @@ export function AdminTaskCommissionSection({
                           )}
                         </StatusBadge>
                         <StatusBadge tone="info">
-                          {row.taskScope === "team" && row.teamName
-                            ? `${getTaskScopeLabel(row.taskScope, sharedTaskT)} 璺?${row.teamName}`
-                            : getTaskScopeLabel(row.taskScope, sharedTaskT)}
+                          {getTaskScopeWithTeamLabel(row.taskScope, row.teamName, sharedTaskT)}
                         </StatusBadge>
                       </div>
                     </td>
@@ -130,7 +132,7 @@ export function AdminTaskCommissionSection({
                       </div>
                       <div className="mt-2">
                         <StatusBadge
-                          tone={getSettlementTone(row.settlementStatus)}
+                          tone={getCommissionSettlementTone(row.settlementStatus)}
                         >
                           {getCommissionSettlementStatusLabel(
                             row.settlementStatus,
@@ -145,11 +147,11 @@ export function AdminTaskCommissionSection({
                       ) : null}
                     </td>
                     <td className="px-4 py-4">
-                      <DetailLine
+                      <CommissionDetailLine
                         label={t("shared.fields.createdAt")}
                         value={formatDateTime(row.createdAt, locale)}
                       />
-                      <DetailLine
+                      <CommissionDetailLine
                         label={t("shared.fields.settledAt")}
                         value={formatDateTime(row.settledAt, locale)}
                       />
@@ -184,25 +186,4 @@ export function AdminTaskCommissionSection({
       )}
     </DashboardListSection>
   );
-}
-
-function DetailLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="leading-7 text-content-muted">
-      <span className="text-xs text-content-subtle">{label}: </span>
-      <span>{value}</span>
-    </div>
-  );
-}
-
-function getSettlementTone(status: TaskCommissionRow["settlementStatus"]) {
-  if (status === "paid") {
-    return "success";
-  }
-
-  if (status === "pending" || status === "reversed") {
-    return "warning";
-  }
-
-  return "info";
 }

@@ -12,13 +12,14 @@ import {
 } from "./business-vip-display";
 
 export function BusinessVipCustomerCell({ row }: { row: BusinessVipRow }) {
+  const t = useTranslations("BusinessVip");
   return (
     <div className="min-w-0">
       <p className="break-words font-semibold text-content-strong [overflow-wrap:anywhere]">
         {row.customerLabel}
       </p>
       <p className="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
-        {row.contactLabel}
+        {row.contactLabel ?? t("fallback.noContact")}
       </p>
       {row.secondaryLabel ? (
         <p className="mt-1 break-words text-xs leading-5 text-content-subtle [overflow-wrap:anywhere]">

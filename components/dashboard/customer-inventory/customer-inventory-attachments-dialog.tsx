@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { Download, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -11,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   createCustomerInventoryAttachmentDownloadUrl,
   deleteCustomerInventoryAttachment,
-  uploadCustomerInventoryFiles,
 } from "@/lib/customer-inventory-attachments";
 import type {
   CustomerInventoryAttachment,
@@ -19,6 +16,7 @@ import type {
 } from "@/lib/customer-inventory-types";
 
 import { formatInventoryDateTime } from "./customer-inventory-display";
+import { useInventoryAttachmentUpload } from "./use-inventory-attachment-upload";
 import type { RunInventoryAction } from "./use-customer-inventory-actions";
 
 export function CustomerInventoryAttachmentsDialog({
@@ -39,32 +37,16 @@ export function CustomerInventoryAttachmentsDialog({
   runAction: RunInventoryAction;
 }) {
   const t = useTranslations("CustomerInventory");
-  const [files, setFiles] = useState<File[]>([]);
+  const upload = useInventoryAttachmentUpload({
+    attachments,
+    orderId: order?.id,
+    currentUserId,
+    runAction,
+    successMessage: t("feedback.uploadSuccess"),
+  });
 
   if (!order) return null;
-
-  const activeOrder = order;
-  const uploadKey = `attachment-upload:${order.id}`;
-
-  async function uploadFiles() {
-    if (!currentUserId) return;
-    const currentOrder = activeOrder;
-
-    const success = await runAction(
-      uploadKey,
-      t("feedback.uploadSuccess"),
-      async (supabase) => {
-        await uploadCustomerInventoryFiles(supabase, {
-          existingAttachments: attachments,
-          files,
-          orderId: currentOrder.id,
-          uploadedByUserId: currentUserId,
-        });
-      },
-    );
-
-    if (success) setFiles([]);
-  }
+  const uploading = pendingKey === upload.key;
 
   async function downloadAttachment(attachment: CustomerInventoryAttachment) {
     await runAction(
@@ -109,23 +91,28 @@ export function CustomerInventoryAttachmentsDialog({
           <div className="grid gap-3 rounded-record-card border border-border-subtle bg-surface-inset p-4">
             <DashboardFilePicker
               accept=".csv,.xls,.xlsx"
-              disabled={pendingKey === uploadKey}
-              files={files}
+              disabled={uploading || upload.needsCheck}
+              files={upload.files}
               label={t("attachments.choose")}
               multiple
-              onFiles={setFiles}
+              onFiles={upload.selectFiles}
             />
             <p className="text-xs leading-5 text-content-muted">
               {t("attachments.rules")}
             </p>
+            {upload.needsCheck && (
+              <p role="status" className="text-sm text-content-muted">
+                {t("attachments.uploadUnconfirmed")}
+              </p>
+            )}
             <Button
               className="w-full sm:w-fit"
-              disabled={files.length === 0 || pendingKey === uploadKey}
-              loading={pendingKey === uploadKey}
-              onClick={() => void uploadFiles()}
+              disabled={!currentUserId || (!upload.needsCheck && upload.files.length === 0)}
+              loading={uploading}
+              onClick={() => void upload.submit()}
               type="button"
             >
-              {t("attachments.upload")}
+              {t(upload.needsCheck ? "attachments.checkUpload" : "attachments.upload")}
             </Button>
           </div>
         ) : null}

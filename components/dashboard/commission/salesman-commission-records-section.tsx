@@ -17,7 +17,6 @@ import {
 import { useLocale } from "@/components/i18n/locale-provider";
 import type {
   AdminCommissionRow,
-  CommissionSettlementStatus,
 } from "@/lib/admin-commission";
 import type { useDashboardPagination } from "@/lib/use-dashboard-pagination";
 
@@ -28,6 +27,10 @@ import {
   getCommissionOriginText,
   getCommissionSettlementStatusLabel,
 } from "./commission-display";
+import {
+  CommissionDetailLine,
+  getCommissionSettlementTone,
+} from "./admin-commission-record-utils";
 
 type CommissionPagination = ReturnType<
   typeof useDashboardPagination<AdminCommissionRow>
@@ -111,11 +114,11 @@ export function SalesmanCommissionRecordsSection({
                   ) : null}
                 </td>
                 <td className="px-4 py-4">
-                  <DetailLine
+                  <CommissionDetailLine
                     label={t("shared.fields.orderNumber")}
                     value={commission.orderNumber}
                   />
-                  <DetailLine
+                  <CommissionDetailLine
                     label={t("shared.fields.customer")}
                     value={
                       commission.sourceCustomer?.label ??
@@ -156,7 +159,7 @@ export function SalesmanCommissionRecordsSection({
                 </td>
                 <td className="px-4 py-4">
                   <StatusBadge
-                    tone={getSettlementTone(commission.settlementStatus)}
+                    tone={getCommissionSettlementTone(commission.settlementStatus)}
                   >
                     {getCommissionSettlementStatusLabel(
                       commission.settlementStatus,
@@ -165,11 +168,11 @@ export function SalesmanCommissionRecordsSection({
                   </StatusBadge>
                 </td>
                 <td className="px-4 py-4">
-                  <DetailLine
+                  <CommissionDetailLine
                     label={t("shared.fields.createdAt")}
                     value={formatDateTime(commission.createdAt, locale)}
                   />
-                  <DetailLine
+                  <CommissionDetailLine
                     label={t("shared.fields.settledAt")}
                     value={formatDateTime(commission.settledAt, locale)}
                   />
@@ -181,19 +184,4 @@ export function SalesmanCommissionRecordsSection({
       </DashboardTableFrame>
     </DashboardListSection>
   );
-}
-
-function DetailLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="leading-7 text-content-muted">
-      <span className="text-xs text-content-subtle">{label}: </span>
-      <span>{value}</span>
-    </div>
-  );
-}
-
-function getSettlementTone(status: CommissionSettlementStatus) {
-  if (status === "paid") return "success";
-  if (status === "pending" || status === "reversed") return "warning";
-  return "info";
 }

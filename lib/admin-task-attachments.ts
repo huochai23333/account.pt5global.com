@@ -179,9 +179,12 @@ export function validateAdminTaskAttachments(files: File[]) {
   });
 }
 
-async function removeStoredTaskAttachments(
+export async function removeStoredTaskAttachments(
   supabase: SupabaseClient,
-  attachments: Pick<AdminTaskAttachment, "bucket_name" | "task_attachment_storage_path">[],
+  attachments: Array<{
+    bucket_name: string | null;
+    task_attachment_storage_path: string | null;
+  }>,
 ) {
   await removeTaskStorageObjects(supabase, attachments, {
     defaultBucket: TASK_ATTACHMENT_BUCKET,

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import {
   expectForbiddenPage,
@@ -8,6 +8,8 @@ import {
 } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
 import { chooseSelectOption } from "./helpers/select-control";
+import { test } from "./helpers/company-expense-fixture";
+import { shanghaiDate } from "../test-support/shanghai-calendar";
 
 test.describe("company expenses", () => {
   test("administrator can open company expenses", async ({ page }) => {
@@ -35,8 +37,9 @@ test.describe("company expenses", () => {
     await expectForbiddenPage(page);
   });
 
-  test("finance can create and delete a company expense", async ({ page }) => {
-    const title = `自动测试费用 ${Date.now()}`;
+  test("finance can create and delete a company expense", async ({ page, expenseFixture }) => {
+    const { title } = expenseFixture;
+    const month = shanghaiDate().slice(0, 7);
 
     await loginAs(page, "finance");
     await page.goto("/finance/company-expenses");
@@ -47,7 +50,7 @@ test.describe("company expenses", () => {
     await expect(dialog).toBeVisible();
     await fillDateControl(
       dialog.getByLabel("所属月份"),
-      getCurrentMonthValue(),
+      month,
     );
     await dialog.getByLabel("费用名称").fill(title);
     await chooseSelectOption(dialog.getByLabel("费用分类"), {
@@ -63,6 +66,10 @@ test.describe("company expenses", () => {
     const expenseCard = page.locator("article").filter({ hasText: title });
     await expect(expenseCard).toBeVisible();
     await expect(expenseCard.getByText("¥123.45")).toBeVisible();
+    await expenseFixture.expectSaved(month);
+    await page.reload();
+    await expect(expenseCard).toBeVisible();
+    await expenseFixture.expectSaved(month);
 
     const deleteButton = expenseCard.getByRole("button", { name: "删除" });
     await deleteButton.click();
@@ -75,17 +82,23 @@ test.describe("company expenses", () => {
     await expect(confirmDialog).toBeHidden();
     await expect(expenseCard).toBeVisible();
     await expect(deleteButton).toBeFocused();
+    await expenseFixture.expectSaved(month);
 
     // 取消确认不能触发删除；再次打开后只有明确确认才继续领域操作。
     await deleteButton.click();
     await confirmDialog.getByRole("button", { name: "暂不操作" }).click();
     await expect(expenseCard).toBeVisible();
+    await expenseFixture.expectSaved(month);
 
     await deleteButton.click();
     await confirmDialog.getByRole("button", { name: "确认操作" }).click();
 
     await expect(page.getByText("费用已删除。")).toBeVisible();
     await expect(expenseCard).toHaveCount(0);
+    await expenseFixture.expectAbsent();
+    await page.reload();
+    await expect(expenseCard).toHaveCount(0);
+    await expenseFixture.expectAbsent();
   });
 
   test("company expenses page fits mobile width", async ({ page }) => {
@@ -98,13 +111,6 @@ test.describe("company expenses", () => {
     await expectNoDocumentHorizontalOverflow(page);
   });
 });
-
-function getCurrentMonthValue() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-
-  return `${now.getFullYear()}-${month}`;
-}
 
 async function expectNoDocumentHorizontalOverflow(page: Page) {
   const overflowPixels = await page.evaluate(

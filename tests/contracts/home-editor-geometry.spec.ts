@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { expect, test } from "@playwright/test";
 import { expectEditorGeometry } from "../e2e/helpers/home-editor-geometry";
-// Isolated TSX loader renders the actual first-party React component. It imports no Auth helpers.
+// 隔离加载器渲染真实编辑器组件，页面路由全部拦截，夹具由本测试独立准备。
 import { renderHomeEditor } from "./helpers/render-home-editor";
 
 test.beforeEach(async ({ page }) => {

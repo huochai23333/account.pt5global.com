@@ -1,12 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getSalesmanCustomerRowById, normalizeSalesmanCustomerRow } from "./salesman-people";
 import {
-  getSalesmanCustomerRowById,
   isSalesmanCustomerType,
-  normalizeSalesmanCustomerRow,
   type SalesmanCustomerRow,
   type SalesmanCustomerType,
-} from "./salesman-people";
+} from "./salesman-people-contract";
 import { withRequestTimeout } from "./request-timeout";
 import { getCurrentSessionContext } from "./user-self-service";
 import { isSalesStaffRole } from "./sales-staff-roles";
@@ -62,7 +61,7 @@ export async function updateSalesmanCustomerType(
     ? normalizeSalesmanCustomerRow(data[0])
     : normalizeSalesmanCustomerRow(data);
 
-  if (!rpcCustomer) {
+  if (!rpcCustomer || rpcCustomer.user_id !== payload.customerUserId) {
     throw new SalesmanPeopleMutationError("notFound");
   }
 
@@ -73,6 +72,11 @@ export async function updateSalesmanCustomerType(
 
   if (!updatedCustomer) {
     throw new SalesmanPeopleMutationError("notFound");
+  }
+
+  // 数据库读回必须是本次写入的标记，避免目标行未修改时返回成功。
+  if (updatedCustomer.customer_type !== payload.customerType) {
+    throw new SalesmanPeopleMutationError("unknown");
   }
 
   return updatedCustomer;

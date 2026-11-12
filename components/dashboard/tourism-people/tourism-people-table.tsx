@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/dashboard/dashboard-shared-ui";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RecordCard } from "@/components/ui/data-display";
-import type { AdminPersonRow } from "@/lib/admin-people";
+import type { AdminPersonRow } from "@/lib/admin-people-contract";
 import type { Locale } from "@/lib/locale";
 
 import {

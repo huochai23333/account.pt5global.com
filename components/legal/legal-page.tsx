@@ -72,6 +72,8 @@ export function LegalPage({ activePath, copy }: LegalPageProps) {
                 {LEGAL_LINKS.map((link) => (
                   <Link
                     key={link.key}
+                    // 当前页除了视觉高亮，也需要让读屏器能识别。
+                    aria-current={link.href === activePath ? "page" : undefined}
                     className={cn(
                       "inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors sm:h-10",
                       link.href === activePath

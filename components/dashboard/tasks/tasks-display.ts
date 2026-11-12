@@ -5,19 +5,6 @@ import type { Locale } from "@/lib/locale";
 type TranslationValues = Record<string, string | number>;
 export type TranslateFn = (key: string, values?: TranslationValues) => string;
 
-type TaskDraftLike = {
-  taskName: string;
-  taskTypeCode: string;
-  commissionAmount: string;
-  acceptanceLimit: string;
-  acceptanceUnlimited: boolean;
-  targetRoles: TaskTargetRole[];
-};
-
-type TaskAssignmentDraftLike = {
-  targetRoles: TaskTargetRole[];
-};
-
 export function getTaskStatusMeta(
   status: TaskStatus | SalesmanTaskRow["status"],
   t: TranslateFn,
@@ -46,6 +33,16 @@ export function getTaskScopeLabel(
   t: TranslateFn,
 ) {
   return scope === "public" ? t("scope.public") : t("scope.team");
+}
+
+// 只有团队任务才显示团队名称，两个佣金看板使用相同的范围标签。
+export function getTaskScopeWithTeamLabel(
+  scope: TaskScope,
+  teamName: string | null,
+  t: TranslateFn,
+) {
+  const scopeLabel = getTaskScopeLabel(scope, t);
+  return scope === "team" && teamName ? `${scopeLabel} · ${teamName}` : scopeLabel;
 }
 
 export function getTaskTeamName(
@@ -96,30 +93,6 @@ export function formatTaskCommissionMoney(value: number, locale: Locale) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-export function parseTaskCommissionAmountInput(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return 0;
-  }
-
-  const parsedValue = Number(trimmedValue);
-
-  return Number.isFinite(parsedValue) ? parsedValue : null;
-}
-
-export function parseTaskAcceptanceLimitInput(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const parsedValue = Number(trimmedValue);
-
-  return Number.isInteger(parsedValue) ? parsedValue : null;
 }
 
 export function getTaskAcceptanceProgressLabel(
@@ -213,52 +186,6 @@ export function getTaskAssignmentLabel(
   t: TranslateFn,
 ) {
   return scope === "team" ? getTaskTeamName(teamName, t) : t("scope.public");
-}
-
-export function validateTaskDraft(
-  formState: TaskDraftLike,
-  t: TranslateFn,
-) {
-  if (!formState.taskName.trim()) {
-    return t("validation.taskNameRequired");
-  }
-
-  if (!formState.taskTypeCode.trim()) {
-    return t("validation.taskTypeRequired");
-  }
-
-  const commissionAmount = parseTaskCommissionAmountInput(formState.commissionAmount);
-
-  if (commissionAmount === null || commissionAmount < 0) {
-    return t("validation.commissionAmountInvalid");
-  }
-
-  if (
-    !formState.acceptanceUnlimited
-    && (
-      parseTaskAcceptanceLimitInput(formState.acceptanceLimit) === null
-      || (parseTaskAcceptanceLimitInput(formState.acceptanceLimit) ?? 0) < 1
-    )
-  ) {
-    return t("validation.acceptanceLimitInvalid");
-  }
-
-  if (formState.targetRoles.length === 0) {
-    return t("validation.targetRolesRequiredForCreate");
-  }
-
-  return null;
-}
-
-export function validateTaskAssignmentDraft(
-  formState: TaskAssignmentDraftLike,
-  t: TranslateFn,
-) {
-  if (formState.targetRoles.length === 0) {
-    return t("validation.targetRolesRequiredForAssignment");
-  }
-
-  return null;
 }
 
 export { toAdminTaskErrorMessage, toSalesmanTaskErrorMessage } from "./tasks-error-messages";

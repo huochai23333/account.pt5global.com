@@ -1,3 +1,4 @@
+/** 工作台 AI 助手：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -5,10 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, LoaderCircle, RefreshCw, Send, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-import {
-  MotionList,
-  MotionListItem,
-} from "@/components/motion/motion-primitives";
+import { MotionList, MotionListItem } from "@/components/motion/motion-primitives";
 import { Button, InteractiveButton as DesignButton } from "@/components/ui/button";
 import * as FormControls from "@/components/ui/form-controls";
 import { MOTION_DURATION, MOTION_EASING } from "@/lib/motion-tokens";
@@ -77,11 +75,12 @@ export function AiAssistantPanel({
     messageEndRef.current?.scrollIntoView({ block: "end" });
   }, [errorMessage, messages, pending]);
 
+  // 手机两侧用定位间距留白，固定宽度只在桌面生效，避免滚动条占宽时挤出视口。
   return (
     <motion.section
       animate={{ opacity: 1, scale: 1, y: 0 }}
       aria-label={copy.title}
-      className="fixed bottom-[5.5rem] right-3 z-40 flex h-[min(640px,calc(100dvh-7rem))] w-[calc(100vw-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-surface-panel border border-surface-panel-border bg-surface-overlay shadow-surface-floating backdrop-blur-2xl backdrop-saturate-150 sm:bottom-24 sm:right-6"
+      className="fixed inset-x-3 bottom-[5.5rem] z-40 flex h-[min(640px,calc(100dvh-7rem))] max-w-[420px] flex-col overflow-hidden rounded-surface-panel border border-surface-panel-border bg-surface-overlay shadow-surface-floating backdrop-blur-2xl backdrop-saturate-150 sm:bottom-24 sm:left-auto sm:right-6 sm:w-[420px]"
       exit={{ opacity: 0, scale: 0.98, y: 18 }}
       initial={{ opacity: 0, scale: 0.96, y: 24 }}
       transition={{
@@ -94,7 +93,7 @@ export function AiAssistantPanel({
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
             <Bot className="size-5" />
           </div>
-          <h2 className="truncate text-base font-semibold text-content-strong">
+          <h2 className="min-w-0 text-pretty text-base font-semibold text-content-strong">
             {copy.title}
           </h2>
         </div>
@@ -134,9 +133,7 @@ export function AiAssistantPanel({
             }}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm leading-6 text-content-muted">
-                {copy.resetConfirmDescription}
-              </p>
+              <p className="text-sm leading-6 text-content-muted">{copy.resetConfirmDescription}</p>
               <div className="flex shrink-0 items-center gap-2">
                 <DesignButton
                   className="h-8 rounded-full px-3 text-sm font-medium text-content-muted transition-colors hover:bg-surface-interactive"
@@ -150,9 +147,7 @@ export function AiAssistantPanel({
                   onClick={() => {
                     onReset();
                     setResetConfirmOpen(false);
-                    window.requestAnimationFrame(() =>
-                      inputRef.current?.focus(),
-                    );
+                    window.requestAnimationFrame(() => inputRef.current?.focus());
                   }}
                   type="button"
                 >
@@ -211,11 +206,7 @@ export function AiAssistantPanel({
           void onSend();
         }}
       >
-        <FormControls.Field
-          controlId="ai-assistant-input"
-          label={copy.inputLabel}
-          labelHidden
-        >
+        <FormControls.Field controlId="ai-assistant-input" label={copy.inputLabel} labelHidden>
           <div className="flex items-end gap-2 rounded-control-large border border-border-subtle bg-surface-interactive p-2 focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/30">
             <FormControls.Textarea
               className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-6 text-content-strong outline-none placeholder:text-content-muted"
@@ -270,9 +261,7 @@ function AssistantMessageBubble({
   const hasSettlementRelease = Boolean(message.settlementRelease);
 
   return (
-    <div
-      className={cn("flex gap-2", fromUser ? "justify-end" : "justify-start")}
-    >
+    <div className={cn("flex gap-2", fromUser ? "justify-end" : "justify-start")}>
       {!fromUser ? (
         <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-status-info-soft text-primary">
           <Bot className="size-3.5" />

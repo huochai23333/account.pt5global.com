@@ -24,8 +24,7 @@ export const getServerSupabaseClient = cache(async () => {
             cookieStore.set(name, value, options);
           });
         } catch {
-          // Server Components cannot always persist cookies directly.
-          // The proxy refresh path handles those writes for navigation requests.
+          // Server Component 并非总能直接写 Cookie；导航请求由 proxy 的刷新路径完成写回。
         }
       },
     },

@@ -1,25 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { readAssistantEventStream } from "@/lib/ai-assistant/assistant-event-stream";
-
-export type WholesaleOrderAssessmentFilters = {
-  customerId: string;
-  orderMonth: string;
-  orderedFromDate: string;
-  orderedToDate: string;
-  salesUserId: string;
-  searchText: string;
-  status: string;
-};
+import type { WholesaleOrderAssessmentFilters } from "@/lib/wholesale-order-assessment-types";
 
 export function useWholesaleOrderAssessment(
   filters: WholesaleOrderAssessmentFilters,
 ) {
   const [rawAssessment, setRawAssessment] = useState("");
   const [assessmentFilterKey, setAssessmentFilterKey] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [failed, setFailed] = useState(false);
   const [pending, setPending] = useState(false);
+  const inFlight = useRef(false);
   const filterKey = useMemo(() => JSON.stringify(filters), [filters]);
   const assessment = useMemo(
     () => sanitizeWholesaleAssessmentText(rawAssessment),
@@ -29,8 +21,11 @@ export function useWholesaleOrderAssessment(
     Boolean(assessment) && assessmentFilterKey !== filterKey;
 
   const generateAssessment = async () => {
+    // 连续点击可能先于按钮重新渲染，同步锁保证同一页面只发一次请求。
+    if (inFlight.current) return;
+    inFlight.current = true;
     setPending(true);
-    setErrorMessage("");
+    setFailed(false);
     setRawAssessment("");
     setAssessmentFilterKey(filterKey);
 
@@ -43,45 +38,28 @@ export function useWholesaleOrderAssessment(
         method: "POST",
       });
 
-      if (!response.ok) {
-        throw new Error(await readAssessmentErrorMessage(response));
-      }
-
-      if (!response.body) throw new Error("assessment_failed");
+      if (!response.ok || !response.body) throw new Error("assessment_failed");
       await readAssistantEventStream(response.body, (chunk) => {
         setRawAssessment((current) => `${current}${chunk}`);
       });
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error && error.message !== "assessment_failed"
-          ? error.message
-          : "评估暂时没有生成成功，请稍后再试。",
-      );
+    } catch {
+      // 只收到部分文字时，清除草稿，避免把没有完成凭证的输出留在结果区。
+      setRawAssessment("");
+      setFailed(true);
     } finally {
+      inFlight.current = false;
       setPending(false);
     }
   };
 
   return {
     assessment,
-    errorMessage,
+    failed,
     generateAssessment,
     hasStaleAssessment,
     pending,
   };
 }
-async function readAssessmentErrorMessage(response: Response) {
-  try {
-    const body = (await response.json()) as { message?: unknown };
-
-    return typeof body.message === "string" && body.message.trim()
-      ? body.message.trim()
-      : "assessment_failed";
-  } catch {
-    return "assessment_failed";
-  }
-}
-
 function sanitizeWholesaleAssessmentText(value: string) {
   return value
     .replace(/\r\n/g, "\n")

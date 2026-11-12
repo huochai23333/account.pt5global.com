@@ -20,6 +20,7 @@ import {
   isInvalidEmailAuthError,
   isSamePasswordAuthError,
   isTooFrequentAuthError,
+  isUnconfirmedPasswordUpdateAuthError,
   isUserNotFoundAuthError,
   isWeakPasswordAuthError,
 } from "./auth-error-messages";
@@ -143,10 +144,10 @@ export function useForgotPasswordViewModel({
         : undefined;
 
     try {
-      const { data, error: resetError } = await client.auth.resetPasswordForEmail(
-        normalizedEmail,
-        { redirectTo },
-      );
+      const { data, error: resetError } =
+        await client.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo,
+        });
       if (resetError) throw resetError;
       requireAuthRequestAccepted(data, "password_reset_request_invalid");
 
@@ -190,6 +191,7 @@ export function useForgotPasswordViewModel({
       return;
     }
 
+    let updateReceiptAccepted = false;
     try {
       const { data: updateData, error: updateError } =
         await client.auth.updateUser({ password });
@@ -197,6 +199,7 @@ export function useForgotPasswordViewModel({
       requireAuthUserReceipt(updateData, {
         errorMessage: "password_update_receipt_invalid",
       });
+      updateReceiptAccepted = true;
 
       const { error: signOutError } = await client.auth.signOut();
       if (signOutError) throw signOutError;
@@ -210,7 +213,13 @@ export function useForgotPasswordViewModel({
 
       startTransition(() => router.replace("/login?passwordReset=1"));
     } catch (updateError) {
-      setError(formatForgotPasswordError(updateError, t));
+      // 密码可能已改变；退出失败或回执丢失时先核对新密码，不能暗示重复提交就能恢复。
+      setError(
+        updateReceiptAccepted ||
+          isUnconfirmedPasswordUpdateAuthError(updateError)
+          ? t("passwordUpdateUnconfirmed")
+          : formatForgotPasswordError(updateError, t),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -256,10 +265,7 @@ export function useForgotPasswordViewModel({
   };
 }
 
-function formatForgotPasswordError(
-  error: unknown,
-  t: (key: string) => string,
-) {
+function formatForgotPasswordError(error: unknown, t: (key: string) => string) {
   if (isTooFrequentAuthError(error)) return t("tooFrequent");
   if (isWeakPasswordAuthError(error)) return t("weakPassword");
   if (isSamePasswordAuthError(error)) return t("samePassword");

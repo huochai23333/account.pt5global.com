@@ -1,3 +1,4 @@
+/** 待办编辑与删除确认共用文案和输入合同；按钮只调度回调，成功凭证由上层服务核对。 */
 "use client";
 
 import * as FormControls from "@/components/ui/form-controls";
@@ -15,10 +16,8 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import type { UserTodoItemRow } from "@/lib/user-todos";
 
-import type {
-  HomeTodoCopy,
-  HomeTodoFormState,
-} from "./dashboard-home-todo-display";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
+import type { HomeTodoFormState } from "./dashboard-home-todo-display";
 
 type HomeTodoDialogProps = {
   copy: HomeTodoCopy;
@@ -91,18 +90,14 @@ export function HomeTodoDialog({
           checked={formState.isImportant}
           data-testid="home-todo-dialog-important"
           label={copy.dialog.importantLabel}
-          onChange={(event) =>
-            onUpdateField("isImportant", event.target.checked)
-          }
+          onChange={(event) => onUpdateField("isImportant", event.target.checked)}
         />
 
         <FormControls.ChoiceField
           checked={formState.isCompleted}
           data-testid="home-todo-dialog-completed"
           label={copy.dialog.completedLabel}
-          onChange={(event) =>
-            onUpdateField("isCompleted", event.target.checked)
-          }
+          onChange={(event) => onUpdateField("isCompleted", event.target.checked)}
         />
       </div>
     </FormDialog>

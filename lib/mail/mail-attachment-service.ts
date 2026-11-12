@@ -11,7 +11,7 @@ import {
   scanAttachment,
   uploadEncryptedObject,
 } from "./mail-storage";
-import { assertThreadAccess, databaseError } from "./mail-service";
+import { assertThreadAccess, databaseError } from "./mail-thread-access";
 import type { MailIdentity } from "./mail-types";
 
 /** 附件上传、扫描和下载独立处理，下载仍需重新核对会话归属。 */

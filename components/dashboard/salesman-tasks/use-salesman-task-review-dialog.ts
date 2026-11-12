@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 
 import type { SalesmanTaskRow } from "@/lib/salesman-tasks";
@@ -8,11 +8,16 @@ import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   cancelTaskReviewSubmissionDraft,
   createTaskReviewSubmissionDraft,
-  removeStoredTaskReviewSubmissionAssets,
-  submitTaskReview,
+} from "@/lib/task-review-draft-mutations";
+import {
   uploadTaskReviewSubmissionAssets,
   validateTaskReviewSubmissionFiles,
-} from "@/lib/task-reviews";
+} from "@/lib/task-review-assets";
+import {
+  finalizeTaskReviewSubmission,
+  TaskReviewAttachmentCleanupError,
+  TaskReviewSubmissionUnconfirmedError,
+} from "@/lib/task-review-submission-flow";
 import { type FeedbackTone } from "@/components/dashboard/dashboard-shared-ui";
 import { toSalesmanTaskErrorMessage } from "@/components/dashboard/tasks/tasks-display";
 
@@ -37,6 +42,7 @@ export function useSalesmanTaskReviewDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [feedback, setFeedback] = useState<PageFeedback>(null);
   const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
   const reset = useCallback(() => {
     setOpen(false);
@@ -61,13 +67,13 @@ export function useSalesmanTaskReviewDialog({
         setOpen(true);
         return;
       }
-      reset();
+      if (!submitting.current) reset();
     },
     [reset],
   );
 
   const submit = useCallback(async () => {
-    if (!supabase || !task || !viewerId || pending) return;
+    if (!supabase || !task || !viewerId || submitting.current) return;
 
     try {
       validateTaskReviewSubmissionFiles(files, {
@@ -81,30 +87,37 @@ export function useSalesmanTaskReviewDialog({
       return;
     }
 
+    // 即使 React 尚未来得及更新按钮，也只能创建一份提审草稿。
+    submitting.current = true;
     setPending(true);
     setFeedback(null);
     setPageFeedback(null);
-    let draftId: string | null = null;
-    let uploadedAssets: Array<{
-      bucket_name: string;
-      task_attachment_storage_path: string;
-    }> = [];
-
     try {
       const draft = await createTaskReviewSubmissionDraft(supabase, {
         acceptanceId: task.id,
         submissionNote: note,
       });
-      draftId = draft.id;
-      uploadedAssets = await uploadTaskReviewSubmissionAssets(supabase, {
+      // 校验归属后才可使用返回的编号上传附件或取消草稿。
+      if (draft.acceptance_id !== task.id || draft.submitted_by_user_id !== viewerId || draft.status !== "draft") {
+        throw new TaskReviewSubmissionUnconfirmedError();
+      }
+      const assets = await uploadTaskReviewSubmissionAssets(supabase, {
         submissionId: draft.id,
         uploadedByUserId: viewerId,
         files,
         requireFiles: task.review_requires_attachment,
+      }).catch(async (error: unknown) => {
+        // 上传阶段尚未提交。上传函数处理已登记文件，取消只针对这份草稿。
+        await cancelTaskReviewSubmissionDraft(supabase, draft.id).catch(() => {
+          throw new TaskReviewSubmissionUnconfirmedError();
+        });
+        throw error;
       });
-      await submitTaskReview(supabase, {
+      await finalizeTaskReviewSubmission(supabase, {
         acceptanceId: task.id,
         submissionId: draft.id,
+        viewerId,
+        assets,
       });
 
       const wasRejected = task.status === "rejected";
@@ -115,25 +128,23 @@ export function useSalesmanTaskReviewDialog({
       });
       refreshTaskBoard();
     } catch (error) {
-      if (uploadedAssets.length > 0) {
-        try {
-          await removeStoredTaskReviewSubmissionAssets(supabase, uploadedAssets);
-        } catch {
-          // 文件回滚是尽力执行；原始提交错误仍需优先反馈给用户。
-        }
+      if (error instanceof TaskReviewSubmissionUnconfirmedError || error instanceof TaskReviewAttachmentCleanupError) {
+        reset();
+        setPageFeedback({
+          tone: "error",
+          message: t(error instanceof TaskReviewAttachmentCleanupError
+            ? "feedback.reviewCleanupIncomplete"
+            : "feedback.reviewUnconfirmed"),
+        });
+        refreshTaskBoard();
+      } else {
+        setFeedback({ tone: "error", message: toSalesmanTaskErrorMessage(error, sharedT) });
       }
-      if (draftId) {
-        try {
-          await cancelTaskReviewSubmissionDraft(supabase, draftId);
-        } catch {
-          // 草稿回滚失败不覆盖原始错误，后续数据库清理可以继续处理该草稿。
-        }
-      }
-      setFeedback({ tone: "error", message: toSalesmanTaskErrorMessage(error, sharedT) });
     } finally {
+      submitting.current = false;
       setPending(false);
     }
-  }, [files, note, pending, refreshTaskBoard, reset, setPageFeedback, sharedT, supabase, t, task, viewerId]);
+  }, [files, note, refreshTaskBoard, reset, setPageFeedback, sharedT, supabase, t, task, viewerId]);
 
   return { feedback, files, note, onOpenChange, open, openForTask, pending, setFiles, setNote, submit, task };
 }

@@ -1,16 +1,34 @@
-import {spawn} from "node:child_process";
-import {readLocalEnvValue} from "./local-supabase-admin";
-/** 在本地持有真实目录事务锁，使服务端等待；关闭连接自动释放，不把浏览器拦截器当成网络超时。 */
-export async function holdDocumentWrites(draftId?:string){
- if(!/^http:\/\/(127\.0\.0\.1|localhost):54321$/.test(readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL")??""))throw new Error("local_docker_required");
- const process=spawn("docker",["exec","-i","supabase_db_pt5-dropshipping","psql","-U","postgres","-d","postgres","-qAt"],{stdio:["pipe","pipe","pipe"]});
- await new Promise<void>((resolve,reject)=>{
-  const timeout=setTimeout(()=>{process.stdin.end();reject(new Error("local_lock_timeout"));},10000);
-  process.once("error",error=>{clearTimeout(timeout);reject(error);});
-  process.stdout.on("data",data=>{if(String(data).includes("document-test-ready")){clearTimeout(timeout);resolve();}});
-  if(draftId&&!/^[a-f0-9-]{36}$/i.test(draftId))throw new Error("invalid_local_fixture");
-  const lock=draftId?`begin;select id from public.company_template_document_drafts where id='${draftId}'::uuid for update;`:"select pg_advisory_lock(hashtextextended('document-explorer-tree',0));";
-  process.stdin.write(lock+"select 'document-test-ready';\n");
- });
- return async()=>{const closed=new Promise<void>(resolve=>process.once("close",()=>resolve()));process.stdin.end();await closed;};
+import { execFileSync, spawn } from "node:child_process";
+
+import { holdPostgresDocumentLock } from "../../test-support/postgres-document-lock";
+import { readDisposablePostgresTarget } from "../../test-support/disposable-fixture";
+
+/** 锁会阻塞整组文档操作，仅允许同一专属项目；本模块不加载认证入口，也不回退到共享数据库。 */
+export function requireDocumentFixtureDatabase() {
+  return readDisposablePostgresTarget({
+    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    mode: process.env.PT5_E2E_FIXTURE_MODE,
+    project: process.env.PT5_E2E_DATABASE_PROJECT,
+    container: process.env.PT5_E2E_DATABASE_CONTAINER,
+  }, args => execFileSync("docker", args, { encoding: "utf8", timeout: 8000, windowsHide: true }));
+}
+
+/** 只接收测试构造的SQL；全局触发器/岗位夹具必须在专属库，禁止传入页面输入。 */
+export function runDocumentFixtureSql(statement: string) {
+  const container = requireDocumentFixtureDatabase();
+  return execFileSync("docker", ["exec", "-i", "-e", "PGOPTIONS=-c statement_timeout=12000 -c lock_timeout=10000",
+    container, "psql", "-U", "postgres", "-d", "postgres", "-qAt", "-v", "ON_ERROR_STOP=1",
+  ], { input: statement, encoding: "utf8", timeout: 15000, windowsHide: true });
+}
+
+export async function holdDocumentWrites(draftId?: string) {
+  const container = requireDocumentFixtureDatabase();
+  return holdPostgresDocumentLock({
+    draftId,
+    startProcess: () => spawn("docker", [
+      "exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres",
+      "-qAt", "-v", "ON_ERROR_STOP=1",
+    ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true }),
+  });
 }

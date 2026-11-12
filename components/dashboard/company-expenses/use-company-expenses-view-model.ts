@@ -7,11 +7,9 @@ import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-pr
 
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import {
-  createCompanyExpense,
   deleteCompanyExpense,
   getCompanyExpensesPageData,
   sortCompanyExpenses,
-  updateCompanyExpense,
   type CompanyExpenseCategory,
   type CompanyExpensesPageData,
   type CompanyExpenseRow,
@@ -21,20 +19,17 @@ import { normalizeSearchText } from "@/lib/value-normalizers";
 
 import type { FeedbackTone } from "../dashboard-shared-ui";
 import { useWorkspaceSyncEffect } from "../workspace-session-provider";
-import {
-  createCompanyExpenseFormFromRow,
-  createEmptyCompanyExpenseForm,
-  getCompanyExpenseMonthValue,
-  toCompanyExpenseErrorMessage,
-  toCompanyExpenseInput,
-  type CompanyExpenseFormState,
-} from "./company-expenses-display";
+import { getCompanyExpenseMonthValue } from "./company-expenses-display";
+import { toCompanyExpenseErrorMessage } from "./company-expenses-form";
+import { useCompanyExpenseEditor } from "./use-company-expense-editor";
 
 type Feedback = { tone: FeedbackTone; message: string } | null;
 type PendingAction = { id: string; type: "delete" } | null;
 
 type CompanyExpensesViewModelCopy = {
   createSuccess: string;
+  createDifferent: string;
+  createUnconfirmed: string;
   deleteConfirm: (title: string) => string;
   deleteSuccess: string;
   invalidAmount: string;
@@ -62,19 +57,11 @@ export function useCompanyExpensesViewModel({
   const [expenses, setExpenses] = useState(initialData.expenses);
   const [hasPermission, setHasPermission] = useState(initialData.hasPermission);
   const [pageFeedback, setPageFeedback] = useState<Feedback>(null);
-  const [dialogFeedback, setDialogFeedback] = useState<Feedback>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingExpense, setEditingExpense] =
-    useState<CompanyExpenseRow | null>(null);
-  const [formState, setFormState] = useState<CompanyExpenseFormState>(() =>
-    createEmptyCompanyExpenseForm(),
-  );
   const [monthFilter, setMonthFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] =
     useState<CompanyExpenseCategory | "all">("all");
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [submitPending, setSubmitPending] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const applyPageData = useCallback((pageData: CompanyExpensesPageData) => {
@@ -163,92 +150,14 @@ export function useCompanyExpensesViewModel({
     setSearchQuery("");
   }, []);
 
-  const openCreateDialog = useCallback(() => {
-    setEditingExpense(null);
-    setFormState(createEmptyCompanyExpenseForm());
-    setDialogFeedback(null);
-    setDialogOpen(true);
-  }, []);
-
-  const openEditDialog = useCallback((expense: CompanyExpenseRow) => {
-    setEditingExpense(expense);
-    setFormState(createCompanyExpenseFormFromRow(expense));
-    setDialogFeedback(null);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogOpenChange = useCallback((open: boolean) => {
-    setDialogOpen(open);
-
-    if (!open) {
-      setDialogFeedback(null);
-    }
-  }, []);
-
-  const updateFormField = useCallback(
-    <Key extends keyof CompanyExpenseFormState>(
-      field: Key,
-      value: CompanyExpenseFormState[Key],
-    ) => {
-      setFormState((current) => ({
-        ...current,
-        [field]: value,
-      }));
-    },
-    [],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (!supabase || submitPending) {
-      return;
-    }
-
-    let input;
-
-    try {
-      input = toCompanyExpenseInput(formState, copy);
-    } catch (error) {
-      setDialogFeedback({
-        tone: "error",
-        message: toCompanyExpenseErrorMessage(error, copy),
-      });
-      return;
-    }
-
-    setSubmitPending(true);
-    setDialogFeedback(null);
-
-    try {
-      const savedExpense = editingExpense
-        ? await updateCompanyExpense(supabase, editingExpense.id, input)
-        : await createCompanyExpense(supabase, input);
-
-      markBrowserCloudSyncActivity();
-      setExpenses((current) =>
-        sortCompanyExpenses(
-          editingExpense
-            ? current.map((item) =>
-                item.id === savedExpense.id ? savedExpense : item,
-              )
-            : [savedExpense, ...current],
-        ),
-      );
-      setPageFeedback({
-        tone: "success",
-        message: editingExpense ? copy.updateSuccess : copy.createSuccess,
-      });
-      setDialogOpen(false);
-      setEditingExpense(null);
-      setFormState(createEmptyCompanyExpenseForm());
-    } catch (error) {
-      setDialogFeedback({
-        tone: "error",
-        message: toCompanyExpenseErrorMessage(error, copy),
-      });
-    } finally {
-      setSubmitPending(false);
-    }
-  }, [copy, editingExpense, formState, submitPending, supabase]);
+  const editor = useCompanyExpenseEditor(supabase, copy, (saved, editing) => {
+    markBrowserCloudSyncActivity();
+    setExpenses((current) => sortCompanyExpenses(editing
+      ? current.map((item) => item.id === saved.id ? saved : item)
+      : [saved, ...current.filter((item) => item.id !== saved.id)],
+    ));
+    setPageFeedback({ tone: "success", message: editing ? copy.updateSuccess : copy.createSuccess });
+  });
 
   const handleDelete = useCallback(
     async (expense: CompanyExpenseRow) => {
@@ -290,22 +199,15 @@ export function useCompanyExpensesViewModel({
   );
 
   return {
+    ...editor,
     categoryFilter,
     currencyFilter,
     currencyOptions,
-    dialogFeedback,
-    dialogOpen,
-    editingExpense,
     filteredExpenses,
-    formState,
     hasPermission,
     handleDelete,
-    handleDialogOpenChange,
-    handleSubmit,
     monthFilter,
     monthOptions,
-    openCreateDialog,
-    openEditDialog,
     pageFeedback,
     pendingAction,
     resetFilters,
@@ -314,7 +216,5 @@ export function useCompanyExpensesViewModel({
     setCurrencyFilter,
     setMonthFilter,
     setSearchQuery,
-    submitPending,
-    updateFormField,
   };
 }

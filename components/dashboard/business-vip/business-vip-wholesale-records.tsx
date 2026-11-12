@@ -16,9 +16,8 @@ import type { Locale } from "@/lib/locale";
 import {
   formatBusinessVipAmount,
   formatBusinessVipDate,
-  getBusinessVipOperationRecords,
-  type BusinessVipOperationRecord,
 } from "./business-vip-display";
+import { getBusinessVipOperationRecords, type BusinessVipOperationRecord } from "./business-vip-record-projection";
 
 export function BusinessVipWholesaleRecordTable({
   locale,

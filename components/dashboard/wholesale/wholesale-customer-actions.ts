@@ -1,46 +1,61 @@
 "use client";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
-import { addClientToBusiness } from "@/lib/client-business-access";
 
 import {
   optionalString,
   requiredString,
   splitList,
+  toWholesaleActionErrorMessage,
 } from "./wholesale-action-utils";
 import {
   addWholesaleCustomerOtherNames,
   deleteWholesaleCustomer,
   updateWholesaleCustomer,
 } from "./wholesale-customer-mutations";
+import type { RunWholesaleAction } from "./use-wholesale-action-runner";
 
-type RunAction = (
-  key: string,
-  successMessage: string,
-  action: () => Promise<void>,
+export type SubmitWholesaleCustomerForm = (
+  formData: FormData,
+  onError?: (message: string) => void,
+) => boolean | Promise<boolean>;
+
+export type DeleteWholesaleCustomerAction = (
+  customerId: string,
+  onError: (message: string) => void,
 ) => Promise<boolean>;
 
+const deleteErrorKeys = {
+  document_customer_has_files: "deleteHasDocuments",
+  wholesale_customer_delete_has_orders: "deleteHasOrders",
+  wholesale_customer_delete_has_sales_lead: "deleteHasLead",
+  wholesale_customer_forbidden: "deleteForbidden",
+  wholesale_customer_not_found: "deleteUnconfirmed",
+} as const;
+
+export type CustomerDeleteFeedbackKey =
+  | (typeof deleteErrorKeys)[keyof typeof deleteErrorKeys]
+  | "deleteFailed";
+
 export function createWholesaleCustomerActions({
-  addRegisteredCustomerSuccessMessage,
+  recordFeedback,
+  deleteFeedback,
+  aliasFeedback,
   runAction,
 }: {
-  addRegisteredCustomerSuccessMessage: string;
-  runAction: RunAction;
+  recordFeedback: {
+    created: string;
+    updated: string;
+    deleted: string;
+    editConflict: string;
+    editUnconfirmed: string;
+  };
+  deleteFeedback: (key: CustomerDeleteFeedbackKey) => string;
+  aliasFeedback: { saved: string; alreadyPresent: string; failed: string };
+  runAction: RunWholesaleAction;
 }) {
-  const addRegisteredCustomer = (userId: string) =>
-    runAction(
-      `customer:add-business:${userId}`,
-      addRegisteredCustomerSuccessMessage,
-      async () => {
-        const supabase = getBrowserSupabaseClient();
-        if (!supabase) throw new Error("client unavailable");
-
-        await addClientToBusiness(supabase, userId, "wholesale");
-      },
-    );
-
   const createCustomer = (formData: FormData) =>
-    runAction("customer:create", "批发客户已保存。", async () => {
+    runAction("customer:create", recordFeedback.created, async () => {
       const supabase = getBrowserSupabaseClient();
       if (!supabase) throw new Error("client unavailable");
 
@@ -62,93 +77,89 @@ export function createWholesaleCustomerActions({
         .select("id")
         .maybeSingle<{ id: string }>();
       if (error) throw error;
-      if (!data) throw new Error("批发客户没有保存成功。");
+      // 插入必须返回新档案编号，空响应不能关闭表单。
+      if (!data?.id) throw new Error("wholesale_customer_create_receipt_missing");
     });
 
-  const updateCustomer = (formData: FormData) => {
+  const updateCustomer = (formData: FormData, onError?: (message: string) => void) => {
     const customerId = requiredString(formData.get("customer_id"));
 
     return runAction(
       `customer:update:${customerId}`,
-      "客户信息已更新。",
+      recordFeedback.updated,
       async () => {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
         await updateWholesaleCustomer(supabase, formData);
       },
+      {
+        onError,
+        getErrorMessage: (error) => {
+          if (typeof error === "object" && error !== null && "code" in error) {
+            if (error.code === "PT409") return recordFeedback.editConflict;
+            // 请求失联时可能已经写入，指导用户核对当前资料再决定是否重试。
+            if (error.code === "") return recordFeedback.editUnconfirmed;
+          }
+          return toWholesaleActionErrorMessage(error);
+        },
+      },
     );
   };
 
-  const deleteCustomer = (customerId: string) =>
+  const deleteCustomer: DeleteWholesaleCustomerAction = (customerId, onError) =>
     runAction(
       `customer:delete:${customerId}`,
-      "客户已删除。",
+      recordFeedback.deleted,
       async () => {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
         await deleteWholesaleCustomer(supabase, customerId);
       },
-    );
-
-  const linkCustomerAccount = (formData: FormData) => {
-    const customerId = requiredString(formData.get("customer_id"));
-
-    return runAction(
-      `customer:link-account:${customerId}`,
-      "批发客户和注册账号已合并。",
-      async () => {
-        const supabase = getBrowserSupabaseClient();
-        if (!supabase) throw new Error("client unavailable");
-
-        const registeredUserId = requiredString(
-          formData.get("registered_user_id"),
-        );
-        const { data, error } = await supabase.rpc(
-          "link_wholesale_customer_registered_user",
-          {
-            p_customer_id: customerId,
-            p_registered_user_id: registeredUserId,
-          },
-        );
-
-        if (error) throw error;
-        if (
-          typeof data !== "object"
-          || data === null
-          || !("id" in data)
-          || data.id !== customerId
-          || !("registered_user_id" in data)
-          || data.registered_user_id !== registeredUserId
-        ) {
-          throw new Error("客户账号关联结果没有确认，请刷新后重试。");
-        }
+      {
+        onError,
+        getErrorMessage: (error) => {
+          if (typeof error === "object" && error !== null) {
+            // 已知数据库保护条件各有处理提示。断线时必须先刷新确认档案还在不在。
+            if ("code" in error && error.code === "") return deleteFeedback("deleteUnconfirmed");
+            if ("message" in error && typeof error.message === "string" && Object.hasOwn(deleteErrorKeys, error.message)) {
+              return deleteFeedback(deleteErrorKeys[error.message as keyof typeof deleteErrorKeys]);
+            }
+          }
+          return deleteFeedback("deleteFailed");
+        },
       },
     );
-  };
 
   const addCustomerOtherName = (formData: FormData) => {
     const customerId = requiredString(formData.get("customer_id"));
 
     return runAction(
       `customer:add-other-name:${customerId}`,
-      "客户其他名称已保存。",
+      aliasFeedback.saved,
       async () => {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
-        await addWholesaleCustomerOtherNames(supabase, formData);
+        // 重复名称不改数据库版本，单独提示用户核对已有名称。
+        if (!(await addWholesaleCustomerOtherNames(supabase, formData))) {
+          throw new Error("wholesale_customer_alias_already_present");
+        }
+      },
+      {
+        getErrorMessage: (error) =>
+          error instanceof Error && error.message === "wholesale_customer_alias_already_present"
+            ? aliasFeedback.alreadyPresent
+            : aliasFeedback.failed,
       },
     );
   };
 
   return {
     addCustomerOtherName,
-    addRegisteredCustomer,
     createCustomer,
     deleteCustomer,
-    linkCustomerAccount,
     updateCustomer,
   };
 }

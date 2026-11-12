@@ -108,8 +108,7 @@ export function useSupabaseAuthSync(
             return;
           }
 
-          // Supabase recommends deferring follow-up work outside the auth callback
-          // so nested auth reads do not compete for the same token lock.
+          // 后续任务延迟到 Auth 回调之外，避免嵌套身份读取争用同一令牌锁而互相等待。
           const timerId = globalThis.setTimeout(() => {
             pendingTimers.delete(timerId);
 

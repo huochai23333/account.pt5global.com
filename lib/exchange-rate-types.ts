@@ -87,10 +87,7 @@ export type ManualExchangeRateFetchResult = {
   outcome: string;
 };
 
-export type HistoricalExchangeRateFetchStatus =
-  | "inserted"
-  | "skipped"
-  | "failed";
+export type HistoricalExchangeRateFetchStatus = "inserted" | "skipped" | "failed";
 
 export type HistoricalExchangeRateFetchInput = {
   baseCurrencies: string[];

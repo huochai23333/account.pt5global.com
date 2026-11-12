@@ -111,25 +111,52 @@ export async function getCompanyExpensesPageData(
 
 export async function createCompanyExpense(
   supabase: SupabaseClient,
+  draft: { id: string; actorId: string },
   input: CompanyExpenseFormInput,
 ) {
-  const { data, error } = await withRequestTimeout(
+  const payload = toCompanyExpensePayload(input);
+  // 同一草稿沿用同一主键。上次提交已完成时，主键冲突也不会生成第二条费用。
+  const { data, error, status } = await withRequestTimeout(
     supabase
       .from("company_expenses")
-      .insert(toCompanyExpensePayload(input))
+      .insert({ id: draft.id, ...payload })
+      .select("id")
+      .maybeSingle<{ id: string }>(),
+  ).catch(() => ({ data: null, error: null, status: 0 }));
+
+  const code = error?.code ?? "";
+  const rejected = /^(22\d{3}|23\d{3}|42501|PGRST30[12])$/.test(code) && code !== "23505";
+  if (status >= 400 && status < 500 && rejected) {
+    // 只把数据库明确拒绝的错误当作未写入。代理超时或未知响应仍然需要核对。
+    throw new CompanyExpenseCreateRejected(code === "42501" ? "permission denied" : "");
+  }
+
+  // 成功响应、断线和重复主键都要读同一记录。创建人由数据库以当前会话填写。
+  const receipt = await withRequestTimeout(
+    supabase.from("company_expenses")
       .select(COMPANY_EXPENSE_SELECT)
+      .eq("id", draft.id)
+      .eq("created_by_user_id", draft.actorId)
       .maybeSingle<CompanyExpenseDatabaseRow>(),
-  );
-
-  if (error) {
-    throw error;
+  ).catch(() => null);
+  const row = receipt?.data;
+  if (receipt?.error || !row || row.id !== draft.id || (data && data.id !== row.id)) {
+    throw new Error(companyExpenseCreateUnconfirmed);
   }
+  const matches = Object.entries(payload).every(([key, value]) => (
+    key === "amount" ? Number(row.amount) === value : row[key as keyof typeof payload] === value
+  ));
+  if (!matches) throw new Error(companyExpenseCreateDifferent);
 
-  if (!data) {
-    throw new Error("Company expense was not created.");
-  }
+  return normalizeCompanyExpenseRow(row);
+}
 
-  return normalizeCompanyExpenseRow(data);
+export const companyExpenseCreateUnconfirmed = "company_expense_create_unconfirmed";
+export const companyExpenseCreateDifferent = "company_expense_create_different";
+export class CompanyExpenseCreateRejected extends Error {}
+
+export function getCompanyExpenseDraftKey(input: CompanyExpenseFormInput) {
+  return JSON.stringify(toCompanyExpensePayload(input));
 }
 
 export async function updateCompanyExpense(

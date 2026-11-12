@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -17,13 +17,14 @@ import { type getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   parseTaskAcceptanceLimitInput,
   parseTaskCommissionAmountInput,
-  toAdminTaskErrorMessage,
   validateTaskDraft,
-} from "@/components/dashboard/tasks/tasks-display";
+} from "@/components/dashboard/tasks/task-form-validation";
+import { toAdminTaskErrorMessage } from "@/components/dashboard/tasks/tasks-display";
 
 import {
   createEmptyTaskForm,
-  formatOptionalTaskCommissionInput,
+  changeTaskFormType,
+  toggleTaskTargetRole,
   type CreateTaskFormState,
 } from "./admin-tasks-utils";
 import { type PageFeedbackValue } from "./admin-tasks-view-model-shared";
@@ -50,6 +51,7 @@ export function useAdminTaskCreateDialog({
     null,
   );
   const [createPending, setCreatePending] = useState(false);
+  const creating = useRef(false);
   const [createFormState, setCreateFormState] = useState<CreateTaskFormState>(
     () => createEmptyTaskForm(taskTypeOptions),
   );
@@ -84,40 +86,13 @@ export function useAdminTaskCreateDialog({
   const handleCreateTargetRoleToggle = useCallback((role: TaskTargetRole) => {
     setCreateFormState((current) => ({
       ...current,
-      targetRoles: current.targetRoles.includes(role)
-        ? current.targetRoles.filter((targetRole) => targetRole !== role)
-        : [...current.targetRoles, role],
+      targetRoles: toggleTaskTargetRole(current.targetRoles, role),
     }));
   }, []);
 
   const handleCreateTaskTypeChange = useCallback(
     (taskTypeCode: string) => {
-      setCreateFormState((current) => {
-        const currentType = taskTypeOptions.find(
-          (taskType) => taskType.code === current.taskTypeCode,
-        );
-        const nextType =
-          taskTypeOptions.find((taskType) => taskType.code === taskTypeCode) ?? null;
-        const currentDefault =
-          currentType !== undefined
-            ? formatOptionalTaskCommissionInput(currentType.defaultCommissionAmountRmb)
-            : "";
-        const nextDefault =
-          nextType !== null
-            ? formatOptionalTaskCommissionInput(nextType.defaultCommissionAmountRmb)
-            : "";
-        const shouldReplaceCommission =
-          current.commissionAmount.trim().length === 0
-          || current.commissionAmount === currentDefault;
-
-        return {
-          ...current,
-          taskTypeCode,
-          commissionAmount: shouldReplaceCommission
-            ? nextDefault
-            : current.commissionAmount,
-        };
-      });
+      setCreateFormState((current) => changeTaskFormType(current, taskTypeCode, taskTypeOptions));
     },
     [taskTypeOptions],
   );
@@ -137,7 +112,7 @@ export function useAdminTaskCreateDialog({
   }, []);
 
   const handleCreateTask = useCallback(async () => {
-    if (!supabase || !viewerId || !canView || createPending) {
+    if (!supabase || !viewerId || !canView || creating.current) {
       return;
     }
 
@@ -161,6 +136,8 @@ export function useAdminTaskCreateDialog({
       return;
     }
 
+    // 同一次表单保存只创建一条任务，避免同一帧的点击重复发布。
+    creating.current = true;
     setCreatePending(true);
     setCreateDialogFeedback(null);
 
@@ -186,13 +163,16 @@ export function useAdminTaskCreateDialog({
             files: createFormState.files,
           });
         } catch (error) {
-          try {
-            await deleteAdminTask(supabase, {
-              id: createdTask.id,
-              attachments: [],
-            });
-          } catch {
-            // Ignore rollback cleanup failure here; surface the original upload error first.
+          const rollback = await deleteAdminTask(supabase, {
+            id: createdTask.id,
+            attachments: [],
+          }).catch(() => null);
+          if (rollback?.status !== "deleted") {
+            // 任务可能仍存在，回列表核对后再创建，避免直接再发布一份。
+            setCreateDialogOpen(false);
+            onPageFeedback({ tone: "error", message: t("feedback.createCleanupUnconfirmed") });
+            refreshTaskBoard();
+            return;
           }
 
           throw error;
@@ -215,9 +195,10 @@ export function useAdminTaskCreateDialog({
         message: toAdminTaskErrorMessage(error, sharedT),
       });
     } finally {
+      creating.current = false;
       setCreatePending(false);
     }
-  }, [canView, createFormState, createPending, onPageFeedback, refreshTaskBoard, sharedT, supabase, t, taskTypeOptions, viewerId]);
+  }, [canView, createFormState, onPageFeedback, refreshTaskBoard, sharedT, supabase, t, taskTypeOptions, viewerId]);
 
   return {
     createDialogFeedback,

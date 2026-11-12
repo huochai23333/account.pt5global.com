@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
 
+// 这里只核对管理员的导航及页面入口；菜单可见不等于数据库审核写入权限通过。
 test.describe("global review center entrypoint", () => {
   test("administrator review center is a global desktop navigation item", async ({
     page,

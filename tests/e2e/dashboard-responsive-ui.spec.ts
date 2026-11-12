@@ -1,9 +1,19 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 
 import { loginAs } from "./helpers/auth";
 import { chooseSelectOption } from "./helpers/select-control";
 
 test.describe("工作台分阶段视觉升级", () => {
+  test.beforeEach(({ baseURL }) => {
+    // 固定角色登录可能保存阅读记录，首页也会读取/维护本人数据；视觉检查先确认专属实例。
+    readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+      execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
+  });
+
   test("首页按 1280px 分界自动排列并保留桌面编辑", async ({ page }) => {
     await loginAs(page, "administrator");
 
@@ -121,10 +131,19 @@ test.describe("工作台分阶段视觉升级", () => {
         }
 
         function luminance(color: string) {
-          const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [];
-          const values = channels.map((channel) => {
+          // 主题可能返回oklch/color()，不能把前三个数字当RGB；交给浏览器转成sRGB像素。
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 1;
+          const context = canvas.getContext("2d", { colorSpace: "srgb", willReadFrequently: true });
+          if (!context || !CSS.supports("color", color)) throw new Error("无法核对头像颜色");
+          context.fillStyle = color;
+          context.fillRect(0, 0, 1, 1);
+          const rgba = context.getImageData(0, 0, 1, 1, { colorSpace: "srgb" }).data;
+          // 此处头像使用实色；透明背景需要另核对真实底色，不能默认为黑或白来凑对比度。
+          if (rgba[3] !== 255) throw new Error("头像颜色不是可独立测量的实色");
+          const values = Array.from(rgba.slice(0, 3)).map((channel) => {
             const normalized = channel / 255;
-            return normalized <= 0.03928
+            return normalized <= 0.04045
               ? normalized / 12.92
               : ((normalized + 0.055) / 1.055) ** 2.4;
           });
@@ -306,6 +325,8 @@ async function expectTouchTarget(locator: Locator, minimum: number) {
 }
 
 async function expectNoClippedHomeWidgets(page: Page) {
+  // 数据尚未出现时空数组也会通过旧断言，必须先看到真实卡片再测量裁切。
+  await expect(page.getByTestId("home-widget-card").filter({ visible: true }).first()).toBeVisible();
   const clippedWidgets = await page
     .locator('[data-testid="home-widget-card"]')
     .evaluateAll((elements) =>

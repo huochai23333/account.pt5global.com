@@ -1,21 +1,22 @@
 "use client";
 
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { requireMutationId, requireMutationRecord } from "@/lib/mutation-receipts";
+import {
+  clearSettlementReleaseAllocations,
+  type SettlementReleaseClearSubmission,
+} from "@/lib/wholesale-settlement-release-clear";
 import {
   parseOperationRequestReceipt,
   requireSucceededOperationRun,
   waitForOperationTerminal,
 } from "@/lib/operation-runs";
 
-import {
-  optionalString,
-  positiveNumber,
-  requiredString,
-} from "./wholesale-action-utils";
 import { useWholesaleActionRunner } from "./use-wholesale-action-runner";
+import { useWholesaleSettlementReleasePublication } from "./use-wholesale-settlement-release-publication";
 
 export type SettlementReleaseAllocationSubmission = {
   allocations: Array<{ amount: number; order_id: string }>;
@@ -24,33 +25,12 @@ export type SettlementReleaseAllocationSubmission = {
   releaseId: string;
 };
 
-export function useWholesaleSettlementReleaseActions() {
+export function useWholesaleSettlementReleaseActions(currentUserId: string | null) {
+  const t = useTranslations("UiText.components_dashboard_wholesale_wholesale_settlement_release_allocation_dialog");
   // 结汇发布与批发页面使用同一个成功契约，避免这里再次维护一套容易走偏的反馈逻辑。
   const { feedback, pendingKey, runAction } = useWholesaleActionRunner();
 
-  const createRelease = useCallback(
-    (formData: FormData) =>
-      runAction("settlement-release:create", "结汇收款已发布。", async () => {
-        const supabase = getBrowserSupabaseClient();
-        if (!supabase) throw new Error("client unavailable");
-
-        const { data, error } = await supabase.rpc(
-          "create_wholesale_settlement_release",
-          {
-            p_customer_id: optionalString(formData.get("customer_id")),
-            p_customer_name: optionalString(formData.get("customer_name")),
-            p_note: optionalString(formData.get("note")),
-            p_received_on: requiredString(formData.get("received_on")),
-            p_release_amount: positiveNumber(formData.get("release_amount")),
-            p_release_currency: requiredString(formData.get("release_currency")),
-          },
-        );
-
-        if (error) throw error;
-        requireMutationId(data, "结汇收款没有返回发布编号。");
-      }),
-    [runAction],
-  );
+  const publication = useWholesaleSettlementReleasePublication(currentUserId, runAction);
 
   const cancelRelease = useCallback(
     (releaseId: string) =>
@@ -128,40 +108,38 @@ export function useWholesaleSettlementReleaseActions() {
   );
 
   const clearAllocations = useCallback(
-    (releaseId: string, expectedRevision: number) =>
+    (submission: SettlementReleaseClearSubmission, onError: (message: string) => void) =>
       runAction(
-        `settlement-release:clear:${releaseId}`,
-        "这笔收款的订单分配已清空。",
+        `settlement-release:clear:${submission.releaseId}`,
+        t("clearSuccess"),
         async () => {
           const supabase = getBrowserSupabaseClient();
-          if (!supabase) throw new Error("client unavailable");
-
-          const { data, error } = await supabase.rpc(
-            "clear_wholesale_settlement_release_allocations",
-            {
-              p_expected_revision: expectedRevision,
-              p_release_id: releaseId,
-            },
-          );
-
-          if (error) throw error;
-          const receipt = requireMutationRecord(data, "结汇分配没有确认清空。");
-          if (receipt.release_id !== releaseId || receipt.status !== "pending") {
-            throw new Error("清空结果与当前收款不一致，请刷新后核对。");
-          }
+          if (!supabase || !currentUserId) throw new Error("client unavailable");
+          await clearSettlementReleaseAllocations(supabase, submission, currentUserId);
         },
+        { onError, getErrorMessage: (error) => t(clearErrorKey(error)) },
       ),
-    [runAction],
+    [currentUserId, runAction, t],
   );
 
   return {
     cancelRelease,
     clearAllocations,
-    createRelease,
+    publication,
     feedback,
     pendingKey,
     saveAllocations,
   };
+}
+
+function clearErrorKey(error: unknown) {
+  const message = error && typeof error === "object" && "message" in error
+    ? String(error.message)
+    : "";
+  if (message.includes("clear_unconfirmed")) return "clearUnconfirmed";
+  if (message.includes("revision_conflict")) return "clearRevisionChanged";
+  if (message.includes("commission_already_paid")) return "clearCommissionPaid";
+  return "clearFailed";
 }
 
 function saveSettlementAllocations(

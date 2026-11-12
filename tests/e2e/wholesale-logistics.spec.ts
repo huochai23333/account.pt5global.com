@@ -1,5 +1,12 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./helpers/logistics-assignment-case";
+import {
+  expectResponsiveLayout,
+  isolateSourceRefresh,
+  waitForPagingResponse,
+  readRenderedPagingRows,
+} from "./helpers/logistics-page-assertions";
 
 import {
   expectForbiddenPage,
@@ -12,12 +19,17 @@ import {
   expectSelectValue,
 } from "./helpers/select-control";
 
-import { assertLogisticsPaging, validateLogisticsFixture, type LogisticsPagingRow } from "./helpers/logistics-paging-oracle";
+import {
+  assertLogisticsPaging,
+  validateLogisticsFixture,
+} from "./helpers/logistics-paging-oracle";
 
 test.describe.configure({ mode: "serial" });
 
 // 本文件验收已有档案的查询/归属；外部同步写入由专用同步用例完成，避免本地 cron 重试外发。
-test.beforeEach(async ({ page }) => { await isolateSourceRefresh(page); });
+test.beforeEach(async ({ page }) => {
+  await isolateSourceRefresh(page);
+});
 
 test.describe("店小秘物流永久档案", () => {
   test("管理员可筛选业务员、店铺、日期与运费并查看分币种汇总", async ({
@@ -41,22 +53,38 @@ test.describe("店小秘物流永久档案", () => {
     const freightSummary = page.locator(
       '[data-slot="dashboard-operational-summary"] [data-summary-tier="secondary"]',
     );
-    await expect(freightSummary.getByText("国际运费", { exact: true })).toBeVisible();
-    await expect(freightSummary.getByText("CNY", { exact: true })).toBeVisible();
-    await expect(freightSummary.getByText(/CNY\s*150\.50/).first()).toBeVisible();
-    await expect(freightSummary.getByText("USD", { exact: true })).toBeVisible();
-    await expect(freightSummary.getByText(/USD\s*20\.00/).first()).toBeVisible();
+    await expect(
+      freightSummary.getByText("国际运费", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      freightSummary.getByText("CNY", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      freightSummary.getByText(/CNY\s*150\.50/).first(),
+    ).toBeVisible();
+    await expect(
+      freightSummary.getByText("USD", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      freightSummary.getByText(/USD\s*20\.00/).first(),
+    ).toBeVisible();
 
     // 搜索使用延迟值，请求完成后只保留目标包裹；更换业务员也会查询完整档案。
     await page.getByLabel("搜索").fill("LOCAL-TRACK-003");
     await expect(page.getByText("第 1-1 条，共 1 条")).toBeVisible();
-    await expect(page.getByText("LOCAL-PKG-003").filter({ visible: true })).toBeVisible();
+    await expect(
+      page.getByText("LOCAL-PKG-003").filter({ visible: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "恢复默认范围" }).click();
     await chooseSelectOption(page.getByLabel("业务员"), {
       label: "本地协作业务员",
     });
-    await expect(page.getByText("LOCAL-PKG-004").filter({ visible: true })).toBeVisible();
-    await expect(page.getByText("LOCAL-PKG-006").filter({ visible: true })).toBeVisible();
+    await expect(
+      page.getByText("LOCAL-PKG-004").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("LOCAL-PKG-006").filter({ visible: true }),
+    ).toBeVisible();
 
     // NULL 和 0 都是缺少运费；桌面行和移动卡片都必须有显眼的红色提示。
     await page.getByRole("button", { name: "恢复默认范围" }).click();
@@ -79,7 +107,7 @@ test.describe("店小秘物流永久档案", () => {
     await expect(missingMobileCard.getByText("缺少运费")).toBeVisible();
   });
 
-  test("管理员可调整店铺历史归属并恢复原设置", async ({ page }) => {
+  test("管理员可调整店铺历史归属并恢复原设置", async ({ page, storeCase }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
@@ -89,7 +117,7 @@ test.describe("店小秘物流永久档案", () => {
     await expect(dialog).toBeVisible();
 
     const alphaHistory = dialog.locator("article").filter({
-      hasText: "Local Shop Alpha",
+      hasText: storeCase.storeName,
     });
     await expect(alphaHistory).toContainText("本地业务员");
     await alphaHistory.getByRole("button", { name: "调整" }).click();
@@ -104,9 +132,14 @@ test.describe("店小秘物流永久档案", () => {
       label: "Wholesale Alpha",
     });
     await dialog.getByRole("button", { name: "保存归属" }).click();
+    storeCase.confirm("peer");
     await expect(alphaHistory).toContainText("本地协作业务员");
+    await page.reload();
+    await page.getByRole("button", { name: "店铺归属设置" }).click();
+    await expect(alphaHistory).toContainText("本地协作业务员");
+    storeCase.unchanged();
 
-    // 测试结束前恢复固定种子归属，保证本用例可重复执行且不影响后续角色测试。
+    // 通过原页面恢复本次独占区间的原归属；失败也不影响固定Alpha/其他角色的种子。
     await alphaHistory.getByRole("button", { name: "调整" }).click();
     await chooseSelectOption(dialog.getByLabel("负责业务员"), {
       label: "本地业务员",
@@ -115,7 +148,12 @@ test.describe("店小秘物流永久档案", () => {
       label: "Wholesale Beta",
     });
     await dialog.getByRole("button", { name: "保存归属" }).click();
+    storeCase.confirm("initial");
     await expect(alphaHistory).toContainText("本地业务员");
+    await page.reload();
+    await page.getByRole("button", { name: "店铺归属设置" }).click();
+    await expect(alphaHistory).toContainText("本地业务员");
+    storeCase.unchanged();
     await expectResponsiveLayout(page);
   });
 
@@ -124,13 +162,19 @@ test.describe("店小秘物流永久档案", () => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/logistics");
-    // Manifest is produced independently when preparing the owned synthetic fixture,
-    // never from get_wholesale_logistics_page or the page under test.
+    // 55条清单来自独立夹具准备，不能从被测分页接口或页面反向生成期望。
     const manifestPath = process.env.PT5_E2E_LOGISTICS_PAGING_FIXTURE;
-    if (!manifestPath) throw new Error("PT5_E2E_LOGISTICS_PAGING_FIXTURE must point to an independent 55-row synthetic fixture manifest");
-    const fixture = validateLogisticsFixture(JSON.parse(readFileSync(manifestPath, "utf8")));
+    if (!manifestPath)
+      throw new Error(
+        "PT5_E2E_LOGISTICS_PAGING_FIXTURE must point to an independent 55-row synthetic fixture manifest",
+      );
+    const fixture = validateLogisticsFixture(
+      JSON.parse(readFileSync(manifestPath, "utf8")),
+    );
     const firstRequest = waitForPagingResponse(page, 1);
-    await chooseSelectOption(page.getByLabel("店小秘店铺"), { label: "Local Paging Shop" });
+    await chooseSelectOption(page.getByLabel("店小秘店铺"), {
+      label: "Local Paging Shop",
+    });
     await expect(page.getByText("第 1-20 条，共 55 条").first()).toBeVisible();
     const first = await readRenderedPagingRows(page, await firstRequest, 20);
     const secondRequest = waitForPagingResponse(page, 2);
@@ -145,15 +189,23 @@ test.describe("店小秘物流永久档案", () => {
     const returnRequest = waitForPagingResponse(page, 2);
     await page.getByRole("button", { name: "上一页" }).click();
     await expect(page.getByText("第 21-40 条，共 55 条")).toBeVisible();
-    const returnedSecond = await readRenderedPagingRows(page, await returnRequest, 20);
+    const returnedSecond = await readRenderedPagingRows(
+      page,
+      await returnRequest,
+      20,
+    );
     assertLogisticsPaging(fixture, [first, second, third], returnedSecond);
     await expectResponsiveLayout(page);
   });
 
-  test("业务员和财务都可查看全部物流并设置店铺归属", async ({ browser }) => {
+  test("业务员和财务都可查看全部物流并设置店铺归属", async ({
+    browser,
+    trackLogisticsPage,
+  }) => {
     const salesmanPage = await browser.newPage({
       viewport: { height: 900, width: 1440 },
     });
+    trackLogisticsPage(salesmanPage);
     await isolateSourceRefresh(salesmanPage);
     await loginAs(salesmanPage, "salesman");
     await salesmanPage.goto("/salesman/wholesale/logistics");
@@ -164,7 +216,9 @@ test.describe("店小秘物流永久档案", () => {
     await expect(
       salesmanPage.getByText("LOCAL-PKG-001").filter({ visible: true }),
     ).toBeVisible();
-    await chooseSelectOption(salesmanPage.getByLabel("业务员"), { value: "all" });
+    await chooseSelectOption(salesmanPage.getByLabel("业务员"), {
+      value: "all",
+    });
     await chooseSelectOption(salesmanPage.getByLabel("店小秘店铺"), {
       label: "Local Shop Peer",
     });
@@ -175,6 +229,7 @@ test.describe("店小秘物流永久档案", () => {
     const financePage = await browser.newPage({
       viewport: { height: 900, width: 1440 },
     });
+    trackLogisticsPage(financePage);
     await isolateSourceRefresh(financePage);
     await loginAs(financePage, "finance");
     await financePage.goto("/finance/wholesale/logistics");
@@ -190,8 +245,7 @@ test.describe("店小秘物流永久档案", () => {
     ).toBeVisible();
     await expectResponsiveLayout(financePage);
 
-    await salesmanPage.close();
-    await financePage.close();
+    // 两个自建角色上下文由命名夹具收尾；中途失败同样回收。
   });
 
   for (const [role, path] of [
@@ -217,67 +271,3 @@ test.describe("店小秘物流永久档案", () => {
     });
   }
 });
-
-async function expectResponsiveLayout(page: Page) {
-  await expectNoDocumentHorizontalOverflow(page);
-  await expectNoCompressedText(page);
-  await page.setViewportSize({ height: 844, width: 390 });
-  await expectNoDocumentHorizontalOverflow(page);
-  await expectNoCompressedText(page);
-}
-
-async function isolateSourceRefresh(page: Page) {
-  await page.route("**/functions/v1/wholesale-logistics-sync", (route) => route.fulfill({
-    status: route.request().method() === "OPTIONS" ? 200 : 503,
-    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
-    json: { error: "local_read_regression" },
-  }));
-}
-
-async function expectNoDocumentHorizontalOverflow(page: Page) {
-  const overflowPixels = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect(overflowPixels).toBeLessThanOrEqual(2);
-}
-
-async function expectNoCompressedText(page: Page) {
-  const compressedText = await page.evaluate(() => {
-    const candidates = Array.from(
-      document.querySelectorAll<HTMLElement>("button, label, th, td, dt, dd"),
-    );
-    return candidates
-      .filter((element) => {
-        const text = element.innerText.trim();
-        const rect = element.getBoundingClientRect();
-        if (!text || rect.width === 0 || rect.height === 0) return false;
-        // 正常换行允许两三行；极窄且高度远大于宽度通常表示中文被挤成竖排。
-        return rect.width < 24 && rect.height > 48 && rect.height > rect.width * 2.5;
-      })
-      .map((element) => element.innerText.trim())
-      .slice(0, 5);
-  });
-  expect(compressedText).toEqual([]);
-}
-
-function waitForPagingResponse(page: Page, pageNumber: number) {
-  return page.waitForResponse((response) => {
-    if (!new URL(response.url()).pathname.endsWith("/rest/v1/rpc/get_wholesale_logistics_page")) return false;
-    const request = response.request();
-    if (request.method() !== "POST") return false;
-    const body = request.postDataJSON();
-    return body?.p_page === pageNumber && body?.p_filters?.storeName === "Local Paging Shop";
-  });
-}
-
-async function readRenderedPagingRows(page: Page, response: Awaited<ReturnType<typeof waitForPagingResponse>>, count: number): Promise<LogisticsPagingRow[]> {
-  expect(response.status()).toBe(200);
-  const data = await response.json();
-  expect(data.totalCount).toBe(55);
-  expect(data.rows).toHaveLength(count);
-  const rows: LogisticsPagingRow[] = data.rows.map((row: { id: string; package_number: string }) => ({ id: row.id, packageNumber: row.package_number }));
-  await expect(page.locator("tbody tr")).toHaveCount(count);
-  // Package is the fifth column; compare the visible order, not only RPC payloads.
-  await expect(page.locator("tbody tr td:nth-child(5)")).toHaveText(rows.map((row) => row.packageNumber));
-  return rows;
-}

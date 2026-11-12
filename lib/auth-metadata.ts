@@ -43,6 +43,7 @@ export function getUserStatusFromMetadataContainer(value: unknown): UserStatus |
   return normalizeUserStatus(getAppMetadata(value)?.status);
 }
 
+// 只读取服务端管理的 app_metadata，绝不把用户可编辑的 user_metadata 当作岗位或状态。
 function getAppMetadata(value: unknown) {
   const record = readRecord(value);
 

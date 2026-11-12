@@ -10,6 +10,9 @@ export type AnnouncementFormState = {
   title: string;
 };
 
+// 公告的 all 表示全体用户，筛选的 any 表示所有受众类型。
+export type AnnouncementAudienceFilter = AnnouncementAudience | "any";
+
 type AnnouncementErrorCopy = {
   notFoundError: string;
   permissionError: string;
@@ -78,25 +81,5 @@ export function toAnnouncementErrorMessage(
     return copy.permissionError;
   }
 
-  if (message.length > 0 && !looksLikeTechnicalAnnouncementError(normalizedMessage)) {
-    return message;
-  }
-
   return copy.unknownError;
-}
-
-function looksLikeTechnicalAnnouncementError(message: string) {
-  return (
-    message.includes("failed to fetch") ||
-    message.includes("fetch failed") ||
-    message.includes("timed out") ||
-    message.includes("timeout") ||
-    message.includes("jwt") ||
-    message.includes("relation") ||
-    message.includes("column") ||
-    message.includes("violates") ||
-    message.includes("supabase") ||
-    /\bhttp\s+\d{3}\b/.test(message) ||
-    /\bstatus code\b/.test(message)
-  );
 }

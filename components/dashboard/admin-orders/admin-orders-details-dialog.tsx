@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { LoaderCircle, PencilLine, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import {
-  getAdminOrderSupplementaryDetail,
-  type AdminOrderRow,
-  type AdminOrderSupplementaryDetail,
-} from "@/lib/admin-orders";
+import type { AdminOrderRow } from "@/lib/admin-orders";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -28,11 +24,11 @@ import {
   getStatusLabel,
   resolveOrderTypeMeta,
   resolveOrderUserLabel,
-  toOrderErrorMessage,
 } from "./admin-orders-utils";
 import { OrderDetailCard } from "./admin-orders-dialog-ui";
 import { OrderServiceFeeSummaryCard } from "./admin-orders-service-fee-preview";
 import { OrderSupplementaryDetailsSection } from "./admin-orders-supplementary-details";
+import { useAdminOrderSupplementaryDetail } from "./use-admin-order-supplementary-detail";
 
 export function OrderDetailsDialog({
   canDelete,
@@ -84,62 +80,8 @@ export function OrderDetailsDialog({
     orderUiCopy,
   );
   const orderNumber = order?.order_number ?? null;
-  const [supplementaryState, setSupplementaryState] = useState<{
-    orderNumber: string | null;
-    detail: AdminOrderSupplementaryDetail | null;
-    error: string | null;
-  }>({
-    orderNumber: null,
-    detail: null,
-    error: null,
-  });
-
-  useEffect(() => {
-    if (!orderNumber || !supabase) {
-      return;
-    }
-
-    let isActive = true;
-
-    void getAdminOrderSupplementaryDetail(supabase, orderNumber)
-      .then((detail) => {
-        if (!isActive) {
-          return;
-        }
-
-        setSupplementaryState({
-          orderNumber,
-          detail,
-          error: null,
-        });
-      })
-      .catch((error) => {
-        if (!isActive) {
-          return;
-        }
-
-        setSupplementaryState({
-          orderNumber,
-          detail: null,
-          error: toOrderErrorMessage(error, orderUiCopy, sharedCopy),
-        });
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [orderNumber, orderUiCopy, sharedCopy, supabase]);
-
-  const supplementaryLoading =
-    orderNumber !== null && supplementaryState.orderNumber !== orderNumber;
-  const supplementaryDetail =
-    supplementaryState.orderNumber === orderNumber
-      ? supplementaryState.detail
-      : null;
-  const supplementaryError =
-    supplementaryState.orderNumber === orderNumber
-      ? supplementaryState.error
-      : null;
+  const { supplementaryLoading, supplementaryDetail, supplementaryError } =
+    useAdminOrderSupplementaryDetail({ orderNumber, orderUiCopy, sharedCopy, supabase });
   const deleteActionPending = deletePending || forceDeletePending;
 
   return (

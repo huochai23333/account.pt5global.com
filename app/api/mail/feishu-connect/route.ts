@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { createFeishuConnectSession } from "@/lib/mail/mail-service";
+import { createFeishuConnectSession } from "@/lib/mail/mail-oauth-provider-urls";
 import { getRequestPublicOrigin } from "@/lib/public-site-origin";
 
 import { mailApiError } from "../_shared";
@@ -12,6 +12,6 @@ export async function POST(request: NextRequest) {
     const workspace = identity.role === "administrator" ? "admin" : "salesman";
     // 成功状态从绑定记录读取，连接网址只负责把用户送回本人的邮件页。
     const returnUrl = new URL(`/${workspace}/mail`, getRequestPublicOrigin(request)).toString();
-    return NextResponse.json(await createFeishuConnectSession(identity, returnUrl), { status: 201 });
+    return NextResponse.json(await createFeishuConnectSession(returnUrl), { status: 201 });
   } catch (error) { return mailApiError(error, "暂时无法绑定飞书。"); }
 }

@@ -41,6 +41,7 @@ const WorkspaceSessionContext = createContext<WorkspaceSessionContextValue>({
   syncVersion: 0,
 });
 
+// 共享登录/恢复事件，只递增刷新版本；业务 Hook 订阅后自行读取，不在外壳缓存业务结果。
 export function WorkspaceSessionProvider({
   children,
 }: {
@@ -89,6 +90,7 @@ export function WorkspaceSessionProvider({
       const currentBasePath = getWorkspaceBasePath(pathname);
 
       if (currentBasePath) {
+        // 浏览器角色仅用于把页面带回正确工作区，目标页及数据接口仍须验证当前数据库权限。
         const role =
           (await getRoleFromAuthClaims(supabase, session.user)) ??
           getRoleFromAuthSession(session);
@@ -157,6 +159,7 @@ export function useWorkspaceSyncEffect(
     });
 
     return () => {
+      // 已发出的异步请求不一定能取消；调用方用 isMounted 拒绝卸载后回写旧结果。
       mounted = false;
     };
   }, [effect, syncVersion]);

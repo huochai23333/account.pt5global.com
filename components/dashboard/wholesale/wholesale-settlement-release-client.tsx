@@ -12,7 +12,7 @@ export function WholesaleSettlementReleaseClient({
 }: {
   initialData: WholesaleSettlementReleasePageData;
 }) {
-  const actions = useWholesaleSettlementReleaseActions();
+  const actions = useWholesaleSettlementReleaseActions(initialData.currentUserId);
   const capabilities = getWholesaleRoleCapabilities(initialData.currentRole);
 
   return (
@@ -26,7 +26,7 @@ export function WholesaleSettlementReleaseClient({
         customers={initialData.customers}
         onCancelRelease={actions.cancelRelease}
         onClearAllocations={actions.clearAllocations}
-        onCreateRelease={actions.createRelease}
+        publication={actions.publication}
         onSaveAllocations={actions.saveAllocations}
         monthlyAllocatedUsd={initialData.monthlyAllocatedUsd}
         monthlyUnallocated={initialData.monthlyUnallocated}

@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 
 import { expectWorkspaceShell, loginAs } from "./helpers/auth";
 
+// 三例只区分客户端切换与整页文档请求；Date.now推进仅在当前测试页面，不修改服务端或数据库时钟。
+// 新测试上下文会隔离这次时间替身；这些场景没有验证真实锁屏、BFCache或长时间网络断开。
+
 test("正常使用时仍保留快速的客户端板块切换", async ({ page }) => {
   await loginAs(page, "administrator");
 

@@ -6,6 +6,7 @@ import {
 } from "./auth-metadata";
 import { normalizeOptionalString } from "./value-normalizers";
 
+// 提取仅约束数据形状；调用方负责先验证令牌或用户身份，不能只凭 sub 字段授权。
 export function getAuthClaimsUserId(claims: unknown) {
   return normalizeOptionalString(readRecord(claims)?.sub);
 }

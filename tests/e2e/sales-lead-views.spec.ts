@@ -1,16 +1,28 @@
 import { expect, test, type Page, type Locator } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import type { SalesLeadPageData } from "../../lib/sales-leads-types";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 import { loginAs, setTestLocale } from "./helpers/auth";
 
 const rows = (page: Page) => page.locator('[data-testid^="sales-lead-row-"]');
 const mode = (page: Page, label: string) => page.getByRole("button", { name: label, exact: true });
+
+// 三组场景共用同一展示页面：偏好与查询保持、极端资料、浏览器存储不可用。
+// 登录可能确认公告；下方响应替换不写线索库，也不证明真实导入或权限终态。
 async function checkLayout(page: Page, area: Locator) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-  expect(await area.locator("p, h3, h4, dt, dd, button").evaluateAll((nodes) => nodes.filter((node) => {
-    const box = node.getBoundingClientRect();
-    if (!box.width || !box.height || node.classList.contains("sr-only")) return false;
-    return box.width < 18 && (node.textContent?.length ?? 0) > 4 || node.scrollWidth > node.clientWidth + 2;
-  }).map((node) => node.textContent?.slice(0, 50)))).toEqual([]);
+  const issues = await area
+    .locator("p, h3, h4, dt, dd, button")
+    .evaluateAll((nodes) => nodes
+      .filter((node) => {
+        const box = node.getBoundingClientRect();
+        if (!box.width || !box.height || node.classList.contains("sr-only")) return false;
+        return box.width < 18 && (node.textContent?.length ?? 0) > 4 ||
+          node.scrollWidth > node.clientWidth + 2;
+      })
+      .map((node) => node.textContent?.slice(0, 50)),
+    );
+  expect(issues).toEqual([]);
 }
 async function expandedArea(page: Page, row: Locator, label: string) {
   const button = row.getByRole("button", { name: label, exact: true });
@@ -22,9 +34,22 @@ async function expandedArea(page: Page, row: Locator, label: string) {
 }
 
 test.describe("sales lead display modes", () => {
+  test.beforeEach(({ baseURL }) => {
+    // 查询页也会释放过期认领；固定种子只能进入可重建的专属实例。
+    readDisposablePostgresTarget({
+      baseURL,
+      supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE,
+      project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER,
+    }, (args) => execFileSync("docker", args, {
+      encoding: "utf8", timeout: 12_000, windowsHide: true,
+    }).trim());
+  });
+  // 截图按测试和重试分目录；整轮运行还须使用独立 --output 目录，保护历史证据。
   test.setTimeout(180_000);
   for (const role of ["administrator", "salesman"] as const) {
-    test(`${role}: preference, pagination, search and complete information`, async ({ page }) => {
+    test(`${role}: preference, pagination, search and complete information`, async ({ page }, testInfo) => {
       await loginAs(page, role);
       const path = `/${role === "administrator" ? "admin" : role}/wholesale/leads`;
       await page.goto(path);
@@ -52,7 +77,10 @@ test.describe("sales lead display modes", () => {
       await mode(page, "列表").click();
 
       let historyRequests = 0;
-      page.on("request", (request) => { if (request.url().includes("get_sales_lead_detail")) historyRequests++; });
+      // 行内展开应只使用当前页公开资料；只有打开详情才读取受权限控制的历史。
+      page.on("request", (request) => {
+        if (request.url().includes("get_sales_lead_detail")) historyRequests++;
+      });
       const first = rows(page).first();
       const profile = await first.getByTestId("profile-summary").innerText();
       const info = await expandedArea(page, first, "展开资料");
@@ -84,11 +112,11 @@ test.describe("sales lead display modes", () => {
         await setTestLocale(page, locale);
         await page.goto(path);
         const info = await expandedArea(page, rows(page).first(), locale === "zh" ? "展开资料" : "Show information");
-        for (const width of [1440, 1024, 375]) {
+        for (const width of [1440, 1024, 390, 375]) {
           await page.setViewportSize({ width, height: 900 });
           await rows(page).first().scrollIntoViewIfNeeded();
           await checkLayout(page, page.getByTestId("sales-lead-list"));
-          await page.screenshot({ path: `output/lead-views-${role}-${locale}-${width}.png` });
+          await page.screenshot({ path: testInfo.outputPath(`lead-views-${role}-${locale}-${width}.png`) });
           await info.scrollIntoViewIfNeeded();
           await checkLayout(page, info);
         }
@@ -96,7 +124,7 @@ test.describe("sales lead display modes", () => {
     });
   }
 
-  test("long profiles, missing values and source error are readable in both languages", async ({ page }) => {
+  test("long profiles, missing values and source error are readable in both languages", async ({ page }, testInfo) => {
     await loginAs(page, "administrator");
     const profile = "公开客户画像 | ".repeat(250) + "\n结束标识";
     const website = "https://example.com/" + "long-contact-path-".repeat(40);
@@ -121,11 +149,11 @@ test.describe("sales lead display modes", () => {
       const info = await expandedArea(page, rows(page).first(), locale === "zh" ? "展开资料" : "Show information");
       await expect(info.getByText(profile, { exact: true })).toBeVisible();
       await expect(info.getByText(website, { exact: true })).toBeVisible();
-      for (const width of [1440, 1024, 375]) {
+      for (const width of [1440, 1024, 390, 375]) {
         await page.setViewportSize({ width, height: 900 });
         await checkLayout(page, page.getByTestId("sales-lead-list"));
         await rows(page).first().scrollIntoViewIfNeeded();
-        await page.screenshot({ path: `output/lead-views-long-${locale}-${width}.png` });
+        await page.screenshot({ path: testInfo.outputPath(`lead-views-long-${locale}-${width}.png`) });
       }
       await mode(page, locale === "zh" ? "卡片" : "Cards").click();
       await expect(page.getByTestId("sales-lead-cards").getByText(profile, { exact: true })).toBeVisible();
@@ -139,8 +167,15 @@ test.describe("sales lead display modes", () => {
     await page.addInitScript(() => {
       const get = Storage.prototype.getItem;
       const set = Storage.prototype.setItem;
-      Storage.prototype.getItem = function (key) { if (key === "pt5-sales-leads-view") throw new Error("blocked"); return get.call(this, key); };
-      Storage.prototype.setItem = function (key, value) { if (key === "pt5-sales-leads-view") throw new Error("blocked"); return set.call(this, key, value); };
+      // 仅阻断布局偏好，不能同时破坏认证等其他存储键；新测试上下文会回收此替身。
+      Storage.prototype.getItem = function (key) {
+        if (key === "pt5-sales-leads-view") throw new Error("blocked");
+        return get.call(this, key);
+      };
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "pt5-sales-leads-view") throw new Error("blocked");
+        return set.call(this, key, value);
+      };
     });
     await page.goto("/salesman/wholesale/leads");
     await mode(page, "卡片").click();

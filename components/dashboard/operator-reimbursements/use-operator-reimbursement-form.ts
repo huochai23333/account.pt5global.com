@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createOperatorReimbursement } from "@/lib/operator-reimbursements";
+import {
+  createOperatorReimbursement,
+  getOperatorReimbursementDraftKey,
+  operatorReimbursementCreateDifferent,
+  operatorReimbursementCreateUnconfirmed,
+  OperatorReimbursementCreateRejected,
+} from "@/lib/operator-reimbursements";
+import { getCurrentUser } from "@/lib/current-session-auth";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import type { FeedbackTone } from "../dashboard-shared-ui";
@@ -11,7 +18,7 @@ import {
   toOperatorReimbursementInput,
   toOperatorReimbursementErrorMessage,
   type OperatorReimbursementFormState,
-} from "./operator-reimbursements-display";
+} from "./operator-reimbursements-form";
 
 export type ReimbursementFeedback = {
   tone: FeedbackTone;
@@ -32,9 +39,11 @@ export function useOperatorReimbursementForm(
   const [fieldError, setFieldError] = useState<{ field: keyof OperatorReimbursementFormState; message: string } | null>(null);
   const [pending, setPending] = useState(false);
   const lock = useRef(false);
+  const creation = useRef<{ actorId: string; id: string; key: string; form: OperatorReimbursementFormState } | null>(null);
   const openCreate = () => {
-    setForm(createEmptyOperatorReimbursementForm());
-    setFeedback(null);
+    const draft = creation.current;
+    setForm(draft?.form ?? createEmptyOperatorReimbursementForm());
+    setFeedback(draft ? { tone: "error", message: copy.createUnconfirmed } : null);
     setFieldError(null);
     setOpen(true);
   };
@@ -67,17 +76,33 @@ export function useOperatorReimbursementForm(
     setPending(true);
     setFeedback(null);
     try {
-      await createOperatorReimbursement(
-        supabase,
-        payload,
-      );
+      const prior = creation.current;
+      const key = getOperatorReimbursementDraftKey(payload);
+      if (prior && prior.key !== key) throw new Error(operatorReimbursementCreateDifferent);
+      const actor = await getCurrentUser(supabase);
+      if (!actor || (prior && prior.actorId !== actor.id)) throw new Error("permission denied");
+      const draft = prior ?? { actorId: actor.id, id: crypto.randomUUID(), key, form };
+      creation.current = draft;
+      try {
+        await createOperatorReimbursement(supabase, draft, payload);
+      } catch (error) {
+        // 只有首次提交明确被数据库拒绝，才可丢弃编号并允许改内容。
+        if (!prior && error instanceof OperatorReimbursementCreateRejected) creation.current = null;
+        throw error;
+      }
+      creation.current = null;
       markBrowserCloudSyncActivity();
       setOpen(false);
       await onSaved(copy.createSuccess);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "";
       setFeedback({
         tone: "error",
-        message: toOperatorReimbursementErrorMessage(error, copy),
+        message: message === operatorReimbursementCreateDifferent
+          ? copy.createDifferent
+          : message === operatorReimbursementCreateUnconfirmed
+            ? copy.createUnconfirmed
+            : toOperatorReimbursementErrorMessage(error, copy),
       });
     } finally {
       lock.current = false;

@@ -15,6 +15,7 @@ import { getWorkspaceSectionKey } from "@/lib/workspace-sections";
 
 import type { SectionPageProps } from "./types";
 
+// 标题生成不读取业务记录，也不授权页面；真实准入在 Page、领域服务和数据库执行。
 export async function generateWorkspaceSectionMetadata({
   params,
 }: SectionPageProps): Promise<Metadata> {

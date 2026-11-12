@@ -41,22 +41,15 @@ export function CustomerInventoryOrderItemEditor({
       clientId: `initial-${index}`,
     }));
   });
-  const serializedItems = rows.map(
-    ({ product_name, quantity, source_url }) => ({
-      product_name: product_name.trim(),
-      quantity,
-      source_url: source_url?.trim() || null,
-    }),
-  );
+  const serializedItems = rows.map(({ product_name, quantity, source_url }) => ({
+    product_name: product_name.trim(),
+    quantity,
+    source_url: source_url?.trim() || null,
+  }));
 
-  function updateRow(
-    clientId: string,
-    changes: Partial<EditableInventoryOrderItem>,
-  ) {
+  function updateRow(clientId: string, changes: Partial<EditableInventoryOrderItem>) {
     setRows((current) =>
-      current.map((row) =>
-        row.clientId === clientId ? { ...row, ...changes } : row,
-      ),
+      current.map((row) => (row.clientId === clientId ? { ...row, ...changes } : row)),
     );
   }
 
@@ -67,18 +60,13 @@ export function CustomerInventoryOrderItemEditor({
           <legend className="font-label text-[11px] font-semibold uppercase tracking-[0.18em] text-content-muted">
             {t("items.title")}
           </legend>
-          <p className="mt-1 text-xs leading-5 text-content-muted">
-            {t("items.editorHint")}
-          </p>
+          <p className="mt-1 text-xs leading-5 text-content-muted">{t("items.editorHint")}</p>
         </div>
         <Button
           disabled={rows.length >= 100}
           onClick={() => {
             const id = nextId.current++;
-            setRows((current) => [
-              ...current,
-              { ...EMPTY_ITEM, clientId: `new-${id}` },
-            ]);
+            setRows((current) => [...current, { ...EMPTY_ITEM, clientId: `new-${id}` }]);
           }}
           type="button"
           variant="outline"
@@ -88,11 +76,7 @@ export function CustomerInventoryOrderItemEditor({
         </Button>
       </div>
 
-      <FormControls.Input
-        name="items"
-        type="hidden"
-        value={JSON.stringify(serializedItems)}
-      />
+      <FormControls.Input name="items" type="hidden" value={JSON.stringify(serializedItems)} />
 
       <div className="grid min-w-0 gap-3">
         {rows.map((row, index) => (
@@ -101,10 +85,7 @@ export function CustomerInventoryOrderItemEditor({
             data-testid="inventory-product-row"
             key={row.clientId}
           >
-            <FormControls.Field
-              label={t("items.productNameLabel", { number: index + 1 })}
-              required
-            >
+            <FormControls.Field label={t("items.productNameLabel", { number: index + 1 })} required>
               <FormControls.Input
                 maxLength={500}
                 onChange={(event) =>
@@ -132,10 +113,7 @@ export function CustomerInventoryOrderItemEditor({
                 value={Number.isFinite(row.quantity) ? row.quantity : ""}
               />
             </FormControls.Field>
-            <FormControls.Field
-              hint={t("items.linkHint")}
-              label={t("items.sourceUrl")}
-            >
+            <FormControls.Field hint={t("items.linkHint")} label={t("items.sourceUrl")}>
               <FormControls.Input
                 maxLength={2048}
                 onChange={(event) =>
@@ -153,9 +131,7 @@ export function CustomerInventoryOrderItemEditor({
                 aria-label={t("items.removeLabel", { number: index + 1 })}
                 disabled={rows.length === 1}
                 onClick={() =>
-                  setRows((current) =>
-                    current.filter((item) => item.clientId !== row.clientId),
-                  )
+                  setRows((current) => current.filter((item) => item.clientId !== row.clientId))
                 }
                 type="button"
                 variant="danger"

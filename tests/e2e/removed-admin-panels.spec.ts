@@ -8,7 +8,7 @@ for (const scenario of [
   { role: "administrator", locale: "en" },
   { role: "finance", locale: "zh" },
 ] as const) {
-  test(`移除管理板块 ${scenario.role} ${scenario.locale}：导航、助手和原地址`, async ({ page }) => {
+  test(`移除管理板块 ${scenario.role} ${scenario.locale}：导航、助手和原地址`, async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     const errors: string[] = [];
     const removedReads: string[] = [];
@@ -46,7 +46,8 @@ for (const scenario of [
     await page.locator("#ai-assistant-input").press("Escape");
     await expect(page.locator("#ai-assistant-input")).toHaveCount(0);
 
-    await page.screenshot({ path: `output/removed-admin-panels/${scenario.role}-${scenario.locale}-1440.png` });
+    // 截图归属当前测试/重试；整轮运行仍须使用独立--output目录，避免下一轮清空历史证据。
+    await page.screenshot({ path: testInfo.outputPath(`${scenario.role}-${scenario.locale}-1440.png`) });
     await page.goto(`${account.workspacePath}/home`);
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 900 });
@@ -59,7 +60,7 @@ for (const scenario of [
       await expect(removedLinks).toHaveCount(0);
       await expect(submitFeedback).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-      await page.screenshot({ path: `output/removed-admin-panels/${scenario.role}-${scenario.locale}-${width}.png` });
+      await page.screenshot({ path: testInfo.outputPath(`${scenario.role}-${scenario.locale}-${width}.png`) });
       await toggle.click();
     }
     await expect(page.locator("nextjs-portal [data-nextjs-dialog-overlay]")).toHaveCount(0);

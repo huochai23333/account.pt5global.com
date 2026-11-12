@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { mkdtemp, readFile, writeFile, appendFile, unlink } from 'node:fs/promises';
+import test, { after } from 'node:test';
+import { mkdtemp, readFile, writeFile, appendFile, unlink, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +10,8 @@ import { recordTestRun } from './record-test-run.mjs';
 import { verifyTestRun } from './test-run-evidence.mjs';
 
 const scratch = await mkdtemp(join(tmpdir(), 'pt5-record-test-'));
+// 全部断言结束后只删除这次生成的夹具，正式测试报告仍留在项目的 output 目录。
+after(() => rm(scratch, { recursive: true, force: true }));
 const read = (directory, name) => readFile(join(directory, name), 'utf8');
 
 test('successful executable preserves stdout and stderr separately', async () => {
@@ -58,8 +60,9 @@ test('CLI missing command cannot report success', () => {
   assert.match(result.stderr, /Usage:/);
 });
 
-test('CLI recording failure rejects even a command that would succeed', async () => {
+test('CLI recording failure rejects even a command that would succeed', async (t) => {
   const blocked = await mkdtemp(join(tmpdir(), 'pt5-record-blocked-'));
+  t.after(() => rm(blocked, { recursive: true, force: true }));
   await writeFile(join(blocked, 'output'), 'synthetic file blocks the output directory');
   const result = spawnSync(process.execPath, [fileURLToPath(new URL('./record-test-run.mjs', import.meta.url)),
     '--', process.execPath, '-e', "console.log('child must not run')"],

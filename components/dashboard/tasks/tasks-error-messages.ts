@@ -25,6 +25,10 @@ export function toAdminTaskErrorMessage(error: unknown, t: TranslateFn) {
     return t("errors.admin.targetRolesLocked");
   }
 
+  if (rawMessage.includes("task target roles not confirmed")) {
+    return t("errors.admin.targetRolesUnconfirmed");
+  }
+
   if (rawMessage.includes("task type display name is required")) {
     return t("errors.admin.taskTypeNameRequired");
   }
@@ -35,6 +39,10 @@ export function toAdminTaskErrorMessage(error: unknown, t: TranslateFn) {
 
   if (rawMessage.includes("task type not found")) {
     return t("errors.admin.taskTypeRequired");
+  }
+
+  if (rawMessage.includes("task type write not confirmed")) {
+    return t("errors.admin.taskTypeUnconfirmed");
   }
 
   if (rawMessage.includes("task_main_commission_amount_nonnegative")) {
@@ -59,6 +67,10 @@ export function toAdminTaskErrorMessage(error: unknown, t: TranslateFn) {
 
   if (rawMessage.includes("task not found")) {
     return t("errors.admin.taskNotFound");
+  }
+
+  if (rawMessage.includes("task delete did not confirm the requested row")) {
+    return t("errors.admin.taskDeleteUnconfirmed");
   }
 
   if (rawMessage.includes("completed task cannot be edited")) {

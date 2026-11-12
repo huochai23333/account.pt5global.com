@@ -19,7 +19,7 @@ import {
 } from "@/components/dashboard/dashboard-page-shell";
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-section-header";
 import { useLocale } from "@/components/i18n/locale-provider";
-import type { AdminPeoplePageData } from "@/lib/admin-people";
+import type { AdminPeoplePageData } from "@/lib/admin-people-contract";
 
 import { getTourismPersonName } from "./tourism-people-display";
 import { TourismPersonDetails } from "./tourism-person-details";

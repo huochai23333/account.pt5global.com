@@ -12,14 +12,10 @@ import type { WholesaleOrderListAttachment } from "@/lib/wholesale-order-list-at
 import {
   formatCurrency,
   formatDate,
-  formatDateTime,
-  formatNumber,
-  formatOptionalCurrency,
-  formatPercent,
   formatRate,
-  WHOLESALE_ORDER_STATUS_LABELS,
 } from "./wholesale-display";
 import { WholesaleDetailGrid } from "./wholesale-detail-grid";
+import { buildWholesaleOrderBasicRows, buildWholesaleOrderCostRows } from "./wholesale-order-detail-rows";
 import type { WholesaleOrderEditAction } from "./wholesale-orders-table";
 import { WholesaleOrderListAttachments } from "./wholesale-order-list-attachments";
 type WholesaleOrderDetailsDialogProps = {
@@ -73,7 +69,8 @@ export function WholesaleOrderDetailsDialog({
     <DashboardDialog
       actions={
         editAction || canMarkOrderSettled ? (
-          <div className="flex flex-wrap gap-2">
+          // 窄屏允许整颗按钮换行，按钮内的长译文也要能在操作区内折行。
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
             {editAction ? (
               <Button
                 size="default"
@@ -87,13 +84,17 @@ export function WholesaleOrderDetailsDialog({
             ) : null}
             {canMarkOrderSettled ? (
               <Button
+                className="max-w-full"
                 variant="primary"
                 size="default"
                 onClick={onOpenOrderSettlement}
                 type="button"
+                wrap
               >
                 <CheckCircle2 className="size-4" />
-                <UiMessage id="components_dashboard_wholesale_wholesale_order_details_dialog.text001" />
+                <span className="min-w-0">
+                  <UiMessage id="components_dashboard_wholesale_wholesale_order_details_dialog.text001" />
+                </span>
               </Button>
             ) : null}
           </div>
@@ -104,84 +105,20 @@ export function WholesaleOrderDetailsDialog({
         if (!nextOpen) onClose();
       }}
       open={open}
-      title={`订单 ${order.order_number}`}
+      title={t("detailFields.title", { number: order.order_number })}
     >
       <div className="space-y-6">
         <DetailGroup title={uiText("attribute002")}>
-          <WholesaleDetailGrid
-            rows={[
-              { label: "客户", value: customerName },
-              { label: "业务员", value: salesName },
-              ...(canViewInternalFields ? [{
-                label: "状态",
-                value: WHOLESALE_ORDER_STATUS_LABELS[order.status],
-              }] : [{
-                label: t("clientColumns.courier"),
-                value: order.courier_company ?? t("fallbacks.notRecorded"),
-              }]),
-              { label: "下单时间", value: formatDateTime(order.ordered_at) },
-              {
-                label: "客户支付",
-                value: formatCurrency(
-                  order.customer_payment_amount,
-                  order.customer_payment_currency,
-                ),
-              },
-              ...(canViewInternalFields
-                ? [
-                    {
-                      label: "收款平台",
-                      value: order.payment_platform ?? "未记录",
-                    },
-                  ]
-                : []),
-            ]}
-          />
+          <WholesaleDetailGrid rows={buildWholesaleOrderBasicRows({
+            canViewInternalFields, customerName, order, salesName, t,
+          })} />
         </DetailGroup>
 
-        {canViewInternalFields ? <DetailGroup title={uiText("attribute003")}>
-          <WholesaleDetailGrid
-            rows={[
-              {
-                label: "小单数量",
-                value: formatNumber(order.small_order_count),
-              },
-              ...(canViewInternalFields
-                ? [
-                    {
-                      label: "产品采购金额",
-                      value: formatCurrency(order.product_purchase_amount),
-                    },
-                  ]
-                : []),
-              { label: "打包费", value: formatCurrency(order.packing_fee) },
-              ...(canViewInternalFields
-                ? [
-                    {
-                      label: "国际运费",
-                      value: formatCurrency(order.international_shipping_fee),
-                    },
-                    { label: t("fees.serviceFee"), value: formatCurrency(order.service_fee) },
-                    { label: t("fees.cnTaxFee"), value: formatCurrency(order.cn_tax_fee) },
-                    { label: t("fees.paymentProcessingFee"), value: formatCurrency(order.payment_processing_fee) },
-                    {
-                      label: "其他费用",
-                      value: formatCurrency(order.other_fee),
-                    },
-                    {
-                      label: "推荐佣金费用",
-                      value: formatCurrency(order.referral_commission_fee),
-                    },
-                  ]
-                : []),
-              {
-                label: "毛利",
-                value: formatOptionalCurrency(order.gross_profit),
-              },
-              { label: "毛利率", value: formatPercent(order.gross_margin) },
-            ]}
-          />
-        </DetailGroup> : null}
+        {canViewInternalFields ? (
+          <DetailGroup title={uiText("attribute003")}>
+            <WholesaleDetailGrid rows={buildWholesaleOrderCostRows(order, t)} />
+          </DetailGroup>
+        ) : null}
 
         {canViewInternalFields ? <DetailGroup title={uiText("attribute004")}>
           <p className="mb-3 text-sm text-content-muted">
@@ -237,7 +174,7 @@ export function WholesaleOrderDetailsDialog({
 
         <DetailGroup title={uiText("attribute008")}>
           <p className="break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
-            {order.notes ?? "未记录备注。"}
+            {order.notes ?? t("detailFields.noNotes")}
           </p>
         </DetailGroup>
       </div>

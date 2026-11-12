@@ -145,6 +145,7 @@ function createWorkspaceRouteConfig({
   };
 }
 
+// 岗位菜单和页面能力统一在此组装；最终记录权限仍由当前身份及数据库规则决定。
 const WORKSPACE_ROUTE_CONFIG_BY_SEGMENT = {
   admin: createWorkspaceRouteConfig({
     authRole: "administrator",
@@ -302,6 +303,7 @@ export function getWorkspaceConfigForPathname(pathname: string) {
   return getWorkspaceConfigByBasePath(getWorkspaceBasePath(pathname));
 }
 
+// 全局栏目不带业务前缀；业务栏目使用本次启用业务，不能把停用模块当作默认入口。
 export function getWorkspaceNavHref(
   configOrSegment: WorkspaceRouteConfig | WorkspaceRouteSegment,
   segment: WorkspaceNavSegment,

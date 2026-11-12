@@ -5,7 +5,7 @@ import { DocumentEntry } from "@/components/dashboard/document-library/document-
 
 import { useTranslations } from "next-intl";
 
-import type { AdminPersonRow } from "@/lib/admin-people";
+import type { AdminPersonRow } from "@/lib/admin-people-contract";
 import type { Locale } from "@/lib/locale";
 
 import {

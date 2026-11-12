@@ -79,6 +79,24 @@ export function WholesaleOrdersTable({
   profilesById,
 }: WholesaleOrdersTableProps) {
   const t = useTranslations("WholesaleBusiness.ordersUi");
+  // 同一列定义同时用于表头和单元格。调整费用顺序时只需要改这里。
+  const internalFeeColumns = [
+    {
+      field: "international_shipping_fee",
+      heading: <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text007" />,
+    },
+    { field: "service_fee", heading: t("fees.serviceFee") },
+    { field: "cn_tax_fee", heading: t("fees.cnTaxFee") },
+    { field: "payment_processing_fee", heading: t("fees.paymentProcessingFee") },
+    {
+      field: "other_fee",
+      heading: <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text008" />,
+    },
+    {
+      field: "referral_commission_fee",
+      heading: <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text009" />,
+    },
+  ] as const;
   return (
     <WholesaleTable minWidth={canViewInternalFields ? 3500 : 2140}>
       <thead>
@@ -103,22 +121,11 @@ export function WholesaleOrdersTable({
           <WholesaleTh>
             <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text006" />
           </WholesaleTh>
-          {canViewInternalFields ? (
-            <>
-              <WholesaleTh>
-                <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text007" />
-              </WholesaleTh>
-              <WholesaleTh>
-                <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text008" />
-              </WholesaleTh>
-              <WholesaleTh>{t("fees.serviceFee")}</WholesaleTh>
-              <WholesaleTh>{t("fees.cnTaxFee")}</WholesaleTh>
-              <WholesaleTh>{t("fees.paymentProcessingFee")}</WholesaleTh>
-              <WholesaleTh>
-                <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text009" />
-              </WholesaleTh>
-            </>
-          ) : null}
+          {canViewInternalFields
+            ? internalFeeColumns.map(({ field, heading }) => (
+                <WholesaleTh key={field}>{heading}</WholesaleTh>
+              ))
+            : null}
           <WholesaleTh>
             <UiMessage id="components_dashboard_wholesale_wholesale_orders_table.text010" />
           </WholesaleTh>
@@ -251,21 +258,11 @@ export function WholesaleOrdersTable({
                   </WholesaleTd>
                 ) : null}
                 <WholesaleTd>{formatCurrency(order.packing_fee)}</WholesaleTd>
-                {canViewInternalFields ? (
-                  <>
-                    <WholesaleTd>
-                      {formatCurrency(order.international_shipping_fee)}
-                    </WholesaleTd>
-                    {/* 新增费用与表头保持同一顺序，均读取数据库保存的人民币金额。 */}
-                    <WholesaleTd>{formatCurrency(order.service_fee)}</WholesaleTd>
-                    <WholesaleTd>{formatCurrency(order.cn_tax_fee)}</WholesaleTd>
-                    <WholesaleTd>{formatCurrency(order.payment_processing_fee)}</WholesaleTd>
-                    <WholesaleTd>{formatCurrency(order.other_fee)}</WholesaleTd>
-                    <WholesaleTd>
-                      {formatCurrency(order.referral_commission_fee)}
-                    </WholesaleTd>
-                  </>
-                ) : null}
+                {canViewInternalFields
+                  ? internalFeeColumns.map(({ field }) => (
+                      <WholesaleTd key={field}>{formatCurrency(order[field])}</WholesaleTd>
+                    ))
+                  : null}
                 <WholesaleTd className="min-w-[140px] whitespace-normal">
                   {order.courier_company ?? t("fallbacks.notRecorded")}
                 </WholesaleTd>

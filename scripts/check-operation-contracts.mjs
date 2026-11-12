@@ -1,10 +1,10 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
+import { readOperationContractManifest } from "./operation-contract-manifest.mjs";
 
 const root = process.cwd();
-const contracts = JSON.parse(await readFile(path.join(root, "config", "operation-contracts.json"), "utf8"));
-const violations = [];
+const { count, coveredSources, violations } = await readOperationContractManifest(root);
 const showInventory = process.argv.includes("--inventory");
 const inventory = {
   authWrites: [],
@@ -14,21 +14,8 @@ const inventory = {
   rpcs: [],
   storageWrites: [],
 };
-const coveredSources = new Set(
-  contracts.flatMap((contract) => contract.sources ?? []).map((source) => source.replaceAll("\\", "/")),
-);
-const requiredFields = ["operationId", "trigger", "completionEvidence", "timeoutSeconds", "retryDelaysSeconds", "idempotency", "failureMessage", "ownerRole", "sources"];
-
-for (const contract of contracts) {
-  for (const field of requiredFields) {
-    if (!(field in contract) || contract[field] === "") violations.push(`${contract.operationId ?? "unknown"}: 缺少 ${field}`);
-  }
-  for (const source of contract.sources ?? []) {
-    try { await access(path.join(root, source)); } catch { violations.push(`${contract.operationId}: 来源文件不存在 ${source}`); }
-  }
-}
-
-const files = await collectFiles(["app", "components", "lib"]);
+// 清单有误时先修清单，再扫描调用，避免同一个错误派生大量未登记提示。
+const files = violations.length ? [] : await collectFiles(["app", "components", "lib"]);
 for (const file of files) {
   const source = await readFile(file, "utf8");
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -204,7 +191,7 @@ if (violations.length) {
   console.error(["操作成功契约检查失败：", ...violations.map((item) => `- ${item}`)].join("\n"));
   process.exitCode = 1;
 } else {
-  console.log(`操作成功契约检查通过：${contracts.length} 项关键契约，${files.length} 个源码文件。`);
+  console.log(`操作成功契约检查通过：${count} 项关键契约，${files.length} 个源码文件。`);
 }
 
 if (showInventory) {

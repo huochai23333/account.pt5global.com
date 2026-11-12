@@ -114,39 +114,49 @@ export function WholesaleOrdersListSection({
           {assessmentPanel ? <div className="mt-3">{assessmentPanel}</div> : null}
         </>
       ) : page ? (
-        <ResponsiveDataView
-          desktop={
-            page.canViewInternalFields ? <div>
-              <div className="mb-3 flex flex-wrap items-start justify-end gap-2">
-                {assessmentPanel ? <div className="min-w-0 flex-1">{assessmentPanel}</div> : null}
-                <Button onClick={() => setShowAllColumns((current) => !current)} size="compact" type="button" variant="outline">
+        <>
+          {page.canViewInternalFields ? (
+            <div className="mb-3 flex flex-wrap items-start justify-end gap-2">
+              {/* 评估状态只保留一份，手机卡片和桌面表格共用。列切换只服务桌面。 */}
+              {assessmentPanel ? <div className="min-w-0 flex-1">{assessmentPanel}</div> : null}
+              <div className="hidden md:block">
+                <Button
+                  onClick={() => setShowAllColumns((current) => !current)}
+                  size="compact"
+                  type="button"
+                  variant="outline"
+                >
                   {showAllColumns ? t("compactColumns.showCommon") : t("compactColumns.showAll")}
                 </Button>
               </div>
-              {showAllColumns ? <WholesaleOrdersTable
+            </div>
+          ) : null}
+          <ResponsiveDataView
+            desktop={
+              page.canViewInternalFields ? (
+                showAllColumns ? (
+                  <WholesaleOrdersTable {...renderProps} canViewInternalFields orders={page.orders} />
+                ) : (
+                  <WholesaleOrdersCompactTable {...renderProps} canViewInternalFields orders={page.orders} />
+                )
+              ) : (
+                <ClientWholesaleOrdersTable
+                  orders={page.orders}
+                  clientContactsByOrderId={page.clientContactsByOrderId}
+                  orderListAttachmentsByOrderId={renderProps.orderListAttachmentsByOrderId}
+                />
+              )
+            }
+            mobile={
+              <WholesaleOrdersMobileList
                 {...renderProps}
-                canViewInternalFields
+                canViewInternalFields={page.canViewInternalFields}
+                clientContactsByOrderId={page.clientContactsByOrderId}
                 orders={page.orders}
-              /> : <WholesaleOrdersCompactTable
-                {...renderProps}
-                canViewInternalFields
-                orders={page.orders}
-              />}
-            </div> : <ClientWholesaleOrdersTable
-              orders={page.orders}
-              clientContactsByOrderId={page.clientContactsByOrderId}
-              orderListAttachmentsByOrderId={renderProps.orderListAttachmentsByOrderId}
-            />
-          }
-          mobile={
-            <WholesaleOrdersMobileList
-              {...renderProps}
-              canViewInternalFields={page.canViewInternalFields}
-              clientContactsByOrderId={page.clientContactsByOrderId}
-              orders={page.orders}
-            />
-          }
-        />
+              />
+            }
+          />
+        </>
       ) : null}
     </DashboardOrderListSection>
   );

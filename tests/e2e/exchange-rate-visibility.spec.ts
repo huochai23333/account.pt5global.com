@@ -8,6 +8,7 @@ import {
   type RegressionRole,
 } from "./helpers/auth";
 
+// 这里列的是原隔离种子中已启用业务的账号，不是汇率函数允许读取的全部岗位。
 const INTERNAL_RATE_VIEWERS = [
   { role: "administrator", workspace: "/admin" },
   { role: "operator", workspace: "/operator" },
@@ -18,6 +19,7 @@ const INTERNAL_RATE_VIEWERS = [
   workspace: string;
 }[];
 
+// 这些内部岗位也可能具备汇率只读能力；本组验证的是种子账号没有已启用业务时的工作台拦截。
 const NO_BUSINESS_RATE_VIEWERS = [
   { role: "manager", workspace: "/manager" },
   { role: "promoter", workspace: "/promoter" },
@@ -128,6 +130,7 @@ test.describe("汇率展示权限", () => {
 });
 
 async function expectManagementActionsHidden(page: Page) {
+  // 隐藏管理控件只证明页面展示；数据库行权和直接写入拒绝必须由独立权限场景核对。
   for (const actionName of [
     "新增汇率",
     "立即获取",

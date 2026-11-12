@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import {
   expectNotForbiddenPage,
@@ -13,19 +13,32 @@ import {
   getSelectValue,
 } from "./helpers/select-control";
 
-const FORCED_ERROR_MESSAGE = "操作没有成功，请检查内容和权限后再试。";
+import {
+  test,
+  FORCED_ERROR_MESSAGE,
+  failJsonRequest,
+  expectInterceptedFailure,
+  expectFailureNotice,
+} from "./helpers/wholesale-mutation-failure-scope";
+import { readLocalPostgresRows } from "./helpers/local-postgres-query";
+import { shanghaiDate } from "../test-support/shanghai-calendar";
 const FIRST_ORDER_ID = "c2000000-0000-4000-8000-000000000001";
 
 test.describe("批发写入失败保留表单", () => {
   test("订单创建、修改、结汇和附件失败时保留输入", async ({ page }) => {
     test.setTimeout(120_000);
+    // 固定种子只读，使用真实单号，不按月份和序号猜测。
+    const [fixedOrder] = readLocalPostgresRows<{ order_number: string }>(
+      `select order_number from public.wholesale_orders where id='${FIRST_ORDER_ID}'`,
+    );
+    expect(fixedOrder?.order_number).toBeTruthy();
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/orders");
     await expectWorkspaceShell(page);
     await expectNotForbiddenPage(page);
 
-    await failJsonRequest(page, "**/rest/v1/rpc/create_wholesale_order");
+    await failJsonRequest(page, "create-order");
     await page.getByRole("button", { name: "新建订单" }).click();
     const createDialog = page.getByRole("dialog", { name: "新建批发订单" });
     const createNote = "失败后仍要保留的订单备注";
@@ -36,17 +49,21 @@ test.describe("批发写入失败保留表单", () => {
     await expect(createDialog.getByLabel("备注")).toHaveValue(createNote);
     await expectResponsiveLayout(page);
     await page.keyboard.press("Escape");
-    await page.getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？").first().waitFor();
+    await page
+      .getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？")
+      .first()
+      .waitFor();
     await page.getByRole("button", { name: "暂不操作" }).click();
     await expect(createDialog.getByLabel("备注")).toHaveValue(createNote);
     await page.keyboard.press("Escape");
-    await page.getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？").first().waitFor();
+    await page
+      .getByText("这笔订单还没有保存，确定要放弃当前填写的内容吗？")
+      .first()
+      .waitFor();
     await page.getByRole("button", { name: "确认操作" }).click();
 
-    await failJsonRequest(page, "**/rest/v1/rpc/update_wholesale_order");
-    await page
-      .getByLabel("搜索订单")
-      .fill(`WH-LOCAL-${currentShanghaiMonth().replace("-", "")}-001`);
+    await failJsonRequest(page, "edit-order");
+    await page.getByLabel("搜索订单").fill(fixedOrder.order_number);
     // 固定夹具可能位于当前月份较早日期，精确找单应走产品已有的全历史入口。
     await page.getByRole("button", { name: "跨日期查此单号" }).click();
     const orderRow = page.getByTestId(`wholesale-order-row-${FIRST_ORDER_ID}`);
@@ -60,47 +77,58 @@ test.describe("批发写入失败保留表单", () => {
     await expect(editDialog).toBeVisible();
     await expect(editDialog.getByLabel("备注")).toHaveValue(editNote);
     await page.keyboard.press("Escape");
-    await page.getByText("还有没保存的修改。确定放弃并关闭吗？").first().waitFor();
+    await page
+      .getByText("还有没保存的修改。确定放弃并关闭吗？")
+      .first()
+      .waitFor();
     await page.getByRole("button", { name: "暂不操作" }).click();
     await expect(editDialog.getByLabel("备注")).toHaveValue(editNote);
     await page.keyboard.press("Escape");
-    await page.getByText("还有没保存的修改。确定放弃并关闭吗？").first().waitFor();
+    await page
+      .getByText("还有没保存的修改。确定放弃并关闭吗？")
+      .first()
+      .waitFor();
     await page.getByRole("button", { name: "确认操作" }).click();
 
-    await failJsonRequest(
-      page,
-      "**/rest/v1/rpc/add_wholesale_order_settlement",
-    );
+    await failJsonRequest(page, "settlement");
     await orderRow.getByRole("button", { name: "登记结汇" }).click();
     const settlementDialog = page.getByRole("dialog", { name: "确认结汇" });
     await settlementDialog.getByLabel("本次结汇金额").fill("12.34");
-    await settlementDialog.getByRole("button", { name: "保存结汇记录" }).click();
+    await settlementDialog
+      .getByRole("button", { name: "保存结汇记录" })
+      .click();
     await expectFailureNotice(page);
     await expect(settlementDialog).toBeVisible();
     // toBeVisible 只检查节点样式；这里确认失败提示在弹窗打开时真正位于屏幕最上层。
     const failureNotice = page.getByText(FORCED_ERROR_MESSAGE).last();
-    await expect.poll(() => failureNotice.evaluate((node) => {
-      const overlay = node.closest<HTMLElement>(".pointer-events-none");
-      if (!overlay) return false;
-      const rect = node.getBoundingClientRect();
-      // 提示允许鼠标穿透；命中测试期间临时启用命中，才能检查它实际绘制在遮罩上方。
-      overlay.style.pointerEvents = "auto";
-      const visibleAtCenter = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      overlay.style.pointerEvents = "";
-      return Boolean(visibleAtCenter && overlay.contains(visibleAtCenter));
-    })).toBe(true);
+    await expect
+      .poll(() =>
+        failureNotice.evaluate((node) => {
+          const overlay = node.closest<HTMLElement>(".pointer-events-none");
+          if (!overlay) return false;
+          const rect = node.getBoundingClientRect();
+          // 提示允许鼠标穿透；命中测试期间临时启用命中，才能检查它实际绘制在遮罩上方。
+          overlay.style.pointerEvents = "auto";
+          const visibleAtCenter = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+          );
+          overlay.style.pointerEvents = "";
+          return Boolean(visibleAtCenter && overlay.contains(visibleAtCenter));
+        }),
+      )
+      .toBe(true);
     await expect(settlementDialog.getByLabel("本次结汇金额")).toHaveValue(
       "12.34",
     );
     await page.keyboard.press("Escape");
 
-    await failJsonRequest(
-      page,
-      "**/storage/v1/object/wholesale-order-lists/**",
-      "POST",
-    );
+    await failJsonRequest(page, "upload-list");
     await orderRow.getByRole("button", { name: "查看详情" }).click();
-    await page.getByRole("dialog", { name: /订单 WH-/ }).getByRole("button", { name: "管理附件" }).click();
+    await page
+      .getByRole("dialog", { name: `订单 ${fixedOrder.order_number}` })
+      .getByRole("button", { name: "管理附件" })
+      .click();
     const attachmentDialog = page.getByRole("dialog", {
       name: /Order List/,
     });
@@ -109,7 +137,7 @@ test.describe("批发写入失败保留表单", () => {
       mimeType: "text/csv",
       name: "失败后保留.csv",
     });
-    await attachmentDialog.getByRole("button", { name: "上传" }).click();
+    await attachmentDialog.getByRole("button", { name: "上传附件" }).click();
     await expectFailureNotice(page);
     await expect(attachmentDialog).toBeVisible();
     await expect(attachmentDialog.getByText(/已选择 1 个表格/)).toBeVisible();
@@ -122,7 +150,7 @@ test.describe("批发写入失败保留表单", () => {
     await openWholesaleAlpha(page);
 
     const detailsDialog = page.getByRole("dialog", { name: "Wholesale Alpha" });
-    await failJsonRequest(page, "**/rest/v1/wholesale_customers*", "PATCH");
+    await failJsonRequest(page, "alias");
     await detailsDialog.getByRole("button", { name: "新增名称" }).click();
     const aliasInput = detailsDialog.getByLabel("新增其他名称");
     await aliasInput.fill("失败后保留的客户别名");
@@ -131,10 +159,7 @@ test.describe("批发写入失败保留表单", () => {
     await expect(detailsDialog).toBeVisible();
     await expect(aliasInput).toHaveValue("失败后保留的客户别名");
 
-    await failJsonRequest(
-      page,
-      "**/rest/v1/rpc/link_wholesale_customer_registered_user",
-    );
+    await failJsonRequest(page, "link-account");
     const accountSelect = detailsDialog.getByLabel("选择客户注册账号");
     const accountValue = await firstNonEmptyOptionValue(accountSelect);
     await chooseSelectOption(accountSelect, { value: accountValue });
@@ -150,10 +175,7 @@ test.describe("批发写入失败保留表单", () => {
     await loginAs(page, "administrator");
 
     await page.goto("/admin/wholesale/logistics");
-    await failJsonRequest(
-      page,
-      "**/rest/v1/rpc/change_wholesale_logistics_store_assignment**",
-    );
+    await failJsonRequest(page, "assignment");
     await page.getByRole("button", { name: "店铺归属设置" }).click();
     const logisticsDialog = page.getByRole("dialog", {
       name: "店铺归属设置",
@@ -192,7 +214,7 @@ test.describe("批发写入失败保留表单", () => {
     await page.keyboard.press("Escape");
 
     await page.goto("/admin/wholesale/referrals");
-    await failJsonRequest(page, "**/rest/v1/wholesale_referrals*", "POST");
+    await failJsonRequest(page, "referral");
     await page.getByRole("button", { name: "新增推荐关系" }).click();
     const referralDialog = page.getByRole("dialog", { name: "新增推荐关系" });
     const referrerSelect = referralDialog.getByRole("combobox", {
@@ -219,16 +241,15 @@ test.describe("批发写入失败保留表单", () => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await loginAs(page, "finance");
     await page.goto("/finance/wholesale/settlement-releases");
-    await failJsonRequest(
-      page,
-      "**/rest/v1/rpc/create_wholesale_settlement_release",
-    );
+    await failJsonRequest(page, "release");
 
     await page.getByRole("button", { name: "发布收款" }).click();
     const dialog = page.getByRole("dialog", { name: "发布结汇收款" });
     await dialog.getByLabel("客户名称").fill("失败后保留的结汇客户");
     await dialog.getByLabel("结汇金额").fill("88.66");
-    await chooseSelectOption(dialog.getByLabel("币种", { exact: true }), { value: "USD" });
+    await chooseSelectOption(dialog.getByLabel("币种", { exact: true }), {
+      value: "USD",
+    });
     await dialog.getByLabel("备注").fill("失败后保留的结汇备注");
     await dialog.getByRole("button", { name: "发布收款" }).click();
     await expectFailureNotice(page);
@@ -237,9 +258,7 @@ test.describe("批发写入失败保留表单", () => {
       "失败后保留的结汇客户",
     );
     await expect(dialog.getByLabel("结汇金额")).toHaveValue("88.66");
-    await expect(dialog.getByLabel("备注")).toHaveValue(
-      "失败后保留的结汇备注",
-    );
+    await expect(dialog.getByLabel("备注")).toHaveValue("失败后保留的结汇备注");
     await expectResponsiveLayout(page);
   });
 });
@@ -268,50 +287,6 @@ async function openWholesaleAlpha(page: Page) {
     .filter({ visible: true })
     .first()
     .click();
-}
-
-const forcedFailureProbes = new WeakMap<Page, Array<() => Promise<void>>>();
-
-async function failJsonRequest(
-  page: Page,
-  url: string,
-  method = "POST",
-) {
-  let matched = 0;
-  const probes = forcedFailureProbes.get(page) ?? [];
-  probes.push(async () => { await expect.poll(() => matched, { message: `forced ${method} failure must actually match ${url}` }).toBeGreaterThan(0); });
-  forcedFailureProbes.set(page, probes);
-  await page.route(url, async (route) => {
-    if (route.request().method() !== method) {
-      await route.continue();
-      return;
-    }
-    matched += 1;
-    await route.fulfill({
-      body: JSON.stringify({
-        code: "P0001",
-        details: null,
-        hint: null,
-        message: "e2e_forced_failure",
-      }),
-      contentType: "application/json",
-      status: 400,
-    });
-  });
-}
-
-async function expectInterceptedFailure(page: Page) {
-  const probe = forcedFailureProbes.get(page)?.shift();
-  expect(probe, "each forced failure must have a pending route probe").toBeDefined();
-  await probe!();
-}
-
-async function expectFailureNotice(page: Page) {
-  await expectInterceptedFailure(page);
-  // Next 自带一个空的路由播报区，同样使用 alert 角色；用文案筛选才能只定位业务反馈。
-  await expect(
-    page.getByRole("alert").filter({ hasText: FORCED_ERROR_MESSAGE }),
-  ).toBeVisible();
 }
 
 async function firstNonEmptyOptionValue(
@@ -343,14 +318,7 @@ async function expectNoDocumentHorizontalOverflow(page: Page) {
   expect(overflowPixels).toBeLessThanOrEqual(2);
 }
 
+/** 月份沿用统一上海日历，避免测试机器时区改变查单/表单输入。 */
 function currentShanghaiMonth() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    month: "2-digit",
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-  return `${values.year}-${values.month}`;
+  return shanghaiDate().slice(0, 7);
 }

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { assignMailThread } from "@/lib/mail/mail-service";
+import { assignMailThread } from "@/lib/mail/mail-thread-mutations";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../../_shared";
 
+/** 预期版本来自当前打开的会话，转交后还要核对新负责人和审计行。 */
 export async function POST(request: Request, context: { params: Promise<{ threadId: string }> }) {
   try {
     const { threadId } = await context.params;

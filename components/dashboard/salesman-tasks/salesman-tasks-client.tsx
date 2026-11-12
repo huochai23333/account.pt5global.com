@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 
 import type {
   SalesmanTaskFocusFilter,
-  SalesmanTasksPageData,
   SalesmanTasksSearchParams,
-} from "@/lib/salesman-tasks";
+} from "@/lib/salesman-task-route";
+import type { SalesmanTasksPageData } from "@/lib/salesman-tasks";
 import { Button } from "@/components/ui/button";
 import { DashboardPaginationFooter } from "@/components/dashboard/dashboard-collection-section";
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-section-header";

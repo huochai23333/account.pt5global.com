@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
+import {
+  getServiceOrderDetail,
+  type OrderSupplementaryOverviewReference,
+  type ServiceOrderRecord,
+} from "./admin-orders-service-detail";
 import type {
   AdminOrderDetailValue,
   AdminOrderSupplementaryDetail,
-  OrderOverviewReference,
 } from "./admin-orders-types";
 import { isVipMembershipScope } from "./vip-memberships";
 
@@ -18,41 +22,10 @@ type PurchaseOrderTypeRecord = {
   business_subcategory: string | null;
 };
 
-type ServiceOrderRecord = {
-  order_overview_id: string;
-  order_type: string;
-  order_discount: string;
-  price_option_id: string;
-  service_fee_type: string | null;
-  order_details: AdminOrderDetailValue;
-};
-
-type ServiceOrderTypeRecord = {
-  business_subcategory: string | null;
-};
-
-type OrderDiscountTypeRecord = {
-  discount_ratio: number | string | null;
-};
-
-type ServiceFeeTypeRecord = {
-  fee_ratio: number | string | null;
-};
-
-type ServiceOrderPriceOptionRecord = {
-  display_name: string | null;
-  amount_usd: number | string | null;
-};
-
 type VipRechargeOrderRecord = {
   order_overview_id: string;
   vip_scope: string;
   order_details: AdminOrderDetailValue;
-};
-
-type OrderSupplementaryOverviewReference = OrderOverviewReference & {
-  rmb_amount: number | string | null;
-  service_fee_type: string | null;
 };
 
 export async function getAdminOrderSupplementaryDetail(
@@ -65,6 +38,7 @@ export async function getAdminOrderSupplementaryDetail(
     return null;
   }
 
+  // 补充表以总单 ID 关联。沿用采购、服务、VIP 的原有分派顺序。
   const [purchaseResult, serviceResult, vipResult] = await Promise.all([
     withRequestTimeout(
       supabase
@@ -124,76 +98,7 @@ export async function getAdminOrderSupplementaryDetail(
   }
 
   if (serviceResult.data) {
-    const serviceFeeTypeId =
-      overview.service_fee_type ?? serviceResult.data.service_fee_type;
-    const [serviceTypeResult, discountTypeResult, priceOptionResult, serviceFeeTypeResult] =
-      await Promise.all([
-      withRequestTimeout(
-        supabase
-          .from("service_order_type")
-          .select("business_subcategory")
-          .eq("id", serviceResult.data.order_type)
-          .maybeSingle<ServiceOrderTypeRecord>(),
-      ),
-      withRequestTimeout(
-        supabase
-          .from("order_discount_type")
-          .select("discount_ratio")
-          .eq("id", serviceResult.data.order_discount)
-          .maybeSingle<OrderDiscountTypeRecord>(),
-      ),
-      withRequestTimeout(
-        supabase
-          .from("service_order_price_option")
-          .select("display_name,amount_usd")
-          .eq("id", serviceResult.data.price_option_id)
-          .maybeSingle<ServiceOrderPriceOptionRecord>(),
-      ),
-      serviceFeeTypeId
-        ? withRequestTimeout(
-            supabase
-              .from("service_fee_type")
-              .select("fee_ratio")
-              .eq("id", serviceFeeTypeId)
-              .maybeSingle<ServiceFeeTypeRecord>(),
-          )
-        : Promise.resolve({ data: null, error: null }),
-    ]);
-
-    if (serviceTypeResult.error) {
-      throw serviceTypeResult.error;
-    }
-
-    if (discountTypeResult.error) {
-      throw discountTypeResult.error;
-    }
-
-    if (serviceFeeTypeResult.error) {
-      throw serviceFeeTypeResult.error;
-    }
-
-    if (priceOptionResult.error) {
-      throw priceOptionResult.error;
-    }
-
-    return {
-      kind: "service",
-      orderNumber: overview.order_number,
-      subtypeId: serviceResult.data.order_type,
-      subtype: serviceTypeResult.data?.business_subcategory ?? null,
-      discountId: serviceResult.data.order_discount,
-      discountRatio: discountTypeResult.data?.discount_ratio ?? null,
-      priceOptionId: serviceResult.data.price_option_id,
-      priceOptionLabel: priceOptionResult.data?.display_name ?? null,
-      priceAmountUsd: priceOptionResult.data?.amount_usd ?? null,
-      serviceFeeAmount: calculateServiceFeeAmount(
-        overview.rmb_amount,
-        serviceFeeTypeResult.data?.fee_ratio ?? null,
-      ),
-      serviceFeeRatio: serviceFeeTypeResult.data?.fee_ratio ?? null,
-      serviceFeeTypeId,
-      details: serviceResult.data.order_details,
-    };
+    return getServiceOrderDetail(supabase, overview, serviceResult.data);
   }
 
   if (vipResult.data) {
@@ -208,33 +113,6 @@ export async function getAdminOrderSupplementaryDetail(
   }
 
   return null;
-}
-
-function calculateServiceFeeAmount(
-  rmbAmount: number | string | null,
-  serviceFeeRatio: number | string | null,
-) {
-  const amount = parseNumericValue(rmbAmount);
-  const ratio = parseNumericValue(serviceFeeRatio);
-
-  if (amount === null || ratio === null) {
-    return null;
-  }
-
-  return Math.round(amount * ratio * 100) / 100;
-}
-
-function parseNumericValue(value: number | string | null | undefined) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const parsed = Number(value.trim());
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 async function getOrderOverviewReference(

@@ -6,7 +6,7 @@ import { localeCookieName } from "../../i18n/config";
  * 这些结果不替代受准入限制的真实角色登录、认证记录读回和工作台验收。
  */
 for (const [width, locale] of [[1440, "zh"], [390, "zh"], [320, "zh"], [390, "en"]] as const) {
-  test(`公共登录页 ${locale}/${width}px：连接中断后可检查状态且无溢出`, async ({ page }) => {
+  test(`公共登录页 ${locale}/${width}px：连接中断后可检查状态且无溢出`, async ({ page }, testInfo) => {
     const errors: string[] = [];
     const diagnostics: string[] = [];
     let passwords = 0;
@@ -33,9 +33,10 @@ for (const [width, locale] of [[1440, "zh"], [390, "zh"], [320, "zh"], [390, "en
     const rect = await recovery.boundingBox();
     expect(rect?.height).toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `docs/security-auth-recovery/login-${locale}-${width}.png`, fullPage: true });
+    // 每次运行使用测试自己的证据目录，避免覆盖文档中的既有验收图。
+    await page.screenshot({ path: testInfo.outputPath(`login-${locale}-${width}.png`), fullPage: true });
     if (width === 1440) {
-      await page.locator("form").screenshot({ path: "docs/security-auth-recovery/login-recovery-feedback.png" });
+      await page.locator("form").screenshot({ path: testInfo.outputPath("login-recovery-feedback.png") });
     }
     await recovery.focus();
     await page.keyboard.press("Enter");

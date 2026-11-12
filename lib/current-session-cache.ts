@@ -27,6 +27,7 @@ export type SessionCacheState = {
   sessionTrackingCleanup: (() => void) | null;
   sessionTrackingReady: boolean;
   resetVersion: number;
+  generation: number;
 };
 
 const sessionCacheByClient = new WeakMap<SupabaseClient, SessionCacheState>();
@@ -43,14 +44,7 @@ export function getSessionCache(supabase: SupabaseClient) {
     if (existingCache.resetVersion !== sessionCacheResetVersion) {
       // 重置时同时取消旧监听，防止登出后仍由过期订阅写回旧用户。
       existingCache.sessionTrackingCleanup?.();
-      existingCache.currentAccessContextRequest = null;
-      existingCache.currentAccessContextSnapshot = undefined;
-      existingCache.currentClaimsRequest = null;
-      existingCache.currentClaimsSnapshot = undefined;
-      existingCache.currentSessionRequest = null;
-      existingCache.currentSessionSnapshot = undefined;
-      existingCache.currentUserRequest = null;
-      existingCache.currentUserSnapshot = undefined;
+      invalidateSessionReads(existingCache, undefined);
       existingCache.sessionTrackingCleanup = null;
       existingCache.sessionTrackingReady = false;
       existingCache.resetVersion = sessionCacheResetVersion;
@@ -71,6 +65,7 @@ export function getSessionCache(supabase: SupabaseClient) {
     sessionTrackingCleanup: null,
     sessionTrackingReady: false,
     resetVersion: sessionCacheResetVersion,
+    generation: 0,
   };
 
   sessionCacheByClient.set(supabase, sessionCache);
@@ -86,20 +81,18 @@ export function ensureSessionTracking(
   const sessionTrackingRegistry = getSessionTrackingRegistry();
   sessionTrackingRegistry.get(supabase)?.();
 
+  let active = true;
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
-    // Auth 事件只负责使派生数据失效；真正的角色解析仍由各读取模块完成。
-    sessionCache.currentAccessContextRequest = null;
-    sessionCache.currentAccessContextSnapshot = undefined;
-    sessionCache.currentClaimsRequest = null;
-    sessionCache.currentClaimsSnapshot = undefined;
-    sessionCache.currentSessionSnapshot = session;
-    sessionCache.currentUserRequest = null;
-    sessionCache.currentUserSnapshot = session ? undefined : null;
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (!active || sessionCache.resetVersion !== sessionCacheResetVersion) return;
+    // INITIAL_SESSION 是订阅时的首次通知，首轮读取会自行核实身份。
+    if (event === "INITIAL_SESSION") return;
+    invalidateSessionReads(sessionCache, session);
   });
 
   const cleanup = () => {
+    active = false;
     subscription.unsubscribe();
     if (sessionTrackingRegistry.get(supabase) === cleanup) {
       sessionTrackingRegistry.delete(supabase);
@@ -113,6 +106,46 @@ export function ensureSessionTracking(
   sessionCache.sessionTrackingCleanup = cleanup;
   sessionCache.sessionTrackingReady = true;
   sessionTrackingRegistry.set(supabase, cleanup);
+}
+
+function invalidateSessionReads(cache: SessionCacheState, session: Session | null | undefined) {
+  cache.generation += 1;
+  cache.currentAccessContextRequest = null;
+  cache.currentAccessContextSnapshot = undefined;
+  cache.currentClaimsRequest = null;
+  cache.currentClaimsSnapshot = undefined;
+  cache.currentSessionRequest = null;
+  cache.currentSessionSnapshot = session;
+  cache.currentUserRequest = null;
+  cache.currentUserSnapshot = session === null ? null : undefined;
+}
+
+export function watchSessionCache(cache: SessionCacheState) {
+  const generation = cache.generation;
+  return () => generation === cache.generation && cache.resetVersion === sessionCacheResetVersion;
+}
+
+/** 旧请求不能发布身份，也不能清空新代次的请求槽。明确返回空值可阻止旧调用继续操作。 */
+export function startSessionCacheRequest<T>(
+  cache: SessionCacheState,
+  load: (isCurrent: () => boolean) => Promise<T | null>,
+  store: (value: T | null) => void,
+  clear: () => void,
+) {
+  const isCurrent = watchSessionCache(cache);
+  return load(isCurrent).then(
+    (value) => {
+      if (!isCurrent()) return null;
+      store(value);
+      return value;
+    },
+    (error: unknown) => {
+      if (!isCurrent()) return null;
+      throw error;
+    },
+  ).finally(() => {
+    if (isCurrent()) clear();
+  });
 }
 
 function getSessionTrackingRegistry() {

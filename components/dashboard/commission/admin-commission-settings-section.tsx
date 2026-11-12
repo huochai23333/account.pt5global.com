@@ -43,7 +43,7 @@ export function AdminCommissionSettingsSection({
 
   return (
     <DashboardListSection bodyClassName="flex flex-col gap-5">
-      {viewModel.feedback ? (
+      {viewModel.feedback && !viewModel.editor ? (
         <FeedbackNotice tone={viewModel.feedback.tone}>
           {viewModel.feedback.message}
         </FeedbackNotice>
@@ -60,6 +60,7 @@ export function AdminCommissionSettingsSection({
 
       <BusinessParameterEditDialog
         editor={viewModel.editor}
+        errorMessage={viewModel.feedback?.tone === "error" ? viewModel.feedback.message : undefined}
         locale={locale}
         onClose={viewModel.closeEditor}
         onPublish={() => void viewModel.publish()}

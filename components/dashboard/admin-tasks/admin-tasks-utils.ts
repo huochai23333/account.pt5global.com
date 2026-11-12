@@ -61,6 +61,29 @@ export function createTaskFormFromTask(task: AdminTaskRow): CreateTaskFormState 
   };
 }
 
+export function changeTaskFormType(
+  form: CreateTaskFormState,
+  taskTypeCode: string,
+  options: TaskTypeOption[],
+): CreateTaskFormState {
+  const previousType = options.find((option) => option.code === form.taskTypeCode);
+  const nextType = options.find((option) => option.code === taskTypeCode);
+  const previousDefault = formatOptionalTaskCommissionInput(previousType?.defaultCommissionAmountRmb ?? 0);
+  const nextDefault = formatOptionalTaskCommissionInput(nextType?.defaultCommissionAmountRmb ?? 0);
+
+  // 空白和旧默认值跟随新类型，用户手填的金额继续保留。
+  const useDefault = form.commissionAmount.trim().length === 0 || form.commissionAmount === previousDefault;
+  return {
+    ...form,
+    taskTypeCode,
+    commissionAmount: useDefault ? nextDefault : form.commissionAmount,
+  };
+}
+
+export function toggleTaskTargetRole(roles: TaskTargetRole[], role: TaskTargetRole) {
+  return roles.includes(role) ? roles.filter((target) => target !== role) : [...roles, role];
+}
+
 export function canEditTask(task: AdminTaskRow) {
   void task;
   return true;

@@ -6,7 +6,6 @@ import { CalendarDays } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
@@ -27,9 +26,7 @@ import {
   getInitialDateTimeDraft,
   getShanghaiDatePickerValue,
   isCanonicalDatePickerValue,
-  isDatePickerValueWithinBounds,
   normalizeDatePickerLocale,
-  parseDatePickerInput,
   type DatePickerMode,
 } from "@/components/ui/date-picker-values";
 import { controlVariants, Input } from "@/components/ui/form-controls";
@@ -37,6 +34,7 @@ import {
   useFormFieldControlAttributes,
   useFormFieldRequired,
 } from "@/components/ui/form-field-context";
+import { useDatePickerField } from "@/components/ui/use-date-picker-field";
 import { cn } from "@/lib/utils";
 
 export type DatePickerProps = {
@@ -91,12 +89,31 @@ export function DatePicker({
   const t = useTranslations("DatePicker");
   const resolvedRequired = useFormFieldRequired(required);
   const locale = normalizeDatePickerLocale(useLocale());
-  const [internalValue, setInternalValue] = useState(defaultValue);
-  const currentValue = value ?? internalValue;
-  const [inputText, setInputText] = useState(() =>
-    formatDatePickerValue(currentValue, mode, locale),
-  );
-  const [error, setError] = useState<string | null>(null);
+  const editable = !disabled && !readOnly;
+  const {
+    currentValue,
+    inputText,
+    error,
+    inputRef,
+    commitCanonicalValue,
+    commitInputText,
+    resetInput,
+    handleBlur,
+    handleChange,
+    handleFocus,
+    handleInvalid,
+  } = useDatePickerField({
+    defaultValue,
+    editable,
+    locale,
+    max,
+    min,
+    mode,
+    onValueChange,
+    resolvedRequired,
+    value,
+  });
+  const restoreFocusRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(() =>
     getInitialDatePickerMonth(currentValue, mode),
@@ -105,10 +122,6 @@ export function DatePicker({
     getInitialDateTimeDraft(currentValue),
   );
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const restoreFocusRef = useRef(false);
-  const inputFocusedRef = useRef(false);
-  const inputDraftRef = useRef(false);
   const errorId = `${useId()}-error`;
   const fieldAttributes = useFormFieldControlAttributes({
     ariaDescribedBy,
@@ -116,9 +129,10 @@ export function DatePicker({
     ariaRequired,
     id,
   });
-  const describedBy = [fieldAttributes["aria-describedby"], error ? errorId : null]
-    .filter(Boolean)
-    .join(" ") || undefined;
+  const describedBy =
+    [fieldAttributes["aria-describedby"], error ? errorId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   const copy: DatePickerPanelCopy = {
     cancel: t("cancel"),
     clear: t("clear"),
@@ -140,104 +154,21 @@ export function DatePicker({
     today: t("today"),
   };
 
-  const updateValue = useCallback(
-    (nextValue: string) => {
-      if (value === undefined) setInternalValue(nextValue);
-      onValueChange?.(nextValue);
-    },
-    [onValueChange, value],
-  );
-
-  const showError = useCallback((message: string | null) => {
-    setError(message);
-    inputRef.current?.setCustomValidity(message ?? "");
-  }, []);
-
-  const commitCanonicalValue = useCallback(
-    (nextValue: string) => {
-      if (!nextValue) {
-        inputDraftRef.current = false;
-        setInputText("");
-        showError(resolvedRequired ? t("required") : null);
-        // 必填字段清空后保留最后一个有效业务值，只让可见输入进入无效状态；
-        // 这样隐藏 FormData 不会短暂污染筛选条件，同时浏览器仍会阻止表单提交。
-        if (!resolvedRequired && currentValue) updateValue("");
-        return !resolvedRequired;
-      }
-      if (
-        !isCanonicalDatePickerValue(nextValue, mode) ||
-        !isDatePickerValueWithinBounds(nextValue, min, max)
-      ) {
-        showError(
-          isCanonicalDatePickerValue(nextValue, mode)
-            ? t("outOfRange")
-            : t(mode === "month" ? "invalidMonth" : mode === "datetime-local" ? "invalidDateTime" : "invalidDate"),
-        );
-        return false;
-      }
-
-      // 仅在规范值真正变化时通知业务层，避免用户只是打开日历就重复触发筛选或查询。
-      if (nextValue !== currentValue) updateValue(nextValue);
-      inputDraftRef.current = false;
-      setInputText(formatDatePickerValue(nextValue, mode, locale));
-      showError(null);
-      return true;
-    },
-    [currentValue, locale, max, min, mode, resolvedRequired, showError, t, updateValue],
-  );
-
-  const commitInputText = useCallback(() => {
-    const parsed = parseDatePickerInput(inputText, mode, locale);
-    if (parsed === null) {
-      showError(
-        t(mode === "month" ? "invalidMonth" : mode === "datetime-local" ? "invalidDateTime" : "invalidDate"),
-      );
-      return false;
-    }
-    return commitCanonicalValue(parsed);
-  }, [commitCanonicalValue, inputText, locale, mode, showError, t]);
-
   const closeAndRestoreFocus = useCallback(() => {
     restoreFocusRef.current = true;
     setOpen(false);
   }, []);
 
-  useEffect(() => {
-    // 用户正在输入但尚未确认时，外部筛选查询可能先返回旧值。
-    // 此时保留输入草稿；等失焦、回车、日历确认或重置后，再接受受控值同步。
-    if (inputFocusedRef.current && inputDraftRef.current) return;
-    inputDraftRef.current = false;
-    setInputText(formatDatePickerValue(currentValue, mode, locale));
-    showError(null);
-  }, [currentValue, locale, mode, showError]);
-
-  useEffect(() => {
-    if (value !== undefined) return;
-    const form = inputRef.current?.form;
-    if (!form) return;
-
-    const handleReset = () => {
-      inputDraftRef.current = false;
-      setInternalValue(defaultValue);
-      setInputText(formatDatePickerValue(defaultValue, mode, locale));
-      showError(null);
-    };
-    form.addEventListener("reset", handleReset);
-    return () => form.removeEventListener("reset", handleReset);
-  }, [defaultValue, locale, mode, showError, value]);
-
   return (
     <Popover.Root
       modal="trap-focus"
       onOpenChange={(nextOpen, details) => {
-        if (disabled || readOnly) return;
+        if (!editable) return;
         if (nextOpen) preparePanel();
         if (!nextOpen && details.reason === "escape-key") {
           // Escape 关闭浮层时，同时丢弃尚未提交的键盘草稿，回到最后一个有效业务值。
-          inputDraftRef.current = false;
-          setInputText(formatDatePickerValue(currentValue, mode, locale));
+          resetInput();
           setDateTimeDraft(getInitialDateTimeDraft(currentValue));
-          showError(null);
           restoreFocusRef.current = true;
         }
         setOpen(nextOpen);
@@ -250,7 +181,10 @@ export function DatePicker({
       }}
       open={open}
     >
-      <div className={cn("grid min-w-0 gap-1.5", className)} data-slot="date-picker-root">
+      <div
+        className={cn("grid min-w-0 gap-1.5", className)}
+        data-slot="date-picker-root"
+      >
         <div className="relative min-w-0" ref={anchorRef}>
           <Input
             {...fieldAttributes}
@@ -266,28 +200,10 @@ export function DatePicker({
             data-value={currentValue}
             disabled={disabled}
             inputMode="numeric"
-            onBlur={() => {
-              if (!readOnly) commitInputText();
-              inputFocusedRef.current = false;
-            }}
-            onChange={(event) => {
-              inputDraftRef.current = true;
-              setInputText(event.target.value);
-              showError(null);
-            }}
-            onFocus={() => {
-              inputFocusedRef.current = true;
-            }}
-            onInvalid={() => {
-              // 保留浏览器把焦点带回第一个无效字段的默认行为，同时显示系统内一致的错误说明。
-              const invalidKey =
-                mode === "month"
-                  ? "invalidMonth"
-                  : mode === "datetime-local"
-                    ? "invalidDateTime"
-                    : "invalidDate";
-              showError(inputText.trim() ? t(invalidKey) : t("required"));
-            }}
+            onBlur={handleBlur}
+            onChange={(event) => handleChange(event.target.value)}
+            onFocus={handleFocus}
+            onInvalid={handleInvalid}
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder ?? getDatePickerPlaceholder(mode, locale)}
             readOnly={readOnly}
@@ -297,7 +213,13 @@ export function DatePicker({
             value={inputText}
           />
           <Popover.Trigger
-            aria-label={t(mode === "month" ? "openMonth" : mode === "datetime-local" ? "openDateTime" : "openDate")}
+            aria-label={t(
+              mode === "month"
+                ? "openMonth"
+                : mode === "datetime-local"
+                  ? "openDateTime"
+                  : "openDate",
+            )}
             className={cn(
               buttonVariants({ size: "icon-compact", variant: "ghost" }),
               "absolute top-1/2 right-0.5 -translate-y-1/2",
@@ -308,9 +230,20 @@ export function DatePicker({
             <CalendarDays aria-hidden="true" className="size-4" />
           </Popover.Trigger>
         </div>
-        {name ? <input disabled={disabled} name={name} type="hidden" value={currentValue} /> : null}
+        {name ? (
+          <input
+            disabled={disabled}
+            name={name}
+            type="hidden"
+            value={currentValue}
+          />
+        ) : null}
         {error ? (
-          <p aria-live="polite" className="px-1 text-xs leading-5 text-status-danger" id={errorId}>
+          <p
+            aria-live="polite"
+            className="px-1 text-xs leading-5 text-status-danger"
+            id={errorId}
+          >
             {error}
           </p>
         ) : null}
@@ -346,6 +279,8 @@ export function DatePicker({
   }
 
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // 快捷键和按钮使用同一编辑权限，固定时间不能从键盘打开日历。
+    if (!editable) return;
     if (event.altKey && event.key === "ArrowDown") {
       event.preventDefault();
       preparePanel();
@@ -357,13 +292,13 @@ export function DatePicker({
       commitInputText();
       return;
     }
-    if (event.key === "Escape" && inputText !== formatDatePickerValue(currentValue, mode, locale)) {
+    if (
+      event.key === "Escape" &&
+      inputText !== formatDatePickerValue(currentValue, mode, locale)
+    ) {
       event.preventDefault();
       event.stopPropagation();
-      inputDraftRef.current = false;
-      setInputText(formatDatePickerValue(currentValue, mode, locale));
-      showError(null);
+      resetInput();
     }
   }
-
 }

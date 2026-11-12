@@ -5,19 +5,30 @@ import {
   expectWorkspaceShell,
   loginAs,
 } from "./helpers/auth";
-import { readLocalPostgresRows } from "./helpers/local-postgres-query";
+import {
+  readLocalPostgresRows,
+  localSqlValue,
+} from "./helpers/local-postgres-query";
 import { expandOrderFilters } from "./helpers/order-filter-visibility";
+import { verifyAttachmentSharing } from "./helpers/wholesale-order-attachment-sharing";
 
 let LOCAL_ORDER_NUMBER_2 = "";
-let fixtureOrderPrefix = "";
-
+const fixtureOrderNumbers = new Map<number, string>();
 test.beforeAll(async () => {
-  const [record] = readLocalPostgresRows<{ order_number: string }>(
-    "select order_number from public.wholesale_orders where id = 'c2000000-0000-4000-8000-000000000001'",
+  const rows = readLocalPostgresRows<{ id: string; order_number: string }>(
+    "select id,order_number from public.wholesale_orders where id in ('c2000000-0000-4000-8000-000000000001','c2000000-0000-4000-8000-000000000002')",
   );
-  expect(record).toBeDefined();
-  // 夹具可能在上个月生成，以权威记录的实际编号为准，测试不改产品的日期规则。
-  fixtureOrderPrefix = record.order_number.slice(0, -3);
+  expect(rows).toHaveLength(2);
+  for (const index of [1, 2]) {
+    const row = rows.find(
+      (row) =>
+        row.id === `c2000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    );
+    if (!row?.order_number) throw Error("pagination_fixture_order_missing");
+    fixtureOrderNumbers.set(index, row.order_number);
+  }
+  // 精确读取两张夹具的实际编号，不根据第一张编号猜测另一张仍连续。
+  expect(new Set(fixtureOrderNumbers.values()).size).toBe(2);
   LOCAL_ORDER_NUMBER_2 = buildCurrentLocalOrderNumber(2);
 });
 
@@ -47,32 +58,78 @@ test.describe("wholesale order pagination", () => {
     await expect(page.getByText(/第 1-20 条，共 \d+ 条/)).toBeVisible();
 
     const firstBatchIds = await readOrderRowIds(page);
+    const secondResponse = page.waitForResponse(
+      (r) =>
+        r.url().includes("/rpc/get_wholesale_order_page") &&
+        r.request().method() === "POST" &&
+        r.request().postDataJSON()?.p_page === 2,
+    );
     await page.getByRole("button", { name: "下一页" }).click();
+    const response = await secondResponse;
+    expect(response.ok()).toBe(true);
+    const payload = await response.json();
+    expect(payload.orders).toHaveLength(20);
+    // 不能用旧一页的20行满足新一页断言，必须等待当前编号与第二页响应逐项一致。
+    await expect
+      .poll(() => readOrderRowIds(page))
+      .toEqual(payload.orders.map((row: { id: string }) => row.id));
     await expect(rows).toHaveCount(20);
 
     const loadedIds = await readOrderRowIds(page);
     expect(new Set(loadedIds).size).toBe(loadedIds.length);
     expect(loadedIds.some((id) => firstBatchIds.includes(id))).toBe(false);
+    const stored = readLocalPostgresRows<{ id: string }>(
+      `select id from public.wholesale_orders where id in (${loadedIds.map(localSqlValue).join(",")})`,
+    );
+    expect(stored).toHaveLength(20);
+    expect(new Set(stored.map((row) => row.id))).toEqual(new Set(loadedIds));
     await page.getByRole("button", { name: "上一页" }).click();
     await expect.poll(() => readOrderRowIds(page)).toEqual(firstBatchIds);
 
-    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
+    await searchWholesaleOrdersAcrossDates(
+      page,
+      buildCurrentLocalOrderNumber(1),
+    );
     await expect(rows).toHaveCount(1);
-    await expect(page.getByTestId("wholesale-order-row-c2000000-0000-4000-8000-000000000001")).toBeVisible();
+    await expect(
+      page.getByTestId(
+        "wholesale-order-row-c2000000-0000-4000-8000-000000000001",
+      ),
+    ).toBeVisible();
     // 刷新后重新从数据库读取，确认搜索结果不依赖页面内存中的旧数据。
     await page.reload();
-    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
+    await searchWholesaleOrdersAcrossDates(
+      page,
+      buildCurrentLocalOrderNumber(1),
+    );
     await expect(rows).toHaveCount(1);
-    await expect(page.getByTestId("wholesale-order-row-c2000000-0000-4000-8000-000000000001")).toBeVisible();
-    await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
+    await expect(
+      page.getByTestId(
+        "wholesale-order-row-c2000000-0000-4000-8000-000000000001",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator("nextjs-portal [data-nextjs-dialog]"),
+    ).toHaveCount(0);
     expect(browserErrors).toEqual([]);
   });
 
   test("salesman and client can use wholesale order cards on mobile", async ({
     browser,
+    baseURL,
   }) => {
-    await expectMobileOrderCards(browser, "salesman", "/salesman/wholesale/orders");
-    await expectMobileOrderCards(browser, "client", "/client/wholesale/orders");
+    await expectMobileOrderCards(
+      browser,
+      "salesman",
+      "/salesman/wholesale/orders",
+      baseURL,
+    );
+    await expectMobileOrderCards(
+      browser,
+      "client",
+      "/client/wholesale/orders",
+      baseURL,
+    );
   });
 
   test("mobile shows order cards first and keeps details inside a focused dialog", async ({
@@ -84,27 +141,40 @@ test.describe("wholesale order pagination", () => {
 
     await expect(page.getByLabel("搜索订单")).toBeVisible();
     await expect(page.getByText(/当前筛选概览.*（展开）/)).toBeVisible();
-    await expect(page.locator('[data-testid^="wholesale-order-card-"]')).toHaveCount(20);
-    await expect(page.locator('[data-testid^="wholesale-order-row-"]').first()).toBeHidden();
+    await expect(
+      page.locator('[data-testid^="wholesale-order-card-"]'),
+    ).toHaveCount(20);
+    await expect(
+      page.locator('[data-testid^="wholesale-order-row-"]').first(),
+    ).toBeHidden();
 
-    await page.locator('[data-testid^="wholesale-order-card-"]').first().click();
+    await page
+      .locator('[data-testid^="wholesale-order-card-"]')
+      .first()
+      .click();
 
     const detailsDialog = page.getByRole("dialog", { name: /^订单 / });
     await expect(detailsDialog).toBeVisible();
-    await expect(detailsDialog.getByRole("heading", { name: "费用和利润" }))
-      .toBeVisible();
-    await expect(detailsDialog.getByRole("heading", { name: "结汇记录" }))
-      .toBeVisible();
-    await expect(detailsDialog.getByRole("heading", { name: "备注" }))
-      .toBeVisible();
-    await expect(detailsDialog.getByRole("button", { name: "修改订单" }))
-      .toBeVisible();
+    await expect(
+      detailsDialog.getByRole("heading", { name: "费用和利润" }),
+    ).toBeVisible();
+    await expect(
+      detailsDialog.getByRole("heading", { name: "结汇记录" }),
+    ).toBeVisible();
+    await expect(
+      detailsDialog.getByRole("heading", { name: "备注" }),
+    ).toBeVisible();
+    await expect(
+      detailsDialog.getByRole("button", { name: "修改订单" }),
+    ).toBeVisible();
     await expectNoDocumentHorizontalOverflow(page);
   });
 
   test("finance and scoped sales staff can manage Order List attachments", async ({
     browser,
+    baseURL,
   }) => {
+    expect(baseURL).toBeTruthy();
     const roleCases = [
       { role: "finance" as const, url: "/finance/wholesale/orders" },
       { role: "salesman" as const, url: "/salesman/wholesale/orders" },
@@ -112,11 +182,12 @@ test.describe("wholesale order pagination", () => {
 
     for (const roleCase of roleCases) {
       const context = await browser.newContext({
+        baseURL,
         viewport: { height: 900, width: 1440 },
       });
-      const page = await context.newPage();
-
+      const errors: unknown[] = [];
       try {
+        const page = await context.newPage();
         await loginAs(page, roleCase.role);
         await page.goto(roleCase.url);
         await searchWholesaleOrdersAcrossDates(page, LOCAL_ORDER_NUMBER_2);
@@ -125,11 +196,22 @@ test.describe("wholesale order pagination", () => {
         );
         await expect(row).toBeVisible();
         await page.getByRole("button", { name: "查看全部字段" }).click();
-        await expect(page.getByRole("button", { name: "显示常用字段" })).toBeVisible();
-        await expect(row.getByRole("button", { name: "管理附件" })).toBeVisible();
-      } finally {
-        await context.close();
+        await expect(
+          page.getByRole("button", { name: "显示常用字段" }),
+        ).toBeVisible();
+        await expect(
+          row.getByRole("button", { name: "管理附件" }),
+        ).toBeVisible();
+      } catch (error) {
+        errors.push(error);
       }
+      try {
+        await context.close();
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length)
+        throw new AggregateError(errors, "pagination_context_incomplete");
     }
   });
 
@@ -139,17 +221,26 @@ test.describe("wholesale order pagination", () => {
     await loginAs(page, "administrator");
     await page.goto("/admin/wholesale/orders");
 
-    await page.route("**/rest/v1/wholesale_order_settlements**", async (route) => {
-      await route.fulfill({
-        body: JSON.stringify({ message: "test settlement failure" }),
-        contentType: "application/json",
-        status: 500,
-      });
-    });
-    await searchWholesaleOrdersAcrossDates(page, buildCurrentLocalOrderNumber(1));
-    await expect(page.getByText("部分结汇记录暂时没有加载成功。"))
-      .toBeVisible();
-    await expect(page.locator('[data-testid^="wholesale-order-row-"]')).toHaveCount(1);
+    await page.route(
+      "**/rest/v1/wholesale_order_settlements**",
+      async (route) => {
+        await route.fulfill({
+          body: JSON.stringify({ message: "test settlement failure" }),
+          contentType: "application/json",
+          status: 500,
+        });
+      },
+    );
+    await searchWholesaleOrdersAcrossDates(
+      page,
+      buildCurrentLocalOrderNumber(1),
+    );
+    await expect(
+      page.getByText("部分结汇记录暂时没有加载成功。"),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="wholesale-order-row-"]'),
+    ).toHaveCount(1);
     await page.getByRole("button", { name: "查看全部字段" }).click();
     await expect(
       page.locator('[data-testid^="wholesale-order-row-"]').filter({
@@ -170,172 +261,10 @@ test.describe("wholesale order pagination", () => {
 
   test("keeps client order fields private and shares Order List attachments", async ({
     browser,
+    baseURL,
   }) => {
-    // 这个用例会依次完成管理员上传、客户下载、桌面与手机检查以及管理员清理，
-    // 两个账号的完整流程在较慢的开发环境中可能超过全局 60 秒，因此单独放宽时间。
-    test.setTimeout(120_000);
-
-    const uploadKey = Date.now();
-    const fileName = `client-order-list-${uploadKey}.csv`;
-    const secondFileName = `client-order-list-${uploadKey}.xlsx`;
-    const adminContext = await browser.newContext({
-      viewport: { height: 900, width: 1440 },
-    });
-    const clientContext = await browser.newContext({
-      viewport: { height: 900, width: 1440 },
-    });
-    const adminPage = await adminContext.newPage();
-    const clientPage = await clientContext.newPage();
-
-    try {
-      await loginAs(adminPage, "administrator");
-      await adminPage.goto("/admin/wholesale/orders");
-      await searchWholesaleOrdersAcrossDates(
-        adminPage,
-        LOCAL_ORDER_NUMBER_2,
-      );
-
-      const adminRow = adminPage.locator(
-        '[data-testid="wholesale-order-row-c2000000-0000-4000-8000-000000000002"]',
-      );
-      await expect(adminRow).toBeVisible();
-      await adminPage.getByRole("button", { name: "查看全部字段" }).click();
-      await expect(adminPage.getByRole("button", { name: "显示常用字段" })).toBeVisible();
-      await adminRow.getByRole("button", { name: "管理附件" }).click();
-
-      const attachmentDialog = adminPage.getByRole("dialog", {
-        name: /Order List 附件/,
-      });
-      await attachmentDialog.locator('input[type="file"]').setInputFiles([
-        {
-          buffer: Buffer.from("sku,quantity\nLOCAL-001,2\n", "utf8"),
-          mimeType: "text/csv",
-          name: fileName,
-        },
-        {
-          buffer: Buffer.from("local xlsx test payload", "utf8"),
-          mimeType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          name: secondFileName,
-        },
-      ]);
-      await attachmentDialog.getByRole("button", { name: "上传附件" }).click();
-      await expect(adminPage.getByText("Order List 附件已上传。")).toBeVisible();
-      await expect(attachmentDialog).toBeHidden();
-      await expect(adminRow.getByRole("button", { name: fileName })).toBeVisible();
-      await expect(adminRow.getByRole("button", { name: secondFileName })).toBeVisible();
-      await adminRow.getByRole("button", { name: "管理附件" }).click();
-      await expect(attachmentDialog.getByText(fileName)).toBeVisible();
-      await expect(attachmentDialog.getByText(secondFileName)).toBeVisible();
-
-      await loginAs(clientPage, "client");
-      await clientPage.goto("/client/wholesale/orders");
-      // 客户的数据范围已经固定为本人，因此筛选区不再显示无意义的客户选择框。
-      await expect(
-        clientPage.getByLabel("客户", { exact: true }),
-      ).toHaveCount(0);
-
-      const rpcResponsePromise = clientPage.waitForResponse(
-        (response) =>
-          response.url().includes("/rest/v1/rpc/get_wholesale_order_page") &&
-          response.request().method() === "POST",
-      );
-      await searchWholesaleOrdersAcrossDates(
-        clientPage,
-        LOCAL_ORDER_NUMBER_2,
-      );
-      const rpcPayload = (await (await rpcResponsePromise).json()) as {
-        canViewInternalFields: boolean;
-        orders: Array<Record<string, unknown>>;
-      };
-
-      expect(rpcPayload.canViewInternalFields).toBe(false);
-      expect(rpcPayload.orders).toHaveLength(1);
-      for (const field of [
-        "payment_platform",
-        "order_month",
-        "referral_commission_fee",
-        "product_purchase_amount",
-        "international_shipping_fee",
-        "other_fee",
-      ]) {
-        expect(rpcPayload.orders[0]).not.toHaveProperty(field);
-      }
-
-      for (const label of [
-        "收款平台",
-        "订单计入月份",
-        "推荐佣金费用",
-        "产品采购金额",
-        "国际运费",
-        "其他费用",
-      ]) {
-        await expect(
-          clientPage.getByRole("columnheader", { name: label }),
-        ).toHaveCount(0);
-      }
-
-      const clientRow = clientPage.locator(
-        '[data-testid="wholesale-order-row-c2000000-0000-4000-8000-000000000002"]',
-      );
-      await expect(clientRow).toContainText("本地业务员");
-      await expect(clientRow).not.toContainText("未分配");
-      await expect(clientRow.getByRole("button", { name: fileName })).toBeVisible();
-      await expect(clientRow.getByRole("button", { name: secondFileName })).toBeVisible();
-      await expect(clientRow.getByRole("button", { name: "管理附件" })).toHaveCount(0);
-
-      const downloadPromise = clientPage.waitForEvent("download");
-      await clientRow.getByRole("button", { name: fileName }).click();
-      const download = await downloadPromise;
-      expect(download.suggestedFilename()).toBe(fileName);
-
-
-      await clientPage.setViewportSize({ height: 844, width: 390 });
-      await clientPage.goto("/client/wholesale/orders");
-      await searchWholesaleOrdersAcrossDates(
-        clientPage,
-        LOCAL_ORDER_NUMBER_2,
-      );
-      await clientPage
-        .locator('[data-testid="wholesale-order-card-c2000000-0000-4000-8000-000000000002"]')
-        .click();
-      const mobileDialog = clientPage.getByRole("dialog", {
-        name: `订单 ${LOCAL_ORDER_NUMBER_2}`,
-      });
-      await expect(mobileDialog).toContainText("本地业务员");
-      await expect(mobileDialog.getByRole("button", { name: fileName })).toBeVisible();
-      await expect(mobileDialog.getByRole("button", { name: secondFileName })).toBeVisible();
-      await expect(mobileDialog.getByText("收款平台", { exact: true })).toHaveCount(0);
-      await expect(mobileDialog.getByText("产品采购金额", { exact: true })).toHaveCount(0);
-      await expectNoDocumentHorizontalOverflow(clientPage);
-
-      await adminPage.bringToFront();
-      await attachmentDialog
-        .locator(`[data-attachment-name="${fileName}"]`)
-        .getByRole("button", { name: "删除" })
-        .click();
-      await adminPage
-        .getByRole("dialog", { name: "请确认这项操作" })
-        .getByRole("button", { name: "确认操作" })
-        .click();
-      await expect(adminPage.getByText("Order List 附件已删除。")).toBeVisible();
-      await expect(attachmentDialog.getByText(fileName)).toHaveCount(0);
-      const secondDeleteButton = attachmentDialog
-        .locator(`[data-attachment-name="${secondFileName}"]`)
-        .getByRole("button", { name: "删除" });
-      await expect(secondDeleteButton).toBeEnabled();
-      // 第一次删除会让弹窗列表重新排版；直接触发第二个按钮，避免测试框架
-      // 在列表动画结束前反复等待元素位置稳定。
-      await secondDeleteButton.evaluate((button: HTMLButtonElement) => button.click());
-      await adminPage
-        .getByRole("dialog", { name: "请确认这项操作" })
-        .getByRole("button", { name: "确认操作" })
-        .click();
-      await expect(attachmentDialog.getByText(secondFileName)).toHaveCount(0);
-    } finally {
-      await adminContext.close();
-      await clientContext.close();
-    }
+    test.setTimeout(180_000);
+    await verifyAttachmentSharing(browser, baseURL);
   });
 });
 
@@ -343,7 +272,12 @@ async function readOrderRowIds(page: Page) {
   return page
     .locator('[data-testid^="wholesale-order-row-"]')
     .evaluateAll((rows) =>
-      rows.map((row) => row.getAttribute("data-testid")?.replace("wholesale-order-row-", "") ?? ""),
+      rows.map(
+        (row) =>
+          row
+            .getAttribute("data-testid")
+            ?.replace("wholesale-order-row-", "") ?? "",
+      ),
     );
 }
 
@@ -356,14 +290,19 @@ async function expectNoDocumentHorizontalOverflow(page: Page) {
 }
 
 function buildCurrentLocalOrderNumber(index: number) {
-  return `${fixtureOrderPrefix}${String(index).padStart(3, "0")}`;
+  const value = fixtureOrderNumbers.get(index);
+  if (!value) throw Error("pagination_fixture_number_unconfirmed");
+  return value;
 }
 
 /**
  * 本地固定订单可能早于页面默认的最近 30 天范围。
  * 精确回归应使用产品已有的“跨日期查此单号”，而不是放宽真实用户的默认查询范围。
  */
-async function searchWholesaleOrdersAcrossDates(page: Page, orderNumber: string) {
+async function searchWholesaleOrdersAcrossDates(
+  page: Page,
+  orderNumber: string,
+) {
   await page.getByLabel("搜索订单").fill(orderNumber);
   await page.getByRole("button", { name: "跨日期查此单号" }).click();
 }
@@ -372,11 +311,16 @@ async function expectMobileOrderCards(
   browser: Browser,
   role: "client" | "salesman",
   path: string,
+  baseURL: string | undefined,
 ) {
-  const context = await browser.newContext({ viewport: { height: 844, width: 390 } });
-  const page = await context.newPage();
-
+  expect(baseURL).toBeTruthy();
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { height: 844, width: 390 },
+  });
+  const errors: unknown[] = [];
   try {
+    const page = await context.newPage();
     await loginAs(page, role);
     await page.goto(path);
     await expectWorkspaceShell(page);
@@ -385,22 +329,35 @@ async function expectMobileOrderCards(
     if (role === "client") {
       await expect(page.getByLabel("客户", { exact: true })).toHaveCount(0);
     }
-    await expect(page.locator('[data-testid^="wholesale-order-card-"]').first())
-      .toBeVisible();
+    await expect(
+      page.locator('[data-testid^="wholesale-order-card-"]').first(),
+    ).toBeVisible();
     if (role === "client") {
       // 客户从实际卡片进入详情，确认页面围绕订单履约展示而非后台结汇资料。
-      await page.locator('[data-testid^="wholesale-order-card-"]').first().click();
+      await page
+        .locator('[data-testid^="wholesale-order-card-"]')
+        .first()
+        .click();
       const dialog = page.getByRole("dialog", { name: /^订单 / });
       await expect(dialog.getByText("物流公司")).toBeVisible();
-      await expect(dialog.getByRole("heading", { name: "结汇记录" })).toHaveCount(0);
+      await expect(
+        dialog.getByRole("heading", { name: "结汇记录" }),
+      ).toHaveCount(0);
       await dialog.getByRole("button", { name: "关闭" }).click();
     }
     await expectNoDocumentHorizontalOverflow(page);
     await expectNoVerticalText(page);
     await expectVisibleButtonsHaveTouchSize(page);
-  } finally {
-    await context.close();
+  } catch (error) {
+    errors.push(error);
   }
+  try {
+    await context.close();
+  } catch (error) {
+    errors.push(error);
+  }
+  if (errors.length)
+    throw new AggregateError(errors, "pagination_mobile_context_incomplete");
 }
 
 async function expectNoVerticalText(page: Page) {

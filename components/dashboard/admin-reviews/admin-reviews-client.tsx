@@ -15,7 +15,8 @@ import {
 } from "@/components/dashboard/dashboard-page-shell";
 import { DashboardListSection } from "@/components/dashboard/dashboard-section-panel";
 import { PrivacyReviewList } from "./admin-reviews-ui";
-import { MediaPreviewDialog, MediaReviewList } from "./media-review-list";
+import { MediaPreviewDialog } from "./admin-review-media-preview";
+import { MediaReviewList } from "./media-review-list";
 import { ProfileChangeReviewList } from "./profile-change-review-list";
 import { useAdminReviewsPage } from "./use-admin-reviews-page";
 
@@ -84,28 +85,36 @@ export function AdminReviewsClient({
 
           <div className="mt-6">
             {activeTab === "profile" ? (
-              <DashboardPagedRecords items={profileRows} queryKey={activeTab}>{(pageRows) => <ProfileChangeReviewList
-                busyRows={busyRows}
-                onAction={handleProfileChangeReview}
-                rows={pageRows}
-              />}</DashboardPagedRecords>
+              <DashboardPagedRecords items={profileRows} queryKey={activeTab}>
+                {(pageRows) => (
+                  <ProfileChangeReviewList
+                    busyRows={busyRows}
+                    onAction={handleProfileChangeReview}
+                    rows={pageRows}
+                  />
+                )}
+              </DashboardPagedRecords>
             ) : null}
 
             {activeTab === "privacy" ? (
-              <DashboardPagedRecords items={privacyRows} queryKey={activeTab}>{(pageRows) => <PrivacyReviewList
-                busyRows={busyRows}
-                onAction={handlePrivacyReview}
-                rows={pageRows}
-              />}</DashboardPagedRecords>
+              <DashboardPagedRecords items={privacyRows} queryKey={activeTab}>
+                {(pageRows) => (
+                  <PrivacyReviewList busyRows={busyRows} onAction={handlePrivacyReview} rows={pageRows} />
+                )}
+              </DashboardPagedRecords>
             ) : null}
 
             {activeTab === "media" ? (
-              <DashboardPagedRecords items={mediaRows} queryKey={activeTab}>{(pageRows) => <MediaReviewList
-                busyRows={busyRows}
-                onAction={handleMediaReview}
-                onPreviewOpen={setPreviewAsset}
-                rows={pageRows}
-              />}</DashboardPagedRecords>
+              <DashboardPagedRecords items={mediaRows} queryKey={activeTab}>
+                {(pageRows) => (
+                  <MediaReviewList
+                    busyRows={busyRows}
+                    onAction={handleMediaReview}
+                    onPreviewOpen={setPreviewAsset}
+                    rows={pageRows}
+                  />
+                )}
+              </DashboardPagedRecords>
             ) : null}
           </div>
         </DashboardListSection>

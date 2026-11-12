@@ -8,18 +8,16 @@ import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import {
   addExchangeRateSyncPair,
   getExchangeRateSyncState,
-  getExchangeRatesPageData,
   normalizeCurrencyCode,
   removeExchangeRateSyncPair,
   setExchangeRateAutoSyncEnabled,
-  triggerManualExchangeRateFetch,
   type ExchangeRatesPageData,
   type ExchangeRateSyncState,
-  type ManualExchangeRateFetchItem,
 } from "@/lib/exchange-rates";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 
 import { type FeedbackTone } from "../dashboard-shared-ui";
+import { useExchangeRateCurrentFetch } from "./use-exchange-rate-current-fetch";
 
 type SyncFeedback = {
   message: string;
@@ -46,16 +44,11 @@ export function useExchangeRateSyncSettings({
     initialState,
   );
   const [pairInput, setPairInput] = useState("");
-  const [manualCurrencies, setManualCurrencies] = useState(["USD"]);
   const [feedback, setFeedback] = useState<SyncFeedback>(null);
   const [settingsPending, setSettingsPending] = useState(false);
   const [addPairPending, setAddPairPending] = useState(false);
   const [removePairPendingId, setRemovePairPendingId] = useState<string | null>(
     null,
-  );
-  const [manualFetchPending, setManualFetchPending] = useState(false);
-  const [manualResults, setManualResults] = useState<ManualExchangeRateFetchItem[]>(
-    [],
   );
 
   useEffect(() => {
@@ -181,83 +174,26 @@ export function useExchangeRateSyncSettings({
     ],
   );
 
-  const handleManualCurrencyChange = useCallback((index: number, value: string) => {
-    setManualResults([]);
-    setManualCurrencies((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? value : item)),
-    );
-  }, []);
-
-  const handleAddManualCurrency = useCallback(() => {
-    setManualResults([]);
-    setManualCurrencies((current) => [...current, ""]);
-  }, []);
-
-  const handleRemoveManualCurrency = useCallback((index: number) => {
-    setManualResults([]);
-    setManualCurrencies((current) => {
-      const nextCurrencies = current.filter((_, itemIndex) => itemIndex !== index);
-      return nextCurrencies.length > 0 ? nextCurrencies : ["USD"];
-    });
-  }, []);
-
-  const handleManualFetch = useCallback(async () => {
-    if (!supabase || !canManage || manualFetchPending) {
-      return;
-    }
-
-    setManualFetchPending(true);
-    setFeedback(null);
-    setManualResults([]);
-
-    try {
-      const result = await triggerManualExchangeRateFetch(
-        supabase,
-        manualCurrencies,
-      );
-      const pageData = await getExchangeRatesPageData(supabase, "manage");
-
-      onPageDataLoaded(pageData);
-      setSyncState(pageData.syncState);
-      markBrowserCloudSyncActivity();
-      setManualResults(result.results);
-      setFeedback({
-        tone: result.failedCount > 0 || result.successCount === 0 ? "error" : "success",
-        message: result.failedCount > 0 || result.successCount === 0
-          ? t("sync.feedback.manualPartial", { count: result.successCount, failed: result.failedCount })
-          : t("sync.feedback.manualFetched", { count: result.successCount }),
-      });
-    } catch (error) {
-      setFeedback({
-        tone: "error",
-        message: formatError(error),
-      });
-    } finally {
-      setManualFetchPending(false);
-    }
-  }, [
+  // 当天报价完成后，用同一次读回更新目录与自动获取设置。
+  const applyRefreshedPage = useCallback((pageData: ExchangeRatesPageData) => {
+    onPageDataLoaded(pageData);
+    setSyncState(pageData.syncState);
+  }, [onPageDataLoaded]);
+  const currentFetch = useExchangeRateCurrentFetch({
     canManage,
     formatError,
-    manualCurrencies,
-    manualFetchPending,
-    onPageDataLoaded,
+    onPageDataLoaded: applyRefreshedPage,
+    setFeedback,
     supabase,
-    t,
-  ]);
+  });
 
   return {
+    ...currentFetch,
     addPairPending,
     feedback,
-    handleAddManualCurrency,
     handleAddPair,
     handleAutoSyncChange,
-    handleManualCurrencyChange,
-    handleManualFetch,
-    handleRemoveManualCurrency,
     handleRemovePair,
-    manualCurrencies,
-    manualFetchPending,
-    manualResults,
     pairInput,
     removePairPendingId,
     setPairInput,

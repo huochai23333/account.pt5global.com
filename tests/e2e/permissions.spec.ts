@@ -7,6 +7,7 @@ import {
   loginAs,
 } from "./helpers/auth";
 
+// 页面准入、业务停用和登录状态分别检查；看见拒绝页不能代替数据库RLS验证，也不能当成会话已失效。
 test.describe("workspace permission regression", () => {
   test("client cannot open the administrator workspace", async ({ page }) => {
     await loginAs(page, "client");

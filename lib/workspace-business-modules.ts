@@ -161,6 +161,7 @@ const enabledBusinessKeySet = new Set<string>(
   companyConfig.enabledBusinessKeys,
 );
 
+// “已注册”保留源码和类型，“已启用”决定本次可进入的业务；停用业务不能仅因仍在注册表而出现。
 export const workspaceBusinessModules = allWorkspaceBusinessModules.filter(
   (module) => enabledBusinessKeySet.has(module.key),
 );

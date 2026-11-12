@@ -3,7 +3,10 @@
 import { BriefcaseBusiness, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
-import { DashboardPageShell, DashboardAccessState } from "@/components/dashboard/dashboard-page-shell";
+import {
+  DashboardPageShell,
+  DashboardAccessState,
+} from "@/components/dashboard/dashboard-page-shell";
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-section-header";
 import { DashboardSegmentedTabs } from "@/components/dashboard/dashboard-segmented-tabs";
 import { Button } from "@/components/ui/button";
@@ -32,20 +35,89 @@ export function SalesLeadsClient({ initialData }: { initialData: SalesLeadPageDa
   }, [setDetail, setBoard, refresh]);
   const customer = useSalesLeadCustomer(afterCustomerSaved);
   if (!initialData.hasPermission) {
-    return <DashboardPageShell><DashboardAccessState description={t("states.noPermissionDescription")} kind="permission" title={t("states.noPermissionTitle")} /></DashboardPageShell>;
+    return (
+      <DashboardPageShell>
+        <DashboardAccessState
+          description={t("states.noPermissionDescription")}
+          kind="permission"
+          title={t("states.noPermissionTitle")}
+        />
+      </DashboardPageShell>
+    );
   }
-  return <DashboardPageShell header={<DashboardSectionHeader
-    actions={view.data.canManage ? <Button disabled={view.pending === "sync"} loading={view.pending === "sync"} onClick={() => void view.syncNow()} variant="outline" wrap><RefreshCw className="size-4" />{t("actions.syncNow")}</Button> : undefined}
-    badge={t("header.badge")} badgeIcon={<BriefcaseBusiness className="size-3.5" />}
-    description={t("header.description")} presentation="overview" title={t("header.title")}
-  />}>
-    <SalesLeadRules />
-    <DashboardSegmentedTabs onChange={view.setBoard} options={display.boardOptions} pendingValue={view.pending === "refresh" ? view.board : null} value={view.board} />
-    <SalesLeadsSyncStatus data={view.data} syncNotice={view.syncNotice} />
-    {customer.notice ? <FeedbackNotice tone={customer.notice === "saved" ? "success" : "info"}>{t(`customer.${customer.notice}`)}</FeedbackNotice> : null}
-    <SalesLeadsResultsSection display={display} onConvert={(lead) => void customer.open(lead)} view={view} />
-    <SalesLeadDetailDialog canManage={view.data.canManage} detail={view.action || customer.detail ? null : view.detail} now={display.now} onAction={view.setAction} onConvert={(lead) => void customer.open(lead)} onOpenChange={(open) => { if (!open) view.setDetail(null); }} />
-    <SalesLeadActionDialog action={view.action} errorCode={view.error} leadId={view.detail?.lead.id ?? null} onClose={() => view.setAction(null)} onSubmit={view.submitAction} pending={Boolean(view.detail && view.pending === view.detail.lead.id)} salespeople={view.data.salespeople} />
-    {customer.detail ? <SalesLeadCustomerDialog detail={customer.detail} errorCode={customer.errorCode} key={`${customer.detail.lead.id}-${customer.detail.lead.current_assignment_id}`} onClose={customer.close} onSubmit={customer.submit} pending={customer.pending} /> : null}
-  </DashboardPageShell>;
+  return (
+    <DashboardPageShell
+      header={
+        <DashboardSectionHeader
+          actions={
+            view.data.canManage ? (
+              <Button
+                disabled={view.syncing}
+                loading={view.syncing}
+                onClick={() => void view.syncNow()}
+                variant="outline"
+                wrap
+              >
+                <RefreshCw className="size-4" />
+                {t("actions.syncNow")}
+              </Button>
+            ) : undefined
+          }
+          badge={t("header.badge")}
+          badgeIcon={<BriefcaseBusiness className="size-3.5" />}
+          description={t("header.description")}
+          presentation="overview"
+          title={t("header.title")}
+        />
+      }
+    >
+      <SalesLeadRules />
+      <DashboardSegmentedTabs
+        onChange={view.setBoard}
+        options={display.boardOptions}
+        pendingValue={view.loading ? view.board : null}
+        value={view.board}
+      />
+      <SalesLeadsSyncStatus data={view.data} syncNotice={view.syncNotice} />
+      {customer.notice ? (
+        <FeedbackNotice tone={customer.notice === "saved" ? "success" : "info"}>
+          {t(`customer.${customer.notice}`)}
+        </FeedbackNotice>
+      ) : null}
+      <SalesLeadsResultsSection
+        display={display}
+        onConvert={(lead) => void customer.open(lead)}
+        view={view}
+      />
+      <SalesLeadDetailDialog
+        canManage={view.data.canManage}
+        detail={view.action || customer.detail ? null : view.detail}
+        now={display.now}
+        onAction={view.setAction}
+        onConvert={(lead) => void customer.open(lead)}
+        onOpenChange={(open) => {
+          if (!open) view.setDetail(null);
+        }}
+      />
+      <SalesLeadActionDialog
+        action={view.action}
+        errorCode={view.actionError}
+        leadId={view.detail?.lead.id ?? null}
+        onClose={() => view.setAction(null)}
+        onSubmit={view.submitAction}
+        pending={Boolean(view.detail && view.actionPending === view.detail.lead.id)}
+        salespeople={view.data.salespeople}
+      />
+      {customer.detail ? (
+        <SalesLeadCustomerDialog
+          detail={customer.detail}
+          errorCode={customer.errorCode}
+          key={`${customer.detail.lead.id}-${customer.detail.lead.current_assignment_id}`}
+          onClose={customer.close}
+          onSubmit={customer.submit}
+          pending={customer.pending}
+        />
+      ) : null}
+    </DashboardPageShell>
+  );
 }

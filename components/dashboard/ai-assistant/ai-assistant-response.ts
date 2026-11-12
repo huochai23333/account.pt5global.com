@@ -4,6 +4,8 @@ import type {
   AiAssistantStructuredResponse,
 } from "@/lib/ai-assistant/assistant-types";
 
+import type { AiAssistantSettlementReleaseCopy, AiAssistantUiMessage } from "./ai-assistant-ui-types";
+
 /** 浏览器只接受助手接口声明过的结构，异常 JSON 不会被渲染成可确认的财务动作。 */
 export async function readAssistantStructuredResponse(response: Response) {
   const value = (await response.json()) as unknown;
@@ -67,4 +69,27 @@ function isSettlementReleaseGuidanceCode(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+// 校验通过后才把结构化结果交给消息气泡或确认按钮。
+export function buildStructuredMessage(
+  message: AiAssistantUiMessage,
+  response: AiAssistantStructuredResponse,
+  copy: AiAssistantSettlementReleaseCopy,
+): AiAssistantUiMessage {
+  if (response.kind === "settlementReleaseGuidance") {
+    return {
+      ...message,
+      content: copy.guidance[response.code],
+    };
+  }
+
+  return {
+    ...message,
+    content: copy.confirmationIntro,
+    settlementRelease: {
+      action: response.action,
+      state: "ready",
+    },
+  };
 }

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { loginAs, setTestLocale } from "./helpers/auth";
 
 for (const role of ["administrator", "salesman"] as const) {
-  test(`${role} wholesale navigation starts with leads, customers and orders`, async ({ page }) => {
+  test(`${role} wholesale navigation starts with leads, customers and orders`, async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     await loginAs(page, role);
     const workspace = role === "administrator" ? "admin" : role;
@@ -29,7 +29,8 @@ for (const role of ["administrator", "salesman"] as const) {
       await expect(desktopLinks.nth(0)).toHaveText(locale === "zh" ? "线索" : "Leads");
       await expect(desktopLinks.nth(1)).toHaveText(locale === "zh" ? "客户管理" : "Customer Management");
       await expect(desktopLinks.nth(2)).toHaveText(locale === "zh" ? "批发订单" : "Wholesale Orders");
-      await page.screenshot({ path: `output/wholesale-nav-${role}-${locale}-1440.png` });
+      // 使用测试实例目录保存证据；角色/语言文件名区分同一次场景里的多张截图。
+      await page.screenshot({ path: testInfo.outputPath(`wholesale-nav-${role}-${locale}-1440.png`) });
 
       // 实际点击前三项，保证只是调整位置，没有改变链接对应的页面。
       for (const section of expected.slice(0, 3)) {
@@ -47,7 +48,7 @@ for (const role of ["administrator", "salesman"] as const) {
       for (const index of [0, 1, 2]) await expect(mobileLinks.nth(index)).toBeInViewport();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
       expect(await mobileLinks.evaluateAll((links) => links.every((link) => link.clientWidth >= 100 && link.scrollWidth <= link.clientWidth + 1))).toBe(true);
-      await page.screenshot({ path: `output/wholesale-nav-${role}-${locale}-375.png` });
+      await page.screenshot({ path: testInfo.outputPath(`wholesale-nav-${role}-${locale}-375.png`) });
       await mobileLinks.first().click();
       await expect(page).toHaveURL(new RegExp(`${prefix}leads$`));
     }
@@ -61,7 +62,7 @@ test("已移除的订单认领地址和导入接口不再提供操作入口", as
   await expect(page.getByText("你访问的页面不存在")).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/wholesale\/order-claims$/);
 
-  // 页面与接口都被移除，直接提交请求也不能重新写入采购记录。
+  // 此处只核对已移除接口的HTTP合同；数据库无新增记录需要另作独立业务核对，不能从404推断。
   const importResponse = await page.request.post("/api/wholesale/1688-orders", {
     data: { rows: [{ external_order_number: "REMOVED-IMPORT" }] },
   });

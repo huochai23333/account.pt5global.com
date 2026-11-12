@@ -1,22 +1,14 @@
+/** 任务、团队与旅游协作资产：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
 
 import { useTranslations } from "next-intl";
-import {
-  CircleCheckBig,
-  LoaderCircle,
-  Paperclip,
-  Upload,
-  UsersRound,
-} from "lucide-react";
+import { CircleCheckBig, LoaderCircle, Paperclip, Upload, UsersRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
-import {
-  formatDateTime,
-  formatFileSize,
-} from "@/components/dashboard/dashboard-shared-ui";
+import { formatDateTime, formatFileSize } from "@/components/dashboard/dashboard-shared-ui";
 import {
   formatTaskCommissionMoney,
   getTaskAcceptanceLimitLabel,
@@ -53,9 +45,7 @@ export function SalesmanTaskCard({
   busy: boolean;
   attachmentBusyKey: string | null;
   onAccept: () => void;
-  onOpenAttachment: (
-    attachment: SalesmanTaskRow["attachments"][number],
-  ) => void;
+  onOpenAttachment: (attachment: SalesmanTaskRow["attachments"][number]) => void;
   onSubmitReview: () => void;
 }) {
   const t = useTranslations("Tasks.salesman.card");
@@ -79,23 +69,14 @@ export function SalesmanTaskCard({
             {targetLabel}
           </DataPill>
           <DataPill accent="blue">
-            {getTaskTypeLabel(
-              task.task_type_label,
-              task.task_type_code,
-              sharedT,
-            )}
+            {getTaskTypeLabel(task.task_type_label, task.task_type_code, sharedT)}
           </DataPill>
           <DataPill accent="gold">
             {formatTaskCommissionMoney(task.commission_amount_rmb, locale)}
           </DataPill>
+          <DataPill accent="blue">{getTaskAcceptanceRemainingLabel(task, sharedT)}</DataPill>
           <DataPill accent="blue">
-            {getTaskAcceptanceRemainingLabel(task, sharedT)}
-          </DataPill>
-          <DataPill accent="blue">
-            {getTaskReviewRequirementLabel(
-              task.review_requires_attachment,
-              sharedT,
-            )}
+            {getTaskReviewRequirementLabel(task.review_requires_attachment, sharedT)}
           </DataPill>
           {task.attachments.length > 0 ? (
             <DataPill accent="blue">
@@ -117,18 +98,11 @@ export function SalesmanTaskCard({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <InfoTile
             label={t("taskTypeLabel")}
-            value={getTaskTypeLabel(
-              task.task_type_label,
-              task.task_type_code,
-              sharedT,
-            )}
+            value={getTaskTypeLabel(task.task_type_label, task.task_type_code, sharedT)}
           />
           <InfoTile
             label={t("commissionAmountLabel")}
-            value={formatTaskCommissionMoney(
-              task.commission_amount_rmb,
-              locale,
-            )}
+            value={formatTaskCommissionMoney(task.commission_amount_rmb, locale)}
           />
           <InfoTile
             label={t("acceptanceLimitLabel")}
@@ -136,39 +110,19 @@ export function SalesmanTaskCard({
           />
           <InfoTile
             label={t("reviewRequirementLabel")}
-            value={getTaskReviewRequirementLabel(
-              task.review_requires_attachment,
-              sharedT,
-            )}
+            value={getTaskReviewRequirementLabel(task.review_requires_attachment, sharedT)}
           />
           <InfoTile label={t("taskScopeLabel")} value={targetLabel} />
-          <InfoTile
-            label={t("createdAtLabel")}
-            value={formatDateTime(task.created_at)}
-          />
-          <InfoTile
-            label={t("acceptedAtLabel")}
-            value={formatDateTime(task.accepted_at)}
-          />
-          <InfoTile
-            label={t("submittedAtLabel")}
-            value={formatDateTime(task.submitted_at)}
-          />
-          <InfoTile
-            label={t("reviewedAtLabel")}
-            value={formatDateTime(task.reviewed_at)}
-          />
-          <InfoTile
-            label={t("completedAtLabel")}
-            value={formatDateTime(task.completed_at)}
-          />
+          <InfoTile label={t("createdAtLabel")} value={formatDateTime(task.created_at)} />
+          <InfoTile label={t("acceptedAtLabel")} value={formatDateTime(task.accepted_at)} />
+          <InfoTile label={t("submittedAtLabel")} value={formatDateTime(task.submitted_at)} />
+          <InfoTile label={t("reviewedAtLabel")} value={formatDateTime(task.reviewed_at)} />
+          <InfoTile label={t("completedAtLabel")} value={formatDateTime(task.completed_at)} />
         </div>
 
         {task.attachments.length > 0 ? (
           <div className="rounded-control-large border border-border-subtle bg-surface-inset p-4">
-            <p className="text-sm font-semibold text-primary">
-              {t("attachmentsTitle")}
-            </p>
+            <p className="text-sm font-semibold text-primary">{t("attachmentsTitle")}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {task.attachments.map((attachment) => {
                 const attachmentKey = `${task.id}:${attachment.id}`;
@@ -203,9 +157,7 @@ export function SalesmanTaskCard({
             <p className="text-sm font-semibold text-status-danger">
               {t("reviewRejectReasonLabel")}
             </p>
-            <p className="mt-2 text-sm leading-7 text-content-muted">
-              {task.review_reject_reason}
-            </p>
+            <p className="mt-2 text-sm leading-7 text-content-muted">{task.review_reject_reason}</p>
           </div>
         ) : null}
 
@@ -229,13 +181,10 @@ export function SalesmanTaskCard({
           ) : null}
 
           {task.status === "to_be_accepted" && !canAccept ? (
-            <p className="text-sm leading-7 text-content-muted">
-              {t("fullyAccepted")}
-            </p>
+            <p className="text-sm leading-7 text-content-muted">{t("fullyAccepted")}</p>
           ) : null}
 
-          {(task.status === "accepted" || task.status === "rejected") &&
-          isMine ? (
+          {(task.status === "accepted" || task.status === "rejected") && isMine ? (
             <Button
               variant="success"
               size="default"
@@ -254,9 +203,7 @@ export function SalesmanTaskCard({
           ) : null}
 
           {task.status === "accepted" && !isMine ? (
-            <p className="text-sm leading-7 text-content-muted">
-              {t("takenByOthers")}
-            </p>
+            <p className="text-sm leading-7 text-content-muted">{t("takenByOthers")}</p>
           ) : null}
 
           {task.status === "reviewing" ? (
@@ -266,9 +213,7 @@ export function SalesmanTaskCard({
           ) : null}
 
           {task.status === "rejected" && !isMine ? (
-            <p className="text-sm leading-7 text-content-muted">
-              {t("rejectedByOthers")}
-            </p>
+            <p className="text-sm leading-7 text-content-muted">{t("rejectedByOthers")}</p>
           ) : null}
 
           {task.status === "completed" ? (

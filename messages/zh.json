@@ -405,7 +405,8 @@
     "serviceUnavailable": "当前无法连接系统，请稍后再试。",
     "forbidden": "当前账号不能调整客户业务。",
     "invalidTarget": "这个客户暂时不能添加到该业务，请刷新后重试。",
-    "unknownError": "添加没有完成，请稍后重试。"
+    "unknownError": "添加没有完成，请稍后重试。",
+    "unconfirmed": "暂时无法确认是否已开通，请刷新页面，核对客户的业务权限后再试。"
   },
   "ForgotPasswordForm": {
     "recoverySuccess": "重置链接验证成功，请设置新的登录密码。",
@@ -436,6 +437,7 @@
     "authSessionMissing": "重置链接已失效，请重新发送一封重置邮件。",
     "weakPassword": "这个新密码太常见，请换一个更安全的密码。",
     "samePassword": "新密码不能和当前密码相同。",
+    "passwordUpdateUnconfirmed": "密码修改结果尚未确认。请使用浏览器无痕窗口尝试新密码，确认后再继续。",
     "invalidEmail": "请填写有效的邮箱地址。",
     "emailDeliveryFailed": "重置邮件没有发送成功，请确认邮箱可用，或联系管理员处理。"
   },
@@ -594,7 +596,8 @@
       "acknowledge": "我知道了",
       "empty": "当前暂无可查看的公告。",
       "loadError": "公告暂时没有加载成功，请稍后再试。",
-      "readError": "公告已读状态暂时没有保存成功，请稍后再试。"
+      "readError": "公告已读状态暂时没有保存成功，请稍后再试。",
+      "readPartialError": "部分公告未能标为已读，请再试一次。"
     },
     "accountMenu": {
       "open": "打开账号菜单",
@@ -692,12 +695,14 @@
     },
     "feedback": {
       "createSuccess": "费用已保存。",
+      "createUnconfirmed": "暂时无法确认费用是否已保存，请用原内容重试。",
+      "createDifferent": "上一笔费用还没确认，请恢复原内容再试。",
       "updateSuccess": "费用已更新。",
       "deleteSuccess": "费用已删除。",
       "deleteConfirm": "确定删除“{title}”吗？",
       "missingTitle": "请填写费用名称。",
       "missingAmount": "请填写金额。",
-      "invalidAmount": "金额需要大于 0。",
+      "invalidAmount": "请输入大于 0 的金额，最多保留两位小数。",
       "invalidMonth": "请选择所属月份。",
       "notFoundError": "这条费用记录已经不存在。",
       "permissionError": "当前账号不能维护公司费用。",
@@ -763,13 +768,16 @@
     },
     "feedback": {
       "createSuccess": "记录已保存。",
+      "createDifferent": "上一笔报销记录还没确认，请恢复原内容再试。",
+      "createUnconfirmed": "暂时无法确认报销记录是否已保存，请用原内容重试。",
       "deleteSuccess": "记录已删除。",
       "deleteConfirm": "确定删除“{content}”吗？",
       "reimburseSuccess": "已将 {count} 条记录标记为已报销。",
       "reimburseEmpty": "所选周期没有待报销记录。",
+      "reimburseUnconfirmed": "暂时无法确认本次报销，请刷新页面核对所选周期。",
       "missingContent": "请填写报销内容。",
       "missingAmount": "请填写报销金额。",
-      "invalidAmount": "报销金额需要大于 0。",
+      "invalidAmount": "请输入大于 0 的报销金额，最多保留两位小数。",
       "invalidDate": "请选择发生日期。",
       "notFoundError": "这条报销记录已经不存在。",
       "deleteLockedError": "已报销的记录不能删除。",
@@ -959,10 +967,12 @@
     },
     "attachments": {
       "title": "{number} 的 Order List",
-      "description": "附件仅支持表格文件；客户和财务可以查看和下载。",
+      "description": "附件仅支持表格文件。有权限的账号可以查看和下载。",
       "choose": "选择表格",
       "rules": "支持 CSV、XLS、XLSX；每单最多10个，单个不超过20 MB，合计不超过100 MB。",
       "upload": "上传所选文件",
+      "uploadUnconfirmed": "附件暂未确认，请先核对本次上传。",
+      "checkUpload": "核对本次上传",
       "empty": "这笔订单还没有 Order List 附件。",
       "download": "下载",
       "delete": "删除",
@@ -1147,7 +1157,48 @@
         "status": "状态"
       }
     },
+    "customerWrite": {
+      "created": "批发客户已保存。",
+      "updated": "客户信息已更新。",
+      "deleted": "客户已删除。",
+      "deleteHasDocuments": "这个客户还有资料文件，请先处理资料，再删除客户档案。",
+      "deleteHasOrders": "这个客户已经有批发订单，需要保留客户档案。",
+      "deleteHasLead": "这个客户由线索添加，需要保留客户档案，可以继续修改资料。",
+      "deleteForbidden": "当前账号没有权限删除这个客户档案。",
+      "deleteUnconfirmed": "暂时无法确认是否已删除，请刷新页面核对客户档案是否还在。",
+      "deleteFailed": "客户档案暂时无法删除，请稍后再试。",
+      "linked": "已确认客户档案关联到所选账号。",
+      "linkUnconfirmed": "暂时无法确认账号是否已合并，请刷新页面并打开客户档案核对。",
+      "editConflict": "编辑期间客户资料已有更新，请先保留本次输入，再刷新页面核对最新资料。",
+      "editUnconfirmed": "暂时无法确认资料是否保存，请刷新页面并打开客户档案核对。"
+    },
     "ordersUi": {
+      "loadError": "批发订单暂时没有加载成功，请稍后重试。",
+      "writeFeedback": {
+        "created": "批发订单已保存。",
+        "updated": "批发订单已更新。",
+        "settlementSaved": "结汇记录已保存。",
+        "settlementUnconfirmed": "这笔结汇还未确认。请保留原金额和日期，再次保存时会先核对原记录。",
+        "settlementConflict": "这次结汇已登记。请用原金额和日期核对，再登记下一笔。",
+        "settlementRateMissing": "这个结汇日期没有对应汇率，请先到汇率设置中补充。",
+        "refreshPending": "订单已保存，列表暂时未能更新。请重新加载列表核对。"
+      },
+      "detailFields": {
+        "title": "订单 {number}",
+        "salesperson": "业务员",
+        "status": "状态",
+        "payment": "客户支付",
+        "platform": "收款平台",
+        "smallOrderCount": "小单数量",
+        "purchase": "产品采购金额",
+        "packing": "打包费",
+        "shipping": "国际运费",
+        "otherFee": "其他费用",
+        "referralFee": "推荐佣金费用",
+        "profit": "毛利",
+        "margin": "毛利率",
+        "noNotes": "未记录备注。"
+      },
       "clientDetailDescription": "查看订单金额、物流信息和附件。如需协助，请联系负责此单的业务员。",
       "clientColumns": {
         "orderNumber": "订单号",
@@ -1197,7 +1248,8 @@
       },
       "assessment": {
         "pending": "正在评估",
-        "generate": "生成当前范围评估"
+        "generate": "生成当前范围评估",
+        "failed": "评估暂时没有生成成功，请稍后再试。"
       },
       "orderList": {
         "title": "Order List 附件",
@@ -1213,6 +1265,12 @@
         "delete": "删除",
         "confirmDelete": "确认删除“{name}”吗？",
         "downloadFailed": "附件暂时无法下载，请稍后重试。",
+        "uploadSaved": "附件已上传。",
+        "deleteSaved": "附件已删除。",
+        "deleteIncomplete": "文件已移除，附件列表还未确认更新。请刷新后核对，如果仍有这项附件，请再次删除。",
+        "deleteFailed": "附件没有确认删除，请刷新后重试。",
+        "uploadUnconfirmed": "附件还没确认保存。请保留原文件后重试；如果已离开页面，请重新选择同一批文件。系统会先核对本次上传。",
+        "uploadFailed": "附件没有上传成功，请检查文件和权限后再试。",
         "connectionFailed": "当前无法连接系统，请刷新页面后再试。"
       },
       "fees": {
@@ -1224,6 +1282,8 @@
     "logisticsArchive": {
       "title": "物流管理",
       "updating": "正在更新物流数据，现有记录可以继续查看。",
+      "sourceRefreshDeferred": "已显示现有物流记录，最新数据稍后会继续更新。",
+      "loadFailed": "物流记录暂时没有加载成功，请稍后重试。",
       "missingCost": "缺少运费",
       "actions": {
         "settings": "店铺归属设置",
@@ -1275,6 +1335,17 @@
       "list": {
         "title": "物流订单",
         "loading": "正在加载物流订单…"
+      },
+      "assignmentFeedback": {
+        "assigned": "店铺归属已保存。",
+        "changed": "店铺归属已调整。",
+        "ended": "店铺归属已结束。",
+        "alreadyAssigned": "所选店铺已经有归属记录。",
+        "dateOutside": "所选生效时间不在当前归属区间内。",
+        "invalidSalesperson": "请选择正常使用中的业务员账号。",
+        "forbidden": "当前账号不能修改店铺归属。",
+        "unconfirmed": "暂时无法确认本次调整，请刷新后查看归属历史。",
+        "failed": "店铺归属暂时没有保存成功，请稍后重试。"
       },
       "assignments": {
         "title": "店铺归属设置",
@@ -1334,6 +1405,9 @@
       "retry": "重新加载",
       "salesmanError": "业务员提成暂时没有加载成功，请刷新页面后重试。",
       "referralsError": "客户推荐佣金暂时没有加载成功，请刷新页面后重试。",
+      "settlementSaved": "提成已标记为已结算。",
+      "settlementChanged": "这条提成已不在待结算状态，请刷新页面核对。",
+      "settlementUnconfirmed": "暂时无法确认结算结果，请刷新页面核对后再试。",
       "incentiveTotal": "提成合计",
       "incentivePending": "待结算提成",
       "incentiveRecords": "提成记录",
@@ -1591,11 +1665,13 @@
       "invalidInput": "请检查填写内容后再提交。",
       "notFound": "没有找到对应的客户或VIP记录。",
       "processed": "这个申请已经处理过了。",
+      "unconfirmed": "VIP状态还未确认，请刷新页面查看客户记录，再决定是否重新提交。",
       "serviceUnavailable": "当前服务暂时不可用，请稍后再试。",
       "unknown": "操作没有成功，请稍后再试。"
     },
     "fallback": {
-      "noRecord": "暂无记录"
+      "noRecord": "暂无记录",
+      "noContact": "未填写联系方式"
     }
   },
   "DashboardHome": {
@@ -1994,7 +2070,9 @@
     "accountSwitcherRoleOperator": "运营账号",
     "accountSwitcherRoleFinance": "财务账号",
     "accountSwitcherRolePromoter": "地推账号",
-    "accountSwitcherRoleRecruiter": "招聘账号"
+    "accountSwitcherRoleRecruiter": "招聘账号",
+    "businessInviteLoadFailed": "暂时无法读取邀请链接，请重试。",
+    "businessInviteRetry": "重新读取邀请链接"
   },
   "DashboardMyState": {
     "unnamedUser": "未命名用户",
@@ -2467,6 +2545,7 @@
       "privacyRejected": "个人隐私资料已拒绝。",
       "mediaApproved": "个人媒体已审核通过。",
       "mediaRejected": "个人媒体已拒绝。",
+      "unconfirmed": "暂时无法确认审核结果，请刷新页面核对这条申请。",
       "profileApproved": "资料修改已通过，用户资料已更新。",
       "profileRejected": "资料修改申请已拒绝。"
     }
@@ -2935,7 +3014,8 @@
     },
     "feedback": {
       "orderMarkedPaid": "订单 {orderNumber} 的佣金已标记为已结算。",
-      "taskMarkedPaid": "任务 {taskName} 的佣金已标记为已结算。"
+      "taskMarkedPaid": "任务 {taskName} 的佣金已标记为已结算。",
+      "settlementRefreshFailed": "佣金已标记为已结算，请刷新页面查看最新列表。"
     },
     "taskSection": {
       "title": "任务佣金记录",
@@ -3034,7 +3114,7 @@
         "confirmPublish": "确认发布"
       },
       "validation": {
-        "rate": "请输入 0 到 100 之间的比例。",
+        "rate": "请输入 0.01 到 100 之间的百分数。",
         "amount": "请输入大于 0 的金额。",
         "count": "请输入大于 0 的整数数量。",
         "tierOrder": "三个运单档位必须从小到大排列。",
@@ -3080,7 +3160,8 @@
         "reason": "修改原因",
         "reasonHint": "例如：按最新业务方案调整；这段说明会保存在历史记录中。",
         "before": "修改前",
-        "after": "修改后"
+        "after": "修改后",
+        "rateHint": "按百分数填写，例如 1 表示 1%。"
       },
       "publish": {
         "confirmTitle": "确认发布这次修改？",
@@ -3188,6 +3269,8 @@
       "errors": {
         "noAdminAccess": "当前账号无法查看全量佣金看板。",
         "noSalesmanAccess": "当前账号无法查看个人佣金记录。",
+        "settlementChanged": "这笔佣金已不处于待结算状态，请刷新页面查看最新记录。",
+        "settlementUnconfirmed": "暂时无法确认结算结果，请刷新页面核对这笔佣金后再操作。",
         "unknown": "佣金操作暂时没有成功，请稍后再试。"
       }
     },
@@ -3272,6 +3355,9 @@
           "taskTypeRequired": "请选择有效的任务类型。",
           "targetRolesRequired": "请选择至少一个目标角色。",
           "targetRolesLocked": "这项任务已经有人领取，目标角色暂时不能再调整。",
+          "targetRolesUnconfirmed": "暂时无法确认目标角色已更新，请刷新后核对。",
+          "taskDeleteUnconfirmed": "暂时无法确认任务已删除，请刷新列表核对。",
+          "taskTypeUnconfirmed": "暂时无法确认任务类型已保存，请刷新列表核对。",
           "taskTypeNameRequired": "请填写任务类型名称。",
           "commissionAmountInvalid": "佣金金额可不填；填写时需是不小于 0 的数字。",
           "acceptanceLimitInvalid": "领取次数需填写为大于 0 的整数，或选择不限次数。",
@@ -3321,7 +3407,10 @@
         "updated": "任务已更新。",
         "updatedWithCommissionSyncWarning": "任务已更新，但相关佣金信息还没全部刷新，请稍后再去佣金中心查看。",
         "assignmentUpdated": "目标角色已更新。",
+        "assignmentUnchanged": "目标角色已经是当前选择，无需更新。",
         "deletedWithAttachmentCleanupWarning": "任务已删除，但部分任务附件或提审附件还没清理完成，请稍后再查看。",
+        "deleteUnconfirmed": "暂时无法确认任务已删除，附件已保留。请刷新列表核对。",
+        "createCleanupUnconfirmed": "附件上传未完成，任务或附件的清理结果暂时无法确认。请先在任务列表核对。",
         "deleted": "任务已删除。"
       },
       "confirmDelete": "确认删除任务“{taskName}”吗？任务附件也会一起清理。",
@@ -3358,6 +3447,8 @@
         "errors": {
           "noPermission": "当前账号没有审核这条任务提交的权限。",
           "notReviewing": "这项任务当前已经不在待审核状态。",
+          "submissionChanged": "任务材料已更新，请刷新列表后再审核。",
+          "unconfirmed": "暂时无法确认审核结果，请刷新列表核对。",
           "submissionMissing": "当前任务提交不存在，请刷新后重试。",
           "taskMissing": "任务不存在，请刷新列表后重试。"
         }
@@ -3571,6 +3662,8 @@
         "accepted": "任务已接取，开始处理吧。",
         "reviewSubmitted": "任务已提交审核。",
         "reviewResubmitted": "任务已重新提交审核。",
+        "reviewUnconfirmed": "暂时无法确认提交结果。请刷新任务列表核对进度后再试。",
+        "reviewCleanupIncomplete": "任务未提交，附件清理没有全部完成。请刷新任务列表核对进度。",
         "completed": "任务已完成。"
       },
       "header": {
@@ -4549,9 +4642,9 @@
     },
     "components_dashboard_wholesale_wholesale_customer_delete_dialog": {
       "text004": " 确认删除 ",
-      "text002": " 如果这个客户已经有批发订单，系统会保留客户，避免订单资料丢失。 ",
-      "attribute001": "删除后，这个客户会从客户管理中移除；已有订单的客户不能删除。",
-      "text001": " 确认删除“",
+      "text002": " 仍有订单或资料文件的客户档案需要保留。 ",
+      "attribute001": "删除后，客户档案会从客户目录中永久移除。",
+      "text001": "确认删除“{name}”？",
       "text003": " 先不删除 ",
       "attribute002": "删除批发客户"
     },
@@ -4567,13 +4660,23 @@
       "text007": " 合并后，这个注册账号会承接当前客户名下已有和后续的批发订单及佣金。 ",
       "attribute002": "当前没有未合并的客户注册账号。客户完成注册后，就可以在这里选择并合并。",
       "linkedLeadNotice": "这个客户由线索添加，需要保留客户档案，可以继续修改资料。",
-      "ownerLabel": "客户负责人"
+      "ownerLabel": "客户负责人",
+      "uniqueName": "客户唯一名称",
+      "contact": "联系方式",
+      "source": "客户来源",
+      "customerKind": "客户类型",
+      "account": "关联注册账号",
+      "linkedAccount": "已关联账号",
+      "unnamedAccount": "未填写姓名",
+      "registeredOn": "登记时间",
+      "notes": "备注"
     },
     "components_dashboard_wholesale_wholesale_customer_dialogs": {
       "attribute002": "新增批发客户",
       "attribute004": "编辑批发客户",
       "attribute003": "修改客户唯一名称、联系方式、来源、其他名称、客户负责人和备注。",
-      "attribute001": "客户唯一标识名称用于区分客户；其他名称可填写常用昵称或店铺名。"
+      "attribute001": "客户唯一标识名称用于区分客户；其他名称可填写常用昵称或店铺名。",
+      "detailsTitle": "客户详情"
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
       "attribute005": "联系方式",
@@ -4584,7 +4687,9 @@
       "text001": "暂不分配",
       "text002": "客户负责人",
       "attribute001": "客户唯一标识名称",
-      "attribute004": "可一次填写多个，用逗号或换行分开"
+      "attribute004": "可一次填写多个，用逗号或换行分开",
+      "saveNew": "保存客户",
+      "saveChanges": "保存修改"
     },
     "components_dashboard_wholesale_wholesale_customer_other_names": {
       "attribute002": "可一次填写多个，用逗号或换行分开",
@@ -4592,7 +4697,12 @@
       "text002": " 可记录客户常用昵称、店铺名或对账名称。 ",
       "attribute001": "新增其他名称",
       "text001": "其他名称",
-      "text003": "暂未记录其他名称。"
+      "text003": "暂未记录其他名称。",
+      "open": "新增名称",
+      "collapse": "收起",
+      "saved": "客户其他名称已保存。",
+      "alreadyPresent": "客户资料中已有这些名称。",
+      "failed": "暂时无法确认名称是否保存，请刷新资料核对后再试。"
     },
     "components_dashboard_wholesale_wholesale_customers_section": {
       "attribute003": "客户管理",
@@ -4704,7 +4814,9 @@
       "text003": "保存结汇记录",
       "attribute006": "填写本次结汇金额",
       "attribute007": "结汇日期",
-      "attribute001": "确认结汇"
+      "attribute001": "确认结汇",
+      "noRateForDate": "这个日期暂无汇率",
+      "previewUnavailable": "填写金额并选有汇率的日期后显示"
     },
     "components_dashboard_wholesale_wholesale_orders_mobile_list": {
       "attribute003": "业务员",
@@ -4839,6 +4951,12 @@
     },
     "components_dashboard_wholesale_wholesale_settlement_release_dialogs": {
       "selectCurrency": "请选择实际收款币种",
+      "publicationSuccess": "结汇收款已发布。",
+      "publicationUnconfirmed": "暂时无法确认这笔收款是否已发布，请先核对上次发布。",
+      "publicationDifferent": "上一笔发布尚待核对。请核对上一笔，或用原内容重试。",
+      "publicationFailed": "这笔收款暂时无法发布，请检查填写内容。",
+      "publicationRecoveryHint": "有一笔收款等待核对。若仍未确认，可以用原内容重试。",
+      "recoverPublication": "核对上次发布",
       "attribute003": "选择客户",
       "attribute010": "备注",
       "attribute004": "客户名称",
@@ -4858,6 +4976,11 @@
       "adjustTitle": "调整收款分配",
       "allocatedAmount": "本次分配",
       "clearAllocations": "清空当前分配",
+      "clearSuccess": "这笔收款的订单分配已清空。",
+      "clearUnconfirmed": "暂时无法确认分配是否已清空，请刷新后核对。",
+      "clearRevisionChanged": "这笔收款刚被更新，请刷新后核对。",
+      "clearCommissionPaid": "关联订单已发放提成，无法清空这笔分配。",
+      "clearFailed": "这笔分配暂时无法清空，请稍后重试。",
       "clearConfirmDescription": "确认后，这笔收款生成的订单结汇记录会一起撤销，收款会恢复为待分配。已经发放提成的订单不会允许清空。",
       "clearConfirmTitle": "确认清空这笔收款的全部分配？",
       "confirmClear": "确认清空",
@@ -4939,6 +5062,13 @@
       "moreOrders": "另有 {count} 笔订单",
       "noNote": "未记录",
       "notAllocated": "尚未分配",
+      "awaiting": "等待处理",
+      "status": {
+        "allocated": "已分配",
+        "cancelled": "已取消",
+        "partially_allocated": "部分分配",
+        "pending": "待分配"
+      },
       "publishedAs": "发布时：{customerName}",
       "remainingAmount": "剩余 {amount}",
       "removedOrder": "订单已移除"
@@ -4989,6 +5119,18 @@
     "newMail": "新邮件",
     "waitingPt5": "待我们回复",
     "waitingCustomer": "等待客户",
+    "threadStateSaved": "会话状态已保存。",
+    "threadOpenFailed": "邮件详情暂时无法读取。",
+    "threadDraftRestoreFailed": "草稿已恢复，请重新打开原会话后再发送回复。",
+    "threadUnavailable": "你现在无法查看这封邮件。",
+    "replySuggestionReady": "回复建议已生成，可以继续修改后再发送。",
+    "replySuggestionFailed": "回复建议没有生成完成，请稍后重试。",
+    "aiReportReady": "邮件分析报告已生成。",
+    "aiReportFailed": "邮件分析报告没有生成完成，请稍后重试。",
+    "threadReadFailed": "已读状态暂时无法确认，请重新打开邮件核对。",
+    "threadStateFailed": "会话状态没有保存。",
+    "threadAssigned": "会话已转交。",
+    "threadAssignFailed": "会话没有转交。",
     "unread": "未读",
     "closed": "已结束",
     "unassigned": "待指派",
@@ -5004,6 +5146,7 @@
     "restoreToWorkspace": "恢复到工作台",
     "moveToQuarantine": "移入隔离区",
     "quarantineSelected": "隔离所选 {count} 封",
+    "quarantineUnconfirmed": "部分邮件没有确认移入隔离区。",
     "selectThread": "选择邮件：{subject}",
     "futureMail": "后续来信",
     "quarantineOnly": "只隔离本次",
@@ -5072,6 +5215,8 @@
     "plusAlias": "加号别名",
     "refPrefix": "Ref 前缀",
     "senderDisplayName": "发件显示名",
+    "senderSaveUnconfirmed": "发件人配置保存结果没有确认完整。",
+    "senderSaved": "发件人配置已保存。",
     "signature": "邮件签名",
     "replyToPreview": "客户回复地址：chinapt5+{alias}@gmail.com",
     "refPreview": "Ref 示例：PT5-{year}-{prefix}-XXXXXXXX",
@@ -5170,6 +5315,7 @@
     "publish": {
       "createTitle": "新建公司模板",
       "updateTitle": "上传模板新版本",
+      "recoveryNotice": "暂时无法确认上传结果。请再次点击「上传并启用」，系统会核对同一次提交。",
       "description": "文件校验并写入成功后会立即成为员工使用的当前版本。"
     },
     "feedback": {
@@ -5318,6 +5464,8 @@
     "download": "下载",
     "preview": "预览",
     "rename_file": "重命名文件",
+    "previewFailed": "暂时无法预览这份资料，请重试。",
+    "previewRetry": "重新预览",
     "move_file": "移动文件",
     "delete_file": "删除文件",
     "create_folder": "新建文件夹",

@@ -1,3 +1,4 @@
+/** 系统邮件与外部连接：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { RotateCcw, Save } from "lucide-react";
@@ -18,7 +19,10 @@ export function MailAgentProfileCard(props: {
   const t = useTranslations("MailWorkspace");
   const profile = props.profile;
   return (
-    <article className="min-w-0 rounded-surface-inset border border-border-subtle bg-surface-inset p-4" data-testid={`mail-agent-${profile.memberId}`}>
+    <article
+      className="min-w-0 rounded-surface-inset border border-border-subtle bg-surface-inset p-4"
+      data-testid={`mail-agent-${profile.memberId}`}
+    >
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h3 className="break-words font-bold text-content-strong">{profile.displayName}</h3>
@@ -26,21 +30,81 @@ export function MailAgentProfileCard(props: {
             {t(profile.role === "administrator" ? "administratorRole" : "salespersonRole")}
           </span>
         </div>
-        {props.canToggle ? <ChoiceField checked={profile.enabled} label={t("enabled")} onChange={(event) => props.onChange({ ...profile, enabled: event.target.checked })} rootClassName="min-h-0 border-0 bg-transparent px-0 py-0" /> : null}
+        {props.canToggle ? (
+          <ChoiceField
+            checked={profile.enabled}
+            label={t("enabled")}
+            onChange={(event) => props.onChange({ ...profile, enabled: event.target.checked })}
+            rootClassName="min-h-0 border-0 bg-transparent px-0 py-0"
+          />
+        ) : null}
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label={t("plusAlias")}><Input onChange={(event) => props.onChange({ ...profile, aliasLocalPart: event.target.value })} value={profile.aliasLocalPart} /></Field>
-        <Field label={t("refPrefix")}><Input onChange={(event) => props.onChange({ ...profile, refPrefix: event.target.value })} value={profile.refPrefix} /></Field>
+        <Field label={t("plusAlias")}>
+          <Input
+            onChange={(event) => props.onChange({ ...profile, aliasLocalPart: event.target.value })}
+            value={profile.aliasLocalPart}
+          />
+        </Field>
+        <Field label={t("refPrefix")}>
+          <Input
+            onChange={(event) => props.onChange({ ...profile, refPrefix: event.target.value })}
+            value={profile.refPrefix}
+          />
+        </Field>
       </div>
-      <p className="mt-2 break-all text-xs leading-5 text-content-muted">{t("replyToPreview", { alias: profile.aliasLocalPart || profile.suggestedAliasLocalPart })}</p>
-      <p className="break-all text-xs leading-5 text-content-muted">{t("refPreview", { prefix: profile.refPrefix || profile.suggestedRefPrefix, year: new Date().getUTCFullYear() })}</p>
-      <Field className="mt-3" label={t("senderDisplayName")}><Input onChange={(event) => props.onChange({ ...profile, senderDisplayName: event.target.value })} value={profile.senderDisplayName} /></Field>
-      <Field className="mt-3" label={t("signature")}><Textarea className="min-h-24" onChange={(event) => props.onChange({ ...profile, signatureHtml: event.target.value })} value={profile.signatureHtml} /></Field>
+      <p className="mt-2 break-all text-xs leading-5 text-content-muted">
+        {t("replyToPreview", { alias: profile.aliasLocalPart || profile.suggestedAliasLocalPart })}
+      </p>
+      <p className="break-all text-xs leading-5 text-content-muted">
+        {t("refPreview", {
+          prefix: profile.refPrefix || profile.suggestedRefPrefix,
+          year: new Date().getUTCFullYear(),
+        })}
+      </p>
+      <Field className="mt-3" label={t("senderDisplayName")}>
+        <Input
+          onChange={(event) =>
+            props.onChange({ ...profile, senderDisplayName: event.target.value })
+          }
+          value={profile.senderDisplayName}
+        />
+      </Field>
+      <Field className="mt-3" label={t("signature")}>
+        <Textarea
+          className="min-h-24"
+          onChange={(event) => props.onChange({ ...profile, signatureHtml: event.target.value })}
+          value={profile.signatureHtml}
+        />
+      </Field>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <span className={`text-xs ${profile.feishuBound ? "text-status-success" : "text-status-warning"}`}>{profile.feishuBound ? t("feishuBound") : t("feishuUnbound")}</span>
+        <span
+          className={`text-xs ${profile.feishuBound ? "text-status-success" : "text-status-warning"}`}
+        >
+          {profile.feishuBound ? t("feishuBound") : t("feishuUnbound")}
+        </span>
         <div className="flex flex-wrap gap-2">
-          <Button disabled={props.busy} loading={props.busyKey === `agent:reset:${profile.memberId}`} onClick={() => props.onSave(true)} size="compact" type="button" variant="outline"><RotateCcw className="size-4" />{t("restoreSuggested")}</Button>
-          <Button disabled={props.busy} loading={props.busyKey === `agent:save:${profile.memberId}`} onClick={() => props.onSave(false)} size="compact" type="button"><Save className="size-4" />{t("save")}</Button>
+          <Button
+            disabled={props.busy}
+            loading={props.busyKey === `agent:reset:${profile.memberId}`}
+            onClick={() => props.onSave(true)}
+            size="compact"
+            type="button"
+            variant="outline"
+          >
+            <RotateCcw className="size-4" />
+            {t("restoreSuggested")}
+          </Button>
+          <Button
+            disabled={props.busy}
+            loading={props.busyKey === `agent:save:${profile.memberId}`}
+            onClick={() => props.onSave(false)}
+            size="compact"
+            type="button"
+          >
+            <Save className="size-4" />
+            {t("save")}
+          </Button>
         </div>
       </div>
     </article>

@@ -1,3 +1,4 @@
+/** 汇率与金额换算：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -41,18 +42,26 @@ export function LatestRateCard({
           {t(row.original_currency === "CNY" ? "latest.card.fixedRate" : "latest.card.currentRate")}
         </p>
         <p className="mt-2 text-3xl font-bold tracking-tight text-content-strong">
-          {formatExchangeRateValue(
-            row.daily_exchange_rate,
-            locale,
-            t("summary.noRecord"),
-          )}
+          {formatExchangeRateValue(row.daily_exchange_rate, locale, t("summary.noRecord"))}
         </p>
       </div>
 
-      <div className="mt-4 text-sm text-content-muted">{t("companyRate")}: <strong>{formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)}</strong></div>
+      <div className="mt-4 text-sm text-content-muted">
+        {t("companyRate")}:{" "}
+        <strong>
+          {formatExchangeRateValue(
+            companyExchangeRate(row.original_currency, row.daily_exchange_rate),
+            locale,
+          )}
+        </strong>
+      </div>
       <div className="mt-4 flex items-center justify-between gap-4 text-sm text-content-muted">
         <span>{historyCountLabel}</span>
-        <span>{row.original_currency === "CNY" ? "—" : formatExchangeRateQuoteTime(row.provider_updated_at, locale)}</span>
+        <span>
+          {row.original_currency === "CNY"
+            ? "—"
+            : formatExchangeRateQuoteTime(row.provider_updated_at, locale)}
+        </span>
       </div>
     </article>
   );

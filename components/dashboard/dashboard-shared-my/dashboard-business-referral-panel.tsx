@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { BriefcaseBusiness, Copy, LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { buildBoardInviteLink } from "@/lib/business-referrals";
-import {
-  getCurrentSalesmanBusinessBoards,
-  type SalesmanBusinessBoard,
-} from "@/lib/salesman-business-access";
+import type { SalesmanBusinessBoard } from "@/lib/salesman-business-access";
 import { isSalesStaffRole } from "@/lib/sales-staff-roles";
-import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { useDashboardBusinessReferrals } from "./use-dashboard-business-referrals";
 
 import { Button } from "../../ui/button";
 
@@ -35,45 +32,13 @@ export function DashboardBusinessReferralPanel({
   role,
 }: DashboardBusinessReferralPanelProps) {
   const t = useTranslations("DashboardMy");
-  const supabase = getBrowserSupabaseClient();
-  const [salesmanBoards, setSalesmanBoards] = useState<SalesmanBusinessBoard[]>(
-    [],
-  );
-  const [loading, setLoading] = useState(false);
+  const {
+    boards: salesmanBoards,
+    loading,
+    loadFailed,
+    retry,
+  } = useDashboardBusinessReferrals(role);
   const [notice, setNotice] = useState<LocalNotice | null>(null);
-
-  useEffect(() => {
-    if (!supabase || !isSalesStaffRole(role)) {
-      setSalesmanBoards([]);
-      setLoading(false);
-      return;
-    }
-
-    const client = supabase;
-    let mounted = true;
-
-    async function loadBoards() {
-      setLoading(true);
-
-      try {
-        const boards = await getCurrentSalesmanBusinessBoards(client);
-
-        if (mounted) {
-          setSalesmanBoards(boards);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadBoards();
-
-    return () => {
-      mounted = false;
-    };
-  }, [role, supabase]);
 
   if (!isSalesStaffRole(role)) {
     return null;
@@ -140,7 +105,23 @@ export function DashboardBusinessReferralPanel({
         </p>
       ) : null}
 
-      {!loading ? (
+      {loadFailed ? (
+        <div className="mt-4 space-y-3" role="status">
+          <p className="text-sm text-status-danger">
+            {t("businessInviteLoadFailed")}
+          </p>
+          <Button
+            onClick={retry}
+            size="default"
+            type="button"
+            variant="outline"
+          >
+            {t("businessInviteRetry")}
+          </Button>
+        </div>
+      ) : null}
+
+      {!loading && !loadFailed ? (
         <SalesmanInviteActions
           boards={salesmanBoards}
           boardLabel={boardLabel}

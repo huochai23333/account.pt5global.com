@@ -8,18 +8,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { HomeCustomizerCopy } from "./dashboard-home-customizer-copy";
-import {
-  HOME_WIDGET_ROW_UNIT_PX,
-  type HomeWidgetInstance,
-} from "./dashboard-home-layout";
+import { HOME_WIDGET_ROW_UNIT_PX, type HomeWidgetInstance } from "./dashboard-home-layout";
 import { HOME_WIDGET_ICONS } from "./dashboard-home-widget-meta";
 import {
   startHomeWidgetPositionDrag,
   startHomeWidgetResize,
 } from "./dashboard-home-widget-interactions";
-import {
-  DashboardHomeWidgetResizeHandle,
-} from "./dashboard-home-widget-resize-handle";
+import { DashboardHomeWidgetResizeHandle } from "./dashboard-home-widget-resize-handle";
 import { useDashboardHomeWidgetResizeHandle } from "./use-dashboard-home-widget-resize-handle";
 
 type DashboardHomeWidgetCardProps = {
@@ -35,9 +30,7 @@ type DashboardHomeWidgetCardProps = {
   onDragStart: () => void;
   onMove: (position: Pick<HomeWidgetInstance, "x" | "y">) => void;
   onRemove: () => void;
-  onResize: (
-    layout: Pick<HomeWidgetInstance, "height" | "width" | "x" | "y">,
-  ) => void;
+  onResize: (layout: Pick<HomeWidgetInstance, "height" | "width" | "x" | "y">) => void;
   onResizeEnd: () => void;
   onResizeStart: () => void;
   pauseWiggle: boolean;
@@ -65,12 +58,8 @@ export function DashboardHomeWidgetCard({
   resizing,
   widget,
 }: DashboardHomeWidgetCardProps) {
-  const {
-    handleResizePointerLeave,
-    handleResizePointerMove,
-    pointerOnControl,
-    resizeHandle,
-  } = useDashboardHomeWidgetResizeHandle({
+  const { handleResizePointerLeave, handleResizePointerMove, pointerOnControl, resizeHandle } =
+    useDashboardHomeWidgetResizeHandle({
       deleting,
       dragging,
       editing,
@@ -139,8 +128,7 @@ export function DashboardHomeWidgetCard({
           editing &&
             (deleting || entering || resizing) &&
             "border-ring bg-surface-overlay shadow-surface-interactive",
-          dragging &&
-            "shadow-surface-interactive ring-4 ring-ring/45",
+          dragging && "shadow-surface-interactive ring-4 ring-ring/45",
           resizing && "border-ring bg-surface-overlay ring-2 ring-ring/35",
         )}
         style={{ animationDelay: `${(index % 5) * -45}ms` }}

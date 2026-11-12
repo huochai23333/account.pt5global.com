@@ -16,6 +16,7 @@ type WorkspaceLoadingShellProps = {
   titleKey?: WorkspaceLoadingTitleKey;
 };
 
+// 路径只用于选择加载标题，骨架屏不读取业务数据，也不代表当前用户已获得目标页权限。
 export function WorkspaceLoadingShell({
   description,
   title,

@@ -1,24 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-
-import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import {
-  createAnnouncement,
-  deleteAnnouncement,
   getAdminAnnouncementsPageData,
-  publishAnnouncement,
   sortAnnouncements,
-  takeAnnouncementOffline,
-  updateAnnouncement,
   type AdminAnnouncementsPageData,
-  type AnnouncementAudience,
   type AnnouncementRow,
   type AnnouncementStatus,
 } from "@/lib/announcements";
+import { createAnnouncement, updateAnnouncement } from "@/lib/announcement-mutations";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 
 import type { FeedbackTone } from "../dashboard-shared-ui";
@@ -27,15 +19,13 @@ import {
   createAnnouncementFormFromRow,
   createEmptyAnnouncementForm,
   toAnnouncementErrorMessage,
+  type AnnouncementAudienceFilter,
   type AnnouncementFormState,
 } from "./announcements-display";
 
+import { useAnnouncementRowActions } from "./use-announcement-row-actions";
+
 type Feedback = { tone: FeedbackTone; message: string } | null;
-type AnnouncementAction = "delete" | "offline" | "publish";
-type PendingAnnouncementAction = {
-  id: string;
-  type: AnnouncementAction;
-} | null;
 
 type UseAdminAnnouncementsViewModelOptions = {
   copy: {
@@ -58,8 +48,6 @@ export function useAdminAnnouncementsViewModel({
   copy,
   initialData,
 }: UseAdminAnnouncementsViewModelOptions) {
-  const confirm = useDashboardConfirm();
-  const confirmT = useTranslations("DashboardFramework.confirm");
   const supabase = getBrowserSupabaseClient();
   const [announcements, setAnnouncements] = useState(initialData.announcements);
   const [hasPermission, setHasPermission] = useState(initialData.hasPermission);
@@ -72,12 +60,9 @@ export function useAdminAnnouncementsViewModel({
     createEmptyAnnouncementForm(),
   );
   const [statusFilter, setStatusFilter] = useState<AnnouncementStatus | "all">("all");
-  const [audienceFilter, setAudienceFilter] = useState<AnnouncementAudience | "all">(
-    "all",
-  );
+  const [audienceFilter, setAudienceFilter] = useState<AnnouncementAudienceFilter>("any");
   const [submitPending, setSubmitPending] = useState(false);
-  const [pendingAction, setPendingAction] =
-    useState<PendingAnnouncementAction>(null);
+  const submitting = useRef(false);
 
   const applyPageData = useCallback((pageData: AdminAnnouncementsPageData) => {
     setHasPermission(pageData.hasPermission);
@@ -119,14 +104,14 @@ export function useAdminAnnouncementsViewModel({
       const statusMatches =
         statusFilter === "all" || announcement.status === statusFilter;
       const audienceMatches =
-        audienceFilter === "all" || announcement.audience === audienceFilter;
+        audienceFilter === "any" || announcement.audience === audienceFilter;
 
       return statusMatches && audienceMatches;
     });
   }, [announcements, audienceFilter, statusFilter]);
 
   const resetFilters = useCallback(() => {
-    setAudienceFilter("all");
+    setAudienceFilter("any");
     setStatusFilter("all");
   }, []);
 
@@ -166,7 +151,7 @@ export function useAdminAnnouncementsViewModel({
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!supabase || submitPending) {
+    if (!supabase || submitting.current) {
       return;
     }
 
@@ -180,6 +165,8 @@ export function useAdminAnnouncementsViewModel({
       return;
     }
 
+    // 渲染状态稍后更新，同一事件帧也只能提交一次。
+    submitting.current = true;
     setSubmitPending(true);
     setDialogFeedback(null);
 
@@ -211,126 +198,22 @@ export function useAdminAnnouncementsViewModel({
         message: toAnnouncementErrorMessage(error, copy),
       });
     } finally {
+      submitting.current = false;
       setSubmitPending(false);
     }
   }, [
     copy,
     editingAnnouncement,
     formState,
-    submitPending,
     supabase,
   ]);
 
-  const handlePublish = useCallback(
-    async (announcement: AnnouncementRow) => {
-      if (!supabase || pendingAction) {
-        return;
-      }
-
-      setPendingAction({ id: announcement.id, type: "publish" });
-      setPageFeedback(null);
-
-      try {
-        const updatedAnnouncement = await publishAnnouncement(
-          supabase,
-          announcement.id,
-        );
-
-        markBrowserCloudSyncActivity();
-        setAnnouncements((current) =>
-          sortAnnouncements(
-            current.map((item) =>
-              item.id === updatedAnnouncement.id ? updatedAnnouncement : item,
-            ),
-          ),
-        );
-        setPageFeedback({ tone: "success", message: copy.publishSuccess });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toAnnouncementErrorMessage(error, copy),
-        });
-      } finally {
-        setPendingAction(null);
-      }
-    },
-    [copy, pendingAction, supabase],
-  );
-
-  const handleTakeOffline = useCallback(
-    async (announcement: AnnouncementRow) => {
-      if (!supabase || pendingAction) {
-        return;
-      }
-
-      setPendingAction({ id: announcement.id, type: "offline" });
-      setPageFeedback(null);
-
-      try {
-        const updatedAnnouncement = await takeAnnouncementOffline(
-          supabase,
-          announcement.id,
-        );
-
-        markBrowserCloudSyncActivity();
-        setAnnouncements((current) =>
-          sortAnnouncements(
-            current.map((item) =>
-              item.id === updatedAnnouncement.id ? updatedAnnouncement : item,
-            ),
-          ),
-        );
-        setPageFeedback({ tone: "success", message: copy.offlineSuccess });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toAnnouncementErrorMessage(error, copy),
-        });
-      } finally {
-        setPendingAction(null);
-      }
-    },
-    [copy, pendingAction, supabase],
-  );
-
-  const handleDelete = useCallback(
-    async (announcement: AnnouncementRow) => {
-      if (!supabase || pendingAction) {
-        return;
-      }
-
-      if (
-        !(await confirm({
-          description: copy.deleteConfirm(announcement.title),
-          title: confirmT("title"),
-          tone: "danger",
-        }))
-      ) {
-        return;
-      }
-
-      setPendingAction({ id: announcement.id, type: "delete" });
-      setPageFeedback(null);
-
-      try {
-        await deleteAnnouncement(supabase, announcement.id);
-
-        markBrowserCloudSyncActivity();
-        setAnnouncements((current) =>
-          current.filter((item) => item.id !== announcement.id),
-        );
-        setPageFeedback({ tone: "success", message: copy.deleteSuccess });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toAnnouncementErrorMessage(error, copy),
-        });
-      } finally {
-        setPendingAction(null);
-      }
-    },
-    [confirm, confirmT, copy, pendingAction, supabase],
-  );
+  const { handleRowAction, pendingAction } = useAnnouncementRowActions({
+    copy,
+    setAnnouncements,
+    setPageFeedback,
+    supabase,
+  });
 
   return {
     audienceFilter,
@@ -340,11 +223,9 @@ export function useAdminAnnouncementsViewModel({
     filteredAnnouncements,
     formState,
     hasPermission,
-    handleDelete,
     handleDialogOpenChange,
-    handlePublish,
+    handleRowAction,
     handleSubmit,
-    handleTakeOffline,
     openCreateDialog,
     openEditDialog,
     pageFeedback,

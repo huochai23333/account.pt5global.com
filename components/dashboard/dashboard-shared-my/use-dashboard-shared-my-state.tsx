@@ -1,27 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 import { useLocale } from "@/components/i18n/locale-provider";
-import { getBrowserSupabaseClient } from "@/lib/supabase";
-import {
-  getCurrentUserBundle,
-  type CurrentUserBundle,
-} from "@/lib/user-self-service";
 
-import { type MediaAssetKey, toErrorMessage } from "../dashboard-shared-ui";
-import {
-  useWorkspaceRecoverCloudSync,
-  useWorkspaceSyncEffect,
-} from "../workspace-session-provider";
-import { DashboardSharedMyMediaDialogActions } from "./dashboard-shared-my-media-dialog-actions";
-import {
-  type DashboardSharedMyNotice,
-  type DashboardSharedMyRefreshOptions,
-  refreshDashboardSharedMyBundle,
-} from "./dashboard-shared-my-refresh";
+import { type CurrentUserBundle } from "@/lib/user-self-service";
+
+import { type MediaAssetKey } from "../dashboard-shared-ui";
+
+import { useDashboardMyBundle } from "./use-dashboard-my-bundle";
+import { type DashboardSharedMyNotice } from "./dashboard-shared-my-refresh";
 import { useDashboardSharedMyStateCopy } from "./dashboard-shared-my-state-copy";
 import {
   createDashboardSharedMyViewModel,
@@ -37,21 +25,12 @@ import { useDashboardInviteCode } from "./use-dashboard-invite-code";
 export function useDashboardSharedMyState(
   initialData: CurrentUserBundle | null = null,
 ) {
-  const router = useRouter();
   const { locale } = useLocale();
   const { copy, sharedCopy } = useDashboardSharedMyStateCopy();
-  const supabase = getBrowserSupabaseClient();
-  const recoverWorkspaceCloudSync = useWorkspaceRecoverCloudSync();
+
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const hasLoadedInitialBundleRef = useRef(Boolean(initialData));
 
-  const [bundle, setBundle] = useState<CurrentUserBundle | null>(initialData);
-  const [loading, setLoading] = useState(initialData === null);
-  const [pageError, setPageError] = useState<string | null>(null);
-  const [pageNotice, setPageNotice] = useState<DashboardSharedMyNotice | null>(
-    null,
-  );
   const [dialogNotice, setDialogNotice] =
     useState<DashboardSharedMyNotice | null>(null);
   const [activeDialog, setActiveDialog] = useState<MediaAssetKey | null>(null);
@@ -61,110 +40,23 @@ export function useDashboardSharedMyState(
   const [passportEditing, setPassportEditing] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  const recoverCloudSync = useCallback(() => {
-    setPageError(null);
-    setPageNotice(null);
-    setLoading(true);
-    recoverWorkspaceCloudSync();
-  }, [recoverWorkspaceCloudSync]);
-
-  const loadBundle = useCallback(
-    async ({
-      isMounted,
-      showLoading,
-    }: {
-      isMounted: () => boolean;
-      showLoading: boolean;
-    }) => {
-      if (!supabase) {
-        return;
-      }
-
-      if (showLoading && isMounted()) {
-        setLoading(true);
-      }
-
-      try {
-        const nextBundle = await getCurrentUserBundle(supabase);
-
-        if (!isMounted()) {
-          return;
-        }
-
-        if (!nextBundle) {
-          router.replace("/login");
-          return;
-        }
-
-        setBundle(nextBundle);
-        setPageError(null);
-      } catch (error) {
-        if (!isMounted()) {
-          return;
-        }
-
-        setPageError(toErrorMessage(error, sharedCopy));
-      } finally {
-        if (isMounted()) {
-          setLoading(false);
-        }
-      }
-    },
-    [router, sharedCopy, supabase],
-  );
-
-  useEffect(() => {
-    if (
-      initialData !== null ||
-      !supabase ||
-      hasLoadedInitialBundleRef.current
-    ) {
-      return;
-    }
-
-    let mounted = true;
-    hasLoadedInitialBundleRef.current = true;
-
-    void loadBundle({
-      isMounted: () => mounted,
-      showLoading: true,
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [initialData, loadBundle, supabase]);
-
-  useWorkspaceSyncEffect(({ isMounted, syncVersion }) => {
-    if (syncVersion === 0 || !supabase) {
-      return;
-    }
-
-    if (!hasLoadedInitialBundleRef.current) {
-      hasLoadedInitialBundleRef.current = true;
-    }
-
-    return loadBundle({
-      isMounted,
-      showLoading: !bundle,
-    });
+  // 总状态层只组合领域动作与弹窗意图，资料读取生命周期位于专用 Hook。
+  const {
+    bundle,
+    loading,
+    pageError,
+    pageNotice,
+    recoverCloudSync,
+    refreshBundle,
+    setPageNotice,
+    supabase,
+  } = useDashboardMyBundle({
+    initialData,
+    activeDialog,
+    setBusyKey,
+    setDialogNotice,
+    sharedCopy,
   });
-
-  const refreshBundle = (options: DashboardSharedMyRefreshOptions = {}) =>
-    refreshDashboardSharedMyBundle(
-      {
-        activeDialog,
-        onRequireLogin: () => router.replace("/login"),
-        setBundle,
-        setBusyKey,
-        setDialogNotice,
-        setPageError,
-        setPageNotice,
-        sharedCopy,
-        supabase,
-      },
-      options,
-    );
 
   const {
     approvedIdentityValue,
@@ -288,25 +180,6 @@ export function useDashboardSharedMyState(
 
   const dialogCopy = getDashboardSharedMyDialogCopy(activeDialog, copy);
 
-  const dialogActions =
-    activeDialog === "photos" || activeDialog === "videos" ? (
-      <DashboardSharedMyMediaDialogActions
-        activeDialog={activeDialog}
-        busyKey={busyKey}
-        copy={copy}
-        deletePhotoAssets={mediaActions.deletePhotoAssets}
-        deleteVideoAssets={mediaActions.deleteVideoAssets}
-        photoAssets={photoAssets}
-        photoInputRef={photoInputRef}
-        pendingPhotoFiles={mediaActions.pendingPhotoFiles}
-        pendingVideoFiles={mediaActions.pendingVideoFiles}
-        retryPhotos={mediaActions.retryPhotos}
-        retryVideos={mediaActions.retryVideos}
-        videoAssets={videoAssets}
-        videoInputRef={videoInputRef}
-      />
-    ) : undefined;
-
   return {
     bundle,
     loading,
@@ -338,7 +211,13 @@ export function useDashboardSharedMyState(
     accountSwitcher,
     profileDialog,
     assetDialog: {
-      actions: dialogActions,
+      photoInputRef,
+      videoInputRef,
+      pendingPhotoFiles: mediaActions.pendingPhotoFiles,
+      pendingVideoFiles: mediaActions.pendingVideoFiles,
+      retryPhotos: mediaActions.retryPhotos,
+      retryVideos: mediaActions.retryVideos,
+      actionCopy: copy,
       activeDialog,
       assets,
       close: closeDialog,

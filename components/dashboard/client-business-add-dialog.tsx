@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -20,7 +20,7 @@ type ClientBusinessAddDialogProps = {
   business: "tourism" | "wholesale";
   candidates: ClientBusinessCandidate[];
   error: string | null;
-  onAdd: (userId: string) => Promise<boolean>;
+  onAdd: (userId: string, onError: (message: string) => void) => Promise<boolean>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pendingUserId: string | null;
@@ -37,6 +37,13 @@ export function ClientBusinessAddDialog({
 }: ClientBusinessAddDialogProps) {
   const t = useTranslations("ClientBusinessAccess");
   const [searchText, setSearchText] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const notice = error ?? submissionError;
+  useEffect(() => {
+    // 用户可能已滚到列表下方，提交失败时让原因回到确认框的可视范围。
+    if (notice) feedbackRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }, [notice]);
   const filteredCandidates = useMemo(() => {
     const searchValue = normalizeSearchText(searchText);
 
@@ -57,6 +64,7 @@ export function ClientBusinessAddDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           setSearchText("");
+          setSubmissionError("");
         }
         onOpenChange(nextOpen);
       }}
@@ -64,7 +72,7 @@ export function ClientBusinessAddDialog({
       title={t("title", { business: t(`businesses.${business}`) })}
     >
       <div className="min-w-0 space-y-5">
-        {error ? <FeedbackNotice tone="error">{error}</FeedbackNotice> : null}
+        {notice ? <div ref={feedbackRef}><FeedbackNotice tone="error">{notice}</FeedbackNotice></div> : null}
 
         <DashboardFilterField label={t("searchLabel")}>
           <DashboardSearchInput
@@ -75,7 +83,7 @@ export function ClientBusinessAddDialog({
         </DashboardFilterField>
 
         <div className="max-h-[min(55vh,430px)] space-y-2 overflow-y-auto overscroll-contain pr-1">
-          {filteredCandidates.length === 0 ? (
+          {filteredCandidates.length === 0 && !notice ? (
             <p className="rounded-record-card border border-dashed border-border-subtle px-4 py-8 text-center text-sm leading-6 text-content-muted">
               {t("empty")}
             </p>
@@ -105,8 +113,12 @@ export function ClientBusinessAddDialog({
                     disabled={Boolean(pendingUserId)}
                     loading={pending}
                     onClick={async () => {
-                      const succeeded = await onAdd(candidate.userId);
-                      if (succeeded) onOpenChange(false);
+                      setSubmissionError("");
+                      const succeeded = await onAdd(candidate.userId, setSubmissionError);
+                      if (succeeded) {
+                        setSearchText("");
+                        onOpenChange(false);
+                      }
                     }}
                     size="compact"
                     type="button"

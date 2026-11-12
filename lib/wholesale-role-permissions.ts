@@ -10,7 +10,8 @@ import type { AppRole } from "./auth-routing";
 export type WholesaleRoleCapabilities = {
   canAllocateSettlementRelease: boolean;
   canAssignSalesUser: boolean;
-  canManageEveryCustomer: boolean;
+  canMaintainCustomerRecords: boolean;
+  canLinkCustomerAccount: boolean;
   canManageEveryOrder: boolean;
   canManageInventoryCredit: boolean;
   canManageInventoryOrders: boolean;
@@ -34,7 +35,9 @@ export function getWholesaleRoleCapabilities(
     canAllocateSettlementRelease:
       isAdministrator || isWholesaleCollaborator,
     canAssignSalesUser: isAdministrator || isWholesaleCollaborator,
-    canManageEveryCustomer: isAdministrator || isWholesaleCollaborator,
+    // 档案写入策略只允许管理员和业务员。账号关联走独立的数据库权限，财务也能操作。
+    canMaintainCustomerRecords: isAdministrator || role === "salesman",
+    canLinkCustomerAccount: isAdministrator || isWholesaleCollaborator,
     canManageEveryOrder: isAdministrator || isWholesaleCollaborator,
     canManageInventoryCredit: isAdministrator || isWholesaleCollaborator,
     canManageInventoryOrders: isAdministrator || isWholesaleCollaborator,
@@ -74,11 +77,6 @@ export function canReadFullWholesaleBackoffice(role: AppRole | null) {
 /** 财务与业务员都采用批发协作查询范围。 */
 export function canUseWholesaleSalesScope(role: AppRole | null) {
   return getWholesaleRoleCapabilities(role).usesWholesaleSalesScope;
-}
-
-/** 管理员、财务和业务员都能处理任意业务员名下的客户。 */
-export function canManageEveryWholesaleCustomer(role: AppRole | null) {
-  return getWholesaleRoleCapabilities(role).canManageEveryCustomer;
 }
 
 /** 管理员、财务和业务员都能处理任意业务员名下的订单。 */

@@ -15,8 +15,11 @@ import { expandOrderFilters } from "./helpers/order-filter-visibility";
 test("filters wholesale orders by included month across pagination and responsive layouts", async ({
   browser,
   page,
+  baseURL,
 }) => {
   test.setTimeout(120_000);
+  // 固定种子只用于可重建专属实例；独立查询另核对实际API/DB映射，不读取原认证环境。
+  expect(baseURL).toBe(process.env.PLAYWRIGHT_BASE_URL);
   const browserErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") browserErrors.push(message.text());
@@ -27,6 +30,7 @@ test("filters wholesale orders by included month across pagination and responsiv
   const [fixture] = readLocalPostgresRows<{ order_month: string }>(
     "select order_month from public.wholesale_orders where id = 'c2000000-0000-4000-8000-000000000001'",
   );
+  expect(fixture).toBeDefined();
   const currentMonth = fixture.order_month.slice(0, 7);
   const currentMonthDate = `${currentMonth}-01`;
 
@@ -90,15 +94,18 @@ test("filters wholesale orders by included month across pagination and responsiv
   expect(browserErrors).toEqual([]);
 
   const clientContext = await browser.newContext({
+    // 手动创建的上下文不继承测试page的baseURL；相对登录和跳转都需同一本地入口。
+    baseURL,
     viewport: { height: 844, width: 390 },
   });
-  const clientPage = await clientContext.newPage();
-  const clientBrowserErrors: string[] = [];
-  clientPage.on("console", (message) => {
-    if (message.type() === "error") clientBrowserErrors.push(message.text());
-  });
-  clientPage.on("pageerror", (error) => clientBrowserErrors.push(error.message));
   try {
+    // 页面创建或监听注册失败时，也要由同一个finally回收已创建的上下文。
+    const clientPage = await clientContext.newPage();
+    const clientBrowserErrors: string[] = [];
+    clientPage.on("console", (message) => {
+      if (message.type() === "error") clientBrowserErrors.push(message.text());
+    });
+    clientPage.on("pageerror", (error) => clientBrowserErrors.push(error.message));
     await loginAs(clientPage, "client");
     await clientPage.goto("/client/wholesale/orders");
     await clientPage.getByRole("button", { name: /更多筛选条件/ }).click();
@@ -123,11 +130,14 @@ async function expectNoFrameworkError(page: Page) {
 }
 
 async function expectOrderSummaryCount(page: Page, count: number) {
+  expect(Number.isSafeInteger(count) && count >= 0).toBe(true);
   const orderMetric = page
     .locator('[data-slot="metric-card"]')
-    .filter({ hasText: "订单" })
-    .first();
-  await expect(orderMetric).toContainText(String(count));
+    .filter({ has: page.getByText("订单", { exact: true }) })
+    .filter({ visible: true });
+  // 桌面/手机会保留隐藏副本，须唯一定位当前可见卡片，并完整比较数字而非子串。
+  await expect(orderMetric).toHaveCount(1);
+  await expect(orderMetric).toHaveText(new RegExp(`^订单\\s*${count}$`));
 }
 
 async function expectNoLayoutRegression(page: Page) {

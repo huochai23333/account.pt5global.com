@@ -10,7 +10,7 @@ const sanitizeHtml = require("sanitize-html");
 const MailComposer = require("nodemailer/lib/mail-composer");
 const sharp = require("sharp");
 
-const filename = path.resolve(__dirname, "../lib/mail/mail-outbound-worker.ts");
+const filename = path.resolve(__dirname, "../lib/mail/mail-outbound-content.ts");
 const source = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText;

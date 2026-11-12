@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { quarantineMailThreads, queryMailQuarantine } from "@/lib/mail/mail-service";
+import { quarantineMailThreads, queryMailQuarantine } from "@/lib/mail/mail-quarantine-service";
 
 import { mailApiError, readAuthenticatedMailJson } from "../_shared";
 

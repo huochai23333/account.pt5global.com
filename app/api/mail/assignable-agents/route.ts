@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { listAssignableMailAgents } from "@/lib/mail/mail-service";
+import { listAssignableMailAgents } from "@/lib/mail/mail-agent-directory";
 import { mailApiError } from "../_shared";
 
 /** 会话转交只需要可接收邮件的人员姓名与编号，不读取他人的私有发件设置。 */

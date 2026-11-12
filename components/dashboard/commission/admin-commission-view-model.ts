@@ -1,9 +1,15 @@
+import { normalizeSearchText } from "@/lib/value-normalizers";
 import type {
   AdminCommissionRow,
   CommissionCategory,
   CommissionSettlementStatus,
 } from "@/lib/admin-commission";
 import type { AppRole, UserStatus } from "@/lib/user-self-service";
+
+import {
+  getCommissionCategoryLabel,
+  getCommissionSettlementStatusLabel,
+} from "./commission-display";
 
 export type SettlementFilter = "all" | CommissionSettlementStatus;
 export type CategoryFilter = "all" | CommissionCategory;
@@ -106,4 +112,53 @@ function pickLaterDate(current: string | null, next: string | null) {
 
 function compareDateDesc(left: string | null, right: string | null) {
   return (right ? new Date(right).getTime() : 0) - (left ? new Date(left).getTime() : 0);
+}
+
+// 只筛选当前会话已加载的记录。类别与状态也使用页面当前语言的文案搜索。
+export function filterAdminCommissions(
+  commissions: AdminCommissionRow[],
+  filters: CommissionFilters,
+  t: (key: string) => string,
+) {
+  const searchValue = normalizeSearchText(filters.searchText);
+  const orderValue = normalizeSearchText(filters.orderNumber);
+
+  return commissions.filter((commission) => {
+    if (
+      filters.beneficiaryUserId &&
+      commission.beneficiary.userId !== filters.beneficiaryUserId
+    )
+      return false;
+    if (
+      filters.settlementStatus !== "all" &&
+      commission.settlementStatus !== filters.settlementStatus
+    )
+      return false;
+    if (
+      filters.category !== "all" &&
+      commission.category !== filters.category
+    )
+      return false;
+    if (
+      orderValue &&
+      !normalizeSearchText(commission.orderNumber).includes(orderValue)
+    )
+      return false;
+    if (!searchValue) return true;
+
+    return [
+      commission.orderNumber,
+      commission.beneficiary.label,
+      commission.beneficiary.name,
+      commission.beneficiary.email,
+      commission.sourceCustomer?.label ?? "",
+      commission.sourceCustomer?.name ?? "",
+      commission.sourceCustomer?.email ?? "",
+      commission.sourceSalesman?.label ?? "",
+      commission.sourceSalesman?.name ?? "",
+      commission.sourceSalesman?.email ?? "",
+      getCommissionCategoryLabel(commission.category, t),
+      getCommissionSettlementStatusLabel(commission.settlementStatus, t),
+    ].some((value) => normalizeSearchText(value).includes(searchValue));
+  });
 }

@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 
-import { persistGooglePush, verifyGooglePush } from "@/lib/mail/mail-integrations";
+import { persistGooglePush, verifyGooglePush } from "@/lib/mail/mail-google-push";
 import { processInboundEventBatch } from "@/lib/mail/mail-inbound-worker";
 import { processMailNotificationBatch } from "@/lib/mail/mail-notification-worker";
 

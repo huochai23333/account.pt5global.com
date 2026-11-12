@@ -6,6 +6,7 @@ import {
 } from "../../components/dashboard/wholesale/wholesale-order-link-options";
 import type { WholesaleOrderLinkOption } from "../../lib/wholesale";
 
+// 本文件直接测试真实显示/排序纯函数，不登录或访问数据库；列表权限与写入终态由其他用例验证。
 test.describe("批发订单关联选项", () => {
   test("统一显示订单编号和原币金额", () => {
     const order = buildOption({

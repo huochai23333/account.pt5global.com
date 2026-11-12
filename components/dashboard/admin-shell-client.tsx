@@ -1,3 +1,4 @@
+/** 点击退出后先阻止重复提交，再由共享退出流程清理本地会话并提交服务端表单；按钮本身不宣称退出已经完成。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -34,11 +35,7 @@ export function AdminShellLogoutButton({ label }: AdminShellLogoutButtonProps) {
         onClick={handleLogout}
         type="button"
       >
-        {pending ? (
-          <LoaderCircle className="size-4 animate-spin" />
-        ) : (
-          <LogOut className="size-4" />
-        )}
+        {pending ? <LoaderCircle className="size-4 animate-spin" /> : <LogOut className="size-4" />}
         {label}
       </DesignButton>
     </div>

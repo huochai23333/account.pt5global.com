@@ -1,7 +1,5 @@
-import type {
-  AdminTaskRow,
-  AdminTasksFilters,
-} from "@/lib/admin-tasks";
+/** 任务、团队与旅游协作资产：声明模块内的数据合同；类型帮助调用方理解字段，但不能替代运行时输入与权限校验。 */
+import type { AdminTaskRow, AdminTasksFilters } from "@/lib/admin-tasks";
 import type { DashboardPaginationSlice } from "@/lib/dashboard-pagination";
 
 import type { FeedbackTone } from "../dashboard-shared-ui";
@@ -20,10 +18,7 @@ export const taskInputClassName =
 export const taskTextareaClassName =
   "min-h-[150px] w-full rounded-[22px] border border-border bg-white px-4 py-3 text-sm leading-7 text-content-strong outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/30";
 
-export function areAdminTaskFiltersEqual(
-  left: AdminTasksFilters,
-  right: AdminTasksFilters,
-) {
+export function areAdminTaskFiltersEqual(left: AdminTasksFilters, right: AdminTasksFilters) {
   return (
     left.searchText === right.searchText &&
     left.targetRole === right.targetRole &&

@@ -53,10 +53,12 @@ export function applyServicePricingToOrderForm(
     ...(options.syncCostAmount ? { costAmount: costAmountValue } : {}),
   };
 
+  // 服务订单固定使用美元，金额和成交价读取同一次派生结果。
+  const transactionRate = deriveTransactionRateValue(nextState.dailyExchangeRate, "USD");
   return {
     ...nextState,
-    transactionRate: deriveTransactionRateValue(nextState.dailyExchangeRate, "USD"),
-    rmbAmount: deriveRmbAmountValue(amountValue, deriveTransactionRateValue(nextState.dailyExchangeRate, "USD")),
+    transactionRate,
+    rmbAmount: deriveRmbAmountValue(amountValue, transactionRate),
   };
 }
 

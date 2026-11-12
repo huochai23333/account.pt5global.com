@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
@@ -13,7 +13,7 @@ import {
   type HistoricalExchangeRateFetchResult,
 } from "@/lib/exchange-rates";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
-import { getRawErrorMessage, type FeedbackTone } from "../dashboard-shared-ui";
+import type { FeedbackTone } from "../dashboard-shared-ui";
 
 import {
   getExchangeRateDateRangeDayCount,
@@ -61,6 +61,7 @@ export function useExchangeRateHistoryFetch({
 }) {
   const supabase = getBrowserSupabaseClient();
   const t = useTranslations("ExchangeRates.historicalFetch");
+  const inFlight = useRef(false);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<DialogFeedback>(null);
@@ -89,7 +90,7 @@ export function useExchangeRateHistoryFetch({
   }, []);
 
   const openDialog = useCallback(() => {
-    if (!canManage) return;
+    if (!canManage || inFlight.current) return;
     setFormState(createInitialFormState(syncPairs));
     setFeedback(null);
     setResult(null);
@@ -98,14 +99,14 @@ export function useExchangeRateHistoryFetch({
 
   const setOpenState = useCallback(
     (nextOpen: boolean) => {
-      if (!nextOpen && pending) return;
+      if (!nextOpen && inFlight.current) return;
       setOpen(nextOpen);
       if (!nextOpen) {
         setFeedback(null);
         setResult(null);
       }
     },
-    [pending],
+    [],
   );
 
   const updateDate = useCallback(
@@ -152,7 +153,7 @@ export function useExchangeRateHistoryFetch({
   );
 
   const submit = useCallback(async () => {
-    if (!supabase || !canManage || pending) return;
+    if (!supabase || !canManage || inFlight.current) return;
 
     const rawCurrencies = formState.currencies.map((currency) => currency.trim());
     if (rawCurrencies.some((currency) => !/^[A-Za-z]{3}$/.test(currency))) {
@@ -180,6 +181,8 @@ export function useExchangeRateHistoryFetch({
       return;
     }
 
+    // 当次提交的币种和日期随请求一起固定，重复点击只保留一次提交。
+    inFlight.current = true;
     setPending(true);
     setFeedback(null);
     setResult(null);
@@ -195,21 +198,22 @@ export function useExchangeRateHistoryFetch({
       onPageDataLoaded(pageData);
       markBrowserCloudSyncActivity();
       setResult(nextResult);
+      const completedCount = nextResult.insertedCount + nextResult.skippedCount;
       setFeedback({
-        tone: nextResult.failedCount > 0 ? "info" : "success",
+        tone: nextResult.failedCount === 0 ? "success" : completedCount > 0 ? "info" : "error",
         message: t("feedback.complete", {
           failed: nextResult.failedCount,
           inserted: nextResult.insertedCount,
           skipped: nextResult.skippedCount,
         }),
       });
-    } catch (error) {
-      const rawMessage = getRawErrorMessage(error).trim();
+    } catch {
       setFeedback({
         tone: "error",
-        message: rawMessage || t("feedback.failed"),
+        message: t("feedback.failed"),
       });
     } finally {
+      inFlight.current = false;
       setPending(false);
     }
   }, [
@@ -219,7 +223,6 @@ export function useExchangeRateHistoryFetch({
     maxDate,
     normalizedCurrencies,
     onPageDataLoaded,
-    pending,
     supabase,
     t,
   ]);

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { AdminPersonAccountUpdatePayload } from "./admin-people";
+import type { AdminPersonAccountUpdatePayload } from "./admin-people-contract";
 import { withRequestTimeout } from "./request-timeout";
 import type { WorkspaceBusinessKey } from "./workspace-business-access";
 

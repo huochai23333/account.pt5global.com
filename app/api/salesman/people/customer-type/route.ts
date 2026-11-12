@@ -6,7 +6,7 @@ import {
   updateSalesmanCustomerType,
   type SalesmanCustomerTypeUpdatePayload,
 } from "@/lib/salesman-people-mutations";
-import { isSalesmanCustomerType } from "@/lib/salesman-people";
+import { isSalesmanCustomerType } from "@/lib/salesman-people-contract";
 
 const STATUS_BY_ERROR_CODE = {
   forbidden: 403,

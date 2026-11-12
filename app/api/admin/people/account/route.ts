@@ -4,12 +4,12 @@ import {
   getAdminPeopleUpdateErrorCode,
   updateAdminPersonAccount,
 } from "@/lib/admin-people-mutations";
+import { getAdminPeopleChangeLogs } from "@/lib/admin-people";
 import {
-  getAdminPeopleChangeLogs,
   isAdminPeopleRole,
   isAdminPeopleStatus,
   type AdminPersonAccountUpdatePayload,
-} from "@/lib/admin-people";
+} from "@/lib/admin-people-contract";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { isSalesmanBusinessBoard } from "@/lib/salesman-business-access";
 import { isWorkspaceBusinessAccessKey } from "@/lib/workspace-business-access";

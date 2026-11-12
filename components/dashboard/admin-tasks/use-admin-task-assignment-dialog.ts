@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -12,12 +12,13 @@ import {
 import { type getBrowserSupabaseClient } from "@/lib/supabase";
 
 import {
-  toAdminTaskErrorMessage,
   validateTaskAssignmentDraft,
-} from "@/components/dashboard/tasks/tasks-display";
+} from "@/components/dashboard/tasks/task-form-validation";
+import { toAdminTaskErrorMessage } from "@/components/dashboard/tasks/tasks-display";
 
 import {
   createEmptyAssignmentForm,
+  toggleTaskTargetRole,
   type AssignmentFormState,
 } from "./admin-tasks-utils";
 import { type PageFeedbackValue } from "./admin-tasks-view-model-shared";
@@ -39,6 +40,7 @@ export function useAdminTaskAssignmentDialog({
   const [assignmentDialogFeedback, setAssignmentDialogFeedback] =
     useState<PageFeedbackValue | null>(null);
   const [assignmentPending, setAssignmentPending] = useState(false);
+  const saving = useRef(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [assignmentFormState, setAssignmentFormState] = useState<AssignmentFormState>(
     createEmptyAssignmentForm,
@@ -69,14 +71,12 @@ export function useAdminTaskAssignmentDialog({
 
   const handleAssignmentTargetRoleToggle = useCallback((role: TaskTargetRole) => {
     setAssignmentFormState((current) => ({
-      targetRoles: current.targetRoles.includes(role)
-        ? current.targetRoles.filter((targetRole) => targetRole !== role)
-        : [...current.targetRoles, role],
+      targetRoles: toggleTaskTargetRole(current.targetRoles, role),
     }));
   }, []);
 
   const handleSaveAssignment = useCallback(async () => {
-    if (!supabase || !selectedTask || assignmentPending) {
+    if (!supabase || !selectedTask || saving.current) {
       return;
     }
 
@@ -90,11 +90,13 @@ export function useAdminTaskAssignmentDialog({
       return;
     }
 
+    // 按钮尚未来得及禁用时，也只发起一份角色保存请求。
+    saving.current = true;
     setAssignmentPending(true);
     setAssignmentDialogFeedback(null);
 
     try {
-      await updateAdminTaskAssignment(supabase, {
+      const result = await updateAdminTaskAssignment(supabase, {
         taskId: selectedTask.id,
         targetRoles: assignmentFormState.targetRoles,
       });
@@ -102,8 +104,8 @@ export function useAdminTaskAssignmentDialog({
       setAssignmentDialogOpen(false);
       setSelectedTaskId(null);
       onPageFeedback({
-        tone: "success",
-        message: t("feedback.assignmentUpdated"),
+        tone: result.status === "saved" ? "success" : "info",
+        message: t(result.status === "saved" ? "feedback.assignmentUpdated" : "feedback.assignmentUnchanged"),
       });
       refreshTaskBoard();
     } catch (error) {
@@ -112,9 +114,10 @@ export function useAdminTaskAssignmentDialog({
         message: toAdminTaskErrorMessage(error, sharedT),
       });
     } finally {
+      saving.current = false;
       setAssignmentPending(false);
     }
-  }, [assignmentFormState, assignmentPending, onPageFeedback, refreshTaskBoard, selectedTask, sharedT, supabase, t]);
+  }, [assignmentFormState, onPageFeedback, refreshTaskBoard, selectedTask, sharedT, supabase, t]);
 
   return {
     assignmentDialogFeedback,

@@ -4,7 +4,7 @@ import type {
 } from "@/lib/admin-commission";
 import type { DashboardPaginationSlice } from "@/lib/dashboard-pagination";
 
-// 分页契约与小型展示映射从记录区块移出，让主文件专注桌面表格和移动记录的组装。
+// 表格共用状态色和详情行，让管理与个人看板对同一结算状态使用一致的表达。
 export type CommissionPagination =
   DashboardPaginationSlice<AdminCommissionRow> & {
     goToNextPage: () => void;

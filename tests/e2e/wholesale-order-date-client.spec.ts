@@ -8,7 +8,8 @@ import {
 import { normalizeWholesaleOrderAssessmentPayload } from "../../lib/wholesale-order-assessment-filters";
 import { getWholesaleOrderPage } from "../../lib/wholesale-order-page";
 
-// Freeze only this test process; expectations below are fixed Shanghai calendar dates.
+// 只冻结当前测试进程的时钟，每例结束恢复；独立预期使用上海日期，不能拿被测函数的输出反算。
+// 下面的客户端明确模拟请求边界，只核对真实查询/评估代码的参数，不表示数据库权限或页面已经通过。
 const originalDate = Date;
 const frozenTimestamp = originalDate.parse("2026-01-01T00:30:00+08:00");
 test.beforeEach(() => {

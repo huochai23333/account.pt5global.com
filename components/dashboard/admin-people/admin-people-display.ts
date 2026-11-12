@@ -1,6 +1,6 @@
 import type { AppRole } from "@/lib/auth-routing";
 import type { UserStatus } from "@/lib/user-self-service";
-import type { AdminPersonRow, CustomerTypeMark } from "@/lib/admin-people";
+import type { AdminPersonRow, CustomerTypeMark } from "@/lib/admin-people-contract";
 import type { Locale } from "@/lib/locale";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 import type {

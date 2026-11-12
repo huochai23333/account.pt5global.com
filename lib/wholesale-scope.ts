@@ -13,9 +13,8 @@ import {
   scopeWholesaleCommissions,
   scopeWholesaleOrderChangeLogs,
   scopeWholesaleOrderSettlements,
-  scopeWholesaleProfiles,
-  scopeWholesaleReferrals,
 } from "./wholesale-scope-related";
+import { scopeWholesaleProfiles, scopeWholesaleReferrals } from "./wholesale-people-scope";
 import {
   canCollaborateAcrossWholesale,
   canReadFullWholesaleBackoffice,

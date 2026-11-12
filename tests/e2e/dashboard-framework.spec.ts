@@ -21,7 +21,9 @@ test.describe("全工作台共享结构", () => {
       await page.goto(entry.path);
       await expectWorkspaceShell(page);
       await expectNotForbiddenPage(page);
-      await expect(page.locator('[data-dashboard-page-shell="true"]')).toHaveCount(1);
+      await expect(
+        page.locator('[data-dashboard-page-shell="true"]'),
+      ).toHaveCount(1);
     });
   }
 

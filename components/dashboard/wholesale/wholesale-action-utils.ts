@@ -232,17 +232,6 @@ export function toWholesaleActionErrorMessage(error: unknown) {
     return "这个客户名称已经存在，请换一个名称。";
   }
 
-  if (normalized.includes("wholesale_customer_delete_has_orders")) {
-    return "这个客户已经有批发订单，不能删除。";
-  }
-  // 客户文件属于长期档案，删除客户前必须明确处理，不能留下无归属的对象。
-  if (normalized.includes("document_customer_has_files")) {
-    return "这个客户还有资料文件，请先处理资料，再删除客户档案。";
-  }
-  if (normalized.includes("wholesale_customer_delete_has_sales_lead")) {
-    return "这个客户由线索添加，需要保留客户档案，可以继续修改资料。";
-  }
-
   if (normalized.includes("wholesale_customer_not_found")) {
     return "没有找到这个客户，请刷新后再试。";
   }

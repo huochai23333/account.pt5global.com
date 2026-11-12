@@ -28,16 +28,18 @@ import type {
   MonthlySettlementAllocatedUsdSummary,
   MonthlySettlementUnallocatedSummary,
 } from "@/lib/wholesale-settlement-release-summary";
+import type { SettlementReleaseClearSubmission } from "@/lib/wholesale-settlement-release-clear";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 import { WholesaleSettlementReleaseAllocationDialog } from "./wholesale-settlement-release-allocation-dialog";
 import { WholesaleSettlementReleaseCreateDialog } from "./wholesale-settlement-release-dialogs";
 import {
   getSettlementReleaseSearchText,
-  WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS,
+  WHOLESALE_SETTLEMENT_RELEASE_STATUSES,
 } from "./wholesale-settlement-release-display";
 import { WholesaleSettlementReleaseTable } from "./wholesale-settlement-release-table";
 import { WholesaleSettlementReleaseSummary } from "./wholesale-settlement-release-summary";
 import type { SettlementReleaseAllocationSubmission } from "./use-wholesale-settlement-release-actions";
+import type { SettlementReleasePublicationActions } from "./use-wholesale-settlement-release-publication";
 import {
   WholesaleEmptyState,
   WholesalePageShell,
@@ -49,10 +51,10 @@ type WholesaleSettlementReleaseSectionProps = {
   customers: WholesaleCustomer[];
   onCancelRelease: (releaseId: string) => Promise<boolean>;
   onClearAllocations: (
-    releaseId: string,
-    expectedRevision: number,
+    submission: SettlementReleaseClearSubmission,
+    onError: (message: string) => void,
   ) => Promise<boolean>;
-  onCreateRelease: (formData: FormData) => Promise<boolean>;
+  publication: SettlementReleasePublicationActions;
   onSaveAllocations: (
     submission: SettlementReleaseAllocationSubmission,
   ) => Promise<boolean>;
@@ -73,7 +75,7 @@ export function WholesaleSettlementReleaseSection({
   customers,
   onCancelRelease,
   onClearAllocations,
-  onCreateRelease,
+  publication,
   onSaveAllocations,
   monthlyAllocatedUsd,
   monthlyUnallocated,
@@ -85,6 +87,9 @@ export function WholesaleSettlementReleaseSection({
 }: WholesaleSettlementReleaseSectionProps) {
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_settlement_release_section",
+  );
+  const tableText = useTranslations(
+    "UiText.components_dashboard_wholesale_wholesale_settlement_release_table",
   );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedAllocationRelease, setSelectedAllocationRelease] =
@@ -132,6 +137,7 @@ export function WholesaleSettlementReleaseSection({
           ordersById,
           profilesById,
           release,
+          statusLabel: tableText(`status.${release.status}`),
         }),
       ).includes(searchValue);
     });
@@ -142,6 +148,7 @@ export function WholesaleSettlementReleaseSection({
     releases,
     searchText,
     statusFilter,
+    tableText,
   ]);
   const hasActiveFilters = searchText || statusFilter !== ALL;
   return (
@@ -207,9 +214,10 @@ export function WholesaleSettlementReleaseSection({
                   ),
                   value: ALL,
                 },
-                ...Object.entries(
-                  WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS,
-                ).map(([status, label]) => ({ label, value: status })),
+                ...WHOLESALE_SETTLEMENT_RELEASE_STATUSES.map((status) => ({
+                  label: tableText(`status.${status}`),
+                  value: status,
+                })),
               ]}
               value={statusFilter}
             />
@@ -249,7 +257,7 @@ export function WholesaleSettlementReleaseSection({
         <WholesaleSettlementReleaseCreateDialog
           currencyOptions={currencyOptions}
           customers={customers}
-          onCreateRelease={onCreateRelease}
+          publication={publication}
           onOpenChange={setCreateDialogOpen}
           pending={pendingKey === "settlement-release:create"}
         />

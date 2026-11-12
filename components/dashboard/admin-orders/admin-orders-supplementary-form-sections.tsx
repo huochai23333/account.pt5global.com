@@ -20,7 +20,7 @@ import {
   OrderSupplementaryFormSection,
 } from "./admin-orders-dialog-ui";
 import { OrderDetailPairsInput } from "./admin-orders-detail-pairs-input";
-import { isPurchaseDetailsCategory } from "./admin-orders-form";
+import { isPurchaseDetailsCategory } from "./admin-orders-form-validation";
 import {
   createOrdersUiCopy,
   formatDiscountRatioValue,

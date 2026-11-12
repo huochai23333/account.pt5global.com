@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 
 import {
   expectForbiddenPage,
@@ -64,6 +66,18 @@ const workspaceEntries: readonly WorkspaceEntry[] = [
 ];
 
 test.describe("workspace entrypoint regression", () => {
+  test.beforeEach(async ({ baseURL, page }) => {
+    // 固定账号和页面查询可能保存阅读记录或释放过期认领，入口巡检也不能落到共享数据。
+    readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+      execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
+    // 本套件验证导航和已有档案；物流页面会自动请求来源，明确阻断外部边界，不伪造同步成功。
+    await page.route("**/functions/v1/wholesale-logistics-sync", route => route.fulfill({
+      status: 503, contentType: "application/json", body: JSON.stringify({ error: "本地入口检查暂不更新物流来源" }),
+    }));
+  });
+
   for (const entry of workspaceEntries) {
     test(`${entry.role} can open key workspace sections`, async ({
       page,
@@ -173,6 +187,7 @@ test.describe("workspace entrypoint regression", () => {
     await expectDateControlValue(orderedToInput, defaultRange.to);
 
     await page.route("**/api/wholesale/order-assessment", async (route) => {
+      // 仅核对流式内容如何显示；两笔订单和评估正文是替身，不证明AI生成或数据库订单统计。
       const text = "**订单概况**\n* 当前范围共 2 笔订单。\n* 状态分布正常。";
       await route.fulfill({
         body: `${JSON.stringify({ type: "delta", text })}\n${JSON.stringify({ type: "completed", contentLength: text.length })}\n`,
@@ -301,6 +316,7 @@ async function mockClipboard(page: Page) {
 }
 
 function getLast30DaysDateRange() {
+  // 独立按上海日界计算含今天的30天，避免把生产函数自身拿来当测试期望。
   const today = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const to = today.toISOString().slice(0, 10);
   today.setUTCDate(today.getUTCDate() - 29);

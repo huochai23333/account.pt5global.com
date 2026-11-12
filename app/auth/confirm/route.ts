@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const publicOrigin = getRequestPublicOrigin(request);
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = getSupportedEmailOtpType(requestUrl.searchParams.get("type"));
-  // Recovery verification creates the reset session; always land on the reset form.
+  // recovery 验证建立改密会话，必须固定进入改密表单，不能被 next 参数带到别的流程。
   const nextPath =
     type === PASSWORD_RECOVERY_TYPE
       ? DEFAULT_RECOVERY_REDIRECT_PATH

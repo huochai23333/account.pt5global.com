@@ -1,17 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizeNullableString, normalizeTaskMainRecord } from "./admin-task-normalizers";
-import { ADMIN_TASK_SELECT } from "./admin-task-query-fields";
 import type {
   AdminTaskMainRow,
-  AdminTaskRow,
   CreateAdminTaskInput,
   TaskMainRecord,
+  TaskTargetRole,
   UpdateAdminTaskAssignmentInput,
   UpdateAdminTaskInput,
 } from "./admin-tasks-types";
 import { withRequestTimeout } from "./request-timeout";
-import { prepareDeletedTaskStorageCleanup } from "./task-storage-cleanup";
+import { getTaskTargetRolesByTaskIds } from "./task-target-roles";
 
 export async function createAdminTask(
   supabase: SupabaseClient,
@@ -83,8 +82,15 @@ export async function updateAdminTask(
 export async function updateAdminTaskAssignment(
   supabase: SupabaseClient,
   input: UpdateAdminTaskAssignmentInput,
-): Promise<AdminTaskMainRow> {
-  // verified-rpc: RPC 返回 void；下方立即重新读取 task_main，确认任务仍存在且版本可用。
+) {
+  const expectedRoles = new Set(input.targetRoles);
+  if (expectedRoles.size === 0) throw new Error("invalid task target roles");
+  const currentRoles = await readAssignedRoles(supabase, input.taskId);
+  if (matchesAssignedRoles(currentRoles, expectedRoles)) {
+    return { status: "unchanged" as const, targetRoles: currentRoles };
+  }
+
+  // verified-rpc: RPC 返回 void；必须按任务编号独立读回目标角色集合。
   const { error } = await withRequestTimeout(
     supabase.rpc("set_task_target_roles", {
       p_task_id: input.taskId,
@@ -96,54 +102,20 @@ export async function updateAdminTaskAssignment(
     throw error;
   }
 
-  const { data: taskData, error: taskError } = await withRequestTimeout(
-    supabase
-      .from("task_main")
-      .select(ADMIN_TASK_SELECT)
-      .eq("id", input.taskId)
-      .single()
-      .returns<TaskMainRecord>(),
-  );
-
-  if (taskError) {
-    throw taskError;
+  const savedRoles = await readAssignedRoles(supabase, input.taskId);
+  if (!matchesAssignedRoles(savedRoles, expectedRoles)) {
+    throw new Error("task target roles not confirmed");
   }
 
-  const task = normalizeTaskMainRecord(taskData);
-
-  if (!task) {
-    throw new Error("任务改派成功，但返回数据不完整。");
-  }
-
-  return task;
+  return { status: "saved" as const, targetRoles: savedRoles };
 }
 
-export async function deleteAdminTask(
-  supabase: SupabaseClient,
-  task: Pick<AdminTaskRow, "id" | "attachments">,
-) {
-  const runDeletedTaskStorageCleanup = await prepareDeletedTaskStorageCleanup(
-    supabase,
-    {
-      taskId: task.id,
-      taskAttachments: task.attachments,
-    },
-  );
+async function readAssignedRoles(supabase: SupabaseClient, taskId: string) {
+  const rows = await getTaskTargetRolesByTaskIds(supabase, [taskId]);
+  return rows.filter((row) => row.taskId === taskId).map((row) => row.role);
+}
 
-  const { data, error } = await withRequestTimeout(
-    supabase.from("task_main").delete().eq("id", task.id).select("id").maybeSingle<{ id: string }>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-  if (!data || data.id !== task.id) {
-    throw new Error("没有找到需要删除的任务。");
-  }
-
-  const storageCleanupFailed = await runDeletedTaskStorageCleanup();
-
-  return {
-    storageCleanupFailed,
-  };
+function matchesAssignedRoles(roles: TaskTargetRole[], expected: Set<TaskTargetRole>) {
+  return roles.length === expected.size && new Set(roles).size === expected.size
+    && roles.every((role) => expected.has(role));
 }

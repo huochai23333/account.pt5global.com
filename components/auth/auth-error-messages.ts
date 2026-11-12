@@ -4,6 +4,7 @@ type AuthErrorShape = {
   status: number | null;
 };
 
+// 原始错误只供本模块/调用方分类使用，界面应映射为双语消息，不能直接显示该返回值。
 export function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "string") {
     return error;
@@ -71,7 +72,9 @@ export function isUserAlreadyRegisteredAuthError(error: unknown) {
 export function isEmailNotConfirmedAuthError(error: unknown) {
   const { code, message } = normalizeAuthError(error);
 
-  return code === "email_not_confirmed" || message.includes("email not confirmed");
+  return (
+    code === "email_not_confirmed" || message.includes("email not confirmed")
+  );
 }
 
 export function isInvalidCredentialsAuthError(error: unknown) {
@@ -156,6 +159,19 @@ export function isAuthSessionMissingError(error: unknown) {
     code === "session_missing" ||
     message.includes("auth session missing")
   );
+}
+
+/** 改密请求断线或服务端异常时可能已经写入；明确的输入/会话拒绝仍使用原提示。 */
+export function isUnconfirmedPasswordUpdateAuthError(error: unknown) {
+  if (
+    isWeakPasswordAuthError(error) ||
+    isSamePasswordAuthError(error) ||
+    isTooFrequentAuthError(error) ||
+    isAuthSessionMissingError(error)
+  )
+    return false;
+  const { status } = normalizeAuthError(error);
+  return status === null || status === 0 || status === 408 || status >= 500;
 }
 
 export function isUserNotFoundAuthError(error: unknown) {

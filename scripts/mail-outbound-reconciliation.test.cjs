@@ -8,16 +8,20 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 
-function loadWorker(dependencies) {
-  const filename = path.join(root, 'lib/mail/mail-outbound-worker.ts');
+function loadWorker(dependencies, sourceName = 'mail-outbound-worker.ts') {
+  const filename = path.join(root, 'lib/mail', sourceName);
   const output = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const module = { exports: {} };
-  vm.runInThisContext('(function(require,module,exports){' + output + '\n})', { filename })((name) => {
+  vm.runInThisContext('(function(require,module,exports,fetch){' + output + '\n})', { filename })((name) => {
     if (Object.hasOwn(dependencies, name)) return dependencies[name];
+    // 拆分后的真实内容与归档模块继续使用同一组隔离外部边界，不能用空实现替代业务逻辑。
+    if (['./mail-outbound-content', './mail-outbound-persistence', './mail-google-outbound', './mail-google-api'].includes(name)) {
+      return loadWorker(dependencies, name.slice(2) + '.ts');
+    }
     throw new Error('未隔离的依赖：' + name);
-  }, module, module.exports);
+  }, module, module.exports, fakeGmailFetch);
   return module.exports;
 }
 
@@ -43,6 +47,7 @@ function clientFor(handler, rpc) {
 const ok = (data) => ({ data, error: null });
 let sends = 0;
 let lookups = 0;
+let sentChecks = 0;
 let failProviderReceipt = true;
 let savedMessage = null;
 const job = {
@@ -51,6 +56,28 @@ const job = {
   status: 'pending', attempt_count: 0, provider_message_id: null, provider_thread_id: null,
   dispatch_started_at: null, rfc_message_id: null, created_at: '2026-09-23T00:00:00Z',
 };
+
+// 只模拟供应商的 HTTP 边界。真实 Gmail 适配模块仍需构造请求并验证 SENT 回执。
+async function fakeGmailFetch(address, init) {
+  const url = new URL(address);
+  assert.equal(init.headers.authorization, 'Bearer isolated-token');
+  if (url.pathname.endsWith('/messages/send') && init.method === 'POST') {
+    const body = JSON.parse(init.body);
+    assert.match(Buffer.from(body.raw, 'base64url').toString(), /Message-ID: <pt5-job-id@pt5china.com>/i);
+    return Response.json({ id: 'provider-' + ++sends, threadId: 'provider-thread' });
+  }
+  if (url.pathname.endsWith('/messages')) {
+    lookups += 1;
+    assert.equal(url.searchParams.get('q'), 'in:sent rfc822msgid:<pt5-job-id@pt5china.com>');
+    return Response.json({ messages: sends ? [{ id: 'provider-1', threadId: 'provider-thread' }] : [] });
+  }
+  if (url.pathname.endsWith('/messages/provider-1')) {
+    sentChecks += 1;
+    assert.equal(url.searchParams.get('format'), 'minimal');
+    return Response.json({ id: 'provider-1', threadId: 'provider-thread', labelIds: ['SENT'] });
+  }
+  throw new Error('不在测试范围的 Gmail 请求');
+}
 const client = clientFor((query) => {
   if (query.table === 'mail_shared_mailboxes') return ok({ email_enc: 'company@example.test', status: 'active' });
   if (query.table === 'mail_agent_profiles') return ok({ enabled: true, alias_local_part: 'sales', ref_prefix: 'SALES', sender_display_name_enc: 'Sales', signature_html_enc: '' });
@@ -86,15 +113,9 @@ const worker = loadWorker({
   './mail-security': { decryptMailValue: (value) => value, encryptMailValue: (value) => value, createBlindIndex: (value) => value },
   'sanitize-html': (value) => value,
   'nodemailer/lib/mail-composer/index.js': Composer,
-  './mail-google': {
+  'server-only': {},
+  './mail-google-credentials': {
     getSharedAccessToken: async () => 'isolated-token',
-    sendRawMessage: async () => ({ id: 'provider-' + ++sends, threadId: 'provider-thread' }),
-    findSentMessageByRfcId: async (_token, messageId) => {
-      lookups += 1;
-      assert.equal(messageId, '<pt5-job-id@pt5china.com>');
-      return sends ? { id: 'provider-1', threadId: 'provider-thread' } : null;
-    },
-    verifySentMessage: async () => ({ labelIds: ['SENT'] }),
   },
   './mail-recipient-service': { recordSuccessfulOutboundRecipients: async () => {} },
   './mail-storage': {},
@@ -110,5 +131,6 @@ const worker = loadWorker({
   assert.equal(job.provider_message_id, 'provider-1');
   assert.equal(sends, 1);
   assert.equal(lookups, 1);
-  console.log(JSON.stringify({ sends, lookups, finalStatus: job.status }));
+  assert.equal(sentChecks, 1);
+  console.log(JSON.stringify({ sends, lookups, sentChecks, finalStatus: job.status }));
 })().catch((error) => { console.error(error); process.exitCode = 1; });

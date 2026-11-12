@@ -1,3 +1,4 @@
+/** 汇率与金额换算：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -7,21 +8,13 @@ import * as FormControls from "@/components/ui/form-controls";
 import { memo } from "react";
 
 import { useTranslations } from "next-intl";
-import {
-  CalendarRange,
-  Clock3,
-  LoaderCircle,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { CalendarRange, Clock3, LoaderCircle, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 import {
   normalizeCurrencyCode,
   type ExchangeRateSyncState,
   type ManualExchangeRateFetchItem,
 } from "@/lib/exchange-rates";
-import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatExchangeRateQuoteTime } from "./exchange-rates-utils";
 
@@ -97,21 +90,13 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
       title={t("sync.title")}
     >
       <div className="space-y-5">
-        {feedback ? (
-          <FeedbackNotice tone={feedback.tone}>
-            {feedback.message}
-          </FeedbackNotice>
-        ) : null}
+        {feedback ? <FeedbackNotice tone={feedback.tone}>{feedback.message}</FeedbackNotice> : null}
 
         <div className="flex flex-col gap-4 border-b border-border-subtle pb-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-content-strong">
-              {t("sync.autoFetchTitle")}
-            </p>
+            <p className="text-sm font-semibold text-content-strong">{t("sync.autoFetchTitle")}</p>
             <p className="mt-1 text-sm leading-6 text-content-muted">
-              {isEnabled
-                ? t("sync.autoFetchEnabled")
-                : t("sync.autoFetchDisabled")}
+              {isEnabled ? t("sync.autoFetchEnabled") : t("sync.autoFetchDisabled")}
             </p>
           </div>
           <FormControls.ChoiceField
@@ -132,9 +117,7 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <section className="space-y-4">
             <div>
-              <p className="text-sm font-semibold text-content-strong">
-                {t("sync.pairsTitle")}
-              </p>
+              <p className="text-sm font-semibold text-content-strong">{t("sync.pairsTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-content-muted">
                 {t("sync.pairsDescription")}
               </p>
@@ -206,9 +189,7 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
 
           <section className="space-y-4">
             <div>
-              <p className="text-sm font-semibold text-content-strong">
-                {t("sync.manualTitle")}
-              </p>
+              <p className="text-sm font-semibold text-content-strong">{t("sync.manualTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-content-muted">
                 {t("sync.manualDescription")}
               </p>
@@ -222,18 +203,15 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
                 >
                   <FormControls.Input
                     className={dashboardFilterInputClassName}
-                    onChange={(event) =>
-                      onManualCurrencyChange(index, event.target.value)
-                    }
+                    disabled={manualFetchPending}
+                    onChange={(event) => onManualCurrencyChange(index, event.target.value)}
                     placeholder={t("sync.currencyPlaceholder")}
                     type="text"
                     value={currency}
                   />
                   <Button
                     aria-label={t("sync.removeManualCurrency")}
-                    disabled={
-                      manualFetchPending || manualCurrencies.length === 1
-                    }
+                    disabled={manualFetchPending || manualCurrencies.length === 1}
                     onClick={() => onRemoveManualCurrency(index)}
                     type="button"
                     variant="outline"
@@ -286,10 +264,7 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
               <div className="space-y-2">
                 {manualResults.map((result) => (
                   <p
-                    className={cn(
-                      "text-sm",
-                      result.ok ? "text-content-muted" : "text-content-muted",
-                    )}
+                    className="text-sm text-content-muted"
                     key={`${result.baseCurrency}-${result.targetCurrency}`}
                   >
                     {result.ok
@@ -300,9 +275,14 @@ export const ExchangeRateSyncSection = memo(function ExchangeRateSyncSection({
                       : t("sync.resultFailed", {
                           currency: result.baseCurrency,
                         })}
-                    {result.ok && result.rateRecordId ? <span className="mt-1 block break-all text-xs">
-                      {t("sync.resultProof", { id: result.rateRecordId, time: formatExchangeRateQuoteTime(result.quotedAt, locale) })}
-                    </span> : null}
+                    {result.ok && result.rateRecordId ? (
+                      <span className="mt-1 block break-all text-xs">
+                        {t("sync.resultProof", {
+                          id: result.rateRecordId,
+                          time: formatExchangeRateQuoteTime(result.quotedAt, locale),
+                        })}
+                      </span>
+                    ) : null}
                   </p>
                 ))}
               </div>

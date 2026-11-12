@@ -1,3 +1,4 @@
+/** 待办行与筛选按钮只接收记录和操作回调；完成、重要和删除状态由上层写入后刷新。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -21,9 +22,9 @@ import type { UserTodoItemRow } from "@/lib/user-todos";
 import {
   formatHomeTodoDueDate,
   getHomeTodoDueTone,
-  type HomeTodoCopy,
   type HomeTodoFilter,
 } from "./dashboard-home-todo-display";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
 
 type TodoFilterButtonProps = {
   active: boolean;
@@ -33,13 +34,7 @@ type TodoFilterButtonProps = {
   onClick: () => void;
 };
 
-export function TodoFilterButton({
-  active,
-  count,
-  filter,
-  label,
-  onClick,
-}: TodoFilterButtonProps) {
+export function TodoFilterButton({ active, count, filter, label, onClick }: TodoFilterButtonProps) {
   return (
     <DesignButton
       aria-selected={active}
@@ -88,27 +83,16 @@ export function TodoItem({
   const dueTone = getHomeTodoDueTone(todo);
 
   return (
-    <RecordCard
-      className={cn(todo.is_completed ? "opacity-78" : "")}
-      data-testid="home-todo-item"
-    >
+    <RecordCard className={cn(todo.is_completed ? "opacity-78" : "")} data-testid="home-todo-item">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-1 gap-3">
           <DesignButton
-            aria-label={
-              todo.is_completed
-                ? copy.actions.unmarkComplete
-                : copy.actions.markComplete
-            }
+            aria-label={todo.is_completed ? copy.actions.unmarkComplete : copy.actions.markComplete}
             className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface-inset text-primary transition hover:bg-status-info-soft"
             data-testid="home-todo-complete-button"
             disabled={completePending}
             onClick={onToggleComplete}
-            title={
-              todo.is_completed
-                ? copy.actions.unmarkComplete
-                : copy.actions.markComplete
-            }
+            title={todo.is_completed ? copy.actions.unmarkComplete : copy.actions.markComplete}
             type="button"
           >
             {completePending ? (
@@ -153,8 +137,7 @@ export function TodoItem({
               <p
                 className={cn(
                   "mt-3 inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-semibold",
-                  dueTone === "overdue" &&
-                    "bg-surface-inset text-content-muted",
+                  dueTone === "overdue" && "bg-surface-inset text-content-muted",
                   dueTone === "today" && "bg-surface-inset text-content-muted",
                   dueTone === "default" && "bg-status-info-soft text-primary",
                 )}
@@ -170,23 +153,14 @@ export function TodoItem({
           <IconActionButton
             active={todo.is_important}
             disabled={importantPending}
-            label={
-              todo.is_important
-                ? copy.actions.unmarkImportant
-                : copy.actions.markImportant
-            }
+            label={todo.is_important ? copy.actions.unmarkImportant : copy.actions.markImportant}
             onClick={onToggleImportant}
             testId="home-todo-important-button"
           >
             {importantPending ? (
               <LoaderCircle className="size-4 animate-spin" />
             ) : (
-              <Star
-                className={cn(
-                  "size-4",
-                  todo.is_important ? "fill-current" : "",
-                )}
-              />
+              <Star className={cn("size-4", todo.is_important ? "fill-current" : "")} />
             )}
           </IconActionButton>
 

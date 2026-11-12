@@ -14,6 +14,7 @@ export function normalizeLocale(value: string | null | undefined): Locale {
   return value === "en" ? "en" : DEFAULT_LOCALE;
 }
 
+/** 明确选择的 Cookie 优先；没有有效选择时，按浏览器语言权重寻找本项目支持的语言。 */
 export function resolveRequestLocale(
   cookieLocale: string | null | undefined,
   acceptLanguage: string | null | undefined,

@@ -130,12 +130,14 @@ export function getCustomerName(
 export function getProfileName(
   profilesById: Map<string, WholesaleProfile>,
   userId: string | null | undefined,
+  fallback = "未分配",
 ) {
   if (!userId) {
-    return "未分配";
+    return fallback;
   }
 
   const profile = profilesById.get(userId);
 
-  return profile?.name || profile?.email || "未分配";
+  // 显示层传入当前语言的占位文案，资料索引仅负责提供可用姓名。
+  return profile?.name || profile?.email || fallback;
 }

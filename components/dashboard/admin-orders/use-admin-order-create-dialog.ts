@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   type BusinessCategoryOption,
@@ -12,7 +12,6 @@ import {
   findTodayCnyExchangeRate,
   type ExchangeRateRow,
 } from "@/lib/exchange-rates";
-import { previewOrderServiceFeeType } from "@/lib/service-fee-types";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 
 import {
@@ -32,8 +31,7 @@ import {
   type PageFeedbackSetter,
 } from "./admin-orders-view-model-shared";
 import { toOrderErrorMessage } from "./admin-orders-errors";
-import { parseNumericValue } from "./admin-orders-display";
-import { type OrderServiceFeePreviewState } from "./admin-orders-service-fee-preview";
+import { useAdminOrderServiceFeePreview } from "./use-admin-order-service-fee-preview";
 import { applyServicePricingToOrderForm } from "./admin-orders-service-pricing";
 import { type DashboardSharedCopy } from "../dashboard-shared-ui";
 
@@ -72,12 +70,9 @@ export function useAdminOrderCreateDialog({
   const [createPending, setCreatePending] = useState(false);
   const [createDialogFeedback, setCreateDialogFeedback] =
     useState<PageFeedback>(null);
-  const [createServiceFeePreview, setCreateServiceFeePreview] =
-    useState<OrderServiceFeePreviewState>({ feeType: null, status: "idle" });
   const [createFormState, setCreateFormState] = useState<OrderFormState>(() =>
     createOrderFormState(),
   );
-  const serviceFeePreviewTokenRef = useRef(0);
   const defaultOriginalCurrency = useMemo(
     () => getDefaultOrderCurrency(orderCurrencyRates),
     [orderCurrencyRates],
@@ -207,52 +202,12 @@ export function useAdminOrderCreateDialog({
     ],
   );
 
-  useEffect(() => {
-    if (
-      !createDialogOpen ||
-      !supabase ||
-      !createFormState.orderType ||
-      !createFormState.orderingUser ||
-      orderCategoryByTypeId.get(createFormState.orderType) !== "purchase"
-    ) {
-      serviceFeePreviewTokenRef.current += 1;
-      setCreateServiceFeePreview({ feeType: null, status: "idle" });
-      return;
-    }
-
-    const previewToken = serviceFeePreviewTokenRef.current + 1;
-    serviceFeePreviewTokenRef.current = previewToken;
-    const rmbAmount = parseNumericValue(createFormState.rmbAmount) ?? 0;
-
-    setCreateServiceFeePreview({ feeType: null, status: "loading" });
-
-    void previewOrderServiceFeeType(supabase, {
-      orderType: createFormState.orderType,
-      orderingUser: createFormState.orderingUser,
-      rmbAmount,
-    })
-      .then((feeType) => {
-        if (serviceFeePreviewTokenRef.current !== previewToken) {
-          return;
-        }
-
-        setCreateServiceFeePreview({ feeType, status: "ready" });
-      })
-      .catch(() => {
-        if (serviceFeePreviewTokenRef.current !== previewToken) {
-          return;
-        }
-
-        setCreateServiceFeePreview({ feeType: null, status: "error" });
-      });
-  }, [
-    createDialogOpen,
-    createFormState.orderType,
-    createFormState.orderingUser,
-    createFormState.rmbAmount,
+  const createServiceFeePreview = useAdminOrderServiceFeePreview({
+    enabled: createDialogOpen,
+    form: createFormState,
     orderCategoryByTypeId,
     supabase,
-  ]);
+  });
 
   const handleCreateOrder = useCallback(async () => {
     if (!supabase || createPending || !canCreateOrders) {

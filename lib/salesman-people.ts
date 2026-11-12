@@ -1,65 +1,21 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "./auth-routing";
 import { normalizeUserStatus } from "./auth-metadata";
 import { withRequestTimeout } from "./request-timeout";
-import {
-  getCurrentSalesmanBusinessBoards,
-  salesmanBusinessBoardsInclude,
-  type SalesmanBusinessBoard,
-} from "./salesman-business-access";
+import { getCurrentSalesmanBusinessBoards, salesmanBusinessBoardsInclude } from "./salesman-business-access";
+import { isSalesmanCustomerType, type SalesmanCustomerRow, type SalesmanPeoplePageData } from "./salesman-people-contract";
 import { isSalesStaffRole } from "./sales-staff-roles";
 import { getCurrentSessionContext, type UserStatus } from "./user-self-service";
 import { normalizeOptionalString } from "./value-normalizers";
-
-export const SALESMAN_CUSTOMER_TYPE_OPTIONS = ["retail"] as const;
-
-export type SalesmanCustomerType =
-  (typeof SALESMAN_CUSTOMER_TYPE_OPTIONS)[number];
-
-export type SalesmanCustomerRow = {
-  user_id: string;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  city: string | null;
-  status: UserStatus;
-  customer_type: SalesmanCustomerType | null;
-  marked_at: string | null;
-  created_at: string;
-  private_note: string | null;
-};
-
-export type SalesmanPeoplePageData = {
-  businessBoards: SalesmanBusinessBoard[];
-  hasPermission: boolean;
-  currentViewerId: string | null;
-  customers: SalesmanCustomerRow[];
-};
 
 export function canViewSalesmanPeople(
   role: AppRole | null,
   status: UserStatus | null,
 ) {
   return isSalesStaffRole(role) && status === "active";
-}
-
-export function isSalesmanCustomerType(
-  value: unknown,
-): value is SalesmanCustomerType {
-  return value === "retail";
-}
-
-export function getSalesmanCustomerTypeOptionsForBusinessBoards(
-  businessBoards: readonly SalesmanBusinessBoard[],
-): SalesmanCustomerType[] {
-  const options: SalesmanCustomerType[] = [];
-
-  if (salesmanBusinessBoardsInclude(businessBoards, "tourism")) {
-    options.push("retail");
-  }
-
-  return options;
 }
 
 export async function getSalesmanPeoplePageData(
@@ -79,6 +35,7 @@ export async function getSalesmanPeoplePageData(
     };
   }
 
+  // 先核对工作台岗位，再使用数据库授权的业务板块判断历史入口。
   const businessBoards = await getCurrentSalesmanBusinessBoards(supabase);
 
   if (

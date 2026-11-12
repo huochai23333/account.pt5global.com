@@ -1,10 +1,4 @@
-import {
-  BadgeCheck,
-  CircleDollarSign,
-  Clock3,
-  ReceiptText,
-  WalletCards,
-} from "lucide-react";
+import { BadgeCheck, CircleDollarSign, Clock3, ReceiptText, WalletCards } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type {
@@ -34,12 +28,9 @@ export function WholesaleSettlementReleaseSummary({
     "UiText.components_dashboard_wholesale_wholesale_settlement_release_section",
   );
   const waitingCount = releases.filter(
-    (release) =>
-      release.status === "pending" || release.status === "partially_allocated",
+    (release) => release.status === "pending" || release.status === "partially_allocated",
   ).length;
-  const allocatedCount = releases.filter(
-    (release) => release.status === "allocated",
-  ).length;
+  const allocatedCount = releases.filter((release) => release.status === "allocated").length;
   const monthlyUnavailable = monthlyAllocatedUsd?.missingRateCount
     ? uiText("statMonthlyMissingRates", {
         count: monthlyAllocatedUsd.missingRateCount,
@@ -76,21 +67,18 @@ export function WholesaleSettlementReleaseSummary({
           icon: <CircleDollarSign className="size-4" />,
           label: uiText("statUnallocatedAmount"),
           tone: "warning",
-          value: formatUnallocatedAmountSummary(
-            releases,
-            allocations,
-            uiText("allAllocated"),
-          ),
+          value: formatUnallocatedAmountSummary(releases, allocations, uiText("allAllocated")),
         },
         {
           icon: <CircleDollarSign className="size-4" />,
           label: uiText("statMonthlyUnallocatedAmount"),
           tone: "warning",
-          value: monthlyUnallocated.amounts.length === 0
-            ? uiText("allAllocated")
-            : monthlyUnallocated.amounts
-                .map(({ currency, amount }) => formatCurrency(amount, currency))
-                .join(" / "),
+          value:
+            monthlyUnallocated.amounts.length === 0
+              ? uiText("allAllocated")
+              : monthlyUnallocated.amounts
+                  .map(({ currency, amount }) => formatCurrency(amount, currency))
+                  .join(" / "),
         },
         {
           helper: monthlyUnavailable,
@@ -98,8 +86,7 @@ export function WholesaleSettlementReleaseSummary({
           label: uiText("statMonthlyAllocatedUsd"),
           tone: monthlyUnavailable ? "warning" : "success",
           value:
-            monthlyAllocatedUsd?.amountUsd === null ||
-            monthlyAllocatedUsd === null
+            monthlyAllocatedUsd?.amountUsd === null || monthlyAllocatedUsd === null
               ? uiText("statMonthlyUnavailable")
               : formatCurrency(monthlyAllocatedUsd.amountUsd, "USD"),
         },
@@ -127,8 +114,7 @@ function formatUnallocatedAmountSummary(
   for (const release of releases) {
     if (release.status === "cancelled" || release.status === "allocated") continue;
     const remainingAmount = Math.max(
-      Number(release.release_amount) -
-        (activeAmountByRelease.get(release.id) ?? 0),
+      Number(release.release_amount) - (activeAmountByRelease.get(release.id) ?? 0),
       0,
     );
     // 不同币种不能直接相加，未分配金额继续按原币分别展示。

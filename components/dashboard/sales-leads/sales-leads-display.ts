@@ -35,7 +35,3 @@ export function toExternalHref(value: string) {
     return null;
   }
 }
-
-export function getLeadPrimaryContact(lead: SalesLead) {
-  return lead.email ?? lead.phone ?? lead.whatsapp ?? lead.public_contact ?? "—";
-}

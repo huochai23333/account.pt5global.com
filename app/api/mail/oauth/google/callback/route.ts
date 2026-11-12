@@ -2,7 +2,7 @@ import { unstable_rethrow } from "next/navigation";
 import type { NextRequest } from "next/server";
 
 import { requireMailIdentity, requireMailAdministrator } from "@/lib/mail/mail-identity";
-import { consumeOAuthTransaction } from "@/lib/mail/mail-integrations";
+import { consumeOAuthTransaction } from "@/lib/mail/mail-oauth-transactions";
 import { exchangeGoogleCode, getGoogleProfile, saveSharedMailbox, startGmailWatch, validateCompanyMailbox } from "@/lib/mail/mail-google-connection";
 import { MailConnectionError, MAIL_CONNECTION_COOKIE, type MailConnectionReason } from "@/lib/mail/mail-connection-feedback";
 import { createConnectionReceipt, verifyConnectionReceipt } from "@/lib/mail/mail-connection-receipt";

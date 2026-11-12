@@ -1,20 +1,18 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
-  AiAssistantChatRequest,
   AiAssistantLocale,
-  AiAssistantStructuredResponse,
 } from "@/lib/ai-assistant/assistant-types";
-import { readAssistantEventStream } from "@/lib/ai-assistant/assistant-event-stream";
 
 import type {
   AiAssistantSettlementReleaseCopy,
   AiAssistantUiMessage,
 } from "./ai-assistant-ui-types";
 import { buildAiAssistantReadableHistory } from "./ai-assistant-history";
-import { readAssistantStructuredResponse } from "./ai-assistant-response";
+import { getAssistantErrorMessage, requestAssistantReply } from "./ai-assistant-request";
+import { buildStructuredMessage } from "./ai-assistant-response";
 import { useAiAssistantSettlementRelease } from "./use-ai-assistant-settlement-release";
 
 export type { AiAssistantUiMessage } from "./ai-assistant-ui-types";
@@ -64,9 +62,13 @@ export function useAiAssistantChat({
     setMessages,
   });
   const busy = pending || actionPending;
+  const activeRequest = useRef<AbortController | null>(null);
+
+  // 关闭气泡时组件仍在，保留对话。离开工作台时停止网络读取。
+  useEffect(() => () => activeRequest.current?.abort(), []);
 
   const reset = useCallback(() => {
-    if (actionPending) {
+    if (actionPending || activeRequest.current) {
       return;
     }
 
@@ -79,10 +81,13 @@ export function useAiAssistantChat({
   const sendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
 
-    if (!trimmedInput || busy) {
+    if (!trimmedInput || busy || activeRequest.current) {
       return;
     }
 
+    // React 的按钮禁用要等下一次渲染，同一帧的第二次提交由这个引用拦住。
+    const request = new AbortController();
+    activeRequest.current = request;
     const history = buildAiAssistantReadableHistory(messages, locale);
     const userMessage: AiAssistantUiMessage = {
       content: trimmedInput,
@@ -102,62 +107,39 @@ export function useAiAssistantChat({
     setPending(true);
 
     try {
-      const requestBody: AiAssistantChatRequest = {
-        history,
-        locale,
-        message: trimmedInput,
-        pathname,
-        requestId: assistantMessageId,
-      };
-      const response = await fetch("/api/assistant/chat", {
-        body: JSON.stringify(requestBody),
-        headers: {
-          "Content-Type": "application/json",
+      const structuredResponse = await requestAssistantReply(
+        { history, locale, message: trimmedInput, pathname, requestId: assistantMessageId },
+        request.signal,
+        (chunk) => {
+          setMessages((current) =>
+            current.map((item) =>
+              item.id === assistantMessageId
+                ? { ...item, content: item.content + chunk }
+                : item,
+            ),
+          );
         },
-        method: "POST",
-      });
+      );
 
-      if (!response.ok) {
-        const errorCode = await readAssistantErrorCode(response);
-        throw new AiAssistantRequestError(errorCode);
-      }
-
-      if (response.headers.get("content-type")?.includes("application/json")) {
-        const structuredResponse = await readAssistantStructuredResponse(response);
-
+      if (structuredResponse && !request.signal.aborted) {
         setMessages((current) =>
           current.map((item) =>
             item.id === assistantMessageId
-              ? buildStructuredMessage(item, structuredResponse, copy)
+              ? buildStructuredMessage(item, structuredResponse, copy.settlementRelease)
               : item,
           ),
         );
-        return;
       }
-
-      if (!response.body) {
-        throw new Error("assistant unavailable");
-      }
-
-      await readAssistantEventStream(response.body, (chunk) => {
-        setMessages((current) =>
-          current.map((item) =>
-            item.id === assistantMessageId
-              ? {
-                  ...item,
-                  content: `${item.content}${chunk}`,
-                }
-              : item,
-          ),
-        );
-      });
     } catch (error) {
+      if (request.signal.aborted) return;
+
       setMessages((current) =>
         current.filter((item) => item.id !== assistantMessageId),
       );
       setErrorMessage(getAssistantErrorMessage(error, copy));
     } finally {
-      setPending(false);
+      activeRequest.current = null;
+      if (!request.signal.aborted) setPending(false);
     }
   }, [
     copy,
@@ -180,64 +162,6 @@ export function useAiAssistantChat({
     sendMessage,
     setInput,
   };
-}
-
-class AiAssistantRequestError extends Error {
-  constructor(public code: string | null) {
-    super(code ?? "assistant unavailable");
-  }
-}
-
-async function readAssistantErrorCode(response: Response) {
-  try {
-    const body = (await response.json()) as { error?: unknown };
-    return typeof body.error === "string" ? body.error : null;
-  } catch {
-    return null;
-  }
-}
-
-function buildStructuredMessage(
-  message: AiAssistantUiMessage,
-  response: AiAssistantStructuredResponse,
-  copy: AiAssistantChatCopy,
-): AiAssistantUiMessage {
-  if (response.kind === "settlementReleaseGuidance") {
-    return {
-      ...message,
-      content: copy.settlementRelease.guidance[response.code],
-    };
-  }
-
-  return {
-    ...message,
-    content: copy.settlementRelease.confirmationIntro,
-    settlementRelease: {
-      action: response.action,
-      state: "ready",
-    },
-  };
-}
-
-function getAssistantErrorMessage(
-  error: unknown,
-  copy: AiAssistantChatCopy,
-) {
-  if (error instanceof AiAssistantRequestError) {
-    if (error.code === "tooManyRequests") {
-      return copy.tooManyRequests;
-    }
-
-    if (error.code === "requestTooLarge") {
-      return copy.requestTooLarge;
-    }
-
-    if (error.code === "resultConfirming") {
-      return copy.resultConfirming;
-    }
-  }
-
-  return copy.serviceUnavailable;
 }
 
 function createMessageId(prefix: string) {

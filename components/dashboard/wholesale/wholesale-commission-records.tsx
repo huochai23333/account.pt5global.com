@@ -20,7 +20,6 @@ import {
   formatPercent,
   getCustomerName,
   getProfileName,
-  WHOLESALE_STATUS_LABELS,
 } from "./wholesale-display";
 import { WholesaleTd, WholesaleTh } from "./wholesale-ui";
 type WholesaleCommissionRecordsProps = {
@@ -48,6 +47,9 @@ export function WholesaleCommissionRecords({
   profilesById,
 }: WholesaleCommissionRecordsProps) {
   const t = useTranslations("WholesaleBusiness.orderFees");
+  const statusText = useTranslations("UiText.components_dashboard_wholesale_wholesale_commission_section");
+  // 表格、手机卡片和状态筛选共用同一份双语状态。
+  const statusLabels = { pending: statusText("text004"), settled: statusText("text005"), cancelled: statusText("text006") };
   return (
     <>
       <ResponsiveDataView
@@ -97,48 +99,37 @@ export function WholesaleCommissionRecords({
                     return (
                       <tr key={commission.id}>
                         <WholesaleTd className="whitespace-normal">
-                          <p className="font-semibold">
-                            {order?.order_number ?? "未找到订单"}
-                          </p>
+                          <p className="font-semibold">{order?.order_number ?? "未找到订单"}</p>
                           <p className="mt-1 text-xs text-content-muted">
                             {formatDateTime(commission.calculated_at)}
                           </p>
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
-                          {getCustomerName(
-                            customersById,
-                            commission.customer_id,
-                          )}
+                          {getCustomerName(customersById, commission.customer_id)}
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
-                          {getProfileName(
-                            profilesById,
-                            commission.beneficiary_user_id,
-                          )}
+                          {getProfileName(profilesById, commission.beneficiary_user_id)}
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
-                          <p>
-                            {formatCurrency(
-                              commission.order_payment_rmb_amount,
-                            )}
-                          </p>
+                          <p>{formatCurrency(commission.order_payment_rmb_amount)}</p>
                           <p className="mt-1 text-xs text-content-muted">
-                            {t(commission.commission_basis === "service_fee" ? "serviceFeeCommission" : "grossProfitCommission")}：{formatCurrency(commission.commission_basis_amount_rmb)}
+                            {t(
+                              commission.commission_basis === "service_fee"
+                                ? "serviceFeeCommission"
+                                : "grossProfitCommission",
+                            )}
+                            ：{formatCurrency(commission.commission_basis_amount_rmb)}
                           </p>
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
-                          <p>
-                            {formatCurrency(commission.commission_amount_rmb)}
-                          </p>
+                          <p>{formatCurrency(commission.commission_amount_rmb)}</p>
                           <p className="mt-1 text-xs text-content-muted">
                             {formatPercent(commission.commission_rate)}
                           </p>
                         </WholesaleTd>
                         <WholesaleTd className="whitespace-normal">
-                          <StatusBadge
-                            tone={getCommissionTone(commission.status)}
-                          >
-                            {WHOLESALE_STATUS_LABELS[commission.status]}
+                          <StatusBadge tone={getCommissionTone(commission.status)}>
+                            {statusLabels[commission.status]}
                           </StatusBadge>
                         </WholesaleTd>
                         {canAdmin ? (
@@ -174,23 +165,25 @@ export function WholesaleCommissionRecords({
                       </p>
                     </div>
                     <StatusBadge tone={getCommissionTone(commission.status)}>
-                      {WHOLESALE_STATUS_LABELS[commission.status]}
+                      {statusLabels[commission.status]}
                     </StatusBadge>
                   </div>
                   <div className="mt-3 grid gap-2 break-words text-sm text-content-muted">
                     <p>
                       <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text009" />
-                      {getProfileName(
-                        profilesById,
-                        commission.beneficiary_user_id,
-                      )}
+                      {getProfileName(profilesById, commission.beneficiary_user_id)}
                     </p>
                     <p>
                       <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text010" />
                       {formatCurrency(commission.order_payment_rmb_amount)}
                     </p>
                     <p>
-                      {t(commission.commission_basis === "service_fee" ? "serviceFeeCommission" : "grossProfitCommission")}：{formatCurrency(commission.commission_basis_amount_rmb)}
+                      {t(
+                        commission.commission_basis === "service_fee"
+                          ? "serviceFeeCommission"
+                          : "grossProfitCommission",
+                      )}
+                      ：{formatCurrency(commission.commission_basis_amount_rmb)}
                     </p>
                     <p>
                       <UiMessage id="components_dashboard_wholesale_wholesale_commission_records.text012" />
@@ -229,9 +222,7 @@ function SettleButton({
   return (
     <Button
       className={className}
-      disabled={
-        commission.status !== "pending" || pendingKey === "commission:settle"
-      }
+      disabled={commission.status !== "pending" || pendingKey === "commission:settle"}
       onClick={() => onSettleCommission(commission.id)}
       size="compact"
       type="button"

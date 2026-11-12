@@ -11,7 +11,7 @@ import {
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import { useDashboardConfirm } from "../dashboard-confirm-provider";
-import { toOperatorReimbursementErrorMessage } from "./operator-reimbursements-display";
+import { toOperatorReimbursementErrorMessage } from "./operator-reimbursements-form";
 import type {
   ReimbursementCopy,
   ReimbursementFeedback,
@@ -88,15 +88,12 @@ export function useOperatorReimbursementActions(
       const result = await reimburseOperatorPeriod(supabase, selected.start);
       markBrowserCloudSyncActivity();
       setOpen(false);
-      await onSaved(
-        result.updatedCount > 0
-          ? copy.reimburseSuccess(result.updatedCount)
-          : copy.reimburseEmpty,
-      );
+      // 服务层已拒绝零行；只有正数业务回执进入完成和刷新路径。
+      await onSaved(copy.reimburseSuccess(result.updatedCount));
     } catch (error) {
       setDialogFeedback({
         tone: "error",
-        message: toOperatorReimbursementErrorMessage(error, copy),
+        message: toOperatorReimbursementErrorMessage(error, { ...copy, unknownError: copy.reimburseUnconfirmed }),
       });
     } finally {
       lock.current = false;

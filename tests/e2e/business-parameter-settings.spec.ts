@@ -1,9 +1,9 @@
 import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { expectForbiddenPage, loginAs } from "./helpers/auth";
-import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
+import { countVersions, readLatestVersion, readVersion, requireLocalAdminClient, resetParameter } from "./helpers/business-parameter-data";
+import { nextShanghaiDayLocal } from "../test-support/shanghai-calendar";
 
 const AMOUNT_CODE = "wholesale_referral_order_amount_rate";
 const SALESMAN_CODE = "wholesale_salesman_customer_commission";
@@ -42,7 +42,7 @@ test.describe("批发业务参数中心", () => {
 
       const version = await readLatestVersion(admin, AMOUNT_CODE);
       expect(version).toMatchObject({ version_number: 2 });
-      expect(Number((version.config as { rate: number }).rate)).toBe(0.025);
+      expect(Number((version.config as { rate: number; }).rate)).toBe(0.025);
       console.log(
         "[参数中心凭证]",
         JSON.stringify({
@@ -296,7 +296,7 @@ test.describe("批发业务参数中心", () => {
     const baseline = await readLatestVersion(admin, AMOUNT_CODE);
     let detected = false;
     try {
-      expect(Number((baseline.config as { rate: number }).rate)).toBe(0.99);
+      expect(Number((baseline.config as { rate: number; }).rate)).toBe(0.99);
     } catch {
       detected = true;
     }
@@ -310,90 +310,6 @@ function parameterRow(page: Page, code: string) {
 
 function parameterCard(page: Page, code: string) {
   return page.getByTestId(`business-parameter-card-${code}`);
-}
-
-function requireLocalAdminClient() {
-  const admin = getLocalSupabaseAdminClient();
-  test.skip(!admin, "必须连接本地 Docker Supabase 才能核对参数版本凭证。");
-  if (!admin) throw new Error("local_supabase_admin_required");
-  return admin;
-}
-
-async function readLatestVersion(admin: SupabaseClient, code: string) {
-  const { data, error } = await admin
-    .from("business_parameter_versions")
-    .select("id,version_number,config,effective_from,cancelled_at")
-    .eq("parameter_code", code)
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .single();
-  if (error) throw error;
-  return data as {
-    cancelled_at: string | null;
-    config: Record<string, number>;
-    effective_from: string;
-    id: string;
-    version_number: number;
-  };
-}
-
-async function readVersion(admin: SupabaseClient, id: string) {
-  const { data, error } = await admin
-    .from("business_parameter_versions")
-    .select("id,version_number,config,effective_from,cancelled_at")
-    .eq("id", id)
-    .single();
-  if (error) throw error;
-  return data as Awaited<ReturnType<typeof readLatestVersion>>;
-}
-
-async function countVersions(admin: SupabaseClient, code: string) {
-  const { count, error } = await admin
-    .from("business_parameter_versions")
-    .select("id", { count: "exact", head: true })
-    .eq("parameter_code", code);
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function resetParameter(admin: SupabaseClient, code: string) {
-  const { data: disposable, error: readError } = await admin
-    .from("business_parameter_versions")
-    .select("id")
-    .eq("parameter_code", code)
-    .gt("version_number", 1);
-  if (readError) throw readError;
-  const ids = (disposable ?? []).map((row) => row.id);
-  if (ids.length > 0) {
-    const { error } = await admin
-      .from("business_parameter_versions")
-      .delete()
-      .in("id", ids);
-    if (error) throw error;
-  }
-  const { error } = await admin
-    .from("business_parameter_definitions")
-    .update({ current_revision: 1 })
-    .eq("parameter_code", code);
-  if (error) throw error;
-  if ((await countVersions(admin, code)) !== 1)
-    throw new Error("parameter_test_cleanup_failed");
-}
-
-function nextShanghaiDayLocal() {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    hour: "2-digit",
-    hour12: false,
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-  }).formatToParts(new Date(now.getTime() + 24 * 60 * 60 * 1000));
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-  return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}`;
 }
 
 async function expectNoPageOverflow(page: Page) {

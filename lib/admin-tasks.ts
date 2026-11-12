@@ -3,10 +3,8 @@
 import { getTaskAcceptanceAssigneesByRootTaskId } from "./admin-task-assignees";
 import { getTaskAttachmentsByTaskIds } from "./admin-task-attachments";
 import {
-  normalizeNullableString,
   normalizeTaskMainRecord,
   normalizeTaskProfile,
-  normalizeTaskTargetRole,
 } from "./admin-task-normalizers";
 import { ADMIN_TASK_SELECT } from "./admin-task-query-fields";
 import {
@@ -15,10 +13,10 @@ import {
 } from "./admin-task-type-management";
 export {
   createAdminTask,
-  deleteAdminTask,
   updateAdminTask,
   updateAdminTaskAssignment,
 } from "./admin-task-mutations";
+export { deleteAdminTask } from "./admin-task-deletion";
 export {
   ADMIN_TASK_ATTACHMENT_MAX_FILES,
   ADMIN_TASK_ATTACHMENT_MAX_TOTAL_SIZE_BYTES,
@@ -58,19 +56,14 @@ export type {
 } from "./admin-tasks-types";
 import type {
   AdminTaskAttachment,
-  AdminTaskTargetRoleFilter,
   AdminTaskMainRow,
   AdminTaskRow,
-  AdminTasksFilters,
   AdminTasksPageData,
-  AdminTasksSearchParams,
-  AdminTaskStatusFilter,
   AdminTaskViewerContext,
   TaskMainRecord,
   TaskProfileSummary,
   TaskTargetRole,
   TaskTargetRoleOption,
-  TaskTargetRoleRecord,
   UserProfileRecord,
 } from "./admin-tasks-types";
 import { TASK_TARGET_ROLES } from "./admin-tasks-types";
@@ -85,6 +78,7 @@ import {
   MAX_DASHBOARD_QUERY_ROWS,
 } from "./dashboard-pagination";
 import { getTaskAcceptanceSummaryByTaskId } from "./task-acceptance-summary";
+import { getTaskTargetRolesByTaskIds } from "./task-target-roles";
 
 export async function getCurrentTaskViewerContext(
   supabase: SupabaseClient,
@@ -104,31 +98,6 @@ export async function getCurrentTaskViewerContext(
 
 export function canViewAdminTaskBoard(role: AppRole | null, status: UserStatus | null) {
   return role === "administrator" && (status === null || status === "active");
-}
-
-export function normalizeAdminTasksFilters(
-  filters?: Partial<AdminTasksFilters> | null,
-): AdminTasksFilters {
-  return {
-    searchText: normalizeNullableString(filters?.searchText) ?? "",
-    targetRole: normalizeAdminTaskTargetRoleFilter(filters?.targetRole),
-    status: normalizeAdminTaskStatusFilter(filters?.status),
-  };
-}
-
-export function parseAdminTasksSearchParams(
-  searchParams: Record<string, string | string[] | undefined>,
-): AdminTasksSearchParams {
-  return {
-    filters: normalizeAdminTasksFilters({
-      searchText: getSingleSearchParam(searchParams.searchText),
-      targetRole: normalizeAdminTaskTargetRoleFilter(
-        getSingleSearchParam(searchParams.targetRole),
-      ),
-      status: normalizeAdminTaskStatusFilter(getSingleSearchParam(searchParams.status)),
-    }),
-    page: normalizePositiveInteger(getSingleSearchParam(searchParams.page), 1),
-  };
 }
 
 export async function getAdminTasksPageData(
@@ -282,36 +251,6 @@ function createEmptyAdminTasksPageData(options: {
   };
 }
 
-function getSingleSearchParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizePositiveInteger(value: string | null | undefined, fallback: number) {
-  const parsed = Number.parseInt(value ?? "", 10);
-
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return fallback;
-  }
-
-  return parsed;
-}
-
-function normalizeAdminTaskTargetRoleFilter(value: unknown): AdminTaskTargetRoleFilter {
-  const role = normalizeTaskTargetRole(value);
-
-  return role ?? "all";
-}
-
-function normalizeAdminTaskStatusFilter(value: unknown): AdminTaskStatusFilter {
-  return value === "to_be_accepted"
-    || value === "accepted"
-    || value === "reviewing"
-    || value === "rejected"
-    || value === "completed"
-    ? value
-    : "all";
-}
-
 async function getTaskProfilesByUserIds(
   supabase: SupabaseClient,
   userIds: string[],
@@ -339,34 +278,4 @@ async function getTaskProfilesByUserIds(
 
 function getTaskTargetRoleOptions(): TaskTargetRoleOption[] {
   return TASK_TARGET_ROLES.map((role) => ({ role }));
-}
-
-async function getTaskTargetRolesByTaskIds(
-  supabase: SupabaseClient,
-  taskIds: string[],
-): Promise<Array<{ taskId: string; role: TaskTargetRole }>> {
-  if (taskIds.length === 0) {
-    return [];
-  }
-
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("task_target_roles")
-      .select("task_id,target_role")
-      .in("task_id", taskIds)
-      .returns<TaskTargetRoleRecord[]>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? [])
-    .map((item) => {
-      const taskId = normalizeNullableString(item.task_id);
-      const role = normalizeTaskTargetRole(item.target_role);
-
-      return taskId && role ? { taskId, role } : null;
-    })
-    .filter((item): item is { taskId: string; role: TaskTargetRole } => item !== null);
 }

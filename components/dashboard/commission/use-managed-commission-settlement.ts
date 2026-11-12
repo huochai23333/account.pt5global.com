@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -22,6 +22,13 @@ type PageFeedbackValue = {
   tone: FeedbackTone;
 };
 
+type SettlementAction = {
+  key: string;
+  confirmMessage: string;
+  save: () => Promise<string>;
+  successMessage: string;
+};
+
 export function useManagedCommissionSettlement({
   onPageFeedback,
   refreshCommissionBoard,
@@ -35,87 +42,79 @@ export function useManagedCommissionSettlement({
   const confirmT = useTranslations("DashboardFramework.confirm");
   const t = useTranslations("Commission");
   const [settlingKey, setSettlingKey] = useState<string | null>(null);
+  const settling = useRef(false);
+
+  const settle = useCallback(
+    async (action: SettlementAction) => {
+      if (settling.current) return;
+
+      // 确认弹窗打开前先锁住提交，同一轮点击不必等组件重新渲染。
+      settling.current = true;
+      let saved = false;
+      try {
+        const confirmed = await confirm({
+          description: action.confirmMessage,
+          title: confirmT("title"),
+          tone: "warning",
+        });
+        if (!confirmed) return;
+
+        setSettlingKey(action.key);
+        await action.save();
+        saved = true;
+        await refreshCommissionBoard();
+        onPageFeedback({ tone: "success", message: action.successMessage });
+      } catch (error) {
+        // 写入已确认但列表加载失败时，请用户刷新核对，避免误以为要再次结算。
+        onPageFeedback({
+          tone: "error",
+          message: saved
+            ? t("feedback.settlementRefreshFailed")
+            : toCommissionErrorMessage(error, t, "admin"),
+        });
+      } finally {
+        settling.current = false;
+        setSettlingKey(null);
+      }
+    },
+    [confirm, confirmT, onPageFeedback, refreshCommissionBoard, t],
+  );
 
   const handleMarkCommissionAsPaid = useCallback(
     async (commission: AdminCommissionRow) => {
-      if (!supabase || settlingKey) {
-        return;
-      }
+      if (!supabase) return;
 
-      if (!(await confirm({
-        description: t("actions.confirmMarkOrderPaid", {
+      await settle({
+        key: `order:${commission.id}`,
+        confirmMessage: t("actions.confirmMarkOrderPaid", {
           orderNumber: commission.orderNumber,
         }),
-        title: confirmT("title"),
-        tone: "warning",
-      }))) {
-        return;
-      }
-
-      setSettlingKey(`order:${commission.id}`);
-
-      try {
-        await markCommissionRecordAsPaid(supabase, {
-          commissionRecordId: commission.id,
-        });
-        await refreshCommissionBoard();
-        onPageFeedback({
-          tone: "success",
-          message: t("feedback.orderMarkedPaid", {
-            orderNumber: commission.orderNumber,
-          }),
-        });
-      } catch (error) {
-        onPageFeedback({
-          tone: "error",
-          message: toCommissionErrorMessage(error, t, "admin"),
-        });
-      } finally {
-        setSettlingKey(null);
-      }
+        save: () => markCommissionRecordAsPaid(supabase, { commissionRecordId: commission.id }),
+        successMessage: t("feedback.orderMarkedPaid", {
+          orderNumber: commission.orderNumber,
+        }),
+      });
     },
-    [confirm, confirmT, onPageFeedback, refreshCommissionBoard, settlingKey, supabase, t],
+    [settle, supabase, t],
   );
 
   const handleMarkTaskCommissionAsPaid = useCallback(
-    async (taskCommission: TaskCommissionRow) => {
-      if (!supabase || settlingKey) {
-        return;
-      }
+    async (commission: TaskCommissionRow) => {
+      if (!supabase) return;
 
-      if (!(await confirm({
-        description: t("actions.confirmMarkTaskPaid", {
-          taskName: taskCommission.taskName,
+      await settle({
+        key: `task:${commission.id}`,
+        confirmMessage: t("actions.confirmMarkTaskPaid", {
+          taskName: commission.taskName,
         }),
-        title: confirmT("title"),
-        tone: "warning",
-      }))) {
-        return;
-      }
-
-      setSettlingKey(`task:${taskCommission.id}`);
-
-      try {
-        await markTaskCommissionRecordAsPaid(supabase, {
-          taskCommissionRecordId: taskCommission.id,
-        });
-        await refreshCommissionBoard();
-        onPageFeedback({
-          tone: "success",
-          message: t("feedback.taskMarkedPaid", {
-            taskName: taskCommission.taskName,
-          }),
-        });
-      } catch (error) {
-        onPageFeedback({
-          tone: "error",
-          message: toCommissionErrorMessage(error, t, "admin"),
-        });
-      } finally {
-        setSettlingKey(null);
-      }
+        save: () =>
+          markTaskCommissionRecordAsPaid(supabase, { taskCommissionRecordId: commission.id }),
+        successMessage: t("feedback.taskMarkedPaid", {
+          taskName: commission.taskName,
+        }),
+      });
     },
-    [confirm, confirmT, onPageFeedback, refreshCommissionBoard, settlingKey, supabase, t],
+    [settle, supabase, t],
   );
 
   return {

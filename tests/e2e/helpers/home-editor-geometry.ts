@@ -1,7 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function expectEditorGeometry(page: Page) {
-  // The reset fixture has five cards: one compact greeting and four full editors.
+  // 固定重置夹具含五张卡片，一张紧凑问候卡和四张完整编辑卡。
+  // 先核对每张卡的内部结构，再比较控件尺寸，避免总数正确却放错位置。
   await expect(page.getByTestId("home-widget-card")).toHaveCount(5);
   await expect(page.getByTestId("home-widget-editor-compact")).toHaveCount(1);
   await expect(page.getByTestId("home-widget-editor-toolbar")).toHaveCount(4);

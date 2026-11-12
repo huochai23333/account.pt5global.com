@@ -74,10 +74,10 @@ export function AdminAnnouncementsClient({
           announcements={viewModel.filteredAnnouncements}
           copy={copy.list}
           locale={locale}
-          onDelete={viewModel.handleDelete}
+          onDelete={(announcement) => void viewModel.handleRowAction("delete", announcement)}
           onEdit={viewModel.openEditDialog}
-          onOffline={viewModel.handleTakeOffline}
-          onPublish={viewModel.handlePublish}
+          onOffline={(announcement) => void viewModel.handleRowAction("offline", announcement)}
+          onPublish={(announcement) => void viewModel.handleRowAction("publish", announcement)}
           pendingAction={viewModel.pendingAction}
         />
       </DashboardPageShell>

@@ -17,24 +17,58 @@ export const workspacePageContracts = {
   "wholesale/commission": { title: "提成与佣金", label: "搜索提成" },
 } as const;
 
-export async function expectWorkspacePageContent(page: Page, workspacePath: string, timeout = 10_000) {
+export async function expectWorkspacePageContent(
+  page: Page,
+  workspacePath: string,
+  timeout = 10_000,
+) {
   const match = /^\/(admin|salesman|finance)\/(.+)$/.exec(workspacePath);
   const key = match?.[2] as keyof typeof workspacePageContracts;
   const contract = workspacePageContracts[key];
   if (!contract) throw new Error(`Missing independent workspace page contract: ${workspacePath}`);
-  expect(new URL(page.url()).pathname, "must remain on the requested business page").toBe(workspacePath);
+  expect(new URL(page.url()).pathname, "must remain on the requested business page").toBe(
+    workspacePath,
+  );
   const main = page.locator("main");
   // 明确错误标签供负例核对；无关异常不能冒充“成功抓住目标错误”。
   await expect(main, "page-contract:main-count").toHaveCount(1, { timeout });
-  await expect(main.getByRole("heading", { name: contract.title, exact: true }), "page-contract:business-heading").toBeVisible({ timeout });
+  await expect(
+    main.getByRole("heading", { name: contract.title, exact: true }),
+    "page-contract:business-heading",
+  ).toBeVisible({ timeout });
   if ("label" in contract) {
-    await expect(main.getByLabel(contract.label, { exact: true }), "page-contract:business-control").toBeVisible({ timeout });
+    const field = main.getByLabel(contract.label, { exact: true });
+    // 手机把次要筛选收起。只有确实位于共享折叠区的字段，才从页面展开后验证；
+    // 普通隐藏字段仍须失败，避免“自动展开”掩盖业务控件消失的负例。
+    if ((page.viewportSize()?.width ?? 1440) < 640 && (await field.count()) === 1) {
+      const collapsed = field.locator('xpath=ancestor::*[@data-mobile-filter-expanded="false"][1]');
+      if ((await collapsed.count()) === 1 && !(await field.isVisible())) {
+        const section = collapsed.locator("..");
+        await section.getByRole("button", { name: "更多筛选条件", exact: true }).click();
+      }
+    }
+    await expect(
+      main.getByLabel(contract.label, { exact: true }),
+      "page-contract:business-control",
+    ).toBeVisible({ timeout });
   } else {
-    await expect(main.getByRole("button", { name: new RegExp(`^${contract.button}`) }), "page-contract:business-control").toBeVisible({ timeout });
+    await expect(
+      main.getByRole("button", { name: new RegExp(`^${contract.button}`) }),
+      "page-contract:business-control",
+    ).toBeVisible({ timeout });
   }
-  await expect(page.getByRole("heading", {
-    name: /当前页面暂时打不开|This page is temporarily unavailable|页面出现异常|Something went wrong|这个页面不在你的工作范围内/,
-  }), "page-contract:error-heading").toHaveCount(0, { timeout });
-  await expect(page.locator("body"), "page-contract:framework-error").not.toContainText("Application error:", { timeout });
-  await expect(page.locator("nextjs-portal [data-nextjs-dialog], nextjs-portal [data-nextjs-dialog-overlay]"), "page-contract:error-overlay").toHaveCount(0, { timeout });
+  await expect(
+    page.getByRole("heading", {
+      name: /当前页面暂时打不开|This page is temporarily unavailable|页面出现异常|Something went wrong|这个页面不在你的工作范围内/,
+    }),
+    "page-contract:error-heading",
+  ).toHaveCount(0, { timeout });
+  await expect(page.locator("body"), "page-contract:framework-error").not.toContainText(
+    "Application error:",
+    { timeout },
+  );
+  await expect(
+    page.locator("nextjs-portal [data-nextjs-dialog], nextjs-portal [data-nextjs-dialog-overlay]"),
+    "page-contract:error-overlay",
+  ).toHaveCount(0, { timeout });
 }

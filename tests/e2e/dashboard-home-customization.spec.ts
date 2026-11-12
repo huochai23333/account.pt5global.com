@@ -1,6 +1,17 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { loginAs, type RegressionRole } from "./helpers/auth";
+import { loginAs } from "./helpers/auth";
+
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
+import { widgetCard, requiredBox, expectNoClippedHomeWidgets, expectNoHorizontalOverflow } from "./helpers/home-widget-assertions";
+import { resetHomeLayout, openHomeManager, resetHomeLayoutFromOpenDialog } from "./helpers/home-manager";
+
+// 会重置固定管理员布局；声明之外仍必须提供实际可重建的完整隔离实例。
+test.beforeAll(() => requireDisposableFixture({
+  baseURL: process.env.PLAYWRIGHT_BASE_URL,
+  supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  mode: process.env.PT5_E2E_FIXTURE_MODE,
+}));
 
 test.describe.configure({ mode: "serial" });
 
@@ -83,7 +94,7 @@ test.describe("首页组件管理与紧凑布局", () => {
       .getByRole("dialog", { name: "管理首页" })
       .locator(`[data-home-manager-widget-id="${duplicateId}"]`);
 
-    // 重复组件移动到原组件前方后会成为“当前时间 1”，这同时证明顺序已经持久化。
+    // 重复组件移到原组件前方后会成为“当前时间 1”；刷新后的页面顺序仍需另配独立数据库凭证。
     await expect(persistedDuplicate).toContainText("当前时间 1");
     await persistedDuplicate.getByTestId("home-manager-remove").click();
     await expect(
@@ -172,111 +183,3 @@ test.describe("首页组件管理与紧凑布局", () => {
   });
 
 });
-
-for (const role of ["administrator", "salesman", "client"] as const satisfies readonly RegressionRole[]) {
-  test(`${role} 的邀请码操作在 390px 下保持可用`, async ({ page }) => {
-    const account = await loginAs(page, role);
-
-    await page.setViewportSize({ height: 844, width: 390 });
-    await page.goto(`${account.workspacePath}/home`);
-
-    const inviteCard = widgetCard(page, "invite");
-
-    await expect(inviteCard).toBeVisible();
-    await expectNoHorizontalOverflow(page);
-    for (const button of await inviteCard.getByRole("button").all()) {
-      if (await button.isVisible()) {
-        await expectTouchTarget(button, 44);
-      }
-    }
-
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto(`${account.workspacePath}/home`);
-
-    const desktopInviteCard = widgetCard(page, "invite");
-
-    expect(
-      Number(await desktopInviteCard.getAttribute("data-home-widget-width")),
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      Number(await desktopInviteCard.getAttribute("data-home-widget-height")),
-    ).toBeGreaterThanOrEqual(2);
-    for (const button of await desktopInviteCard.getByRole("button").all()) {
-      await expect(button).toBeVisible();
-      await expectTouchTarget(button, 44);
-    }
-    await expectNoClippedHomeWidgets(page);
-  });
-}
-
-async function openHomeManager(page: Page) {
-  await page.setViewportSize({ height: 844, width: 390 });
-  await page.getByTestId("home-manage-button").click();
-  await expect(page.getByRole("dialog", { name: "管理首页" })).toBeVisible();
-}
-
-async function resetHomeLayout(page: Page, path: string) {
-  await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto(path);
-  await openHomeManager(page);
-  await resetHomeLayoutFromOpenDialog(page);
-}
-
-async function resetHomeLayoutFromOpenDialog(page: Page) {
-  const manager = page.getByRole("dialog", { name: "管理首页" });
-
-  await manager.getByTestId("home-manager-reset").click();
-  /*
-   * 如果页面本来就是默认布局，不会产生重复保存请求；如果布局发生变化，
-   * 这里覆盖保存防抖与本地请求所需时间，再关闭弹窗，避免刷新读到旧顺序。
-   */
-  await page.waitForTimeout(900);
-  await expect(
-    manager.getByText("首页调整还没有保存，请检查网络后重试。"),
-  ).toHaveCount(0);
-  await manager.getByTestId("home-manager-done").click();
-}
-
-function widgetCard(page: Page, type: string) {
-  return page.locator(
-    `[data-testid="home-widget-card"][data-home-widget-type="${type}"]`,
-  );
-}
-
-async function expectTouchTarget(locator: Locator, minimum: number) {
-  const box = await requiredBox(locator);
-
-  // 浏览器缩放矩阵偶尔会产生 43.9999px 一类浮点结果，0.1px 仅用于消除计算误差。
-  expect(box.height).toBeGreaterThanOrEqual(minimum - 0.1);
-  expect(box.width).toBeGreaterThanOrEqual(minimum - 0.1);
-}
-
-async function expectNoClippedHomeWidgets(page: Page) {
-  const clippedWidgets = await page
-    .getByTestId("home-widget-card")
-    .evaluateAll((cards) =>
-      cards
-        .map((card) => ({
-          overflow: card.scrollHeight - card.clientHeight,
-          type: card.getAttribute("data-home-widget-type"),
-        }))
-        .filter((item) => item.overflow > 2),
-    );
-
-  expect(clippedWidgets).toEqual([]);
-}
-
-async function expectNoHorizontalOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-
-  expect(overflow).toBeLessThanOrEqual(2);
-}
-
-async function requiredBox(locator: Locator) {
-  const box = await locator.boundingBox();
-
-  expect(box).not.toBeNull();
-  return box!;
-}

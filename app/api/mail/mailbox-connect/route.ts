@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { createSharedMailboxConnectSession } from "@/lib/mail/mail-service";
+import { createSharedMailboxConnectSession } from "@/lib/mail/mail-oauth-provider-urls";
 import { getRequestPublicOrigin } from "@/lib/public-site-origin";
 
 import { mailApiError } from "../_shared";

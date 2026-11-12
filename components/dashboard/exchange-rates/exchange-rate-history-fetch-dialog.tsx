@@ -1,3 +1,4 @@
+/** 汇率与金额换算：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { CalendarRange, Plus, Trash2 } from "lucide-react";
@@ -52,9 +53,7 @@ export function ExchangeRateHistoryFetchDialog({
   const failedResults = result?.results.filter((item) => item.status === "failed") ?? [];
   const completedResults = result?.results.filter((item) => item.status !== "failed") ?? [];
   const currencyCount = new Set(
-    formState.currencies
-      .map((currency) => currency.trim().toUpperCase())
-      .filter(Boolean),
+    formState.currencies.map((currency) => currency.trim().toUpperCase()).filter(Boolean),
   ).size;
 
   return (
@@ -96,9 +95,7 @@ export function ExchangeRateHistoryFetchDialog({
           >
             {t("currencies")}
           </h3>
-          <p className="mt-1 text-sm leading-6 text-content-muted">
-            {t("currenciesHint")}
-          </p>
+          <p className="mt-1 text-sm leading-6 text-content-muted">{t("currenciesHint")}</p>
         </div>
 
         <div className="space-y-2">
@@ -153,20 +150,30 @@ export function ExchangeRateHistoryFetchDialog({
         </p>
       </div>
 
-      {completedResults.length > 0 ? <section className="space-y-2">
-        <h3 className="text-sm font-semibold">{t("completedTitle")}</h3>
-        <div className="max-h-40 space-y-2 overflow-y-auto rounded-surface-inset bg-surface-inset p-3">
-          {completedResults.map(item => <p key={`${item.baseCurrency}-${item.rateDate}`} className="break-all text-xs leading-6">
-            {t("completedItem", { currency: item.baseCurrency, date: item.rateDate, rate: item.rate ?? "", id: item.rateRecordId ?? "", time: formatExchangeRateQuoteTime(item.quotedAt, locale) })}
-          </p>)}
-        </div>
-      </section> : null}
+      {completedResults.length > 0 ? (
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold">{t("completedTitle")}</h3>
+          <div className="max-h-40 space-y-2 overflow-y-auto rounded-surface-inset bg-surface-inset p-3">
+            {completedResults.map((item) => (
+              <p
+                key={`${item.baseCurrency}-${item.rateDate}`}
+                className="break-all text-xs leading-6"
+              >
+                {t("completedItem", {
+                  currency: item.baseCurrency,
+                  date: item.rateDate,
+                  rate: item.rate ?? "",
+                  id: item.rateRecordId ?? "",
+                  time: formatExchangeRateQuoteTime(item.quotedAt, locale),
+                })}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {failedResults.length > 0 ? (
         <section className="space-y-2" aria-labelledby="historical-failures-title">
-          <h3
-            className="text-sm font-semibold text-content-strong"
-            id="historical-failures-title"
-          >
+          <h3 className="text-sm font-semibold text-content-strong" id="historical-failures-title">
             {t("failedTitle")}
           </h3>
           <div className="max-h-40 space-y-2 overflow-y-auto rounded-surface-inset bg-surface-inset p-3">

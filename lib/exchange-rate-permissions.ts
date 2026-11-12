@@ -51,7 +51,7 @@ export function canViewExchangeRatesPage(
   role: AppRole | null,
   status: UserStatus | null,
 ) {
-  return mode === "manage"
-    ? canManageExchangeRatesByRole(role)
-    : canReadExchangeRatesByRole(role, status);
+  // 首次渲染和浏览器刷新都要求账号处于启用状态。管理模式额外要求管理员身份。
+  return canReadExchangeRatesByRole(role, status)
+    && (mode === "readonly" || canManageExchangeRatesByRole(role));
 }

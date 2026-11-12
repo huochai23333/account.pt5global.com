@@ -1,5 +1,5 @@
 import { createMailAiStream } from "@/lib/mail/mail-ai-stream";
-import { getReplyContext } from "@/lib/mail/mail-service";
+import { getReplyContext } from "@/lib/mail/mail-reply-context";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../_shared";
@@ -10,7 +10,8 @@ export async function POST(request: Request) {
     if (!body.threadId || !body.requestId) throw new Error("缺少会话或本次生成编号。");
     const context = await getReplyContext(identity, body.threadId);
     if (context.messages.length === 0 || context.characterCount === 0) throw new Error("这封会话还没有可用于生成建议的正文。");
-    return createMailAiStream({
+    // 等待流建立，使供应商启动失败也走本接口的日常语言提示。
+    return await createMailAiStream({
       operationKey: "ai-assistant-generation",
       requestId: body.requestId,
       requestPayload: { threadId: body.threadId, messageCount: context.messages.length },

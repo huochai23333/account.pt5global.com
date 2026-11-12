@@ -69,6 +69,8 @@ export type MailMessageView = {
 };
 
 export type MailThreadDetail = MailThreadListItem & {
+  /** 只指向本次实际返回的来信，供应商时间和当前请求时间都不能当作已读位置。 */
+  readMessageId: string | null;
   routingSource: "thread" | "recipient_history" | "alias" | "ref" | "unassigned" | "manual" | "quarantine";
   nameHintMemberIds: string[];
   messages: MailMessageView[];

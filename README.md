@@ -1,765 +1,267 @@
-# PT5 Dropshipping Web 前端
+# PT5 Dropshipping Web
 
-PT5 Dropshipping Web 端基于 `Next.js 16 App Router`、`React 19`、`TypeScript`、`Tailwind CSS 4`、`Supabase` 和 `next-intl` 构建。网站页面统一使用 `PT5` 品牌名称，仓库与本地技术标识使用 `PT5-dropshipping`，便于和 PT5-China、Steam 及官网项目区分。
+本轮两仓库上传与Supabase迁移／函数发布的范围见[2026-11-12云端记录](docs/onboarding/reference/cloud-upload-2026-11-12.md)，GitHub、Cloud、网站部署和平台重扫分别核对。
 
-项目目录：`C:\code\system\PT5-dropshipping-web`
+后台清理与来源导出的实际接线、资料库重试遗漏修复及验证边界见[后台入口验证](docs/onboarding/reference/verification-2026-11-11-cleanup-workers.md)。资料库清理使用固定任务清单续办原目标；数据库迁移和Edge代码需在同一本地项目配套使用，主项目计划任务继续暂停。
 
-## 快速定位
+PT5 工作台的网页、交互与服务端接口。基于 Next.js 16.4.3、React 19、TypeScript、Tailwind CSS 4、Supabase 与 next-intl。当前业务启用范围由公司配置与数据库权限决定。
 
-- Web 仓库：`C:\code\system\PT5-dropshipping-web`
-- Supabase 仓库：`C:\code\system\PT5-dropshipping-supabase`
-- 本地测试账号：优先读取 `C:\code\system\PT5-dropshipping-supabase\supabase\local-test-data.sql` 中的 `local.*@bs.test` 账号。
-- Windows 旧资料目录如仍需查看，可从 `/mnt/c/...` 路径访问。
+## 新人从这里开始
 
-说明：
+- [学习路线](docs/onboarding/README.md)：从本地启动到完成一次维护。
+- [功能与源码地图](docs/onboarding/module-index.md)：页面、业务、权限、后端与测试的位置。
+- [贡献指南](CONTRIBUTING.md)：改动、注释、验证与交付约定。
+- [架构与数据流](docs/onboarding/explanation/architecture.md)、[术语表](docs/onboarding/reference/glossary.md)。
+- [共享控件维护入口](docs/onboarding/explanation/shared-ui-flow.md)，包含日期输入、弹窗焦点和响应式列表。
+- [共享读取与请求边界](docs/onboarding/explanation/shared-read-and-request-flow.md)，包含分页、恢复和服务端输入检查。
+- [线索数据流](docs/onboarding/explanation/sales-lead-flow.md)，从页面认领、联系、退回到后台导入。
+- [线索每日上限测试](docs/onboarding/explanation/sales-lead-flow.md#怎样维护每日认领上限测试)，要求专属身份当天零认领，使用六个随机编号，按完整记录和行版本核对第5次成功/第6次拒绝，原页面验收另列。
+- [线索数据库阅读路线](../PT5-dropshipping-supabase/docs/onboarding/sales-lead-hall-history.md)，区分来源、领取周期、联系记录及历史状态。
+- [线索练习数据与清理](../PT5-dropshipping-supabase/docs/onboarding/learning-lead-fixture.md)，用专属随机编号准备教程，核对实际影响数、锁后归属及提交后的独立记录。
+- [报销与后台凭证阅读路线](../PT5-dropshipping-supabase/docs/onboarding/operation-reimbursement-history.md)，区分共享查看、本人写入、运行终态与最终业务记录。
+- [运营报销SQL实操](../PT5-dropshipping-supabase/docs/onboarding/reimbursement-sharing-sql.md)，在九身份专属副本核对分页、周期金额、重复确认不重写及完整恢复；真实Auth、页面与并发另验。
+- [业务参数SQL实操](../PT5-dropshipping-supabase/docs/onboarding/business-parameter-sql.md)，在四身份专属副本追踪版本发布/取消、恢复原基准和订单锁定，核对3000元已结汇与110元推荐佣金。
+- [结汇发布SQL实操](../PT5-dropshipping-supabase/docs/onboarding/settlement-release-sql.md)，按五身份/六订单追踪发布、分配修订、冲销历史和108元合成提成保护，实际付款及真实中行凭证另验。
+- [结汇测试夹具与收尾](docs/onboarding/explanation/settlement-test-fixtures.md)，说明原子清理、空正文拒绝、页面回收及专项与原页面套件的不同范围。
+- [订单读取测试](docs/onboarding/explanation/order-read-contract-tests.md)与[客户别名夹具](docs/onboarding/explanation/customer-alias-tests.md)，区分纯逻辑、页面准入、独立记录与限定清理。
+- [线索转换测试辅助](docs/onboarding/explanation/sales-lead-conversion-tests.md)，说明页面前清单、非空负责人和完整周期凭证、原子清理及独立读回；大厅使用本次UUID和上海当日额度只读检查，33项专项覆盖大厅、管理员及原转换夹具，保护预登记编辑/故障版本，与原认证页面验收分开记录。
+- [后台尝试与月度分配](../PT5-dropshipping-supabase/docs/onboarding/worker-monthly-quotation-history.md)，包含真实连接竞争、旧代拒绝和已分配归月边界。
+- [订单、账号与邮件边界](../PT5-dropshipping-supabase/docs/onboarding/order-mail-boundary-history.md)，分清内部字段、列权与行权、收件原子性和历史游标页。
+- [线索额度、客户转换与邮件数据库](../PT5-dropshipping-supabase/docs/onboarding/lead-mail-history.md)，包含转换凭证、固定认领期限、隔离测试入口及邮件回执。
+- [公司模板、个人文档与规则版本](../PT5-dropshipping-supabase/docs/onboarding/template-parameter-history.md)，区分私有草稿、公共文档、统一目录、可恢复批次、读取策略与普通HTML保存、固定版本及客户分类提成与费用。
+- [批发目录与推荐关系](docs/onboarding/explanation/wholesale-people-flow.md)，区分客户档案、登录账号和两类推荐树；原客户管理测试复用UUID清单核对字段/修订和零残留，协作矩阵区分入口可见与实际写入，并核对手动context的地址和失败收尾。
+- [批发 VIP 数据流](docs/onboarding/explanation/business-vip-flow.md)，包含开通、续期及待确认时的核对方法。
+- [VIP 数据库历史阅读路线](../PT5-dropshipping-supabase/docs/onboarding/business-vip-history.md)，说明审批与直接续费的期限差异、固定年费和权限。
+- [批发订单数据流](docs/onboarding/explanation/wholesale-order-flow.md)，包含筛选、建单重试、费用列核对、直接结汇、附件八岗位矩阵及同页／跨页上传核对；[创建防重复测试维护](docs/onboarding/reference/verification-2026-11-05-wholesale-order-core.md#2026-11-10原创建防重复页面测试)说明原USD样本、刷新闸门、独立凭证和专属清理。
+- [分页与附件测试维护](docs/onboarding/reference/verification-2026-11-05-wholesale-order-core.md#2026-11-10原分页与附件凭证测试)说明第二页响应等待、自有订单、真实工作簿、下载哈希与完整版本凭证。未知登记保留待核对对象；只有明确未转发的本次夹具可限定回收。该原套件的Auth／产品页面和物理Storage组合仍未执行，PG和受控Chrome证据单独记录；独立学习套件的附件岗位范围见上方订单数据流。
+- [写入失败测试维护](docs/onboarding/reference/verification-2026-11-05-wholesale-order-core.md#2026-11-10原写入失败作用域)说明九类失败请求、明确读取白名单和逐表/xmin不变核对。旧别名PATCH已对齐当前原子接口；未声明写入直接拒绝，结束先排空再查库，不用错误提示代替“没有写入”的证据。
+- [分批美元结汇测试](docs/onboarding/reference/verification-2026-11-05-wholesale-order-core.md#2026-11-10原分批美元结汇)保留原300USD/100+200场景，说明逐笔舍入、加权价、双点击/本笔响应等待，以及订单、客户、报价的版本保护清理。实际PG与受控Chrome单独留证，原Auth/产品页面及真实银行仍未验收。
+- [数据库授权与订单编辑历史](../PT5-dropshipping-supabase/docs/onboarding/order-edit-privilege-history.md)，区分表、函数、行级权限及新函数默认授权。
+- [媒体与文档的对象凭证](../PT5-dropshipping-supabase/docs/onboarding/storage-object-receipts.md)，解释同名目录、真实文件、分页与删除终态。
+- [物流历史与当前入口](../PT5-dropshipping-supabase/docs/onboarding/logistics-link-history.md)，区分旧关联模型和当前永久归档，附隔离核对步骤。
+- [永久归档的店铺区间和同步租约](../PT5-dropshipping-supabase/docs/onboarding/logistics-archive-history.md)，按原迁移分段阅读，核对真实记录及失败恢复。
+- [采购认领与日期查询历史](../PT5-dropshipping-supabase/docs/onboarding/claims-and-date-history.md)，说明退出时删除的专用数据、保留业务和 AI 额度，附上海日界及权限核对。
+- [编号分页与权限](../PT5-dropshipping-supabase/docs/onboarding/order-page-policy-performance-history.md)，从订单、物流、邮件到完整人员审计，区分当前页与完整统计。
+- [物流观测、断点与续跑](../PT5-dropshipping-supabase/docs/onboarding/logistics-archive-history.md)，区分内容变化、成功检查、已提交页和任务失败预算。
+- [物流性能模型实操](../PT5-dropshipping-supabase/docs/onboarding/logistics-performance.md)，在无网络PG17核对24次真实写入及观测夹具，分清索引成本与完整页面性能验收。
+- [完整物流分页性能](../PT5-dropshipping-supabase/docs/onboarding/logistics-page-performance.md)，在历史模型核对500比较、948全页、168计时及旧/缺索引计划拒绝，真实页面与来源另外验收。
+- [独立物流归属与回滚](../PT5-dropshipping-supabase/docs/onboarding/logistics-independent-rollback.md)，以原始关联验证三组分页、本人目录与批准旧函数/权限，直接构造当前模型。
+- [物流Worker丢回执与续跑](../PT5-dropshipping-supabase/docs/onboarding/logistics-worker-model.md)，运行真实同步代码，在明确模拟来源的空PG17核对三页1200条、观测、检查点与事务恢复。
+- [物流页面来源夹具](docs/onboarding/explanation/logistics-source-fixture.md)，说明专属API/Edge准入、数据库内私有备份、精确回收与来源服务收尾；原页面认证套件另验。
+- [Docker完整结构分页](../PT5-dropshipping-supabase/docs/onboarding/logistics-docker-page.md)，使用专属副本的真实数据库权限，核对700行、完整JSON和回退指纹，原Worker仍单列。
+- [历史报价、发布防重与分配](../PT5-dropshipping-supabase/docs/onboarding/rate-publication-allocation-history.md)，解释修订号、结汇凭证及撤销历史，区分旧参考价与当前银行报价。
+- [库存订单、商品与信贷](../PT5-dropshipping-supabase/docs/onboarding/inventory-order-credit-history.md)，按业务分段追踪商品必填、修订号、后台启用与还款凭证。
+- [业务入口与订单维护演进](../PT5-dropshipping-supabase/docs/onboarding/workspace-order-lifecycle-history.md)，分清可配置岗位、旅游停用、直接改单和新建请求防重。
 
-- `C:\code\system` 只是工作区目录，不是 Web Git 仓库。
-- Web 代码提交和推送只在 `PT5-dropshipping-web` 目录执行。
-- 数据库迁移、Edge Function 和 Supabase secrets 以同级 `PT5-dropshipping-supabase\supabase` 项目目录为准。
+线索后台维护工具的来源、三次恢复及私有备份回收见[后端环境说明](../PT5-dropshipping-supabase/docs/onboarding/environment.md#线索同步cli的来源与回收)。只运行专属可重建实例；原CLI按数据库到期主动发出HTTP，原认证页面和真实供应商分别验收。
 
-## 技术栈
+线索的[自动调度验收](docs/onboarding/reference/verification-2026-11-11-auto-dispatch.md)另补齐原小时触发、暂停后恢复、分钟派发及真实pg_net／Docker Edge终态。最早重试间隔与实际分钟触发时间分开理解；共享项目计划任务继续暂停，原Web手动页面、真实来源和其他任务分别验收。
 
-- `Next.js 16.3.4` + App Router
-- `React 19.2.4`
-- `TypeScript 5`
-- `Tailwind CSS 4`
-- `Supabase Auth` / `@supabase/ssr` / `@supabase/supabase-js`
-- `next-intl` 中英文双语
-- `Playwright` 真实浏览器验证
-- `lucide-react` 图标
-- `Base UI` / `shadcn` 辅助组件
-- `motion` 全站页面、浮层、列表重排与交互反馈
-- `libphonenumber-js@1.13.8` 国际手机号解析与 E.164 校验
+工作台入口矩阵与信息层级的维护见[界面测试说明](docs/onboarding/explanation/workspace-ui-tests.md#跨页面入口与信息层级)：先核验专属项目，物流自动来源使用明确失败替身，布局助手等待可见目标，原认证页面仍需独立验收。
+
+固定资料测试的恢复应只匹配本次写入值，并核对影响行数与独立读回；原页面、SDK替身和PG字段模型的边界见[资料回执测试](docs/onboarding/explanation/profile-data-flow.md#原资料回执测试怎样维护)。[原媒体回执测试](docs/onboarding/explanation/user-media-receipt-tests.md)说明UUID文件意图、对象SHA/版本、媒体和评估完整行、local会话撤销及分阶段回收；20专项与真实SDK/Chrome协议分层记录，原Auth产品页面另验。
+
+原响应式综合场景的头像颜色转换、卡片加载前置和8个页面场景的范围见[视觉测试维护](docs/onboarding/explanation/design-system-tests.md#原响应式综合场景)。
+
+原测试的SQL准备/清理及费用助手现在共用专属目标检查；需要显式声明项目、API和暂停状态，原固定账号套件仍需各自验收。见[SQL辅助选择](docs/onboarding/explanation/test-controls-and-local-sql.md#准备与清理sql的专属目标)。
+
+运营报销共享测试按场景独占209条UUID数据，批量确认核对205条完整终态，收尾按原行版本精确回收；维护入口与实际数据库/Chrome辅助验证范围见[共享报销测试](docs/onboarding/explanation/operator-reimbursement-tests.md#共享分页和历史时间场景)。原登录、产品页面和响应式验收单独记录。
+
+公司模板原综合测试按访问、预览、发布和拒绝/故障维护，入口保留原18场景及顺序。UUID名称支持编号未读回时限定清理，固定版本哈希故障按完整行/xmin核对注入和恢复；见[发布与预览测试](docs/onboarding/explanation/company-template-publication-tests.md)，实际PG/Chrome辅助证据与原Auth产品页面未执行范围分别记录。
+
+中行综合测试使用专属本地项目和模拟报价来源。准备、XTS 手工报价、按编号追踪后台任务、单订单核算和按版本回收见[中行测试维护](docs/onboarding/explanation/exchange-rate-boc-tests.md)。已完成该测试入口的源码审查和隔离 PostgreSQL 定向验证。原认证页面套件及真实中行核对仍待验收。
+
+结汇缺价场景按本次收款编号追踪派发、精确日末报价和分配终态。专属环境及数据回收见[结汇补价测试维护](docs/onboarding/explanation/wholesale-settlement-release-flow.md#跟踪缺汇率后的补价)。
+
+批发结汇综合测试使用专属客户、两张订单和本地手工汇率，逐笔核对分配、整组调整及冲销。夹具与终态预期见[多订单分配测试维护](docs/onboarding/explanation/wholesale-settlement-release-flow.md#验证两张订单的分配和冲销)。
 
 ## 本地运行
 
-1. 准备 WSL Node.js
-
-```bash
-source ~/.nvm/nvm.sh
-nvm install --lts
-nvm alias default lts/*
-node -v
-```
-
-说明：
-
-- 当前 WSL 使用 nvm 管理 Node.js，默认 LTS 为 `v24.18.0`。
-- 在普通交互式 WSL 终端中，`.bashrc` 会自动加载 nvm；在脚本或非交互命令里如果找不到 `node`，先执行 `source ~/.nvm/nvm.sh`。
-- 不要混用 `/mnt/c/Program Files/nodejs` 下的 Windows 版 `npm` 或 `corepack` 运行本项目。
-
-2. 安装依赖
-
-```bash
-npm ci
-```
-
-项目只使用 npm，唯一锁文件是 `package-lock.json`，`package.json` 声明
-`npm@11.16.0`；不要生成或提交 pnpm、Yarn 锁文件。
-
-3. 准备环境变量
-
-```bash
-cp .env.example .env.local
-```
-
-4. 启动开发服务
-
-```bash
-npm run dev
-```
-
-默认入口：
-
-- `http://localhost:3000`
-- `http://localhost:3000/login`
-- `http://localhost:3000/register`
-- `http://localhost:3000/forgot-password`
-
-开发约束：
-
-- 同一个 Next 项目目录不要同时启动两个 dev server。
-- 需要等待的按钮在处理期间显示旋转图标并阻止重复点击；邮件列表读取会在列表标题或当前会话标出等待状态，首页邀请码复制也会等浏览器确认结果后再显示完成提示。手机和桌面保持同一反馈规则，减少动态效果时保留静态等待图标。
-- `instrumentation-client.ts` 在 React 水合前保护开发期 User Timing：只把 React 服务端组件调试信息中的非法负时间归零，避免高频整页导航时误报性能测量错误；生产环境和正常性能记录不受影响。
-- Playwright 或本地验证建议固定使用 `http://localhost:3000`，避免热更新资源来源不一致；`127.0.0.1` 已加入开发来源允许列表，但改动配置后需要重启 dev server 才生效。
-- 如果 `3000` 已被其他项目占用，本项目临时运行在 `3001` 等端口，Playwright 验证必须显式指定当前端口，并跳过自动启动服务：
+需要同级 PT5-dropshipping-supabase 仓库、Node.js 24、package.json 声明的 npm 版本和 Docker Desktop。先按[启动手册](docs/onboarding/how-to/local-development.md)准备本地后台与 .env.local，确认没有同项目已有开发服务器，再执行：
 
 ```powershell
-$env:PLAYWRIGHT_BASE_URL = "http://localhost:3001"
-$env:PLAYWRIGHT_SKIP_WEB_SERVER = "1"
-npm run test:e2e
+npm ci
+npm run doctor
+npm run dev -- --hostname localhost
 ```
 
-- `.env.local`、真实密钥、测试账号和本地产物不能提交。
+默认入口是 `http://localhost:3000/login`。doctor 在 Web 尚未启动时会报告该项失败，启动后重新运行。本机密钥与种子账号不写入文档或提交。
 
-## 线索大厅
+当前本机 API 为 `http://127.0.0.1:48021`，与同级后端配置一致。Windows 端口受保留范围影响时见[本地 API 排查](../PT5-dropshipping-supabase/docs/onboarding/local-api-port.md)；doctor 只读检查，不自动改端口或重置数据。
 
-- 所有线索看板支持“列表 / 卡片”，默认列表，同一浏览器记住最后选择；切换时保留搜索、负责人筛选和分页。存储不可用时仍可在当前页面切换。
-- 翻页会取消尚未开始的延迟刷新，列表只接收最新一次查询结果，避免较早的首屏或筛选请求覆盖当前页。
-- 桌面列表按名称与类型、国家与地区、优先级与状态、联系方式、负责人及跟进时间、操作分列；小于 1280px 使用紧凑纵向条目。联系方式摘要最多两行，链接保持可点击；每行可以独立展开全部公开资料原文，联系历史仍在有权限的详情中读取。
-- “客户画像”与“目标客户”分别展示；列表提供两行摘要，展开资料、卡片及详情显示全文。来源未提供时显示“未提供”。字段由来源 JSON 的 `customer_profile` 经 Supabase 保存，空来源不覆盖已有画像。
-- 双视图的卡片、列表行、工具栏、结果区、同步状态和展示 hook 单独维护，Client 仅负责组装。来源缺少机器文件时，管理员可看到缺失批次日期；完整批次继续同步。
-- `tests/e2e/sales-lead-views.spec.ts` 检查双语、1440/1024/375px 布局、偏好记忆、筛选分页保留、展开全文和来源提示；卡片字段回归明确选择卡片，业务流程回归使用默认列表。运行时沿用下述单服务、单 worker 设置。
+原固定账号套件的种子恢复只能在[专属隔离数据库](../PT5-dropshipping-supabase/docs/onboarding/environment.md#恢复固定测试种子)执行。
 
-- 管理员和业务员分别通过 `/admin/wholesale/leads`、`/salesman/wholesale/leads` 进入线索大厅；财务、客户及其他岗位没有入口，直接访问也会被工作台权限拦截。
-- 业务员可查看大厅中的全部公开联系方式，认领后记录不可覆盖的联系备注，并可主动退回或添加为客户。本次认领满30天仍未成为客户，线索会自动回到大厅；联系记录不会延长期限。
-- 大厅展示邮箱、电话、WhatsApp、网站、公开联系入口和社群入口，以及目标客户、收费门槛、联系建议。详情按基本资料、公开联系方式、合作建议、来源与提醒、跟进进度、历史记录分组，完整展示来源中的地区时区、优先级、今日联系建议、联系话术和注意事项；来源未提供的内容明确显示“未提供”。网页地址可点击打开，长网址和多行备注完整换行显示。
-- 公开资料、共享联系方式、跟进进度、联系与认领历史、内容显示工具分别放在 `components/dashboard/sales-leads/` 的独立模块；详情弹窗只组装内容及操作按钮，查询和写操作在 `lib/sales-leads.ts`，不堆入批发订单核心 Client。展示沿用现有权限，不扩大联系历史的可见范围。
-- 管理员可查看全部认领、按业务员筛选、安排或转派负责人、退回，并查看最近同步状态或发起立即同步。
-- 页面顶部固定展示30天内成为客户、每人每天最多5条及自动退回规则，切换看板后仍可查看。本人领取、管理员安排或转派、退回后重新领取都开始新的30天周期并计入当天额度。管理员自领的线索保存为客户后仍由管理员负责。
-- 列表、卡片和详情中的“添加为客户”打开独立表单，预填名称、全部公开联系方式和资料来源，名称与联系方式必填。客户保存与线索转换使用同一事务，关联真实批发客户后显示“已成为客户”；独立重读客户、认领终态和线索关系后才显示成功。断网或确认超时显示“保存结果待确认”，刷新后读取真实结果，同周期重试不重复建档。
-- 客户负责人由线索当前认领记录确定。关联客户可编辑且必须保留，数据库外键和删除入口均阻止删除。成为客户后结束线索处理。发布须先部署并验证 Supabase 的 `sales_lead_customer_conversion` 迁移，再发布 Web；存在无法关联真实客户的历史手动使用结果时迁移中止并列出待核对编号。
-- 弹窗、转换状态、表单预填及保存验证分别位于独立模块；客户负责人校验支持在职管理员，订单与提成负责人沿用原业务员校验。
+## 常用检查
 
-- 本地验收必须先恢复 Supabase 线索夹具，再用单个开发服务和单 worker Playwright 检查管理员、两名业务员、财务和客户的入口及业务边界，同时覆盖 375px 移动宽度和桌面宽度。双业务员竞争用例先等双方页面加载同一条搜索结果，再等待每条认领请求的权威响应，并独立核对数据库负责人；已被认领的请求应立即显示明确提示，不能把尚在执行的请求当作竞争结束。
-- 本地服务已启动时，测试进程设置 `PLAYWRIGHT_SKIP_WEB_SERVER=1`、`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`（与本地服务一致）后运行 `npx playwright test tests/e2e/sales-leads.spec.ts tests/e2e/sales-lead-details.spec.ts --workers=1`；测试从本地种子文件读取账号。详情回归逐项核对接口公开资料，并检查中英文、缺失字段、多联系方式、长网址及滚动阅读。
-- `tests/e2e/sales-lead-admin-claim.spec.ts` 验证中英文顶部规则、桌面与手机排版、管理员自领、转换为客户全流程，以及管理员与业务员竞争认领；同样只使用本地账号、一个开发服务和单 worker。测试临时腾出共享账号当日额度，结束后恢复既有认领日期；联系备注使用本次唯一内容并独立核对只写入一条。
-- `tests/e2e/sales-lead-conversion.spec.ts` 从页面验证业务员和管理员建档、姓名与联系方式必填、重名、过期、转派旧弹窗、重复提交、断网、确认超时及HTTP成功但业务未完成。独立查询客户编号、负责人、版本和周期结束记录；错误负责人注入必须触发最终凭证断言失败，恢复后再次验证。覆盖中英文、1440px/375px、刷新及客户编辑；只清理本文件专用资料。
-- `tests/e2e/sales-lead-daily-limit.spec.ts` 从页面完成当天第 5 次领取并独立查询数据库，再验证第 6 次在中英文和刷新后都保持失败；同时检查 1440px 与 375px 的规则和错误提示排版。运行前必须恢复本地 Supabase 夹具，测试会清理专用页面线索。
-
-## 环境变量
-
-浏览器使用 Supabase SDK 直接连接下方配置的项目地址；登录和页面查询都要求员工自己的网络能够访问该地址。服务端仍连接同一项目，登录 Cookie 由 SDK 管理。密码请求最多等待 15 秒，一次登录／恢复流程最多等待 30 秒；只读身份和权限核验最多尝试两次，间隔 500 毫秒。连接中断后先检查已有会话，不自动再次提交密码；“检查登录状态”按钮和一次网络恢复事件可以继续核验。登录等待期间密码保持只读，显示／隐藏按钮仍可使用。
-
-登录和恢复必须由 Auth 服务核验身份，再使用数据库实际角色、账号状态和业务权限决定工作台。读取失败不会使用旧角色或默认业务继续跳转；临时网络错误保留会话，明确失效或账号停用才清理。内部 `partial_failed` 表示认证已完成而后续步骤尚未完成，页面仍提供恢复入口。脱敏失败日志以 `pt5.auth` 标记时间、随机操作编号、阶段、耗时和错误类别，不记录邮箱、密码、令牌、Cookie 或请求正文。
-
-`npm run test:login-recovery` 使用合成边界运行真实恢复与核验模块；`npm run test:security-dependencies` 验证邮件清洗、收件人集合和本机图片转换。`npm run test:public-login-recovery` 只复用已启动的 `http://localhost:3000` 服务，验证匿名页面的断线反馈、键盘操作及 1440/390/320px 布局；所有密码请求都在浏览器边界中止或返回合成错误，不创建真实会话。这些检查不替代真实认证验收。
-
-真实认证验收使用既有开发服务与本地 Docker，按 [测试准入与夹具要求](docs/real-e2e-blockers.md) 准备后，再运行 `PLAYWRIGHT_SKIP_WEB_SERVER=1 npx playwright test tests/e2e/auth-network.spec.ts tests/e2e/auth.spec.ts --workers=1`（PowerShell 使用对应环境变量设置）。从页面登录，独立核对认证用户、会话和数据库实际权限，再刷新工作台；当前受限的账号／管理员辅助入口不得通过替换实现绕过。
-
-### 依赖安全维护
-
-Next.js 和 eslint-config-next 保持同一固定版本；Supabase SDK、React 与本次安全补丁依赖均固定版本，并保存 npm 锁文件。升级后同时运行 `npm audit --omit=dev` 与 `npm audit`，按公告编号和实际依赖树核对，不能仅比较总数。shadcn 的状态变体样式保存在 `app/ui-variants.css`，来源和 MIT 许可见 [许可文件](docs/security-auth-recovery/shadcn-LICENSE.md)；已有组件使用这些本地样式，项目不再依赖生成组件用的命令行工具。安全修复及验收范围见 [依赖与登录恢复报告](docs/security-auth-recovery/report.md)。
-
-至少需要：
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-NEXT_PUBLIC_SITE_URL=https://account.pt5global.com
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-MAIL_CREDENTIAL_ENCRYPTION_KEY=64-character-hex-key
-MAIL_CONTENT_ENCRYPTION_KEY=another-64-character-hex-key
-MAIL_EMAIL_HASH_SECRET=at-least-32-random-characters
-MAIL_TASK_SECRET=background-task-secret
-MAIL_SHARED_MAILBOX_EMAIL=chinapt5@gmail.com
-MAIL_ATTACHMENT_BUCKET=pt5-mail-attachments
-MAIL_ATTACHMENT_SCANNER_URL=https://your-malware-scanner.example/scan
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_PUBSUB_TOPIC=projects/your-project/topics/your-topic
-FEISHU_APP_ID=your-feishu-app-id
-FEISHU_APP_SECRET=your-feishu-app-secret
-DEEPSEEK_API_KEY=your-deepseek-api-key
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-flash
-```
-
-说明：
-
-- `NEXT_PUBLIC_*` 用于浏览器端和 SSR 访问 Supabase。
-- `NEXT_PUBLIC_SITE_URL` 用于邮箱确认等服务端回跳地址，线上必须填写包含 `https://` 的完整站点根地址，并与 Supabase Auth 的 Site URL 保持一致；生产环境只接受 HTTPS 完整域名及标准端口，拒绝所有 IP、本机地址、本地域名和带路径的地址；缺失或无效时使用默认正式域名，并记录按原因去重的配置告警。告警不包含配置值。
-- `SUPABASE_SERVICE_ROLE_KEY` 只允许服务端脚本或受控管理任务使用，不能暴露到前端。
-- `MAIL_CREDENTIAL_ENCRYPTION_KEY` 与 `MAIL_CONTENT_ENCRYPTION_KEY` 分别加密授权凭据和邮件内容；`MAIL_EMAIL_HASH_SECRET` 生成客户邮箱盲索引，三者只能配置在 Next.js 服务端。`MAIL_TASK_SECRET` 保护后台补偿任务入口。
-- Google 变量用于管理员连接公司邮箱和续订 Gmail Watch；飞书变量用于员工绑定与应用私聊。附件扫描服务必须明确返回安全结果，文件才可进入发信队列。所有这些变量都不能使用 `NEXT_PUBLIC_*` 前缀。
-- Google 和飞书授权入口、回调与返回邮件页统一使用 `NEXT_PUBLIC_SITE_URL` 对应的公开地址，不能填写 `0.0.0.0`。仅本地外部边界测试配置 `MAIL_GOOGLE_OAUTH_BASE_URL`（提供 `/authorize`、`/token`、`/userinfo`）及 `MAIL_GOOGLE_API_BASE_URL`（Gmail 用户接口根地址）；线上应移除测试覆盖变量。Google 授权交换、身份确认与通知开通各等待最多 10 秒。
-- 飞书授权返回管理员或业务员本人的邮件页，授权记录只保存该页公开地址；失败使用固定原因显示可读提示，成功状态从实际绑定记录读取。仅开发环境的服务端令牌及身份接口复用 `MAIL_FEISHU_API_BASE_URL` 本地边界，分别等待最多 10 秒，生产固定访问官方接口。
-- 汇率凭据 `NOWAPI_APP_KEY`、`NOWAPI_SIGN` 只配置在 Supabase 服务端，具体位置见下方汇率说明。
-- `LOGISTICS_SOURCE_ARCHIVE_API_URL` 和 `LOGISTICS_SOURCE_ARCHIVE_API_TOKEN` 只配置为 Supabase Edge Function secrets，用于把店小秘必要物流字段归档到主系统，不暴露到浏览器端；同步只调用来源项目的受控接口。
-- `USER_MEDIA_IMAGE_REVIEW_PROVIDER` 和真实内容安全供应商密钥只配置为 Supabase Function secrets，默认 provider 为 `disabled`。
-- `DEEPSEEK_API_KEY` 只在 Next.js 服务端接口中使用，用于登录后右下角的工作台助手；助手名称从 `lib/company-config.ts` 读取。
-- `next.config.ts` 对所有页面和 API 返回基础浏览器安全头：不允许页面被嵌入其他网站，禁止浏览器猜测文件类型，限制来源信息和默认浏览器权限。
-
-## 常用命令
-
-```bash
-npm run dev
+```powershell
 npm run lint
 npm run typecheck
 npm run check:i18n
 npm run check:dashboard-ui
+npm run check:operation-contracts
+npm run check:learning
+npm run check:edge
+npm run test:learning
 npm run build
-npm audit --omit=dev
-npm audit
-npm run start
-npm run test:e2e
-npm run test:e2e:ui
-npm run test:regression
-npm run clean:artifacts
-npm run clean:cache
-npm run clean:all
-npm run supabase:admin -- summary
 ```
 
-说明：
-
-- `npm run check:i18n` 会核对中英文消息键结构，并拦截 TSX 中直接编写的用户可见文案；品牌、币种、邮箱示例和 `1688` 等不可翻译标识使用小型明确白名单。
-- `npm run check:dashboard-ui` 使用 TypeScript AST 检查 JSX、导入和职责边界：拦截业务层原生控件与 `<label>`、Select/DatePicker 视觉覆盖、Button 尺寸或材质覆盖、绕过共享资源筛选区、手写桌面/移动双视图、状态函数返回颜色类名、非共享组件持有面板阴影、`href` 混入 CSS 变量，以及 Page/Client 同时导入查询或 mutation 并渲染表格/弹窗。信息层级规则位于独立模块，要求页头明确选择工作或概览形态，禁止工作页重新加入徽标、介绍、指标大面板，并禁止订单列表恢复通用介绍。检查同时保留硬编码颜色、400 行上限、深色模式、原生确认框、复制页面外壳和旧分页组件等规则；导航与首页布局编辑器是明确的响应式白名单。
-- `npm run test:regression` 会依次执行 lint、typecheck、双语静态检查、工作台结构检查、操作成功契约检查、AI 流终态与操作回执测试、build 和 Playwright 回归测试。`config/operation-contracts.json` 是写入与后台任务的机器可读清单；新增数据库写入、写入型 RPC、有副作用的 HTTP/Edge Function、Storage 或 Auth 请求如果未登记，或没有校验实际回执，会直接阻止回归。完整浏览器验收由 Playwright 独占一个开发服务器并使用 `--workers=1`，避免测试夹具相互覆盖。
-- `npm run clean:artifacts` 清理 `.playwright-cli` 和 `output/playwright` 下的临时验证产物。
-- `npm run clean:cache` 清理 `.next` 和 `tsconfig.tsbuildinfo`。
-- `npm run supabase:admin -- summary` 查看订单、汇率等表的概览。
-
-## 角色与入口
-
-当前系统使用统一动态工作台，不再为每个角色维护一套散落页面。登录、账号、角色、状态和个人中心共用同一套后台壳。本次发布只启用批发业务；旅游业务代码与历史数据保留，但普通账号不能从网页、接口或数据库直达访问。
-
-| 角色            | 默认入口          | 当前模块                                                                                                                                                                                                                                                                               |
-| --------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `administrator` | `/admin/home`     | 全局首页、审核中心、账号管理、公告管理、公司费用、汇率，以及批发订单、库存订单、结汇发布、物流、客户、人员、VIP、推荐、佣金、提成和业务设置 |
-| `salesman`      | `/salesman/home`  | 全局首页、只读汇率；固定仅可见批发业务，显示批发订单、库存订单、结汇发布、物流、客户管理、VIP管理、推荐树、佣金和提成                                                                                                                                                         |
-| `promoter`      | `/business-unavailable` | 账号可以登录，但当前没有已启用业务，只显示停用说明、帮助邮箱和退出登录 |
-| `client`        | `/client/home`    | 拥有批发权限的客户进入批发工作台；只有旅游权限的历史客户进入停用说明页 |
-| `manager`       | `/business-unavailable` | 当前角色原有业务已停用，登录后进入停用说明页 |
-| `operator`      | `/operator/home` | 全局首页、报销记录、只读汇率；明确分配批发业务后可进入批发订单工作区 |
-| `finance`       | `/finance/home`   | 全局首页、公司费用、只读汇率；固定仅可见批发业务，显示批发订单、库存订单、结汇发布、物流、客户、VIP、推荐、佣金和提成；可管理批发日常业务与库存信贷，但不获得人员、业务设置、佣金结算权限 |
-| `recruiter`     | `/business-unavailable` | 当前角色原有业务已停用，登录后进入停用说明页 |
-
-访问规则：
-
-- `/[role]` 自动重定向到 `/[role]/home`。
-- `/[role]/home` 和 `/[role]/my` 是全局页面，不归属于单个业务。
-- `/admin/reviews`、`/admin/accounts`、`/admin/announcements` 和 `/admin/company-expenses` 是管理员全局管理页面，不归属于单个业务；审核中心显示在批发板块之前的全局导航中。
-- `/finance/company-expenses` 是财务全局公司费用页面，不归属于旅游业务或批发业务。
-- `/operator/reimbursements` 是运营全局报销记录页面，不归属于旅游业务或批发业务。
-- `/[internal-role]/settings` 是内部账号的全局汇率页面，不归属于旅游业务或批发业务；管理员可以维护、立即获取和按日期补充，其他已激活内部角色只读查看。客户不显示该入口，`/client/settings` 保持不可访问。
-- `/admin/wholesale/settings` 是批发业务参数中心，仅供在职管理员维护批发订单老客户毛利提成和新客户服务费提成、推荐客户订单金额佣金和推荐客户月度运单奖励。每次发布都生成不可修改的新版本，可立即生效、预约生效、查看记录、取消尚未生效的预约或把旧值恢复成一个新版本；页面不能新增参数。
-- `/[role]/tourism/[section]` 是系统认识但本次停用的地址，统一进入 `/business-unavailable?business=tourism`；其他未知业务地址保持 404。
-- `/[role]/wholesale/[section]` 承载当前启用的批发业务页面。
-- `/admin/wholesale/inventory-orders`、`/salesman/wholesale/inventory-orders` 和 `/finance/wholesale/inventory-orders` 提供“库存订单、信贷管理”两个视图；`/client/wholesale/inventory-orders` 只读显示本人订单。
-- 有效账号访问工作范围之外的页面时保留登录状态，显示“这个页面不在你的工作范围内”并提供返回当前角色首页的按钮。退出是 POST 写操作；GET 退出地址只显示确认页，链接预加载不会清除登录。会话失效或账号停用时也通过确认页安全清理 Cookie。
-- 左侧导航先按账号当前可见业务过滤，再展示当前角色在该业务下可用的模块。
-- 管理员和业务员的批发业务菜单依次以“线索、客户、批发订单”开头，其余入口保持原有相对顺序。桌面侧栏与手机下拉菜单共用 `lib/workspace-wholesale-module.ts`，其他岗位的入口和权限不受此顺序调整影响；`tests/e2e/wholesale-navigation-order.spec.ts` 验证中英文及桌面、手机显示顺序。
-- 桌面端左侧导航将全局入口和账号有权访问的业务板块列在同一列，不显示“批发业务”分组标题；图标、文字、缩进和行高统一，选中或等待跳转时保持对齐，内容较长时侧栏可以独立滚动。移动端顶部下拉菜单继续按业务分组展示有效清单。
-- 桌面工作栏上端提供“搜索板块”，按当前语言的入口名称即时筛选，仅搜索当前账号可见入口，忽略首尾空格和英文大小写。搜索框固定在列表上方，清空按钮或 Esc 可恢复完整菜单；无匹配时显示提示，页面切换成功或刷新后清空搜索。手机和平板继续使用顶部菜单。
-- 当前阶段批发业务允许管理员、财务、业务员、明确分配批发业务的运营账号，以及拥有批发业务标记的客户访问。运营账号只进入批发订单工作区，不获得客户、物流、结汇、库存信贷或业务设置能力。财务和业务员都能跨业务员协作处理全部批发订单、客户、附件、VIP、推荐关系、物流归属、库存订单及信贷；财务还可发布、确认和分配结汇收款，取消仍只允许尚未分配的收款。人员管理、业务设置、佣金结算继续仅限管理员。
-- 佣金和提成页面对财务使用业务员视角，只显示本人相关记录，不因此获得管理员结算能力。页面入口统一读取 `WholesaleRoleCapabilities`，数据库 RPC 与 RLS 仍是最终授权边界。
-- 批发“提成与佣金”统一使用 `/{workspace}/wholesale/commission` 入口，以“业务员提成”和“客户推荐佣金”标签切换；内部账号按现有权限加载两类数据，共用客户查询。客户只加载并展示推荐佣金，不接收内部订单、员工资料或业务员提成。查询编排位于 `lib/wholesale-commission-page.ts`；切换标签保留各自筛选与分页，`board=salesman|referrals` 保存当前标签并支持刷新恢复。独立 `incentives` 地址已移除。两个标签分别报告加载错误，单类查询失败不会阻止查看另一类账目。
-- 财务推荐佣金页面展示数据库返回的本人月度记录和合计；客户订单的“负责业务员”由受控函数只返回本人订单所需姓名，分别显示真实姓名、确实未分配和姓名暂不可用，不开放员工资料目录。订单页在桌面默认收起高级筛选并合并列表工具行，让 1280/1440 宽度的首条记录进入首屏。
-- 人员管理不提供恢复旅游业务的入口。客户只能注册或由管理员追加当前启用的批发业务。
-- 当前只有批发业务可注册，因此注册向导自动选择批发并跳过业务选择步骤。业务员邀请码继续关联批发推荐人；旅游邀请码会显示“对应服务暂时停止注册”并阻止提交。
-- 账号没有任何已启用业务时统一进入 `/business-unavailable`。该页面位于工作台布局之外，不加载导航、业务查询或 AI 助手，并提供帮助邮箱和退出登录；内部岗位在电脑端仍可进入独立的公司模板页面，手机端不显示模板入口。
-- 已知但未授权的同工作台模块进入统一的工作范围提示页，不显示空白占位入口，也不退出有效账号。
-- 服务端权限判断必须先使用 Supabase Auth 验证用户身份，再从 `get_current_app_access_context` 读取数据库角色和状态；数据库上下文读取失败时不使用 Auth 元数据或客户端会话兜底放行。同一服务端渲染请求复用已验证身份及 Supabase 客户端，新请求重新验证，不能跨用户缓存。业务访问查询成功时不读取备用会话，仅在查询失败时才回退。部署后恢复浏览器里已有的登录状态时，`/`、`/login`、`/register` 和 `/forgot-password` 也使用同一数据库上下文决定默认工作台，不能把缺失或过期的 Auth 角色默认当成客户。登录后的客户端会话只用于界面状态和会话同步，不能作为服务端放行依据。
-- `lib/verified-session-context.ts` 统一布局及业务查询的可信身份读取，业务访问也只在同次渲染内复用；代理层与页面层各自保留身份验证。部署诊断可临时设 `PT5_PERFORMANCE_LOG=1`：日志以 `pt5.performance` 标记请求编号、身份/业务/页面/数据库对象阶段、耗时和完成情况，不写用户编号、邮箱、Cookie、参数或正文。默认关闭；诊断结束后撤销该环境变量。
-- 管理员调整人员后，同一服务进程对单个账号的 Auth 写入串行执行；同步还会再次核对数据库目标版本和 Auth 实际值。人员页读取待同步账号时由数据库重新比较 Auth 实际字段，跨进程旧写入晚返回且当时复核失败的账号会再次进入待处理列表。
-
-## 库存订单与专属信贷
-
-- 库存订单与普通批发订单完全独立。订单只允许选择已绑定登录账号的批发客户；编号和录入时间由系统按上海业务日期生成。
-- 每笔订单至少包含一件商品，最多100件；商品记录名称、正整数数量和可选的1688货品链接。管理员、财务和业务员可在订单付清后继续维护商品，客户只读。
-- 管理员、财务和业务员可以创建、修改、一次登记全额实付、作废以及维护商品和 Order List；不支持部分实付。购买金额由工作人员填写，币种从现有汇率币种中选择，系统不按200美元门槛自动判断订单资格。
-- 客户可以在自己的待支付订单选择一个或多个可用信贷档位。三个档位分别显示为“安心周转额度”“订单助力额度”“长期合作额度”，并在名称下保留“固定200美元”“一单库存订单金额的50%”“所有订单金额的5%”作为规则说明。安心周转额度只需首次申请和获批；还清后资格长期保留，由管理员或业务员在另一笔新订单直接复用，客户不再重复申请。后两个档位名称不触发自动百分比计算，最终美元金额由审核人填写。
-- 管理员、财务和业务员可以直接启用任意一个或多个档位，确认即生效，无需第二人审核；如果订单已有客户申请，必须一起批准或拒绝。
-- 批准金额按当天汇率锁定到订单币种，信贷抵消与剩余实付必须正好覆盖购买金额，随后订单立即付清。
-- 信贷批准即开始使用，原还款日为30天后。客户最晚在原还款日申请一次1–3个自然月延期；管理员、业务员或财务审核。
-- 到期次日按未还本金计算月单利：`本金 × 1% × 逾期天数 ÷ 30`。不支持部分还款；后台选择实际还款日并一次结清本金和利息。
-- Order List 位于私有存储，只接受 CSV、XLS、XLSX；每单最多10个、单个20 MB、合计100 MB。管理员、财务和业务员可写，订单客户只读。
-- 库存订单可以按订单、商品名称、1688链接、客户、业务员、支付状态、币种和录入日期筛选；录入日期默认使用上海业务日期最近30天，并提供“最近30天、本月、上月、最近3个月、自定义”快捷范围，恢复筛选会回到最近30天。信贷记录可以按关键词、客户、信贷档位、信贷状态、到期情况和申请日期筛选。客户页面隐藏没有意义的客户、业务员筛选，筛选无结果时可以一键恢复默认范围。
-- 页面模块按 `queries / actions hook / filter view-model / filters / order section / item editor and dialog / credit application, review, direct management and lifecycle dialogs / display` 拆分；桌面使用紧凑表格，移动端使用信息卡片和自动换行的筛选区。
-
-## 路由结构
-
-```text
-app/
-├─ (auth)/
-│  ├─ login/
-│  ├─ register/
-│  ├─ forgot-password/
-│  ├─ privacy/
-│  ├─ terms/
-│  └─ help/
-├─ auth/
-│  └─ sign-out/
-├─ access-limited/
-├─ business-unavailable/
-├─ (account-tools)/
-│  └─ mail/
-├─ (company-templates)/
-│  └─ [workspace]/
-│     └─ company-templates/
-├─ api/
-│  └─ company-templates/
-├─ (workspace)/
-│  └─ [workspace]/
-│     ├─ announcements/
-│     ├─ company-expenses/
-│     ├─ home/
-│     ├─ my/
-│     ├─ reimbursements/
-│     ├─ settings/
-│     └─ [business]/
-│        └─ [section]/
-├─ error.tsx
-└─ global-error.tsx
-```
-
-关键文件：
-
-- `proxy.ts`：会话同步、登录保护、工作台访问前置校验。
-- `lib/company-config.ts`：公司级配置，集中维护产品名、助手名、Logo、默认站点域名、支持邮箱和默认启用业务。
-- `lib/workspace-business-modules.ts`：同时维护系统认识的业务与当前启用业务，分别提供 registered/enabled 类型和判断函数；旅游、批发定义仍保留在独立模块中。
-- `lib/current-session-context.ts`：会话薄编排层；缓存、Auth 获取和数据库访问上下文分别位于 `current-session-cache.ts`、`current-session-auth.ts` 与 `current-session-access-context.ts`。
-- `lib/user-self-service.ts`：个人中心读取编排；资料、隐私申请、媒体上传和预览缓存分别位于对应的 `user-*` 服务文件。
-- `lib/mail/`：系统内置邮件数据访问、内容加密、Gmail/飞书边界、收发队列、Watch 维护、附件私有存储和 AI 上下文；浏览器不会读取服务密钥或直接访问邮件表。
-- `lib/company-templates/`：公司模板权限、文件校验、查询、管理员写入回执和内容完整性核对；页面与接口只负责组装和请求调度。
-- `components/dashboard/company-templates/`：模板列表、管理弹窗、模板卡片和沙箱查看器；HTML 正文由独立内容接口返回。
-- `components/dashboard/mail/`：共享邮箱列表、详情、编辑器、人员设置、运行状态、AI 报告和 view-model；`/[workspace]/mail` Page 只组合首屏查询结果。管理员人员资料按批量配置读取，只有缺档账号才逐个补建；会话和管理栏目并发读取，发件概况必须等首次建档后再读取。
-- `lib/workspace-config.ts`：全局工作台配置中心，负责角色 base path、全局入口和从业务模块清单组装后的页面能力。
-- `lib/workspace-route-segments.ts`：工作台角色路由段枚举。
-- `lib/workspace-business-access.ts`：当前账号可见业务读取、业务键规范化和导航过滤辅助。
-- `lib/auth-routing.ts`：角色与工作台 base path 映射。
-- `app/auth/sign-out/route.ts`：服务端退出登录入口，负责删除 Supabase 登录 Cookie 后回到安全登录页；请求来源是 `0.0.0.0` 或未知域名时，使用项目配置的公开地址。
-- `app/access-limited/page.tsx`：有效账号越权后的普通服务端提示页，保留会话并返回当前角色首页；无效或停用账号仍进入退出登录流程。权限入口统一重定向到该页面，不使用实验性 `forbidden()` 边界。
-- `lib/api-request-quota.ts`：调用数据库额度 RPC，统一处理接口调用次数、并发租约和释放。
-- `lib/server-request-body.ts`：按字节流读取 JSON，在内容超过接口上限时立即停止。
-- `lib/browser-auth-session.ts`：浏览器端退出登录和本地会话清理工具，退出后统一进入服务端退出登录入口。
-- `lib/business-vip-management*.ts`：当前只读取和写入批发 VIP；旅游参数在进入 RPC 前返回稳定的 `businessUnavailable`，`errors` 再把它转换成页面提示。
-- `lib/company-expenses.ts`：公司费用页面的数据读取、权限判断和增删改操作。
-- `components/dashboard/company-expenses/`：公司费用页面的展示区块、表单弹窗、状态 hook 和显示工具。
-- `lib/operator-reimbursements.ts`：运营报销记录的公开入口；类型、分页查询与写入操作分别由同名前缀的 types、queries、mutations 模块维护。
-- `components/dashboard/operator-reimbursements/`：运营报销记录页面的页头、筛选、汇总、列表、表单弹窗、状态 hook 和显示工具。
-- `components/dashboard/admin-shell.tsx`：工作台服务端壳层。
-- `components/dashboard/admin-shell-client.tsx`：工作台登出等客户端动作。
-- `components/dashboard/admin-shell-nav.tsx`：工作台导航模式调度；桌面直接展示业务板块，移动端使用顶部菜单，分别由 `admin-shell-desktop-nav.tsx` 和 `admin-shell-mobile-nav.tsx` 渲染；链接外观和图标映射位于 `admin-shell-nav-links.tsx`。
-- `components/dashboard/admin-shell-nav-types.ts`：工作台导航展示类型。
-- `components/dashboard/use-admin-shell-navigation.ts`：工作台导航点击、按悬停或聚焦意图预取，以及页面长时间闲置后的整页跳转兜底；禁止在工作台打开时一次性预取全部登录后板块。
-- `lib/request-timeout.ts`：登录后页面共享的 Supabase 读取超时为 30 秒，避免本地并发或云端短暂变慢时误进入错误页；确实耗时的上传、审核等操作在对应 mutation 中单独设置更长时间。
-- `lib/use-stale-focus-recovery.ts`：页面持续可见但长时间未操作、页面隐藏、窗口失焦或浏览器从页面缓存恢复后的跳转/刷新兜底判断。
-
-## 目录约定
-
-```text
-PT5-dropshipping-web/
-├─ app/
-├─ components/
-│  ├─ auth/
-│  ├─ brand/
-│  ├─ dashboard/
-│  ├─ motion/
-│  └─ legal/
-├─ i18n/
-├─ lib/
-├─ messages/
-├─ public/
-├─ scripts/
-├─ tests/
-├─ proxy.ts
-└─ README.md
-```
-
-约定：
-
-- `components/dashboard` 按业务模块拆分，根目录只保留壳层和共享 UI。
-- `components/motion` 只承接通用页面渐入、状态切换、折叠、列表重排和骨架动效；业务请求与状态判断仍留在对应模块。
-- 公司品牌、默认域名、Logo、助手名称和默认启用业务只能从 `lib/company-config.ts` 读取；不要在页面、组件、助手 prompt 或法律文案里重新写固定公司名。
-- 业务代码资产由 `lib/workspace-business-modules.ts` 注册，当前发布清单由 `lib/company-config.ts` 决定。导航、页面能力、注册候选项和账号业务候选项只能使用启用清单。
-- `components/auth` 只放认证流程编排、认证页字段适配和认证页跳转组件。认证页允许使用唯一的照片双栏和玻璃外壳，但材质只能来自 `theme.css` 的认证语义变量；输入、按钮、字段关联和状态反馈仍统一复用 `components/ui`，不得建立第二套控件。
-- `components/legal` 承接公开法律页和页脚链接，并复用全站表面层级与状态标签，不维护独立色板。
-- `lib` 承接服务端查询、mutation、显示格式化、错误映射和共享业务规则。
-- `messages` 承接用户可见中英文文案。
-- `output`、`.playwright-cli`、`.next` 和 `node_modules` 都是本地产物，不提交。
-
-## 模块边界
-
-工作台共享能力：
-
-- `app/theme.css` 与 `components/ui/`：全站唯一的浅色视觉入口，基准是暖白工作台。页面画布使用 `#faf9f7`，导航结构使用 `#f4f3f1`，筛选、表格和弹窗使用 `#fbfaf8`；具体色值只存在于主题 CSS，业务 TSX 使用表面、内容、边框、品牌和状态等语义令牌。页头和重要面板保留轻阴影，普通数据区与嵌套筛选只使用边界，菜单和弹窗等浮层使用强阴影。账号菜单、表单选择菜单和日期浮层统一通过 Portal 渲染到页面根层，并使用高于页面吸顶表格和固定列的共享浮层层级，不能把浮层留在顶栏或业务面板的局部层叠环境中。玻璃效果仅用于后方不会形成可读文字叠影的区域；手机导航和语言菜单覆盖正文时使用不透底的暖白表面。普通面板移动端为 24px 圆角、桌面端为 28px 圆角，不使用背景模糊；模糊仅用于顶栏及认证页经过约束的玻璃外壳。项目当前不提供深色模式。
-- 控件密度和几何只在 `theme.css` 定义：表单控件 `compact` 为移动 44px / 桌面 40px、`default` 为移动 44px / 桌面 48px、`large` 为 52px；按钮 `compact` 为移动 44px / 桌面 40px、`default` 为 44px、`large` 为 52px。面板、内嵌面板、记录卡和指标卡圆角分别为移动/桌面 24/28px、20/24px、18/20px、20/24px。筛选输入、选择菜单和非选中快捷项使用浅色边界，悬停时适度加深；选择菜单展开后使用圆角暖白浮层，当前项固定为浅品牌蓝底、品牌色文字和勾选，不能退回系统方形菜单或深蓝选中块。每个选项至少 44px 高，长列表在视口内滚动，长文字在浮层中换行、在触发器中截断。普通表单继续使用更清楚的控件边界，所有键盘焦点保持高对比度。语义正文和状态色对比度至少为 4.5:1，普通表单边界及键盘焦点至少为 3:1。
-- `components/ui/button-variants.ts` 与 `button.tsx`：服务端链接和客户端按钮共用同一套变体与尺寸；多行操作使用显式 `wrap`，业务 `className` 只控制宽度、定位和外部间距，不能改高度、内边距、字号、圆角、颜色或阴影。整张记录卡或导航行这类不应继承按钮固定高度的点击区域使用 `InteractiveButton`。
-- `components/ui/form-controls.tsx`：输入、多行输入、勾选、单选、开关和字段说明的统一入口；`Field` 自动建立标签、提示、错误与输入控件之间的可访问性关联，隐藏标签也通过 `labelHidden` 提供。checkbox、radio 和 toggle 行统一使用 `ChoiceField`，业务组件不直接渲染 `<label>`。`DashboardFormField` 完整透传 `required`、`hint`、`error`、`controlId`、隐藏标签和布局属性。`Field density="filter"` 会通过共享上下文让 Input、Select 与 DatePicker 自动使用筛选区浅边界和紧凑尺寸：移动端保持 44px，桌面端使用 40px；普通字段继续使用默认边界与默认尺寸。业务页面不得为三类控件分别复制筛选样式。`components/ui/select.tsx` 是全站唯一的单选菜单，业务层只能传入 `options`、值、表单语义和 `compact/default/large` 尺寸，`className` 只允许控制外层宽度、间距与定位。Select 通过 Base UI 的隐藏输入保留 `FormData`、必填与禁用语义，并继承 `Field` 生成的 id、错误说明、无效状态和视觉密度；账号菜单、语言切换、移动导航和国家区号菜单仍是各自已经圆角化的专用浮层，不属于表单 Select。
-- `components/ui/date-picker.tsx` 是全站唯一的日期、月份和日期时间入口，接口使用 `mode="date | month | datetime-local"`、`value/defaultValue`、`onValueChange`、`name`、`min/max`、表单语义和统一控件尺寸；`className` 同样只控制宽度、网格跨度与定位。可见文本框支持键盘输入，日历按钮或 `Alt + ↓` 打开由 Base UI 定位的圆角暖白浮层，DayPicker 只负责日期网格与键盘移动；日期和月份点选后立即提交，日期时间选择小时、分钟后点击“完成”才提交。中文接受 `YYYY-MM-DD`、`YYYY/MM/DD`、`YYYY-MM`、`YYYY/MM` 及相同日期加 24 小时时间，英文另外接受 `MM/DD/YYYY`、`MM/YYYY` 及相同日期加时间；界面按语言格式化，隐藏表单值始终保持 `YYYY-MM-DD`、`YYYY-MM` 或 `YYYY-MM-DDTHH:mm`。非法日期、闰年错误、必填空值和超出范围都会关联到字段并阻止提交，Escape 恢复最后一个有效值；“今天”和“现在”统一按 `Asia/Shanghai` 计算。390px 下仍使用锚定浮层并在视口内翻转、位移和滚动，不改成系统日期弹层或底部抽屉。
-- `components/ui/feedback-notice.tsx`：认证页和工作台统一的结果反馈条，只有 `info`、`success`、`error` 三种语义和紧凑/默认两档密度；错误自动即时播报，成功和提示使用礼貌播报。业务组件不再维护 `AuthFeedback` 或 `PageBanner`。
-- `components/ui/status-badge.tsx`：全站唯一状态标签。业务模块只映射 `neutral`、`info`、`success`、`warning`、`danger` 语义，不自行返回颜色类名。
-- `components/ui/surface.tsx`、`data-display.tsx` 与 `responsive-data-view.tsx`：`Surface` 通过 `as="section | article | div"` 和 `panel | inset | interactive | floating` 统一材质与内边距；`RecordCard surface="interactive | inset"` 与 `MetaGrid` / `MetaItem` 统一移动记录卡和字段定义列表；`MetricCard presentation="compact | header | summary | value-panel"` 配合 `MetricGrid layout="summary-strip | header | three-column | four-column"` 承接普通汇总和数值面板。紧凑指标不能用省略号隐藏标签或数值，中文标签不得逐字竖排；空间不足时由摘要网格主动减列，金额和币种保持完整。`DashboardOperationalSummary` 用于物流、人员和 VIP 等运营摘要：主要状态、更新时间元信息、币种或其他补充数据分层放在一个紧凑面板中，不把低优先级信息继续做成同权大卡。`ResponsiveDataView` 默认在 `md` 切换，只有 VIP 等经过说明的宽表显式使用 `breakpoint="lg"`；数量、分页和继续加载底栏只渲染一次。
-- `components/ui/public-state-card.tsx`：访问范围、404、局部错误和全局错误页的统一提示卡；法律页和公共状态页继续复用工作台浅色材质，不跟随认证页的照片与玻璃变体。
-- `components/auth/auth-shell.tsx`：登录、注册和找回密码共用的认证编排外壳，接口按 `hero`、`form`、`footer` 分组。桌面端由 `AuthHeroPanel` 展示本地照片、品牌说明和提示，`AuthFormPanel` 展示表单；`lg` 以下隐藏照片栏，并由 `AuthSupplementalNote` 在表单后补齐说明。认证图片只允许在英雄面板静态导入，页面不得复制材质或移动说明卡。
-- 登录与找回密码的 Supabase 状态、账号切换、恢复会话和提交动作分别位于 `use-login-form-view-model.ts` 与 `use-forgot-password-view-model.ts`；表单文件只负责字段、反馈和操作按钮，注册继续由 `use-register-wizard.ts` 调度。
-- `components/motion/` 与 `lib/motion-tokens.ts`：全站统一动效入口；时长、缓动、错峰上限和减少动态效果规则集中维护，业务组件不自行定义另一套动效节奏。
-- `admin-shell-nav.tsx` 与同层桌面、移动导航模块：主文件只选择展示模式；桌面模块将全局和业务入口统一排列，链接模块统一行高与高亮外观，跳转和预载由独立 hook 处理。桌面端保留菜单滚动能力但隐藏浏览器自带滚动滑块；完整左侧导航从 1024px 起展示，768px 平板继续使用顶部下拉导航，避免侧栏把工作区和品牌文字压窄；移动与平板菜单保留业务分组。全局顶部导航统一使用 `surface-chrome`、清晰底边和 `shadow-surface-header` 形成轻分层，不能退回与页面画布相同且边界不可见的透明表面。
-- `dashboard-section-panel.tsx`：筛选面板、列表面板和表格外框。单一主内容区不显示页面标题、标签页或状态栏已经说明的“列表/记录”标题，改由 `ariaLabel` 保留无障碍区域名称；并列数据集、设置分组和不同业务阶段继续显示必要标题。标题移除后内容直接上移，只有操作时渲染紧凑右对齐工具栏，不生成空标题或保留原标题间距。带放大镜的工作台搜索框统一使用 `DashboardSearchInput`；组件会在移动和桌面断点为图标保留固定前置槽位，并继续继承 `Field density="filter"` 的浅边界。业务页面只传值、占位文案和更新函数，不得再自行组合绝对定位图标、响应式内边距或另一套搜索框外观。数据表格和记录列表统一使用 `divide-border-subtle` 作为低强调分隔线，`chart-*` 令牌只用于图表数据，不能再形成抢夺内容层级的深色横杆。
-- `dashboard-page-shell.tsx` 与 `dashboard-section-header.tsx`：管理员、业务员、财务、客户、首页和“我的”页面共用 `1320px` 页面外壳。高频订单、费用、审核、认领、客户、人员、物流和任务页面必须使用 `presentation="work"`，只展示紧凑标题、关键状态和主要操作；首页、统计总览、设置、引导及重要状态页使用 `presentation="overview"`，才可以展示徽标、介绍或页头指标。页面内容固定按页头、操作反馈、权限或错误状态、业务区块的顺序展示。
-- `dashboard-resource-filter-section.tsx`：通用资源筛选卡不显示“筛选内容/筛选订单”一类重复标题和说明，关键词搜索与恢复操作直接进入首行，下方只保留真正有用的筛选字段、启用条件数量和结果摘要。桌面端控件、字段间距、面板内边距和日期快捷区按高密度工作台排列；移动端关键词搜索常驻，其他条件默认收起并可在同一区域展开或恢复默认，同时维持 44px 触控高度和至少 8px 操作间距。订单筛选在它上面扩展必填日期、日期快捷项和跨日期精确单号查询，业务页面不能直接使用底层 `DashboardFilterPanel`。
-- `dashboard-collection-section.tsx` 与 `components/ui/responsive-data-view.tsx`：通用列表卡、默认 `md` 的桌面表格/移动卡片切换、数量底栏、页码分页和继续加载操作。VIP 宽表使用明确的 `lg` 例外；导航及首页布局编辑器之外，业务数据列表不得自行配对显示断点，数量和分页只显示一次。
-- `dashboard-form-dialog.tsx` 的 `FormDialog` 与 `components/ui/action-group.tsx`：创建和编辑表单共用标题、说明、字段、操作反馈、取消、提交、等待状态及移动端按钮排列。移动端操作优先并排，文案较长时自然换行；提交失败时弹窗与输入保持不变，成功后由领域状态关闭并清空。
-- `dashboard-confirm-provider.tsx`：工作台普通、警告和危险确认服务。取消、遮罩、Escape 或关闭都视为不继续，确认后才执行领域操作；工作台不使用浏览器原生确认框。
-- `dashboard-framework-primitives.tsx`：工作台行内编辑操作和文件选择器。领域模块只保留文件格式、大小、数量和上传校验；状态标签使用全站 `StatusBadge`。
-- `dashboard-feedback.tsx`、`dashboard-media-placeholders.tsx`、`dashboard-profile-cards.tsx`、`dashboard-shared-display.ts` 与 `dashboard-shared-errors.ts`：反馈、空状态、媒体占位、个人资料卡、格式化和错误提取分别维护；`dashboard-shared-ui.tsx` 仅为无逻辑的共享导出入口，不依赖隐私、任务等领域实现。
-- `dashboard-dialog.tsx`：工作台通用弹窗使用固定标题栏、独立滚动内容和固定底部操作区；移动端底部包含安全区域，桌面操作右对齐。组件统一处理遮罩、滚动锁定、Escape 关闭、初始聚焦、Tab 焦点循环和关闭后回到原操作位置；弹窗内输入内容时不能重启焦点锁，避免备注、说明、城市等输入框在连续输入时失焦。
-- `dashboard-segmented-tabs.tsx`：订单、任务、佣金、审核等板块内切换按钮。
-- `components/dashboard/tasks/task-ui.tsx`：任务状态、目标角色、搜索筛选和信息块；状态外观复用全站 `StatusBadge`。任务展示与输入校验位于 `tasks-display.ts`，技术错误到日常提示的映射独立位于 `tasks-error-messages.ts`，两个文件都保持在 400 行以内。
-- 大型业务文件按契约、展示和状态副作用拆分：订单表单属性位于 `admin-orders-form-dialog-types.ts`，佣金分页及详情展示工具位于 `admin-commission-record-utils.tsx`，个人中心资料刷新流程位于 `dashboard-shared-my-refresh.ts`；页面和 view-model 主文件保持在 400 行以内。
-- `workspace-header-actions.tsx`：顶部公告和头像菜单入口；语言切换由工作台外壳排列。
-- `announcements/`：管理员全局公告管理列表、筛选、发布和下线，不挂在旅游业务或批发业务下。
-- `dashboard-home/`：各角色首页先显示岗位常用入口，并按账号当前开通的业务范围隐藏无权使用的入口；问候、当前时间、个人邀请码、公告和个人待办仍作为可重复放置的首页组件呈现。小于 1280px 时按账号已保存的组件数组顺序自动排列，390px 单列，640–1279px 两列且问候、待办和公告跨两列；“管理首页”弹窗可以添加、移除、恢复默认和调整先后顺序，尺寸继续由当前屏幕自动决定，不读取或改写桌面坐标。1280px 起使用账号保存的五列坐标、拖拽、边缘缩放和按钮式位置/尺寸调整。布局策略、保存状态 hook、组件卡片、桌面侧栏、窄屏管理弹窗、调整弹窗和内容渲染拆在同层模块中；时钟刷新、邀请码复制、待办查询、保存反馈、弹窗和展示继续拆分，不放进首页 Client/Page。
-- `operator-reimbursements/`：运营报销页面；页头、运营与周期筛选、汇总、分页明细、新增及报销确认弹窗、查询调度、表单状态、写入状态、文案映射与显示工具按职责拆分，Client 只负责组装。
-- `ai-assistant/`：右下角工作台助手浮窗、聊天状态、流式消息和结汇确认动作；普通问答继续使用文字流，结汇指令由 `lib/ai-assistant/settlement-release-command.ts` 的固定规则解析，客户匹配与发布边界放在独立服务模块，确认状态和确认卡分别放在同层 hook 与组件中。`DashboardPageShell` 在固定入口出现的宽度预留右侧安全带，指标、表格操作和长文字不能被入口遮挡。助手名称和产品名从公司配置读取。
-- 工作台助手的普通问答和批发订单评估共用每用户额度：10 分钟最多 10 次、滚动 24 小时最多 100 次、同时最多 2 个请求。两类 AI 请求体都限制为 64 KiB；结汇指令在调用模型前由服务端固定规则识别，不消耗 AI 额度，也不允许模型直接写入财务数据。超量或操作频繁时页面只显示日常语言提示。
-- `lib/account-switcher.ts`、`lib/account-switcher-actions.ts` 与 `lib/account-switcher-storage.ts`：个人页和顶栏共用的本机常用账号动作及浏览器保存边界，不保存密码，不写数据库。
-- `business-vip/`：当前只提供批发 VIP 的精简客户列表、直接开通/续费按钮和独立操作记录表。批发 VIP 每次开通或续费都按 200 USD 年费记录，不产生业务员 VIP 佣金。Client 只组装页面区块，筛选、弹窗、提交和反馈状态进入 view-model；旅游请求在服务端边界直接返回停用错误。
-
-主要业务模块：
-
-- `admin-people/`：管理员全局账号管理，只处理登录账号、身份、状态、城市、备注和推荐码基础信息，配合 `lib/admin-people*.ts`。
-- 管理员修改人员角色、状态、城市和业务范围时，页面快照由 `admin_update_person_account_bundle` 在单个数据库事务中核对并提交，回执必须包含审计编号和最终业务范围。浏览器账号不能直接修改身份与状态列，停用管理员也不能凭旧登录状态恢复自己。Auth 登录资料由独立补偿记录跟踪；同步尚未完成时页面显示部分完成。
-- `tourism-people/` 与 `admin-orders/`：保留的旅游代码资产，当前不注册到启用业务导航或 renderer 调用路径。
-- `exchange-rates/`：内部账号共用的全局汇率页面，服务端按当前数据库身份选择管理员维护模式或普通内部账号只读模式。每天自动获取币种、当日手动获取、按日期补充、新增、编辑和删除只向管理员渲染；页面 Client 只连接页头和现有区块，查询、mutation、权限、view-model、弹窗和历史列表继续由同层模块及 `lib/exchange-rate-*.ts` 分担。
-- `business-settings/`：当前只组装批发订单业务员提成和批发客户推荐佣金区块。
-- `admin-tasks/`：根 Client 只维护路由页签、任务/审核/媒体库三个长期 view-model 和页面外壳；三个 board 组件分别组装当前任务、任务审核和媒体库，创建、编辑、详情、改派和删除继续位于各自同层模块。三个 view-model 始终常驻，因此切换页签不会清空既有筛选和草稿状态。
-- `salesman-tasks/`：内部成员任务接收、提交审核和成果附件。
-- `admin-reviews/`：全局审核中心使用的资料修改、隐私审核、媒体审核和智能初审展示；任务审核仍放在管理员任务板内切换。
-- `commission/`：普通佣金、任务佣金和结算操作。
-- `referrals/`：共享推荐关系读取边界，默认业务为批发，并在调用 RPC 前校验业务已启用；批发推荐树由 `components/dashboard/wholesale/` 下的独立模块展示。
-- `wholesale/`：批发业务模块，包含批发订单、Order List 附件、分批结汇记录、结汇发布、物流永久档案、客户管理、批发推荐树、客户推荐佣金和业务员提成；订单类型、页面查询、范围裁剪、附件 mutation、附件权限 hook、弹窗和表格各自使用同层模块，角色能力集中在 `lib/wholesale-role-permissions.ts`，管理员额外可查看批发人员管理，不复用 `admin-orders/`；批发 VIP 使用独立客户权益模型，不复用旅游 VIP 表。物流页面协调组件只组装汇总、筛选、档案列表和店铺归属弹窗，查询、筛选 hook、归属 mutation、桌面表格、移动卡片和显示工具分别放在同层模块及 `lib/wholesale-logistics-page.ts`。`useWholesaleActions` 只组合共享 action runner 与订单、附件、推荐/佣金、客户 action 模块，不直接承载具体请求。
-- 批发写操作统一返回 `Promise<boolean>`：数据库确认成功返回 `true`，失败返回 `false` 并保留弹窗、表单输入和已解析文件。共享 runner 统一维护 `pendingKey` 与页面反馈；一般批发页面成功后使用服务端刷新，订单页和物流页只刷新当前筛选所需的数据。店铺归属使用操作级 pending key，保存一条归属时不会锁住整张页面。失败反馈固定显示在弹窗遮罩上方，页面文案只使用用户能直接理解的说明。
-- `lib/exchange-rates.ts` 是汇率轻量导出入口，实际实现按类型、权限、查询、写入、显示计算和错误解析拆分；汇率页面最多读取 1000 条记录，并先按 `rate_date`、再按报价时间倒序判断最新值，刚补充的旧日期不能覆盖业务日期更晚的汇率。`lib/wholesale-order-assessment.ts` 只导出输入筛选、汇总提示和类型；`lib/team-management.ts` 只导出团队类型、查询、写入和 RPC 响应归一化。新增调用仍使用这些稳定入口，不添加旧实现 fallback。
-- 批发业务可以使用独立数据模型和页面模块，但页面视觉必须复用统一工作台的页头、面板、表格外框、筛选输入、Select 和空状态组件；`wholesale-ui.tsx` 只保留与批发数据展示有关的轻量结构，不能包装基础选择控件或单独建立另一套卡片风格。
-- `team-management/`：团队创建、成员维护、客户结构和团队详情。
-- `dashboard-shared-my/`：个人中心、账号中心、资料、认证分区和“常用账号”入口。
-
-拆分规则：
-
-- `Client` / `Page` 组件只负责组装和调度。
-- 动态业务 Page 只解析路由、区分未知业务与已知停用业务、校验工作区业务访问并调用启用业务的 `WorkspaceSectionRenderer`。renderer 负责查询参数、领域查询、文案命名空间和 Client 选择。
-- 查询、mutation、权限、表单状态、弹窗、表格渲染和文案映射不要继续堆在同一个核心文件里。
-- 客户端核心文件保持在 400 行以内；接近上限或出现 3 个以上独立职责时，拆成 `queries`、`mutations`、`view-model hook`、`dialog`、`section/table` 或 `display-utils`。页面 Client 只连接共享外壳、访问状态和业务区块，推荐关系、佣金、VIP、人员目录与设置规则等页面的数据刷新、筛选、分页、弹窗和写入状态均由同层 view-model 承接。共享文案只接受当前 `next-intl` 文案契约，不提供旧字符串或内置双语兼容入口。
-- 新增功能默认新建同层模块；只有极小改动才允许补进现有文件。
-- Client/Page 入口只负责读取路由、权限和组装页面；业务差异优先放进业务模块清单、同层业务组件或 `lib` 查询/mutation/display-utils，不继续堆进页面入口。
-
-## 当前关键业务规则
-
-- 注册页是四步向导：可选邀请码、业务选择、邮箱/用户名/可选手机号、密码与条款。每步只校验当前内容，返回时保留填写值；步骤使用方向感知的淡入滑动和高度过渡，并遵守系统的减弱动画设置。
-- 自助注册永远创建正常状态的 `client` 客户角色，当前只开通批发业务，完成现有邮箱验证后再登录。最终提交会再次校验邀请码和业务启用状态。
-- 手机号不是必填项。国家/地区区号使用可搜索完整列表，默认国家从浏览器语言推断；填写手机号时按国家校验并保存 E.164，留空时保存 `NULL`，不单独存无意义区号。
-- 系统仍认识 `tourism` 和 `wholesale` 两个业务键，但当前启用清单只有 `wholesale`。旅游组件只作为保留代码资产存在，不能从导航、路由、注册、接口或 AI 引导进入。
-- 恢复旅游必须新建后续数据库迁移把旅游状态设为启用，再在 `lib/company-config.ts` 的启用清单加入 `tourism`，随后完整运行数据库、静态检查和 Playwright 验收。已发布迁移不得回改。
-- 运营报销记录是运营全局页面。有效运营可查看彼此的已报销及未报销记录，默认查看“我的记录”，也可筛选全部或指定运营，明细显示所属运营姓名。查阅同事时仅提供查看入口；新增、删除未报销记录及确认报销仅限本人，并由数据库校验。公开读取和确认 RPC 通过安全包装进入私有实现；即使 `private` schema 不向普通登录会话开放，运营页面仍可使用，而私有函数本身继续拒绝直接调用。周期按上海时区每月 25 日至次月 24 日计算。“确认报销”弹窗列出本人当前及历史待报销周期，优先当前周期，否则选择最近的待报销周期；确认前显示该周期完整笔数与金额。确认 RPC 必须返回同一周期、正数影响条数和正数实际金额；影响 0 行、周期不一致或金额无效时保留弹窗并显示错误，不能以“没有待报销记录”显示绿色成功。历史补报不设截止时间，保留费用日期与原周期，报销时间为实际操作时间。费用日期按上海业务日期显示，报销时间和更新时间把完整时间戳转换为上海时间并显示到分钟，无效值显示 `-`。关键词停止输入 300ms 后才查询，运营、周期、状态和分页立即查询，恢复筛选会取消尚未执行的关键词查询；保存、删除或确认报销后的刷新始终使用页面当前生效的筛选，较早请求不能覆盖新结果。列表搜索及状态筛选不改变确认范围。列表由服务端按每页 20 条分页，费用汇总随运营筛选变化，周期选项与汇总不受当前页或 200 条上限截断。已报销记录保留作为凭证。
-- 新批发业务保留在同一个后台壳内，但不复用旅游订单结构；批发客户、订单、订单修改记录、结汇发布、物流永久档案、店铺历史归属、客户推荐佣金、业务员提成、推荐关系和 VIP 权益分别走独立模型。物流使用 `wholesale_logistics_records`、`wholesale_logistics_store_assignments` 和服务端同步状态，不再关联批发订单。
-- 业务入口不由管理员页面实时开关。管理员、财务、业务员、明确分配批发业务的运营账号及拥有批发权限的客户进入批发业务；只有旅游权限的账号保留登录会话并进入停用说明页。
-- 批发客户与人员管理分开：客户管理维护批发客户，人员管理只在管理员工作台展示可承接批发客户和订单的业务员账号。
-- 批发客户管理中，管理员和业务员都查看全部批发客户、全部批发业务员资料，以及已经绑定批发客户的注册账号资料。批发客户以客户唯一标识名称作为业务上的唯一客户名，可以先不绑定系统账号，由业务员登记联系方式、其他名称和客户来源；后续可以在客户详情里通过“新增名称”继续补充更多昵称、店铺名或对账名称。管理员和任一业务员都可以编辑客户唯一名称、其他名称、联系方式、来源、关联业务员和备注，也可以在有效批发业务员之间转派；未产生批发订单的客户可以删除，已有批发订单的客户不能删除。客户完成注册后，管理员或任一业务员可以在客户详情里选择符合条件的注册账号进行关联合并，系统不会新建第二个批发客户记录，而是把注册账号绑定到原客户并开通批发业务可见权限，客户登录后可以查看同一客户名下的订单、推荐关系、佣金和 VIP 权益。批发推荐树以“公司”作为唯一主分支，所有已创建批发客户都会出现在公司下方；已有客户之间的推荐关系继续作为客户下级展示，展示层的公司节点不写入推荐关系表，也不参与推荐佣金计算。
-- 批发客户、批发订单、结汇发布、客户推荐和物流店铺归属的写入权限以数据库为准。管理员和业务员可以查看全部物流档案并设置店铺归属；财务可以查看全部物流档案但不能修改；客户、经理、运营、地推和招聘不显示物流入口，也不能直接读取档案。物流档案不再关联批发订单。
-- 管理员、财务和业务员沿用现有数据范围，可以直接修改任意录入时间的批发订单。每次修改都会保存修改前后内容和操作人；待结算提成随订单金额、成本、客户和业务员变化重新计算，已结算提成的整条记录保持不变。
-- 批发客户合并注册账号时，管理员和业务员都可以选择邮箱已验证、未停用且尚未合并过的客户账号，不再按邀请人限制候选范围。合并后由数据库开通该客户账号的批发业务可见权限。
-- 批发客户管理提供管理员“添加客户”弹窗，只显示邮箱已验证、未停用且尚未加入批发业务的客户；添加时自动创建并绑定批发客户档案，重复操作保持幂等。旅游业务追加在 Web 与数据库中均被拒绝。
-- 批发订单和客户分配时，可选承接人只包含已开通批发业务的业务员，不包含地推账号。
-- 批发 VIP 作为批发业务的独立侧栏板块展示。管理员和业务员可以为任一批发客户直接开通或续费；开通从当天开始向后记录一年，续费按当前结束时间延长一年，两类操作都会再次弹窗确认，并按 200 USD 年费写入操作记录，不生成业务员 VIP 佣金。客户列表只保留客户、当前状态和操作入口；页面下方单独展示 VIP 操作记录，点击客户可查看该客户全部开通和续费记录。
-- 批发订单字段包含订单编号、客户名、关联业务员、订单状态、下单时间、最近结汇时间、小单数量、产品采购金额、打包费、国际运费、其他费用、推荐佣金费用、快递公司、结汇进度、平均结汇汇率、结汇记录、客户支付币种、客户支付金额、人民币金额、收款平台、毛利率、服务费、CN税费、付款手续费、备注和订单计入月份；订单编号由数据库按旅游订单同一套每日序号规则自动生成，打包费按 `小单数量 * 3` 自动计算。未结汇订单不提前记录结汇汇率，人民币金额、毛利、毛利率和业务员订单提成在结汇后计算。新建弹窗为每次保存草稿生成独立请求编号：网络重试或连续提交同一编号只返回原订单，不同请求编号仍允许创建内容相同的两笔真实订单。
-- 客户订单权限只按批发客户档案的注册账号绑定关系判断，不能通过建单人或业务员字段读取其他客户订单。客户浏览器不能直接读取批发订单和结汇记录底表；受控订单接口只返回本人订单的外部可见字段。客户列表和详情展示订单金额、物流公司、负责业务员和 Order List 附件，不展示成本、毛利、结汇或订单计入月份；内部角色继续按现有权限查看完整订单字段和业务评估。
-- 每笔批发订单可以保存最多 10 个 Order List 附件，只接受 CSV、XLS 和 XLSX；单文件不超过 20 MB，单笔订单附件合计不超过 100 MB。管理员、财务可以管理可见订单附件，业务员可以管理任一业务员订单的附件，其他内部只读角色和订单所属客户可以下载但不能上传或删除。附件保存在私有 `wholesale-order-lists` bucket，下载时临时生成签名地址。
-- 新建批发订单时只记录客户支付币种、客户支付金额、成本费用、收款平台和订单月份，不使用历史汇率折算人民币金额。客户支付币种从当前可用币种中选择，结汇汇率在订单结汇时确认。
-- 批发订单状态分为“未结汇”“部分结汇”和“已结汇”；新建订单默认未结汇，下单时间与订单号生成时间一致。任一业务员或管理员可以在订单列表中登记多笔结汇记录，每次填写本次结汇金额和结汇日期；日期可以使用当天，也可以指定其他日期，系统按所选日期中行买入价对应的公司成交汇率计算本次人民币金额。所选日期没有汇率时，需要先到汇率设置中补充，结汇弹窗不手动填写汇率。
-- 一笔订单的多笔结汇记录会累计展示结汇进度。累计金额小于客户支付金额时，订单显示“部分结汇”，人民币金额显示已结汇记录累计人民币金额；累计达到订单客户支付金额后，订单自动变为“已结汇”，平均结汇汇率按已登记记录加权计算。订单已有结汇记录后，不能再修改客户支付币种；如果调整客户支付金额，新的金额不能小于已结汇累计金额。
-- 结汇发布是订单结汇之外的协作入口。财务和管理员既可以在批发业务的“结汇发布”页面填写，也可以向工作台助手发送一笔结汇指令，例如“Voltria付款$708.27 备注 月度回款”。助手支持付款、到账、收款、结汇及对应英文说法，币种支持 USD、CNY、EUR、JPY、AUD 及常见符号或中文名称，金额可以带千分位；日期支持今天、昨天、完整年月日和月日，未填写时使用上海当天。一条消息只能包含一笔金额，缺少客户、币种或金额，以及日期无效或内容有歧义时只提示补全，不发布记录。
-- 助手会用去除首尾空格、不区分大小写的完整名称匹配批发客户唯一名称和其他名称。唯一命中时确认卡展示正式客户名，未命中时按输入名称展示临时客户，命中多个客户时停止并要求改用唯一名称。确认卡展示输入名称、发布客户、金额、币种、收款日期和备注；只有用户点击“确认发布”后才调用原结汇发布权限边界，取消不会写入。发布失败时保留卡片供重试，同一用户重复确认同一请求只保留一条记录；同一请求标识对应不同内容时拒绝发布。普通助手消息的模型历史只保留可读摘要，不携带确认卡内部字段。
-- 每条结汇发布记录包含金额、币种、收款日期和备注。管理员和业务员可以把一笔收款分配到同一正式客户的一笔或多笔同币种批发订单，也可以只分配一部分并把余额留在原收款记录中，等后续订单产生后继续分配。弹窗默认按下单时间从早到晚填充订单，用户可以逐笔修改；单笔金额不能超过该订单扣除其他结汇后的可分配金额，分配合计不能超过本笔收款。发布时已经选择正式客户的记录会锁定客户；只手填客户名称的记录需要先选择正式客户，整组调整时仍可以重新选择，并重新生成该客户的分配草稿。每次保存、清空或调整都按整笔收款原子执行，并使用修订号拦截过期页面覆盖；旧分配保留为撤销记录用于核对，当前有效分配各自生成订单结汇记录。本次要新增、改额或移除的订单若已有已发放提成，整组保存会被拒绝，必须先处理已发提成；已经发提成但分配金额完全不变的旧订单不会阻止把剩余收款继续分给新订单，清空全部分配则仍会拦截。财务和管理员只能取消尚未分配的收款；业务员不能发布或取消收款，财务不能分配订单。助手仍只负责发布收款，不自动选择或分配订单。
-- 结汇发布页的“本月未分配金额”按收款日期（`received_on`）归月，以上海时间确定本月月初和下月月初，包含月初当天、排除下月月初当天。汇总当前用户可见的本月收款余额，扣除全部当前有效分配，排除已取消、已全部分配及余额不大于零的记录；已撤销的分配不再扣减余额。录入、处理或分配发生的日期不改变收款所属月份，例如 10 月 29 日收款、11 月 1 日录入的未分配余额不计入 11 月。不同币种分别展示，统计不受列表搜索、处理状态筛选和分页影响；分配、调整、清空或取消后随整页刷新重新读取。
-- 结汇发布页另显示“本月已分配金额”：按上海时间月初至下月月初统计当前有效且在本月创建的分配，不按收款日期归月，也不计入已撤销记录。美元原额直接相加，其他币种按分配时锁定的原币兑人民币汇率和收款日精确的美元兑人民币汇率折算；数据库对可见全量记录汇总，不受页面筛选或列表数量影响。任一笔缺少对应美元汇率时，整个卡片显示“暂无法计算”和缺口数量，不展示不完整合计；查询失败也不伪装成零。保存、调整或清空分配后整页刷新重新读取汇总。
-- 批发订单的毛利、毛利率和业务员订单提成只在订单全部结汇后计算；部分结汇阶段只展示已结汇人民币金额，利润和提成等待全部结汇后统一确认。
-- 批发毛利按 `客户支付人民币金额 - 产品采购金额 - 国际运费 - 打包费 - 其他费用 - 推荐佣金费用` 自动计算；全款收齐后，老客户按正毛利乘以锁定比例、新客户按服务费乘以锁定比例计算业务提成。新版本只影响之后创建的订单，既有订单保留原版本；历史费用和提成仅由本次受控迁移统一切换并重算。
-- 批发客户推荐佣金按月统计，同一被推荐客户当月佣金由两套规则相加：每笔批发订单先按该订单创建时锁定的订单金额佣金版本分别计算，再按月汇总；月度运单奖励按上海自然月第一天可用的版本计算，新奖励只能预约到下一个上海自然月首日。现有迁移基准值为订单人民币金额 `2%`，运单数量达到 `200` 单奖励 `50 USD`、达到 `1000` 单奖励 `200 USD`、达到 `5000` 单奖励 `500 USD`。美元奖励按当天 USD 公司成交汇率折算；缺少汇率或可用参数版本时整项显示“暂无法计算”，不能用写死金额或零值代替。运单数量来自永久物流档案：按订单下单时间匹配当时有效的店铺客户归属，再按客户、月份和非空物流号去重；未关联批发客户的店铺不参与，后补客户归属后按确认区间重新计算。
-- 普通业务订单、批发订单和批发物流统一使用同一套订单筛选卡、日期快捷工具条、精确查询提示、列表卡和列表底栏。默认范围为北京时间最近 30 天，开始与结束日期始终必填；各页面都在筛选卡底部显示最近 30 天、本月、上月、最近 3 个月和自定义范围，恢复筛选会回到默认范围。批发订单的后台筛选另提供可清空的“计入月份”，选择后会与下单日期、状态、客户和业务员共同限制列表、统计与分页；全历史精确单号查询会绕过这些普通条件。列表底栏在桌面端左侧显示已加载数量、右侧显示翻页或继续加载，移动端上下排列；加载完成后仍保留数量提示。列表、统计、关联记录和分页都在数据库按同一范围查询。全历史查询只通过用户显式提交的完整单号执行等值匹配，不允许模糊关键词绕过日期范围。
-- 结汇放款匹配使用“先选客户，再选订单”；订单选项显示“订单编号 · 原币订单金额”，按下单时间和订单 ID 倒序稳定排列。物流档案不使用订单选择。批发订单默认读取首批 20 条，使用下单时间和订单 ID 组成稳定降序游标；页面显示“已显示 X / 总数”，点击“继续加载”追加下一批且不能重复或遗漏。筛选由数据库对当前账号可见的订单范围执行，覆盖订单号、客户、业务员、快递、备注；客户搜索不使用收款平台。
-- 批发订单后台桌面端默认显示订单号、客户、下单时间、订单金额、物流公司、结汇进度和操作七列；点“查看详情”可查看费用、利润、结汇和附件，点“查看全部字段”仍可使用完整横向表格。客户桌面端使用独立的六列表格。390px 等移动宽度使用订单卡片和带焦点锁的详情弹窗，概览默认折叠且标题与当前筛选周期一致；客户卡片只显示订单金额、物流和负责人。页面本身不能横向溢出。物流管理按对应板块规则展示。
-- 客户账号的批发订单数据范围已经固定为本人，因此批发订单筛选区不显示“客户”选择框；“计入月份”属于内部经营字段，客户页面同样不显示且服务端拒绝客户自行构造该条件。管理员、业务员等后台角色仍可使用这两项筛选。
-- 订单核心查询失败时页面必须显示加载失败和重试入口；结汇或修改记录等关联查询失败时显示对应局部提醒，不能用“暂无记录”掩盖失败。订单页只查询本板块所需的客户、账号、汇率、修改规则和当前订单批次，不读取物流永久档案。
-- 物流模块只查询主系统永久档案，不直接依赖店小秘 30 天来源窗口。归档保留来源订单 ID、包裹号、店铺、下单时间、物流号、物流商、状态、国际运费原始金额/币种和各来源最后可见时间，不保存收件人、电话、地址或商品详情。来源后续删除历史订单时主系统不删除；迟到或修正的物流与运费会更新原包裹。
-- 物流页面按业务员、店小秘店铺、开始/结束日期、有无运费及包裹号/物流号/店铺关键词筛选，固定每页 50 条并使用下单时间与记录 ID 稳定继续加载。紧凑摘要第一层显示订单总数、已记录和缺少运费，最近更新时间作为弱化元信息，各币种国际运费在第二层完整展示；`CNY` 与 `RMB` 合并，其他币种分别计算，负数作为有效退款或调整计入，NULL、空值和 0 都标记为红色“缺少运费”。
-- 店铺归属可无限关联多个店铺，使用不重叠的生效时间区间保存业务员和可选批发客户。店铺转交后历史订单仍匹配原业务员；默认补充客户覆盖当前归属区间，也可以从指定日期拆分区间。页面失败时保留选择，桌面表格和 390px 移动卡片都保留缺失运费提示。
-- 未开通批发业务的有效账号即使手动输入批发地址，也只会看到工作范围提示并可返回自己的首页，不会被退出登录。
-- 外侧设置保留汇率设置；批发业务参数中心只维护三组已接入的批发参数。发布、取消和恢复都由数据库复核在职管理员身份、预期修订号和重复请求编号，并返回版本编号、生效时间和版本 ID；页面完成独立回读且数值、版本、生效时间全部一致后才显示成功。旅游业务设置不再提供入口。
-- 全局账号管理只展示已完成邮箱验证的账号；账号列表只直接展示账号、身份/状态、城市、我的备注和操作，推荐码、推荐人、团队、直接推荐人数、创建时间等基础资料通过点击账号后的详情弹窗查看；账号身份、状态和城市只在这里调整，客户标记、VIP、订单、佣金、物流等业务资料不进入全局账号页。
-- 管理员调整账号时，角色、状态、城市、业务权限和审计记录由一次数据库事务提交；登录资料同步失败会显示部分完成，并在该账号详情中提供“重试更新登录信息”。待处理状态存于数据库，刷新页面后仍可继续处理。
-- 批发业务客户管理可以新增、搜索、筛选、查看批发客户，客户详情支持编辑客户资料、继续新增其他名称、删除未产生订单的客户，并与注册账号关联合并；批发业务人员管理只在管理员工作台查看批发承接人账号，业务员不显示该板块。VIP 开通、续费和有效期调整进入批发 VIP 管理。
-- 人员管理和客户管理里的“我的备注”按当前登录账号单独保存，只显示给填写人本人；管理员、业务员和地推只能给自己可见的账号或客户填写或清空备注。
-- 个人资料中姓名和城市按资料修改规则处理：管理员修改自己立即生效，其他角色提交后进入管理员审核。资料更新、申请提交和管理员审核都必须返回同一用户或申请编号、目标状态及提交字段；影响 0 行或返回旧字段时页面显示失败。写入已确认但资料重读失败时显示“个人资料已保存，页面内容正在刷新”，并保留表单，不能覆盖成绿色成功。
-- “我的”页的个人照片和视频提交面向所有有个人中心的角色；地推账号与业务员一样可以提交和删除自己待审核的个人媒体。上传必须核对 Storage 返回的准确路径、逐个确认对象存在、核对数据库媒体编号，并把上传完成与图片审核完成分开展示；删除必须在操作运行中记录防重复编号、核对准确删除数量，并在逐个确认 Storage 对象已经不存在后才显示成功。HTTP 200、数据库记录已删或页面提示都不能单独作为媒体操作完成凭证。
-- 照片或视频上传遇到网络故障时显示可理解的重试提示，保留本次选中的文件和幂等编号；明确超限等业务拒绝显示具体原因。重试仍需完整业务回执才能显示上传成功。
-- “我的”页可在同一浏览器保存 1 个额外常用账号；顶栏账号菜单可直接切换，尚未添加时进入添加登录流程，失效时进入目标账号重新登录流程。添加或重新启用都必须重新登录，重新登录必须匹配目标账号，成功切换会刷新 30 天有效期。超过 30 天后继续显示账号信息，但会删除失效会话并要求重新登录。
-- 邮件工作台固定显示在管理员和业务员左侧工作栏，地址分别为 `/admin/mail` 与 `/salesman/mail`；其他角色无入口且接口拒绝。全公司只连接 `chinapt5@gmail.com`，业务员只绑定飞书并使用系统界面。业务员只能读取自己负责的正常会话，当前负责人可转交给其他启用业务员，也可把本人会话移入隔离区；管理员可查看全部、待指派、隔离区、收件规则、人员配置、邮箱健康和 AI 报告。新建邮件使用紧凑标题区，收件人、主题和正文紧随其后；窄屏点击“新邮件”会把编辑器带入视口，避免被邮件列表或空白占位遮住。
-- 邮件首屏只等本人发件资料、摘要与核心会话。全员配置、统计、隔离区和规则在页面出现后分别加载，各自限时 30 秒并提供失败重试；失败不清空已显示会话，重试不覆盖已加载面板的编辑。业务员的转交名单只返回启用人员编号及姓名，不开放其他人的私有发件设置。
-- 收件来源使用“公司已联系客户”硬门槛，只接收系统已经成功发送并在 Gmail `SENT` 中复核过的 To/Cc/Bcc 地址来信。原 Gmail 线程回复沿用当前负责人；同一已知邮箱在独立线程来信时，历史有效负责人只有一人则自动分配，存在多个负责人、没有负责人或负责人已停用时进入待指派。收件地址只保存带密钥的盲索引；公司主邮箱及其加号别名不会被登记成客户。
-- 陌生邮箱来信会在正文和附件解析前结束，不创建会话、邮件、Ref、通知、未读、AI 或统计记录，也不会出现在隔离区。系统只保存不可逆 Gmail 编号、忽略原因和审计编号，用于重复 Push 幂等；Gmail 原件保持不变，收件游标正常推进。管理员放行规则不能绕过来源门槛。
-- 已知来源通过门槛后，收件过滤仍只改变 PT5 工作台数据，不修改 Gmail 规则、标签或邮件原件。明确放行优先于明确隔离；其后才保护已有正常业务会话并识别带 `List-Unsubscribe`、`List-Id` 或 `Precedence: bulk/list/junk` 的群发邮件。自动回复标记本身不会触发隔离。隔离邮件继续加密保存，但不会指派、生成新 Ref、发送飞书提醒、计入待办/时效/人员分布或进入 AI 上下文；管理员恢复时重新核对已联系来源并路由，删除系统副本仍保留 Gmail 原件。
-- 管理员可维护发件邮箱、发件域名和主题关键词的放行/隔离规则，并批量隔离、恢复或删除系统副本。规则内容加密保存，浏览器角色不能直接访问规则表。批量请求逐条携带预期版本；任一会话过期时整批不写入，规则创建仅部分完成时页面明确显示部分失败。历史维护入口 `/api/mail/tasks/recipient-maintenance` 仅接受 `MAIL_TASK_SECRET`：先用 `prepare` 幂等回填已有成功发信收件人并取得精确预览令牌，再用该令牌执行 `purge`；范围变化会拒绝删除，部分删除返回 `partial_failed`。
-- 管理员和业务员的别名及 Ref 前缀在首次使用时按账号名称自动生成；中文或无效名称回退到登录邮箱前缀，再回退到稳定的用户短码。重复值追加稳定短码，别名最多 40 位、Ref 前缀为 2–16 位大写字母数字。每个人可修改或恢复自己的建议值，管理员可修改所有发件人员；账号名称后续变化不会覆盖已保存设置。发件显示名与签名都以带认证标签的密文保存，签名可以留空且仍能正常读取。管理员和业务员只要发件资料已启用即可新建或回复邮件；会话负责人仍只能指派给启用的业务员。
-- 邮件新建和回复支持 To/Cc/Bcc、最多 10 个附件、独立签名和 Ref。页面提交后保持“正在发送”，只有 Gmail 返回 message/thread ID 且系统再次确认消息位于 `SENT`，才显示发送完成；HTTP 2xx、任务入队或按钮提示都不是成功。附件经服务端加密私有存储和安全检查，下载必须重新执行会话所有权校验。管理员删除只清理系统密文和附件，Gmail 原件保留。
-- 邮件发送前保存稳定的 Message-ID 和派发标记。派发结果不明时只按 Message-ID 查询 Gmail 已发送记录，不直接再次投递；多次无法确认会停在部分完成并要求人工核对。页面为同一次草稿保留发送标识与任务编号，超时或刷新后用“继续核对”查询原任务。邮件会话与隔离区固定每页 20 条，使用上一页、下一页、页数和完整数量；未读及其他条件在分页之前筛选，同时间记录按 ID 排序。翻页会清除上一页勾选，删除末页最后一条后回到有效页。报告全量数字由数据库聚合，代表性正文最多取 100 条。收件邮件、附件登记和提醒由数据库事务统一提交，不支持的来信保存无正文拒绝凭证后继续处理后续邮件。
-- 管理员连接公司邮箱后返回邮箱设置页，显示成功、失败或部分完成。成功须先确认完整授权保存，再核对邮箱启用状态、授权凭据和有效的新邮件通知；短期 HttpOnly 签名凭证绑定当前管理员与本次授权，刷新页面仍重新核对真实状态。成功回调再次访问只核对原结果，不重新交换令牌；失败或过期的旧链接需要从连接按钮重新发起。页面只展示固定的日常语言提示，不透传 Google 或数据库异常。
-- 邮件草稿按当前登录账号保存在浏览器会话中，站内离开、返回和刷新后恢复正文与已登记附件；明确的收件人、附件或内容超限拒绝会释放本次发送标识，修改后可重新提交，结果不明时保留原标识继续核对。邮件 JSON 接口先验证登录再按大小限制读取内容，超限会提示缩短文字或减少附件。撰写、会话和发件设置分别由独立模块管理。
-- 回复建议由业务员手动触发并写入可编辑正文，不会自动发送；管理员报告的数字先由 SQL 计算，模型只负责归纳。两类 AI 调用都复用站内额度租约、完整流结束校验和运行账本，正文为空、流中断、超时或账本未保存时不得显示完成。
-- 公告按发布对象和当前账号角色过滤；管理员管理页可维护全部公告。
-- 首页由可自定义组件组成，1280px 起按 5 列固定坐标摆放，最大尺寸统一为 `5 × 5`，最小尺寸按功能分别限制：问候 `2 × 1`、待办 `3 × 3`，公告、邀请码和时间均为 `2 × 2`。这些下限保证待办快速添加与筛选、不同角色的邀请码复制操作、日期及时区等内容仍可使用；鼠标缩放、调整弹窗、默认布局和布局归一化共同遵守同一套限制。编辑后桌面端原左侧功能栏会切换为添加组件侧栏，一行高或一列宽的组件改为只显示图标、名称、尺寸和管理操作，两行及以上组件用独立工具栏与预览区，业务内容不会再被删除或尺寸信息遮住。普通编辑状态保留轻微摇晃作为可编辑提示；鼠标靠近缩放边缘或编辑按钮、拖动组件、调整大小或打开调整弹窗时，摇晃会立即暂停，结束操作后自动恢复，系统开启“减少动态效果”时不播放摇晃。鼠标靠近边缘时显示贴边的小型标准缩放把手和当前边界，44px 透明操作区保证容易抓取但不会遮住内容。拖动大小期间只移动带尺寸信息的网格预览，真实组件和相邻组件保持原位，松开鼠标后才一次性落位并处理冲突；“调整组件”弹窗继续提供上下左右、加宽缩窄和增高变矮的键盘替代操作，到达组件下限或网格边界的按钮会自动禁用。新增、位置拖动和删除保留现有过渡效果；布局按当前登录账号保存，页面会明确显示正在保存、已保存或保存失败，失败时保留当前页面布局并允许重新保存。
-- 岗位首页的常用工作会显示实际待处理数，并将有待处理的入口排在前面：管理员与业务员显示待回复邮件，财务显示待分配结汇发布，运营显示本人未报销记录，客户显示待付款库存订单。数字与目标页面使用相同的数据范围；查询失败时省略数字，不显示误导性的零。手机和平板先展示自选组件与公告，岗位工作入口接在组件后面；宽屏则将岗位工作置顶。
-- 小于 1280px 的首页使用轻量管理：组件按照保存数组的先后顺序显示，同类组件重复添加时用“当前时间 2”一类名称区分；手机和平板可通过“管理首页”添加、移除、恢复默认、向前移动和向后移动，不设置独立宽高，也不改变桌面坐标。
-- 首页当前时间组件统一只显示小时和分钟。手机、平板和紧凑卡显示标题、时间、日期与时区，不重复显示模拟表盘；桌面大尺寸卡保留表盘。
-- 首页公告在紧凑布局中最多显示两条公告的标题与日期；个人邀请码读取当前账号的邀请码。业务员只生成批发业务注册链接，没有已启用业务的账号不加载工作台首页或邀请链接。
-- 首页个人待办只属于当前登录账号，支持新增、编辑、完成/恢复、删除、重要标记、截止日期、备注和全部/未完成/已完成筛选；重复放置多个待办组件时共用同一份待办状态；390px 下快速添加使用两行布局，标题独占第一行，截止日期、重要标记和添加按钮共用第二行，768px 起恢复单行；数据读取和写入通过 `lib/user-todos.ts` 与 Supabase `user_todo_items` / `create_user_todo` / `update_user_todo` / `delete_user_todo` 对接。
-- 任务领取、提审、审核和完成状态统一进入 `task_acceptances`；多人任务父任务只保留名额和进度。
-- 任务审核保留在管理员任务板内；已通过审核的成员上传文件集中进入“任务媒体库”，支持按任务、提交人和文件类型检索，图片、视频和 PDF 可站内预览，其他文件提供下载。
-- 任务附件策略统一由 `lib/task-attachment-policy.ts` 维护。
-- 个人照片上传后可进入智能初审；供应商未配置或返回需复核时仍进入人工审核。
-
-## 用户体验规则
-
-- 页面文案必须使用普通用户能理解的日常语言。
-- 用户可见文案禁止暴露数据库表名、字段名、状态码、bucket、RPC、JSON、同步请求等技术细节。
-- 高频工作页不长期展示操作教程、设备差异说明、列表内容复述、重复业务徽标或无状态含义的欢迎语。业务限制、权限原因、错误、空状态、截止时间、不可逆影响和真实运行状态继续保留，并放在对应按钮、字段、弹窗或状态附近；删除介绍后直接让筛选、状态、摘要和记录上移，不增加固定高度或装饰面板填空。
-- 每个工作页面只保留一个主要可见页名。页面名、标签页或状态切换已经说明内容时，内部面板不再重复显示“订单列表、费用记录、客户列表”等名称；同屏存在两个以上不同数据集或业务阶段时，保留用于辨认区域的分区标题。
-- 首次语言按已保存 Cookie、浏览器 `Accept-Language`、中文的顺序决定；用户手动切换后同时写入 Cookie 和 localStorage 长期记住，登录和角色变化不再覆盖选择。
-- 用户可见中英文文案统一维护在 `messages/zh.json` 和 `messages/en.json`；数据库错误只在展示层映射为日常语言，页面不直接展示函数名、字段名或技术错误。
-- 登录、语言切换、路由跳转、刷新、上传、审核和保存动作都要有明确等待反馈，并避免重复点击。批发订单的创建、修改和结汇必须先取得权威写入回执；局部重读完成前按钮保持禁用且同一个动作不能再次进入请求。写入已完成但局部重读失败时，明确显示“资料已经保存，页面内容正在刷新”，不能改报保存失败并诱导重复提交。
-- 页面首次进入和工作台路由切换使用克制的淡入与轻位移动效；认证页和工作台加载阶段使用与实际结构接近的骨架，不设置强制最短展示时间。
-- 按钮、链接、输入框、菜单、标签、弹窗、折叠区和状态提示复用统一反馈节奏；列表使用稳定实体 ID 做进入、退出与位置重排，前 12 项允许短错峰，长列表不得累积等待。
-- 所有动效必须遵守系统“减少动态效果”设置；减少动态时取消位移、缩放、扫光和长动画，但保留可理解的加载与状态反馈。动效不能延迟请求、导航或连续操作，也不能在退出后留下透明浮层拦截点击。
-- 工作台业务板块页头默认不展示统计小卡片；全局账号管理、各业务客户管理和人员管理保留人数和状态概览，列表只保留关键列，更多资料放入详情弹窗，其他板块以筛选、列表、表格和分段切换承载主要信息。
-- 工作台列表、筛选、反馈、权限状态、表单弹窗、确认弹窗、状态标签和文件选择使用共享结构；业务页面只提供字段、查询结果、权限和操作。桌面表格与移动卡片共用同一份数据和列表底栏，不能分别渲染数量或分页。
-- 完整业务记录列表统一采用页码分页，固定每页 20 条，底栏显示当前范围、完整数量、上一页和下一页；筛选变化回到第一页，末页删除后按真实数量纠正页码。空结果显示共 0 条并禁用翻页。加载时禁用翻页，读取失败保留错误提示和重试入口。首页摘要、表单候选、规则配置和详情弹窗中的小表格按各自用途显示。
-- 批发订单、物流、邮件会话、邮件隔离区、销售线索和运营报销在数据库端按页读取；订单与物流接口接收 `p_page`，固定返回 20 条，统计使用完整筛选结果，关联查询只读取当前页编号。公共查询状态位于 `lib/use-dashboard-query-page.ts`，底栏位于 `dashboard-collection-section.tsx`。
-- 客户、人员、VIP、推荐、佣金、库存、结汇、费用、公告和审核目录先读取完整可见集合，再由 `DashboardPagedRecords` 按 20 条显示；完整集合供现有统计、关系及操作候选使用。目录读取通过 `queryCompleteDashboardRows` 每批最多 500 条，查询必须以唯一编号结束排序，避免接口默认 1000 条或人为 200 条上限造成遗漏。VIP 客户与操作历史独立分页；推荐目录每页计入 20 个客户，并保留祖先名称组成的推荐路径。
-- Web 与相邻 Supabase 仓库的 `20260930185202_dashboard_numbered_pages.sql` 需要配套发布：先验证并应用数据库迁移，再发布使用新参数的 Web。此处的本地验证不代表已经上传或部署。
-- 创建和编辑表单提交失败后必须保留弹窗、字段和弹窗内反馈；危险操作必须经过工作台确认弹窗，Escape、点击遮罩和取消不能执行原操作，关闭后焦点返回发起按钮。
-- 汇率和批发业务设置分别从各自入口进入，页面顶部只保留对应页头；汇率页对可进入工作台的内部账号展示相同记录，管理员额外看到维护和获取区块。
-- 汇率获取统一使用 NowAPI 的中国银行（BOC）现汇买入列 `se_buy`：银行牌价除以 100 为原始买入汇率，公司成交汇率为原始买入汇率乘 0.99（6 位小数），人民币金额按成交汇率四舍五入到 2 位。人民币自身固定为 1；佣金按原业务公式计算，不重复扣减 1%。页面同时展示买入价、成交价与报价时间，人工录入填写每 1 外币的原始买入汇率和北京时间报价时间。
-- “立即获取”取今天最新有效报价；每日保持原 09:30 同步时间，同时补齐昨日的日末报价。“按日期补充”只接受昨天及以前、最多连续 31 天和 1–10 个币种；每个币种、日期分别检查历史列表完整性，取该北京时间日期最后报价。空买入列、日期不符、缺失条数或接口失败均列入未完成。同币种同日期保持同一记录编号，旧报价不覆盖新报价；缺报价时阻止计算。
-- 管理员汇率页提供“历史重新核算”：先自动补齐真实业务日期的历史报价，再保存逐笔预览，核对后执行。启用前必须在服务端保存美元、欧元当日及历史报价与中行官网相同发布时间的核对凭证。执行检查预览令牌和记录版本，逐笔订单及关联结汇、分配和佣金在同一事务内修改，失败回滚该笔。原成本、参数版本、人员关系、外币金额、记录编号和佣金结算状态保留，已结算佣金也重新核算金额；不发起付款。页面展示原金额、新金额、差额、引用报价、佣金编号和实际影响行数，刷新读取相同凭证。缺报价、缺原参数或预览后数据变化均显示未完成明细。
-- NowAPI 凭据 `NOWAPI_APP_KEY`、`NOWAPI_SIGN` 只配置在相邻 Supabase 仓库的 `.env.local`（本地）或服务端 secrets（发布时），不得放进 Web 环境变量或浏览器。原参考汇率直接删除。原供应商运行实现、配置引用、专属写入入口与索引已移除；已发布历史迁移只保留数据库变更审计。云端发布时同步清理原供应商服务端凭据，部署 NowAPI 实现后核验任务。
-- 汇率回归：`node --experimental-strip-types --test scripts/company-exchange-rate.test.mjs`；`npx playwright test tests/e2e/exchange-rate-boc.spec.ts tests/e2e/exchange-rate-history.spec.ts tests/e2e/exchange-rate-visibility.spec.ts tests/e2e/settlement-rate-repair-receipts.spec.ts tests/e2e/wholesale-order-settlements.spec.ts --workers=1`。真实获取用例需要可用 NowAPI 服务端凭据与已运行的本地 Edge Functions；业务金额及报价编号通过独立管理员数据库查询核验。历史列表桌面使用表格、390px 使用完整卡片。
-- 本地验证、外部报价核对和 2026-09-29 云端清理及完整日期补齐的凭证见 [中行买入价验证记录](docs/boc-exchange-rate-verification.md)。云端获取自第一笔订单的 2026-06-22 起覆盖美元和欧元至 2026-09-29；历史订单金额重新核算与汇率重新获取分别执行。
-- 设置类规则、价格和折扣表在桌面端使用表格，在移动端使用分条卡片展示，不能要求用户横向滑动才能看到当前值、计算方式或操作按钮。
-- 首页组件编辑态只保留必要操作：编辑组件、完成、添加、移除、位置调整和尺寸调整；所有可见编辑、排序、复制和提交按钮至少为 `44px × 44px`。一行高或一列宽的小组件使用简化编辑面，不渲染业务表单或长列表；两行及以上组件的编辑工具栏、尺寸信息与预览内容必须各自占据独立区域。
-- 常用账号切换在同一浏览器保存 30 天，不保存密码、不写数据库；添加和重新登录过程只保留在发起操作的当前标签页。备用账号超过 30 天未使用或会话失效时立即删除失效会话，只保留姓名、邮箱等展示信息并改为重新登录入口。界面保持单行轻量展示：无备用账号时显示加号入口，有备用账号时显示头像、角色、姓名、邮箱和切换按钮；普通退出不删除备用账号，只有明确移除或清除时才删除。
-- 账号中心的修改密码入口发送重置邮件后要显示再次发送倒计时，避免用户因为邮箱暂未收到而连续触发发信限制；成功提示只说明邮件已开始发送，不能承诺已经进入收件箱。
-- 页面持续可见但长时间未操作、页面隐藏、窗口失焦或电脑休眠后，涉及客户端跳转或刷新时要使用 `lib/use-stale-focus-recovery.ts` 做整页加载兜底；登录后的工作台入口只在用户悬停或聚焦时预取，不在页面打开时批量保存全部板块数据。全局页面异常的主操作必须重新打开当前页面，不能只重绘已经出错的局部内容。
-- 移动端需要检查文字竖排、换行挤压、遮挡、横向溢出、按钮压缩和表格挤压；标题、备注、弹窗说明等用户可输入长文本要在组件内自然换行，不能撑出横向滚动。
-- 共享组件的响应式问题要从组件层修复，不只修截图里的单个位置。
-
-## 批发订单费用与提成
-
-- 客户分类按上海时间 2026-10-08 00:00 的档案创建时间永久锁定：之前为老客户，此后为新客户。
-- 全款收齐后，老客户提成为 `max(毛利, 0) × 老客户比例`（初始12%），新客户提成为 `服务费 × 新客户比例`（初始10%）。管理员发布新比例只影响之后创建的订单，已有订单锁定原版本。
-- 服务费为（打包费＋国际运费＋产品成本）的5%，CN税费为同一基数的3%，付款手续费为上述三项加服务费和CN税费之和的1%。金额逐项保留两位小数，表单只读预览，数据库负责最终计算。
-- 三项费用仅展示，不扣入毛利、不自动修改客户应付金额；客户接口不返回这些内部费用。
-- 专用历史迁移保存私有前后快照并统一重算，包括已结算提成，保留结算状态/时间/人员；日常编辑仍冻结已结算提成，系统不自动转账。
-
-## 数据与 Supabase
-
-- Web 仓库不保存数据库迁移源文件；迁移源在同级 `PT5-dropshipping-supabase\supabase` 项目目录。
-- Web 改动如果依赖新表、新字段、新 RPC 或 Edge Function，必须先在本地 Docker Supabase 验证，再按 Supabase 操作指南上传。
-- Storage 上传必须核对服务端返回的准确对象路径，附件和个人媒体登记必须逐条核对父记录或账号、对象路径和数据库编号；Storage 删除即使收到空数组，也必须先确认目标存在且当前账号可读，再逐项确认对象已经不存在。附件或个人媒体登记失败时会清理本次上传的孤立对象，并再次确认清理结果；数据库策略只允许上传者读取自己有权管理的待清理对象。注册、验证码确认和修改密码必须返回权威用户编号；找回密码邮件只显示“已开始发送”的提示状态，不能使用绿色成功表示已经投递。
-- 所有后台运行通过同一个 `operationId` 关联触发、Worker/Edge 尝试、数据库结果和页面状态。页面只有在终态为 `succeeded`、存在完成时间、失败数为 0 且成功数与预期数一致时显示成功；排队或运行中显示处理中，等待超过 90 秒显示“结果确认中”，部分失败和失败保留各自状态。结汇缺汇率自动补齐还必须返回至少一个已核对业务日期，`partial_failed`、`failed`、`needs_attention` 或 `skipped` 均不会再次提交分配。业务页面按各自处理结果显示最终状态，并在刷新后重新核对真实数据。
-- 运行账本保留 90 天，错误只保存截断后的脱敏摘要，不保存密钥、邮件正文、AI 问题或回答。后台默认按 1、5、15 分钟重试，第三次仍失败或超过任务时限才进入需处理；后续成功会自动恢复提醒。文件上传、删除和 AI 生成等页面内直接操作不伪造后台重试，使用同一幂等键返回原结果。
-- 批发物流由 Supabase `wholesale-logistics-sync` Edge Function 归档：每小时读取新增订单、物流状态和运费变化，每天完整核对来源窗口。无业务变化时不重写档案正文，逐包裹的成功核对时间保存在分桶凭证中；列表仍返回准确的 `last_synced_at`，最近更新时间取完整筛选范围，内容写入时间另返回 `data_changed_at`。页面最近一小时没有成功更新时才请求一次刷新，并独立读取运行账本核对完成凭证；正在更新、等待重试或部分完成不会显示成功。每页归档与检查点同事务提交，失败只保留已完成页，后续从该位置继续；全量与增量分开保存进度，全部完成后才推进三路安全基线。首次上线仍需完整同步。
-- 服务端先通过 Supabase Auth 验证令牌，再从数据库读取账号角色和状态；数据库上下文读取失败时不使用 Auth 元数据、Cookie 内容或客户端会话兜底放行。
-- 账号可见业务是数据库权限与 Web 启用清单的交集。RPC 成功返回空数组表示账号当前没有可用业务，Web 不得用角色默认值覆盖；只有 RPC 失败时才使用同样经过启用清单过滤的本地默认值。
-- Supabase 上传完成后，再提交和推送 Web 仓库。
-- Function secrets、供应商密钥和真实服务凭据只放在 Supabase secrets 或本机 `.env.local`，不能写入仓库。
-
-## 公司模板
-
-所有内部员工在电脑端工作栏可进入 `/<角色>/company-templates` 使用公司发布的互动 HTML。点击“新建文档”直接进入制作，不先选文件夹；停止输入约 1 秒自动保存为仅本人可见的云端草稿。“我的草稿”在模板页提供搜索、继续制作和确认删除，支持刷新及换电脑恢复；草稿不进入正式文件夹、数量和搜索。客户及其他员工（包括管理员）不能读取自己的草稿以外的内容或操作凭证。首次“保存”或“另存为”选择文件夹和名称，在一个事务内把最新内容和固定模板版本写入正式文档，沿用草稿编号并移除草稿。正式文档在“我的文档”中管理，普通保存直接更新当前文档；另存为创建新编号的副本，保留源文档。弹窗采用左侧授权目录树、顶部返回／前进／上一级／路径与搜索、右侧文件夹和文件列表、底部文件名及固定模板文档类型；单击选中、双击或 Enter 进入文件夹，可新建子文件夹。目录切换只加载右侧，保留树的展开状态及文件名，错误可重试。目标初选从发起制作的目录或本人的资料文件夹取得，服务端复核管理权限；同目录内同名模板文档忽略大小写提示改名，不覆盖原记录。弹窗期间暂停自动提交，取消后恢复；提交响应丢失沿用原操作编号核对，确认前固定本次文件名和位置；草稿另存为取消时先核对是否已转正。Ctrl+S 普通保存（草稿打开另存为），Ctrl+Shift+S 另存为；模板窗口内部同样支持，其他输入快捷键保持正常。流程、接口和验收凭证见 [云端草稿与另存为](docs/template-cloud-drafts.md)。
-
-文档权限跟随所在文件夹：管理员管理全部；开通批发业务的业务员管理本人及所有客户资料，可以编辑其他员工保存在客户文件夹中的文档。其他岗位沿用我的文档权限，客户身份没有我的文档入口，也不能直接打开模板文档、内容地址或操作凭证。所有档案默认只有一个“资料文件夹”，首次另存、另存副本及移动选择目的地后提交，普通保存更新当前位置，权限由档案身份核对。没有已启用业务的员工仍可管理自己的个人文件夹，包括管理员放入其中的文档。手机不显示公司模板入口，直接打开编辑地址只提示使用电脑，不加载正文。文档绑定创建时的不可变模板版本，公司更新、回退或停用模板后仍可继续编辑；失败保留填写内容，网络恢复重试，未保存离开时提醒，多窗口冲突暂停保存并允许重新打开或另存一份。
-
-只有管理员可以新建模板、上传新版本、回退历史版本和停用模板。发布接口接受 UTF-8 单文件 HTML，模板和可选指南各不超过 5 MB；包含外部脚本、嵌入页面、自动跳转或外部表单提交的文件会被拒绝。上传的 HTML 和指南逐字原样保存，不改写计算、样式或文字。全部工作模板均可“新建文档”；普通 HTML 在隔离窗口运行时由网站采集表单值、多选、勾选、可编辑文字和图片，记录动态按钮、选择与文件操作，刷新时通过原处理函数恢复动态行与计算。已有 `PT5Template` 接口的模板继续导出自己的业务状态。预览只展示共享原版，点击新建文档即开始云端草稿自动保存。发布前在隔离窗口执行初始化与保存恢复往返检查；失败不启用新版本。新版本与指南在同一数据库事务内写入并立即启用，空指南会沿用上一版本。每次写入必须返回模板编号、版本编号、递增修订号和 SHA-256，并在成功提示前独立重新读取核对。
-
-互动 HTML 通过带严格 CSP 的独立响应装入沙箱 iframe，允许模板自身的内联交互、图片粘贴、文件选择、打印、下载及打开产品链接，但不授予同源权限。点击“预览模板”后，链接在跳转期间显示打开中的状态；进入模板路由后由页面占位提示继续显示等待，随后由正文载入提示接管。查看器每次只请求一份正文：服务端完成权限和原始哈希核对后，在响应中加入就绪通知；父页只接受当前 iframe 窗口、沙箱来源与本次随机标识均匹配的通知。错误文档不能结束等待，15 秒内未收到通知会显示重新打开入口；重试或切换设备会换用新标识，手机仍只显示电脑端提示。正文接口不提供 HEAD，避免重复读取内容。个人文档使用独立的 `/api/company-template-documents` 列表和事务写入入口，`/<角色>/documents/templates/<编号>` 为编辑页，返回会定位所在人员或客户的文件夹。沙箱导出/恢复协议使用当前窗口和随机标识，只有真实恢复往返检查通过才开放编辑；握手地址使用站点公开地址策略，生产环境不能采用托管平台内部的 `request.url` 地址。加载失败后停止显示“正在打开文档”，提供重新打开入口。数据库回执经独立读回核对文档编号、文件夹编号、修订号、哈希和影响行数后才显示已保存。文档使用当前用户客户端，RLS 按文件夹实时过滤；正文、指南、绑定版本和旧回执均不能绕过当前权限。数据与图片合计限制 10 MiB，文件及粘贴图片保存实际 data URL 内容。所有互动模板发布前均检查导出、恢复、再次导出的一致性；制作说明与示例见 `docs/company-template-authoring.md` 和 `examples/company-template-personal-document.html`。站点其他路径拒绝被 iframe 嵌入；仅模板正文与指南接口允许本站嵌入，并继续用 `frame-ancestors 'self'` 和沙箱限制访问。模板正文、指南、版本元数据、RLS 和管理员 RPC 位于相邻 Supabase 仓库的 `company_templates`、`company_template_versions`、`company_template_documents` 与操作回执迁移中；先在本地 Docker 应用并验证迁移，再运行网页端测试。
-
-本次位置归属迁移 `20261009035105_template_documents_in_folders.sql` 将已有文档归入各创建者“本人资料／模板文档”，只增加文件夹编号，保留内容、修订、编号与版本。新接口要求创建、复制及移动提供 `folderId`；保存内容与位置在同一事务提交。详细验证见 [模板文档归档](docs/template-document-folders.md)。
-
-2026-10-09 已发布至 `https://account.pt5global.com`：Cloud 207 项迁移一致，原有 12 份文档的数量及全内容指纹保持一致。线上已从页面验证新建选目录、自动保存、换目录保存、指定目录复制、我的文档移动/重命名、刷新恢复及双窗口冲突，并独立查库核对位置、修订、内容哈希和实际影响行数。桌面与手机目录弹窗已检查；线上多角色权限及异常链路的范围区分见上述交付记录。
-
-## 文件资源管理器我的文档
-
-新建文件夹和重命名采用行内编辑：新建直接写入服务端分配的“新建文件夹”，同名依次加 (2)、(3)，随后自动聚焦并选中名称。回车或失焦保存；空输入或 Esc 保留新建默认名称，已有条目取消时保留原名。右键、工具栏和 F2 共用编辑器，文件默认选中扩展名前名称；中文输入法选词不提交。非法名称、同名和旧版本保持输入并提示；结果不确定时保留原操作编号核对，不重复创建。`tests/e2e/document-windows.spec.ts` 验证页面操作、独立数据库/对象读回、刷新与 1440/1024/390/320 布局。
-
-所有内部岗位的 `/<workspace>/documents` 提供资料保存；客户工作台不提供我的文档，直接访问页面、接口、目录、正文及数据库查询均拒绝。个人资料、管理员人员详情及批发客户详情的“查看资料”直接打开对应档案。我的文档只提供电脑端入口：手机菜单、详情页和业务暂停页在工作台电脑端分界（1024px）以下隐藏我的文档入口。没有业务板块授权的员工也能在电脑端管理自己的“资料文件夹”。首页固定显示“我的文档”和“公共文档”，该层级禁止新建、上传和粘贴；左侧人员、客户分类直接显示获授权的账户文件夹，进入账户即显示真实内容，不额外显示“资料文件夹”容器。左侧目录树可展开，右侧同时显示直属文件夹、上传文件及模板文档；只有三者都没有时才显示空目录。顶部提供返回、前进、上一级、可点击路径和当前位置及下级搜索；网址保存位置、搜索、排序和页码，刷新后恢复。详细列表默认按名称排列，文件夹优先，可选类型、日期及图标视图。人员、客户入口支持名称搜索。页面只组装界面，目录导航、选择、快捷键、拖放、弹窗及批量执行位于 `components/dashboard/document-library/`，服务端校验与对象操作位于 `lib/document-library/`。
-
-切换目录、搜索、排序、翻页和操作后的刷新只更新右侧文件区，左侧目录树及手动展开状态保留；读取期间显示加载动画，加载途中使用浏览器返回不会被较晚的旧查询覆盖。普通读取失败在右侧提供“重新加载”，权限撤回则清除此前显示的资料。桌面文件区按窗口高度分配空间并独立滚动；窄屏保留文件区高度，长路径在路径栏内滚动。成功上传和批量处理显示可展开的结果摘要，失败与未完成明细默认展开，明细列表独立滚动；通知放在文件区下方，不挤占浏览高度。选中条目后显示批量工具，工具栏保持高度，按钮较多时在本行横向滚动，双击过程中条目保持原位。
-
-| 区域 | 查看与下载 | 上传、改名、建目录、移动、删除 |
-| --- | --- | --- |
-| 员工资料文件夹（每人一个默认目录） | 本人、管理员 | 本人、管理员 |
-| 客户资料文件夹（每个档案一个默认目录） | 沿用批发客户目录的内部阅读授权 | 沿用客户管理授权 |
-| 公共文档（独立公共档案） | 有效内部员工 | 有效内部员工共同管理 |
-
-人员和客户档案各只有一个“资料文件夹”，其中可以新建子目录、上传资料及保存模板文档。员工目录全部内容由本人和管理员管理；员工即使关联客户业务，目录仍按员工身份授权。客户档案沿用现有内部业务授权，客户账号不能访问我的文档。迁移 `20261012090101_unified_document_folder.sql` 将原内部和共享内容合入唯一根目录，保留文件、模板文档及自建目录编号、文件对象地址、模板固定版本与填写内容，并递增受影响资料版本；同名子目录增加序号，保留两份独立目录。已有人员根目录优先保留，否则保留原客户内部根目录编号，移除其他分区容器。存在未完成批次或文件操作时先完成或结束原操作再执行迁移。数据库和私有 Storage 复核当前身份，授权过滤先于目录、搜索、计数及分页。预览和下载重新读取权限，使用 `private, no-store`。默认目录不能删除、改名或移动；文件、模板文档及自建目录可跨有管理权限的档案移动；整树移动在数据库事务中更新全部后代归属和版本，保留原内容，旧窗口不能覆盖。禁止移入自身或后代，同名文件夹须先重命名，不自动合并。验证及上传凭证见 [统一资料文件夹](docs/document-library-unified-folder.md)。
-
-支持常用图片、PDF、Word、Excel、PPT、CSV、UTF-8 TXT、ZIP、MP4/MOV/WebM/MKV/AVI。图片小于 5MB，视频小于 30MB，其他文件不超过 20MB；服务端校验文件头、大小与 SHA-256。同名上传保留不同记录及对象。删除需确认并永久删除；预览仅支持图片和 PDF。模板填写文档可直接保存到文件夹，导出的报价单及公司模板文件也可上传，认证照片和订单附件继续各自业务流程。
-
-资料档案以人员或客户 UUID 归属，改名不会改变目录归属。未注册客户也有资料夹；关联注册账号时数据库事务合并相同区域及目录，同名文件增加序号并保留原对象。存在文件时阻止直接删除客户档案。
-
-文件、文件夹、左侧目录树和右侧空白处使用我的文档自己的右键菜单，按可操作范围提供新建文档、新建文件夹、复制、剪切、粘贴、重命名、删除及刷新，输入框保留原生编辑菜单。首页和人员／客户分类层不提供新建文件夹、上传或粘贴；进入具体目录后直接在当前位置操作。单击选择、双击打开；图片及 PDF 预览，其他文件下载，模板继续编辑并保留“另存为”。复选框、Ctrl 多选、Shift 连选和当前页全选可批量复制、移动、删除、下载；切换位置、搜索及分页清空选择。支持拖入文件上传、条目拖到目录、复制粘贴、剪切粘贴及 Enter/F2/Delete/Ctrl+C/X/V，输入框保留正常快捷键。上传限制在选文件和拖入时提示。复制生成新的资料编号和文件对象，保留目录层级、模板固定版本及内容，来源保持不变。单条复制可改名称，文件默认在扩展名前加序号；同名文件夹在建立批次前提示改名，可在当前弹窗直接修改后重试。复制也使用原批次断线续办，缺失或损坏对象显示部分失败，补齐后继续原批次，不重复生成已完成的副本。
-
-删除非空目录前列出完整路径与三类数量，永久删除需要明确确认；清单变化必须重新读取并确认。递归删除期间目录树禁止上传、保存及移动。先核对文件对象、资料记录，再按叶子到父目录删除；失败保留未完成目录，显示逐项明细并保存 `partial_failed`。断线后从数据库原批次继续，完成项不重复执行，每次重新核对权限；明确结束批次才解除剩余目录保护。
-
-批量下载为 ZIP，保留文件夹层级，同名上传记录各自保留。一次最多 100 个上传文件、合计 200 MiB；打包逐项核对权限、实际字节及完整清单，缺失对象不交付完整下载。模板不进入 ZIP，需单独打开打印或另存 PDF。
-
-`/api/document-library` 查询与目录/文件管理，`/manifest` 授权确认清单、`/batch` 持久化操作与状态、`/download` ZIP 下载，`/upload` 上传、`/reconcile` 原操作核对及 `/files/[id]/content` 内容读取组成接口。每次写入使用固定操作编号，返回记录编号、版本和影响行数；页面再独立读取凭证，刷新真实列表。上传需确认真实字节及完整登记，删除需确认对象与记录均消失，部分完成显示逐项结果。断线操作保留在当前账号的浏览器会话中，可继续核对。Supabase 的 `document-library-cleanup` 每小时处理超过 24 小时的未完成文件；失败凭证保留，未清理对象继续等待后续清理。
-
-我的文档写入的来源检查复用站点公开地址策略：生产环境比较浏览器来源与受校验的 `NEXT_PUBLIC_SITE_URL`，忽略服务器内部监听地址及转发头；开发环境允许实际的 localhost/127.0.0.1 端口。部署时该配置必须与浏览器正式入口一致，避免新建目录、上传与继续核对被误判为权限不足。
-
-先在同级 Supabase 仓库的本地 Docker 应用基础迁移、`20261009091636_document_explorer.sql`、`20261012090000_personal_document_folders.sql` 及 `20261012090100_document_copy_batches.sql`，核对归档内容及权限后再发布依赖这些接口的 Web。Web 和 Supabase 同时需要服务密钥，但浏览器只持有登录会话；新增资料使用独立私有 `document-library` bucket。资料迁移与清理函数先本地验证，GitHub、Supabase Cloud 与网站部署分别交付。
-
-我的文档验证命令：
-
-```powershell
-node --experimental-strip-types --test scripts/document-cleanup.test.mjs
-node --experimental-strip-types --test scripts/document-library-origin.test.mjs
-node --experimental-strip-types --test scripts/document-archive-paths.test.mjs
-npx playwright test --config=tests/contracts/playwright.config.ts tests/contracts/document-library.spec.ts
-$env:PLAYWRIGHT_SKIP_WEB_SERVER = "1"
-$env:E2E_DOCUMENT_CHROME = "1"
-npx playwright test tests/e2e/document-explorer.spec.ts tests/e2e/document-explorer-recovery.spec.ts tests/e2e/document-explorer-preview.spec.ts --workers=1
-npx playwright test tests/e2e/document-library-workspace.spec.ts tests/e2e/document-library-copy-failures.spec.ts tests/e2e/document-library.spec.ts tests/e2e/document-explorer-loading.spec.ts --workers=1
-npx playwright test tests/e2e/company-template-folders.spec.ts --workers=1
-npx playwright test tests/e2e/template-drafts.spec.ts --workers=1
-```
-
-真实页面测试使用本地隔离账号，从页面完成关键管理操作，另用数据库与 Storage 查询验证最终记录、版本和对象，再刷新页面；后台清理测试准备中断阶段夹具并调用同一清理引擎，独立核对对象消失、失败凭证与已完成文件保留。清理引擎测试和 Edge 入口/定时调度实跑是不同验证范围。
-
-本地改版范围、失败与续办检查、数据库凭证、响应式和品牌清理见 [文件资源管理器验收报告](docs/document-explorer.md)。
-
-个人目录、右键复制、任意目录保存和客户访问拦截的本地验证见 [个人资料工作区验证](docs/document-library-personal-workspace.md)。归档迁移用例需在尚有人员内部目录的本地数据库首次应用迁移时运行，已经完成归档的数据库会明确跳过该迁移用例。
-
-局部加载、通知收起及视图空间的验证见 [我的文档加载与布局验证](docs/document-explorer-loading.md)。
-
-## 测试与验证
-
-代码改动后固定检查：
-
-- 更新 `README.md` 中相关说明。
-- 使用 Playwright 在真实浏览器环境验证受影响页面。
-- 使用测试账号验证登录、跳转和权限链路；本地 Supabase 验证时 e2e 默认优先读取 `local.*@bs.test` 本地账号，环境变量仍可覆盖。
-- `tests/e2e/workspace-navigation-visible.spec.ts` 验证桌面批发板块直接显示、页面跳转及刷新后仍可访问，并检查移动端菜单。
-- 检查桌面和移动宽度下是否有文字竖排、遮挡、溢出或按钮/表格压缩。
-- 运行与改动风险匹配的命令，通常至少包括 `npm run lint`、`npm run typecheck`，重要改动再跑 `npm run build`。
-- 工作台结构调整还要运行 `npm run check:dashboard-ui`，确保新页面没有绕开共享外壳、确认、表单和文件选择结构。
-
-文档-only 改动：
-
-- 不需要启动浏览器验证。
-- 仍应运行 `git diff --check`，确认 Markdown 没有空白字符问题。
-
-自动化回归：
-
-- `npm run test:public-site-origin` checks public-origin policy and documented mail role destinations using fixed expected paths; it is included in `test:regression`.
-- `npm run test:mail-outbound-reconciliation` checks the real outbound worker against synthetic provider/database boundaries: a lost database receipt must trigger reconciliation rather than another send. It is included in `test:regression` and sends no real mail.
-- `npm run test:e2e-fixture-policy` checks the pure admission guard with 16 independent local/mode/endpoint cases and is included in `test:regression`. Daily-limit, parameter reset and Feishu suites reject the default shared fixture environment before reset hooks; running them requires `PT5_E2E_FIXTURE_MODE=disposable`, explicit local application/Supabase endpoints and an actually dedicated fixture environment. The declaration does not establish physical database isolation or authorize restricted identity helpers.
-- `npm run test:template-content-sandbox` uses an isolated local HTTP fixture and a fresh headless Chrome session to check the real content response sandbox against synthetic storage/cookie values; it is included in `test:regression`, uses no login credentials, and does not verify actual account access.
-- `npm run test:company-exchange-rate` runs nine fixed rate and decimal-money examples and is included in `test:regression`; these examples check exact amounts and rounding, not the whole settlement workflow.
-- `tests/e2e/company-template-isolation.spec.ts` prepares two independent two-version cards, locates each by its template ID, and checks repeated open/close clicks, unchanged neighboring height/state, and reload. Both histories may be open together. It requires the existing local test identity and local cleanup helpers; source/syntax checks alone do not verify browser behavior.
-- `playwright.config.ts` 默认使用 `http://localhost:3000`。
-- Playwright 固定使用单 worker 串行执行，因为角色用例共用本地种子账号和 Supabase 数据；不要通过增加 worker 加速，否则写入场景和登录查询会互相干扰。
-- 全量回归会真实调用本地 `exchange-rate-sync`、`user-media-mutate` 等后台函数；仅启动数据库和网页服务还不够。先在相邻 Supabase 仓库运行 `supabase functions serve` 并确认函数可响应，再启动回归。Windows Supabase CLI 2.108.0 的外层程序可能因函数启动命令过长报 `ENAMETOOLONG`，可使用同一官方安装目录内的 `supabase-go.exe functions serve`；保留项目配置和函数内部鉴权，不修改云端。
-- 如果 `3000` 不是当前项目服务，不要直接运行默认 e2e；先设置 `PLAYWRIGHT_BASE_URL` 指向当前项目端口，已手动启动 dev server 时同时设置 `PLAYWRIGHT_SKIP_WEB_SERVER=1`。
-- `tests/e2e` 覆盖登录、角色首页、越权拦截和关键工作区入口。
-- `tests/e2e/company-template-documents.spec.ts` 与 `company-template-document-{failures,restoration,evidence}.spec.ts` 验证模板文档从真实页面写入、独立查库及刷新恢复；涵盖管理、隔离、断线、冲突、图片、超限后减小数据、保存串行、计算与打印设置恢复，以及模板版本固定。`company-template-folders.spec.ts` 补充选目录、暂停保存、原子移动、跨员工编辑、客户访问拒绝、共享区确认及位置红绿检查。打印验收核对页面调用和恢复后的设置，未导出真实 PDF；图片粘贴使用浏览器中的受控文件粘贴事件。相邻 Supabase 的 `supabase/tests/company_template_documents.sql` 与 `template_document_folder_boundaries.sql` 验证事务、RLS、表授权、防重、超限、零行失败及目录生命周期。
-- `node --test scripts/template-document-origin.test.mjs` 重现生产内部地址与公开域名不同的正文握手，并检查本机开发端口。`company-template-production-protocol.spec.ts` 使用只读导出的线上文件 `output/template-repair-{quotation,invoice}.html` 验证管理员发布、个人文档保存、刷新、动态行、图片和 375px 页面；缺少源文件时必须先准备文件，不能用简化模板代替。
-- `company-template-original-html.spec.ts` 使用新普通 HTML 和只读导出的原发票，从真实页面发布并独立核对正文逐字相同、SHA-256、能力标识、零个人文档与刷新；覆盖填写、计算、动态行、初始化失败和桌面/375px 界面。相邻数据库的 `company_template_usage_capability.sql` 覆盖无接口/部分接口/完整接口以及无法伪造计算列。
-- `tests/e2e/company-templates.spec.ts` 覆盖七类内部岗位、客户拒绝、种子模板交互与打印、正文失败后重试、GET/HEAD 相反结果与伪造通知、新建/更新/指南/回退/停用、文件限制、权限、冲突、原子回滚、重复请求、断线、业务失败和内容哈希篡改，并独立查询本地数据库核对最终编号、版本、修订号与哈希。模板交互用例使用产品已有的减少动态效果偏好，按钮点击前等待滚动位置稳定，继续使用真实点击验证产品加行；填写与数据库凭证工具位于 `tests/e2e/helpers/company-template-actions.ts`。
-- `tests/e2e/design-system-visual.spec.ts` 维护 44 张基线：在 `1440 × 900` 与 `390 × 844` 下覆盖登录、注册、找回密码、法律、异常、管理员、运营和客户关键页面、移动筛选折叠态、长表单底部操作区、标准表单弹窗、选择菜单，以及日期、月份和日期时间浮层的展开状态；首页另有 768px 自动布局和 1280px 桌面布局分界基线，768px 也会检查三类日期浮层和代表页面都留在视口内。用例会关闭动画、隐藏开发入口，使用服务端当前日期以保持首屏水合一致，并检查认证页共享控件、工作台默认控件、语义颜色和焦点规则；截图基线保存在同名 `-snapshots` 目录，日期或本地夹具变化后需要重新核对相应基线。
-- `tests/e2e/motion.spec.ts` 覆盖认证页首屏动效、减少动态效果、工作台菜单退出、待办列表重排和移动端密集表格宽度稳定性。
-- `tests/e2e/api-request-limits.spec.ts` 覆盖 AI 请求体上限；数据库 SQL 断言继续覆盖 AI 并发租约、释放、跨用户拒绝及已移除额度种类。
-- `tests/e2e/dashboard-numbered-pages.spec.ts` 验证 205 条费用记录的完整数量、末页、空结果、筛选重置、刷新和 15 个启用列表页面及库存信贷标签的 1440/390px 排版；分页栏必须实际出现，不能把错误页当成加载成功。推荐佣金页面需要当天美元报价，跨日后仅在本地临时补入固定测试值，结束后用管理员权限清理，不作为真实银行报价验收。`tests/e2e/mail-numbered-pages.spec.ts` 验证邮件及隔离区的二十条分页、同时间顺序、勾选清理和刷新，使用独立 PostgreSQL 查询核对数量与编号，测试数据在本地清理。
-- `tests/e2e/wholesale-order-pagination.spec.ts` 覆盖每页 20 条、页间无重复、回到上一页顺序一致、批发订单号搜索、移动卡片详情，以及核心失败和关联数据局部警告。
-- `tests/e2e/wholesale-logistics.spec.ts` 覆盖永久档案全量筛选、分币种汇总、红色缺失运费、店铺历史归属、真实 20 条页码分页与末页 15 条、管理员/业务员/财务/无入口角色权限，以及 1440px 和 390px 的横向溢出与文字挤压。
-- `tests/e2e/legacy-tourism-disabled.spec.ts` 覆盖旅游专属账号登录、旧旅游地址、未知地址、导航与邀请入口、伪造 API 请求，以及运营账号在桌面和 390px 宽度下进入批发订单工作区；批发工作流继续由原有批发专项用例覆盖。
-- 权限回归会检查有效越权账号仍可直接返回自己的首页；开发服务器输出不应出现 `Forbidden` 性能测量异常。当前使用 Next.js 最新稳定补丁，不采用 canary 或 preview 版本。
-- 本地运营报销回归使用两名种子运营账号，运行 `operator-reimbursements.spec.ts` 与 `operator-reimbursements-sharing.spec.ts`；协作套件要求 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`。批量写入回归固定使用专用协作运营和保留的历史周期，执行前确认该周期没有非测试记录，结束后只删除本次标识数据，不能改动结算共享账号的其他费用。套件覆盖真实创建和报销凭证、HTTP 200 但影响 0 行时拒绝成功、历史补报、205 条分页、相互查阅、本人写入边界、搜索 300ms 防抖、删除期间切换运营的查询竞态、上海跨日时间显示、查询失败重试及 1440/390/320px 排版。
-- `scripts/mail-intake.test.mjs` 覆盖自动别名、Ref、规则规范化、To/Cc/Bcc 去重、公司地址排除和历史负责人冲突；`tests/e2e/mail.spec.ts` 直接使用本地 PT5 Supabase，并只模拟 Gmail、飞书、附件扫描和 DeepSeek 外部边界。页面用例覆盖成功发信收件人凭证、同线程回复、已知邮箱独立来信、陌生邮箱忽略、放行规则不能绕过、附件不下载、重复 Push 审计幂等，以及原有的权限、隔离、AI、附件、转交和最终 `SENT` 失败。`tests/e2e/mail-recipient-maintenance.spec.ts` 验证历史回填、预览令牌、权限拒绝、陌生会话删除、已知会话保留和 `partial_failed`。邮件页继续在 1440/390/320px 检查横向溢出。 `tests/e2e/mail-oauth.spec.ts` 从页面连接按钮验证授权、凭据与通知的真实落库，覆盖重复回调、过期、取消、权限、选错账号、缺少权限、通知失败、等待超时、部分保存失败、回程中断及伪造成功参数；仅模拟 Google 外部边界，保存失败注入只作用于本地 Docker 并在每例后删除。真实 Google OAuth、真实收发可见性和真实飞书到达需要在生产切换前单独验收。
-- 跳转地址回归运行 `node --experimental-strip-types --test scripts/public-site-origin.test.mjs`，覆盖生产配置、伪造转发头及角色返回边界；`mail-feishu-oauth.spec.ts` 从页面绑定按钮核对本地授权记录与飞书绑定凭证，`public-redirects.spec.ts` 检查认证、授权及八类工作台入口。发布后以正式域名复核完整跳转链，再单独验收真实外部授权。
-- 测试账号优先读取 `E2E_*` 环境变量；未设置时，若当前 `.env.local` 指向本地 Supabase，则优先从同级 `supabase/local-test-data.sql`、`supabase/supabase/local-test-data.sql` 或 `PT5-dropshipping-supabase/supabase/local-test-data.sql` 读取 `local.*@bs.test` 账号，再读取本机测试账号文件。
-- 本地 Supabase 测试数据会生成 100 条最近 30 天内的批发订单，订单列表默认范围应能直接看到足够的订单样本；协作订单 `WH-PEER-LOCAL-001` 用于验证管理员、财务和两名业务员都只使用直接修改入口。当天汇率按上海业务日期写入，午夜后运行结汇回归也必须能匹配当天汇率。
-- 批发浏览器回归会拦截真实写请求，验证订单、附件、客户别名、账号合并、物流店铺归属、推荐、结汇发布和结汇分配失败时表单保持打开、字段不丢失、反馈可见；订单列表框架只覆盖当前批发订单与物流页面，推荐树只覆盖当前启用的批发业务，不再把已停用的旅游页面当作可用入口。`tests/e2e/wholesale-order-month-filter.spec.ts` 从管理员页面验证计入月份、空结果、分页、恢复默认、刷新和 1440/390px 排版，并通过独立本地数据库读取核对完整数量；客户页面不提供该内部筛选。结汇发布用例还覆盖同一收款分到多笔订单、部分分配、最早订单优先建议、整组重配、临时名称选择正式客户、清空二次确认，以及桌面和移动排版。`tests/e2e/settlement-rate-repair-receipts.spec.ts` 的真实链路从页面发布缺少精确日期汇率的收款，等待专用后台任务终态，再独立核对运行记录、汇率记录 ID、收款分配和刷新后页面；故障链路故意让任务以 `partial_failed` 结束，确认页面不重试分配、不显示成功，并核对数据库仍为待分配。`tests/e2e/wholesale-order-attachment-receipts.spec.ts` 另用真实页面、独立服务端数据库连接和 Storage 查询验证上传、删除、整页刷新后的最终一致性，并故意把登记接口改成 HTTP 200 但只返回一半记录，确认页面拒绝成功且不会留下孤立对象；该用例同时检查 390px 页面横向溢出。批发订单用例检查客户联动、编号金额、日期倒序、详情展示和订单号搜索，物流用例单独检查永久档案统计与响应式布局。
-- 回归产物输出到 `output/playwright-results` 和 `output/playwright-report`，不提交。
-- `tests/e2e/wholesale-logistics-sync.spec.ts` 使用本地来源夹具和真实本地 Edge，从页面发起同步，独立查询 Docker 核对限流、25+25 条续跑、未重写前页、重复投递、刷新与桌面/手机分页；另注入 HTTP 200 的排队、缺少完成凭证与其他同步正在执行三种状态。需要先在相邻 Supabase 仓库应用三份物流迁移，并以 `LOGISTICS_SOURCE_ARCHIVE_API_URL=http://host.docker.internal:43194/source`、`LOGISTICS_SOURCE_ARCHIVE_API_TOKEN=local-fixture` 启动本地函数。夹具只接受本地数据库，结束后恢复配置与状态。发布、回滚和测试证据见 [物流同步修复验收](docs/logistics-sync-repair.md)。
-
-## 构建与本地产物
-
-`npm run build` 使用 Next.js 支持的 `next build --webpack` 完成生产构建。Hostinger 的 Turbopack 在处理样式时曾两次出现 Node 子进程启动后提前退出，显式使用 Webpack 可使本地与主机按同一方式构建。开发命令仍为 `npm run dev`；生产运行命令仍为 `npm run start`。
-
-仓库已忽略：
-
-- `.next/`
-- `.playwright-cli/`
-- `output/`
-- `node_modules/`
-- `*.tsbuildinfo`
-
-清理建议：
-
-- `.next` 是可再生缓存，只在磁盘压力大或怀疑缓存脏时清理。
-- `.playwright-cli` 和 `output/playwright` 是临时验证产物，应定期清理。
-- 有价值的截图和报告可以短期保留在 `output/playwright/screenshots` 和 `output/playwright/reports`。
-
-## 物流同步本地验证与回滚
-
-物流同步的执行片段编号持续递增；相邻 Supabase 仓库的 `20261001072039_logistics_continuation_budget.sql` 将真实故障预算独立计数。已提交新页的正常续跑不消耗故障重试次数，无进度循环和 Worker 从未启动的超时仍受上限约束。永久错误的终态与告警一次事务提交。页面仍以已完成账本凭证判断成功；排队、部分完成和已在执行不能显示为全部更新完成。
-
-在相邻 Supabase 仓库运行四份迁移验证、隔离原 SQL 回归及完整回滚演练，见其 README。所有本地 SQL 夹具运行前要求 `cron.launch_active_jobs=off` 且 HTTP 队列为空；首次启动 Docker Desktop 可能自动恢复容器，因此应预先持久暂停本地 cron，不应依赖“启动后再停任务”实现隔离。`wholesale-logistics-sync.spec.ts` 使用本地来源夹具、真实 Edge/数据库与独立 SQL 核对，并限制浏览器请求为本机地址。只读物流回归隔离页面自动同步。不要把生产来源地址或密钥放入夹具环境文件。
-
-完整回滚入口为相邻仓库 `supabase/rollbacks/logistics-sync.sql`。先暂停任务与页面触发、等待 Worker 退出；脚本回写准确观测时间，恢复旧 Worker 函数合同和权限，保留业务与审查证据。已通过本地正向演练与受控错误检测；未经独立上线授权不得执行生产回滚或迁移。[修复与验证报告](docs/logistics-sync-repair.md)记录本轮证据、发布顺序和未验证项。
-
-## 部署与上传
-
-正式入口为 `https://account.pt5global.com`。Hostinger 的 `public_html/.htaccess` 使用 `PT5 CANONICAL HOST` 规则块，将本站 www 别名在进入 Node.js 前以 308 跳转到正式入口，保留路径、查询参数和请求方法；路径从原始 `THE_REQUEST` 提取，避免中文编码被提前解码。
-重新部署会重新生成 `.htaccess`。部署前备份，部署后保留平台新生成的应用路径、启动参数及访问保护，检查并按需恢复该规则块。通过正式入口、www 编码路径、静态资源、登录后页面和独立实例数量检查后，才算部署验收完成；不能整份覆盖为旧部署配置。
-
-部署建议：
-
-- Framework：`Next.js`
-- Build Command：`npm run build`
-- Start Command：`npm run start`
-- Output Directory：`.next`
-
-Hostinger 构建环境可能报告宿主机的全部 CPU，Next.js 据此启动过多页面构建进程而耗尽线程。`next.config.ts` 将 `experimental.cpus` 固定为 `2`，限制页面数据收集和生成阶段的构建进程数量；不改变线上请求处理方式。如果平台日志出现无法创建线程，应先核对实际并行进程数量及套餐资源，不要跳过类型检查或依赖审计。
-
-Git 推送约定：
-
-- 默认直接推送 `origin/main`。
-- 推送前确认在 `main` 分支。
-- 只暂存本次相关文件。
-- 推送后用 `git ls-remote origin refs/heads/main` 确认远端 HEAD。
-- 详细流程以当前仓库和 `PT5-dropshipping-supabase` 仓库 README 为准。
-
-Supabase Auth 建议：
-
-- Site URL：线上站点根地址，当前线上为 `https://account.pt5global.com`；默认值集中在 `lib/company-config.ts`。
-- `NEXT_PUBLIC_SITE_URL` 应与线上 Site URL 保持一致；生产环境的邮箱确认、退出登录、登录拦截和邮件授权统一使用已校验的配置域名，不依据 Host、转发头或服务器监听地址生成跳转；开发环境才允许 localhost 与 127.0.0.1。
-- Redirect URLs：线上根地址、`/login`、`/auth/confirm`、`/forgot-password`，以及本地开发地址 `http://localhost:3000`、`http://localhost:3000/auth/confirm`、`http://localhost:3000/forgot-password`。
-- 账号邮件通过 Resend 自定义 SMTP 发送；发信域名为已验证的 `pt5global.com`，发件人为 `PT5global <support@pt5global.com>`，该地址同时用于用户联系与邮件回复。注册确认、邀请、登录验证、邮箱变更、密码重置和身份验证模板统一使用 PT5 品牌。
-- `/auth/confirm` 统一处理注册确认和密码重置确认：`type=email` 成功后进入 `next` 指向的登录页；`type=recovery` 成功后进入 `/forgot-password?type=recovery` 设置新密码。
-- `/forgot-password?type=recovery` 是已验证重置邮件的专用入口：入口代理允许它携带恢复会话进入页面，页面服务端优先确认 Supabase JWT 的 `amr` 包含 `recovery`；本地 GoTrue 把恢复会话标记为 `otp` 时，还必须同时通过 `/auth/confirm` 写入的短期 HttpOnly 会话证明才展示新密码表单。普通登录会话手动拼接参数仍返回自己的工作台；令牌过期、链接无效或恢复会话丢失时统一显示重新发送邮件的入口，不能停在无限加载状态。
-- Confirm sign up 邮件模板使用自有域名确认路由：`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}`，不要直接使用 `{{ .ConfirmationURL }}`，避免注册确认邮件里的主链接显示为 Supabase 项目域名。
-- Reset password 邮件模板也使用自有域名确认路由：`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next={{ .RedirectTo }}`，避免重置邮件里的主链接显示为 Supabase 项目域名。
-- Password recovery 邮件由登录页和账号中心共同触发，回跳地址固定为当前站点的 `/forgot-password`；Resend 显示 sent 只代表发信服务已接收或开始发送，delivered 只代表收件方服务器已接收，仍需结合 Resend Insights、收件箱、垃圾邮件和域名 DNS 认证状态判断最终可见性。
-- 注册和重置密码统一要求至少 10 位，并同时包含大写字母、小写字母和数字；前端表单校验要与 Supabase Auth 的 `minimum_password_length`、`password_requirements` 和 `secure_password_change` 配置保持一致。
-- 注册页只匿名调用 `get_signup_invite_context` 获取邀请码状态、建议业务和锁定状态，不读取推荐人资料；管理、批发、VIP、任务和触发器辅助 RPC 都在数据库侧撤销匿名执行权。
-- 自定义 SMTP 发件地址固定为 `support@pt5global.com`，发件名固定为 `PT5global`；网页公司配置与 Supabase Auth 设置必须保持一致。
-
-## 相关文档
-
-- `PT5-dropshipping-supabase/README.md`
-
-\r\n
-
-### Role navigation regression boundaries
-
-`tests/e2e/dashboard-home-role-tasks.spec.ts` requires the administrator destination to render the actual account-management heading and rejects the application's error-boundary headings after reload. A matching URL and HTTP 200 do not establish a successful page render. A local server missing its authorized admin-service configuration can fail this test; do not classify that environment failure as a production business defect or report the navigation suite as fully passed.
-
-### Preserved test runs
-
-`npm run test:record -- -- node --experimental-strip-types --test scripts/assistant-event-stream.test.mjs` runs an executable without a shell and saves stdout, stderr and an exit receipt in a new `output/test-runs/<timestamp>-<uuid>` directory. The CLI returns the child exit code; launch or recording failures return failure. `npm run test:recording` checks these boundaries and is included in `test:regression`. This utility contains no identity configuration and imports no E2E helpers. It does not provision fixtures or redact child output: use approved synthetic inputs and keep the ignored output directory private.
-
-`npm run test:contracts` checks workspace business-content/error-page assertions with synthetic browser documents and logistics paging assertions with 55 fixed synthetic IDs. It is included in `test:regression` and imports no account or backend helpers. The original E2E suites remain subject to restricted-helper and owned-fixture prerequisites; see [test reliability follow-up](docs/test-reliability-follow-up.md) for the exact boundary and the remaining 73-file classification.
-
-The [reconciled execution ledger](docs/reconciled-execution-ledger.md) separates the original 86-file cohort (29 executed files, 135 passing and three failing independent cases, including 39 historical passes without retained full logs) from the 70 controlled-contract checks. The corrected home-editor checks cover actual React card markup and controlled element faults, not authenticated resize/drag/screenshot E2E.
-
-2026-10-05 后续整改的实际受控重跑为 88/88：页面约定 59、分页校验 20、组件几何 9；这些与早前 70 项有重叠，不能相加，也不改变原始 E2E 的 135 通过、3 失败和 57 个未执行文件。分页夹具时间现在保留微秒、明确时区并拒绝非法日期；页面负例核对具体失败原因，另验证受控文档在 1440/390px 刷新后的标题与控件。
-
-新的运行记录同时保存 stdout/stderr 原始字节数与 SHA-256。运行 `node scripts/verify-test-run.mjs output/test-runs/<运行目录>` 核对日志完整性；缺失、被修改、没有摘要的旧记录均不能通过核验，已记录的非零退出码仍返回非零。摘要用于检出日志与保留记录不一致，不是签名，也不证明业务成功或无人同时修改日志和记录。本轮验证范围、实际命令、保留证据和具体阻塞见 [2026-10-05 测试整改记录](docs/test-reliability-2026-10-05.md)。
-
-真实流程的执行准备见 [57 文件与三个失败逐项阻塞表](docs/real-e2e-blockers.md)。`node scripts/audit-real-e2e-prerequisites.mjs`只读取允许的测试源码并解析静态导入、检查原 86 文件及逐项准备清单，不执行测试、不读取账号/管理员受限辅助文件或环境配置。其 stdout 记录每项源文件摘要和限制链路；检查成功不能写成 E2E 通过。原首页 resize 用例已补缩放/鼠标拖动后的保存刷新检查，仍须真实运行和独立布局记录读回；当前 H/A 限制与原三个失败状态保留。不要把人工登录、配置存在、源代码修改或静态检查通过当作完整认证套件准入或业务成功。
-
-验证命令、真实页面与数据库凭证、响应式截图和交付边界见 [批发费用与提成验证报告](docs/wholesale-customer-commission-verification.md)。
+新增或移动源码后运行 npm run learning:refresh，评审两仓库生成的模块归属与文档，再运行学习检查。只读检查不会自动修复或重置环境。
+
+[本地验收清单](docs/onboarding/reference/verification-2026-11-11-current-candidate.md)记录应用生产构建、两仓库可执行回归、服务检查和仍待验收的原测试入口。
+
+运行 `node scripts/audit-real-e2e-prerequisites.mjs` 可查看历史测试集合、当前入口增删改名及准备条件变化。该命令检查静态导入，所有测试执行结果仍以各自运行证据为准。[测试验证手册](docs/onboarding/how-to/verification.md)
+
+整理本地浏览器产物前可运行 `npm run clean:artifacts -- --dry-run` 查看将移动或删除的路径。预演保持文件和目录原样，归档保留已有的同名证据。[验证与清理](docs/onboarding/how-to/verification.md)
+
+浏览器截图归属当前测试和重试，整轮运行还须指定新的 `--output` 目录，避免下一轮清空旧证据。原认证套件的访问准入与独立截图路径探针分别记录，详见[界面测试的截图保留](docs/onboarding/explanation/workspace-ui-tests.md#截图怎样保留每轮证据)。
+
+原页面测试的独立数据库查询须显式声明可重建专属实例，校验本地API与数据库属于同一项目，并在只读事务中核对记录；不会从认证环境助手读取配置或使用固定共享容器。环境变量、限制和月份筛选示例见[原测试的本地SQL说明](docs/onboarding/explanation/test-controls-and-local-sql.md#独立读取的专属目标与只读事务)。原认证入口的访问限制仍有效。
+
+独立[认证迟到响应验证](docs/onboarding/reference/verification-2026-11-11-session-late-browser.md)覆盖中英文桌面／手机的退出和跨标签账号切换。学习登录助手读取页面实际语言的公告按钮并等待关闭；响应取消、旧权限实际送达与刷新后的身份分别核对。
+
+本机改密可运行 `npm run test:learning:browser -- auth-password-maintenance`，只允许本项目 Mailpit 和专属账号。账号页发信、真实恢复表单、数据库行版本及全新窗口的新旧密码登录联合核对；本机模板、故障注入和验收范围见[改密维护记录](docs/onboarding/reference/verification-2026-11-11-password-maintenance.md)。页面提示结果未确认时，先用无痕窗口核对新密码。
+
+逐文件职责审查另见[审查台账说明](docs/onboarding/how-to/source-review.md)。`npm run check:learning:complete` 要求每份源码完成有效审查；默认学习检查会显示真实待审数量。`check:edge` 使用固定 Deno 版本检查后台真实入口，首次运行需要下载工具和依赖，不启动后台服务。
+
+新增关键写入时，在操作契约登记唯一编号、完成凭证和实际调用文件。纯后台任务登记 Edge 入口。[操作清单与验证](docs/onboarding/how-to/verification.md)
+
+依赖安全检查执行`npm run test:security-dependencies`，当前9项包含minimatch锁文件防回退、真实调用方接口及受限模式展开；另分别运行`npm audit --json --ignore-scripts`和`npm audit --omit=dev --json --ignore-scripts`。CVE-2026-118764的现行范围排除3.x，本地11.0.1修补与托管平台重扫分开记录。[告警与验证说明](docs/onboarding/reference/verification-2026-11-06-admin-cli-and-security-tests.md#2026-11-10minimatch告警核对与防回退)
+
+资料库的故障恢复覆盖[递归删除中断与撤权](docs/onboarding/reference/verification-2026-11-11-document-terminal.md)，以及[复制和移动的权限、部分失败与真实超时](docs/onboarding/reference/verification-2026-11-11-document-copy-boundaries.md)。关键操作从中英文桌面／手机页面发起，按原批次核对数据库与实际对象。维护入口见[分阶段调用链](docs/onboarding/explanation/document-library-flow.md)。
+
+订单评估的[中断恢复验证](docs/onboarding/reference/verification-2026-11-11-assessment-interruption.md)包含中英文桌面／手机主动关闭、真实进程终止、原期限到期处理和重启后再次生成。后续[自然定时到期](docs/onboarding/reference/verification-2026-11-11-assessment-automatic.md)在专属实例启用原一分钟规则，实际等待原期限并核对cron、尝试、运行及告警；主项目计划任务继续暂停。
+
+汇率专项随`npm run test:learning`执行，单独运行可使用`node --test scripts/learning/exchange-rate-local-source.test.mjs scripts/learning/exchange-rate-sync-cli.test.mjs`。原后端CLI另已核对实际本地Auth/网关/Edge/SQL、完整重试及限定清理，外部报价为本地模拟；真实银行、原Web认证页面仍待验收。[范围与维护入口](docs/onboarding/reference/verification-2026-11-11-rate-cli.md)
+
+汇率重算的数据库学习入口见[三组SQL实操](../PT5-dropshipping-supabase/docs/onboarding/exchange-rate-sql-tests.md#在隔离副本练习汇率重算)。使用空结构专属副本、最小合成样本和显式会话标记；实际重算、岗位拒绝、最终回滚分别核对，合成核验不算真实中行凭证。
+
+库存订单和信贷数据库测试已按原顺序拆成四组，见[库存SQL维护](../PT5-dropshipping-supabase/docs/onboarding/inventory-sql-tests.md)。新增写前样本/会话检查，父文件须由psql按文件包含；员工独立场景与暂缓的客户归属、完整套件分别记录。
+
+库存订单浏览器测试按角色和流程拆分。维护页面用例、精确订单凭证和夹具清理时，从[库存订单数据流](docs/onboarding/explanation/customer-inventory-flow.md#维护库存浏览器用例)进入，那里也记录了可单独运行的夹具检查和原套件执行状态。
+
+原模板草稿页面测试已按生命周期、目录、转正和恢复拆组，使用专属自动准入、限定故障/清理及测试独占证据路径。[维护与范围](docs/onboarding/explanation/template-draft-tests.md)区分11项离线风险测试、实际数据库凭证和仍未执行的原Auth/页面套件。
+
+原运营报销测试改用单worker的本次UUID夹具：周期有旧记录就拒绝，报销和清理均核对真实编号/版本，凭证写入独占附件。[维护入口](docs/onboarding/explanation/operator-reimbursement-tests.md)区分12项专项、正式数据库函数与尚未执行的原四页面。
+
+认证维护可从[会话读取链路](docs/onboarding/explanation/auth-read-paths.md)查找浏览器缓存、服务端权限和登录恢复。会话迟到结果用例随 `npm run test:learning` 执行。
+
+普通订单与批发订单走不同入口。旅游的停用守卫、普通订单保留源码和独立验证入口见[普通订单与停用边界](docs/onboarding/explanation/tourism-orders-flow.md)。
+
+保留的旅游团队、人员和客户查询见[旅游团队与人员目录](docs/onboarding/explanation/tourism-collaboration-flow.md)。
+旅游任务看板的筛选、类型维护、改派、领取、提审、审核与附件清理见[旅游任务数据流](docs/onboarding/explanation/tourism-task-flow.md)。
+历史订单与任务佣金的回执、原表读回和本地权限见[历史佣金怎么结算](docs/onboarding/explanation/tourism-task-flow.md#历史佣金怎么结算)。
+维护历史看板时，可按[字段、筛选与团队标签](docs/onboarding/explanation/tourism-task-flow.md#修改历史看板的字段筛选或团队标签)定位数据和展示代码。
+
+后台任务的运行编号、终态与 Storage 凭证见[操作凭证与运行账本](docs/onboarding/explanation/operation-run-flow.md)。
+
+普通订单的终端维护使用 `npm run supabase:admin -- summary`、`table`、`order` 和 `updateStatus`，连接取自显式进程变量、.env.local、.env。状态更新须命中真实订单并独立读回，未核对时以非零状态退出并提示重新查询。[命令结构与验证](docs/onboarding/reference/verification-2026-11-06-admin-cli-and-security-tests.md)
+
+合同测试的固定期望、边界反例和受控浏览器文档见[断言检查指南](docs/onboarding/reference/verification-2026-11-06-wholesale-scope-contracts.md)。维护辅助检查时运行对应 `npm run test:contracts -- <文件名>`，再按业务用例核对真实页面。
+
+原账号切换用例的职责拆分、回滚资料和原套件执行前提见[原 E2E 源码审查](docs/onboarding/reference/verification-2026-11-06-classification-access-e2e-review.md)。实际角色登录和管理员操作继续按原套件准入记录执行。
+
+原文档锁进程、日期输入与首页持久化的辅助代码见[测试辅助模块阅读入口](docs/onboarding/reference/verification-2026-11-06-finance-logistics-helpers.md#测试辅助模块阅读入口)。锁进程的有界等待、分块消息和失败收尾随 npm run test:learning 验证，真实锁与原认证套件的前提单独保留。
+
+文档锁现在只接受完整专属项目：显式设置 `PT5_E2E_FIXTURE_MODE=disposable`、`PLAYWRIGHT_BASE_URL`、`NEXT_PUBLIC_SUPABASE_URL`、`PT5_E2E_DATABASE_PROJECT` 和 `PT5_E2E_DATABASE_CONTAINER`。项目名须以 `pt5-e2e-` 或 `pt5-learning-` 开头，容器为 `supabase_db_<项目名>`；程序核对数据库/网关标签、API端口、共同网络以及暂停调度后才取锁。当前共享项目不满足该条件；完整正向环境仍待验收。[锁与清理边界](docs/onboarding/explanation/test-controls-and-local-sql.md#文档写锁的专属项目)。
+
+文档用例的页面步骤、文件凭证、批次身份和限定回收见[文档测试夹具](docs/onboarding/explanation/document-test-fixtures.md)。独立清理测试随 npm run test:learning 执行，失败、零影响和残留记录均不能记作回收成功。
+
+后端物流与后台SQL维护命令使用单独的无网络tmpfs副本，显式声明项目和容器后才能执行；准备、回收及原超时校验示例见[后端SQL维护目标](../PT5-dropshipping-supabase/docs/onboarding/environment.md#sql维护命令的专属目标)。该SQL副本与需要Web/Auth/Storage的完整端到端隔离项目分别准备。
+
+孤立附件登记的精确可见性与数据库治理检查见[专属SQL步骤](../PT5-dropshipping-supabase/docs/onboarding/attachment-visibility-sql.md)。同名其他对象不能替代本次ID/路径，SQL对象登记恢复与Storage实际文件删除分别核对。
+
+导航偏好与模板发布的原SQL及真实指纹夹具见[后端维护指南](../PT5-dropshipping-supabase/docs/onboarding/navigation-template-sql.md)。SQL逐次读取本人记录、版本、指针和修订，实际页面、Auth、断线与并发仍按各模块验收。
+
+物流四历史的局部重建用`node scripts/verify-logistics-migrations.mjs`在后端执行，需另备最小固定夹具；每套SQL保存点及演练结束后均核对恢复。步骤、授权/日期夹具及范围见[历史迁移事务演练](../PT5-dropshipping-supabase/docs/onboarding/logistics-archive-history.md#四份历史迁移的事务演练)。
+
+后台运行的状态机、结汇补价和目录权限用后端`node scripts/verify-operation-regressions.mjs`分别验证；固定角色与任务配置仅放专属副本，步骤及凭证见[当前后台SQL回归](../PT5-dropshipping-supabase/docs/onboarding/operation-reimbursement-history.md#当前三套sql的专属回归入口)。
+
+本地过期清理脚本 `scripts/document-cleanup-local.mjs` 会领取整个实例的过期项，仅用于实际可重建的专属项目。它与文档锁、故障SQL共用上述五项显式配置和真实项目/端口/网络/调度预检，服务密钥另由专属进程配置提供；不读取共享 `.env.local` 或借用共享项目端口。它不按当前测试前缀收窄领取范围，不能在共享库试跑。失败或部分失败仍输出结果JSON并非零退出，调用方应同时检查终态和退出码。[执行边界与凭证](docs/onboarding/explanation/document-test-fixtures.md#本地清理入口与原文档用例)
+公司模板的页面、上传载荷、模板版本计数，以及正文/草稿/操作回执的测试清理，见同指南的[公司模板入口](docs/onboarding/explanation/document-test-fixtures.md#公司模板正文和操作回执)。打印设置、数据超限与串行保存分开维护，原套件准入条件继续适用。
+
+普通HTML及原报价单测试的证据按文档UUID保存为`output/generic-template-saving-<文档编号>-evidence.json`或`output/raw-quotation-saving-<文档编号>-evidence.json`，同名文件不会覆盖。清理助手的17项错误/影响数/归属检查可独立运行`node --experimental-strip-types --test scripts/learning/company-template-records.test.mjs`；这不代表原认证E2E已运行。
+目录旅程、岗位边界和响应丢失恢复各有独立用例；多个资源顺序清理并保留全部失败。下拉框、折叠筛选、闭包模板和本地 SQL 工具见[原测试辅助维护](docs/onboarding/explanation/test-controls-and-local-sql.md)，全局参数用例仍要求可重建的隔离完整实例。
+
+邮件原场景按草稿、权限、发信、发件设置、隔离、收件和工作区操作拆分；阅读路线、自动夹具与模拟服务边界见[邮件测试维护](docs/onboarding/explanation/mail-test-boundaries.md)。纯模拟检查随 npm run test:learning 运行，原套件执行仍需可重建完整隔离实例及原入口准入。
+
+[邮件工作区原SQL](../PT5-dropshipping-supabase/docs/onboarding/mail-workspace-sql.md)按规则/会话/收件职责相对包含，复制核对四文件后用psql文件模式执行。后台实际使用服务角色，规则审计、真实负责人/版本及收件领取凭证独立核对；该数据库副本不执行真实Auth或供应商发送。
+
+公司邮箱/飞书授权及整表保存故障还要求专属数据库项目与容器声明；实际核对网关/API映射、数据库共同网络及调度/队列状态后才准备夹具。故障 SQL 使用该专属目标并事务核对装卸；查询错误、空版本和零影响不能算成功。环境变量、调用链和未执行范围见上述邮件测试维护中的授权用例说明。
+
+固定邮件数据的连接、十九表清理、邮箱、人员和会话准备见[邮件数据夹具](docs/onboarding/explanation/mail-fixture-data.md)。直接调用同样要求显式 disposable 模式及 Web／Supabase 本地地址；插入、清理各自独立核对，纯 SDK 传输检查不计为原端到端通过。
+
+工作台外壳、搜索、导航、日期、分页和动效的原用例阅读路线见[界面测试维护](docs/onboarding/explanation/workspace-ui-tests.md)。分页需实际完整隔离实例，动效按认证页和工作台分开；日期 data-value 不是最终表单提交凭证。
+
+`npm run learning:refresh` 同时生成逐文件审查覆盖表，只有摘要和职责记录有效才计为已审；`npm run check:learning` 会拒绝旧覆盖表。人工批准仍需逐文件填写，刷新不会批准源码。
+
+参数版本、费用和客户准入的原用例按[场景、数据与夹具阅读顺序](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md)维护。全局参数恢复仅在可重建的隔离实例执行；上海日历边界随 npm run test:learning 检查。
+
+批发费用的[原页面编排与收尾](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10原费用页面编排与收尾)说明六场景、原请求登记、专属历史/只读客户订单、截图归属与路由排空。[参数夹具版本保护](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10费用参数夹具的版本保护)及[客户与订单图回收](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10费用客户与订单图的限定回收)使用完整版本和限定清理，不回退订单编号。源码审查与专属数据库/受控浏览器已分别留证，原Auth及实际页面验收尚未执行。
+
+[订单原请求与初始凭证](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10订单原请求与初始凭证)补齐创建前登记、完整父子图/参数核对和丢回执回收，区分当前新客户与专属历史客户样本；结汇/改单终态见下方状态模块。
+
+[结汇与改单的预登记状态](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10结汇与改单的预登记状态)先核对完整终态再回收；[提成临时故障恢复](docs/onboarding/reference/verification-2026-11-06-parameter-expense-test-review.md#2026-11-10提成临时故障与精确恢复)保留正文/恢复全部错误，陌生字段或同值新版本拒绝覆盖。上述助手已接入原费用场景；实际Auth页面与完整回归结果单独记录。
+
+`npm run test:learning:browser` 使用专属账号验证中英文首页布局和待办、服务说明页、个人资料保存与审核、邀请链接读取恢复，以及不提交账号的注册进度。媒体用例执行真实上传、响应丢失重试、人工审核、预览恢复和删除，并独立核对数据库、文件哈希与 Storage；它要求本地 Edge 服务运行，图片供应商设为 `disabled`。覆盖双语和响应式排版，清理自有夹具；需先按验证手册确认本地写入前提。
+
+维护批发功能可按链路定向复跑。建单、附件、直接结汇和本地模拟订单评估的用例见[订单数据流](docs/onboarding/explanation/wholesale-order-flow.md)。人员目录、客户档案的八岗位权限、独立开通批发业务、删除保护、账号合并、并发编辑和推荐关系用例见[批发目录指南](docs/onboarding/explanation/wholesale-people-flow.md)。
+
+VIP的栏目入口、数据库目录和开通续期权限分别定位，见[VIP数据流](docs/onboarding/explanation/business-vip-flow.md)。`npm run test:learning:browser -- wholesale-vip-access`使用专属账号核对八岗位、中英文桌面手机、真实会员／收费编号及刷新；所有收费记录仅属于本地夹具。
+
+客户资料上传与档案删除的并发检查使用 `npm run test:learning:browser -- wholesale-customer-document-upload-race`。它通过两个页面提交真实本地请求，核对文件登记、实际 Storage 字节及删除后的结果。
+
+工作台助手的断流、重复提交和配额释放验证见[助手请求与运行凭证](docs/onboarding/explanation/assistant-chat-flow.md)。流协议可单独运行 `npm run test:assistant-stream`，浏览器验收使用本地模拟供应商和专属账号。
+
+助手结汇的三组用例按收款编号和原请求号独立核对，取消、权限拒绝和歧义提示须保留原任务与配额。专属项目、临时配置探针和回收见[助手结汇测试维护](docs/onboarding/explanation/assistant-chat-flow.md#结汇指令)。
+
+账号页使用 `npm run test:learning:browser -- admin-account-receipts person-private-note` 验证账号调整、Auth 恢复及私有备注。维护入口见[账号管理与私有备注](docs/onboarding/explanation/account-and-private-note-flow.md)。
+
+人工汇率使用 `npm run test:learning:browser -- exchange-rate-manual` 验证录入、改价、错误回执与删除。同步回执使用 `npm run test:learning:browser -- exchange-rate-sync-receipt`，模拟函数响应并独立读取本地报价。日期、权限和后台入口见[汇率报价与同步链路](docs/onboarding/explanation/exchange-rate-flow.md)。
+
+[原历史页面与报价夹具](docs/onboarding/reference/verification-2026-11-06-exchange-rate-sync-receipts.md#2026-11-10原历史页面与报价夹具)说明专属报价、无供应商凭据的本地失败边界、完整版本/引用保护清理及原异步清理合同。七项专项随`npm run test:learning`执行；queued与单次partial_failed分开核对，原Auth/真实页面和银行验收单独记录。
+
+资料上传恢复用 `npm run test:document-upload-recovery` 复现服务内部丢回执。上传重送、权限撤回、批量操作断线及预览与下载的浏览器命令见[资料库数据流](docs/onboarding/explanation/document-library-flow.md)。
+
+多层复制可用 `npm run test:learning:browser -- document-library-batch-interruption --grep 多层目录复制` 定向验收中英文和桌面/手机。用例从页面上传三层文件并复制整树，独立核对模板内容、目录父链、文件哈希和刷新结果；记录见[多层复制验收](docs/onboarding/reference/verification-2026-11-05-document-batches.md#2026-11-09-多层目录复制补充)。
+
+递归删除用 `npm run test:learning:browser -- document-library-batch-interruption --grep 递归删除` 验证11项清单请求间中断或伪成功后的原批次续办。删除终态和夹具清理以完整Storage列表确认对象消失，普通请求错误及旧成功回执均不足以证明删除；范围与结果见[删除验收](docs/onboarding/reference/verification-2026-11-05-document-batches.md#2026-11-09-递归删除与对象缺失凭证)。
+
+公司模板发布与断线重试、草稿转正、正式保存和另存为的维护入口与本地验收命令见[公司模板与文档生命周期](docs/onboarding/explanation/template-document-lifecycle.md)。另存为时可重试目录查询并保留已输入的名称。
+
+库存订单、商品和专属信贷见[库存订单数据流](docs/onboarding/explanation/customer-inventory-flow.md)，内有附件登记丢响应和原路径核对的本地浏览器命令。
+
+[物流数据流](docs/onboarding/explanation/wholesale-logistics-flow.md)列出主库分页、店铺归属区间与后台断点恢复的入口和验证命令。[原页面测试维护](docs/onboarding/explanation/logistics-page-tests.md)说明独占店铺的完整版本、两表回收、额外角色页面收尾和同步隔离；原Auth产品页面另行验收。
+
+[结汇收款数据流](docs/onboarding/explanation/wholesale-settlement-release-flow.md)区分收款发布、订单分配、清空核对和两项月度统计，也列出发布断线后按原编号核对与重试的定向测试。
+
+[批发提成与佣金链路](docs/onboarding/explanation/wholesale-commission-flow.md)列出两个标签的权限、数据库入口、提成结算回执和缺少报价时的页面反馈。[原合并页测试维护](docs/onboarding/explanation/commission-merge-tests.md)说明专属订单、完整行版本、函数故障恢复和限定清理；12专项/真实PG证据与原Auth页面分开记录。
+
+[批发业务参数链路](docs/onboarding/explanation/business-parameter-flow.md)说明百分数输入、发布与预约、规则版本及订单引用，并区分共享项目页面检查和隔离库写入。
+
+[公司费用与运营报销链路](docs/onboarding/explanation/expenses-flow.md)区分两套权限、数据表和核对方式，列出新增断线恢复及运营周期确认的定向测试。
+
+[审核中心链路](docs/onboarding/explanation/review-center-flow.md)说明三类待审记录、媒体预览权限及审核结果的核对方式。
+隐私申请与媒体审核的权限修复及回归见[提交与审核权限验证](docs/onboarding/reference/verification-2026-11-06-review-submission-boundaries.md)。
+
+后台图片认领及旅游停用时的历史读取，按后端[审核SQL维护](../PT5-dropshipping-supabase/docs/onboarding/review-sql-tests.md)准备非空专属夹具、执行真实数据库角色并逐套核对恢复。SQL通过不代表页面、Auth、Storage或真实AI通过。
+
+[公告模块](docs/onboarding/modules/announcements.md)说明管理员维护、工作台已读回执和登录页公开公告的权限与验证入口。
+
+[邮件会话链路](docs/onboarding/explanation/mail-thread-flow.md)列出邮箱工作台入口、负责人权限、已读位置、回复建议和转交的本地验收方法。转交后，旧负责人已打开的会话会在页面确认权限变化时收起。
+同一指南也列出发件人设置、公司邮箱授权、飞书回跳、Gmail 收发和收件隔离的服务端入口。
+公司邮箱授权已有当前候选的 8 个专属本地页面场景，包含独立数据库凭证、重复回调、事务失败及回程中断。[授权链验证](docs/onboarding/reference/verification-2026-11-11-mail-oauth-browser.md)
+收件回补和 Watch 续订可用 `npm run test:mail-inbound-recovery` 在本机复现。
+推送身份用 `npm run test:mail-google-push` 核对本机证书与真实官方验签。入站岗位边界随 `npm run test:mail-intake` 执行，路由和负责人选择器共用在职业务员目录。[推送与岗位验证](docs/onboarding/reference/verification-2026-11-11-google-push.md)
+Watch 已另用真实凭据刷新、HTTP 和专属 Docker 数据库核对，包含旧收件游标保留及失败恢复。[续订接线证据](docs/onboarding/reference/verification-2026-11-11-mail-watch.md)
+收件 worker 使用后端的收件事件结算迁移。两个仓库按本地启动步骤更新后，再运行邮件后台验证。
+
+完整 npm run test:regression 包含真实本地业务写入，必须先满足[验证前提](docs/onboarding/how-to/verification.md)。历史测试结果、受控合同、真实本地与第三方验收分别记录。
+
+## 维护参考
+
+- [完整配置、业务规则与运行手册](docs/reference/maintenance-handbook.md)：原 README 详细内容归入可查阅参考。
+- [后端学习入口](../PT5-dropshipping-supabase/docs/onboarding/README.md)。
+- [物流回滚维护](../PT5-dropshipping-supabase/docs/onboarding/logistics-archive-history.md#回滚资料怎样维护)：后端的`node scripts/verify-logistics-rollback.mjs`只在自动创建的隔离副本执行原SQL，核对停工保护及失败后的完整恢复。
+- [本次改造与验证记录](docs/onboarding/implementation-report.md)。
+
+网页文案放中英文消息；页面只组装与调度，领域逻辑放独立模块。保持现有职责和行数检查。Web、Supabase Cloud、GitHub 与网站部署是独立结果，未经请求不自动上传或部署。

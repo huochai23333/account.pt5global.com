@@ -13,22 +13,15 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
-  type AdminTaskRow,
-  type AdminTaskStatusFilter,
   type AdminTasksFilters,
   type AdminTasksPageData,
   type AdminTasksSearchParams,
 } from "@/lib/admin-tasks";
+import { buildAdminTasksRoute, updateAdminTaskFilterDraft } from "@/lib/admin-task-route";
 import { paginateDashboardItems } from "@/lib/dashboard-pagination";
 
 import { useWorkspaceSyncEffect } from "@/components/dashboard/workspace-session-provider";
-import {
-  normalizeSearchText,
-} from "@/components/dashboard/dashboard-shared-ui";
-import {
-  resolveTaskActorLabel,
-} from "@/components/dashboard/tasks/tasks-display";
-
+import { filterAdminTaskList } from "./admin-task-list-filters";
 import {
   areAdminTaskFiltersEqual,
 } from "./admin-tasks-view-model-shared";
@@ -51,29 +44,23 @@ export function useAdminTasksRouteState({
   const taskTypeOptions = initialData.taskTypeOptions;
   const canView = initialData.canView;
 
-  const routeStateKey = useMemo(
-    () =>
-      [
+  const initialDraft = useMemo(
+    () => ({
+      ...initialView,
+      routeKey: JSON.stringify([
         initialView.page,
         initialView.filters.searchText,
         initialView.filters.targetRole,
         initialView.filters.status,
-      ].join("|"),
-    [
-      initialView.filters.searchText,
-      initialView.filters.status,
-      initialView.filters.targetRole,
-      initialView.page,
-    ],
+      ]),
+    }),
+    [initialView],
   );
-  const [draftState, setDraftState] = useState(() => ({
-    filters: initialView.filters,
-    page: initialView.page,
-    routeStateKey,
-  }));
-  const usingStaleDraft = draftState.routeStateKey !== routeStateKey;
-  const filters = usingStaleDraft ? initialView.filters : draftState.filters;
-  const page = usingStaleDraft ? initialView.page : draftState.page;
+  const [draftState, setDraftState] = useState(initialDraft);
+  const currentDraft = draftState.routeKey === initialDraft.routeKey ? draftState : initialDraft;
+  // 地址变化时丢弃旧草稿，返回旧地址也应使用该地址重新提供的初值。
+  if (currentDraft !== draftState) setDraftState(currentDraft);
+  const { filters, page } = currentDraft;
   const deferredSearchText = useDeferredValue(filters.searchText);
   const refreshTaskBoard = useCallback(() => {
     startRefreshTransition(() => {
@@ -82,85 +69,22 @@ export function useAdminTasksRouteState({
   }, [router, startRefreshTransition]);
 
   const replaceTasksRoute = useCallback(
-    (next: {
-      filters?: AdminTasksFilters;
-      page?: number;
-    }) => {
-      const nextFilters = next.filters ?? filters;
-      const nextPage = next.page ?? page;
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      if (nextFilters.searchText) {
-        nextParams.set("searchText", nextFilters.searchText);
-      } else {
-        nextParams.delete("searchText");
-      }
-
-      if (nextFilters.status !== "all") {
-        nextParams.set("status", nextFilters.status);
-      } else {
-        nextParams.delete("status");
-      }
-
-      if (nextFilters.targetRole !== "all") {
-        nextParams.set("targetRole", nextFilters.targetRole);
-      } else {
-        nextParams.delete("targetRole");
-      }
-
-      if (nextPage > 1) {
-        nextParams.set("page", String(nextPage));
-      } else {
-        nextParams.delete("page");
-      }
-
-      const nextQuery = nextParams.toString();
-
+    (next: AdminTasksSearchParams) => {
+      const href = buildAdminTasksRoute(pathname, searchParams.toString(), next);
       startRefreshTransition(() => {
-        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
-          scroll: false,
-        });
+        router.replace(href, { scroll: false });
       });
     },
-    [filters, page, pathname, router, searchParams, startRefreshTransition],
+    [pathname, router, searchParams, startRefreshTransition],
   );
 
   useWorkspaceSyncEffect(refreshTaskBoard);
 
-  const filteredTasks = useMemo(() => {
-    const normalizedSearchText = normalizeSearchText(deferredSearchText);
-
-    return tasks.filter((task) => {
-      if (!doesTaskMatchStatusFilter(task, filters.status)) {
-        return false;
-      }
-
-      if (filters.targetRole !== "all" && !task.target_roles.includes(filters.targetRole)) {
-        return false;
-      }
-
-      if (!normalizedSearchText) {
-        return true;
-      }
-
-      const searchableText = [
-        task.task_name,
-        task.task_intro,
-        task.task_type_label,
-        task.review_reject_reason,
-        resolveTaskActorLabel(task.creator, task.created_by_user_id, sharedT),
-        task.creator?.email,
-        resolveTaskActorLabel(task.accepted_by, task.accepted_by_user_id, sharedT),
-        task.accepted_by?.email,
-        task.target_roles.map((role) => sharedT(`targetRoles.${role}`)).join(" "),
-      ]
-        .map((value) => normalizeSearchText(value))
-        .filter(Boolean)
-        .join(" ");
-
-      return searchableText.includes(normalizedSearchText);
-    });
-  }, [deferredSearchText, filters.status, filters.targetRole, sharedT, tasks]);
+  const { status, targetRole } = filters;
+  const filteredTasks = useMemo(
+    () => filterAdminTaskList(tasks, { searchText: deferredSearchText, status, targetRole }, sharedT),
+    [deferredSearchText, sharedT, status, targetRole, tasks],
+  );
 
   const tasksPagination = useMemo(
     () => paginateDashboardItems(filteredTasks, page),
@@ -191,7 +115,8 @@ export function useAdminTasksRouteState({
   ]);
 
   useEffect(() => {
-    if (areAdminTaskFiltersEqual(filters, initialView.filters)) {
+    // 翻页会立即写入新地址；已进入后续页时不要再用延迟筛选跳回第一页。
+    if (page !== 1 || areAdminTaskFiltersEqual(filters, initialView.filters)) {
       return;
     }
 
@@ -205,23 +130,16 @@ export function useAdminTasksRouteState({
     return () => {
       globalThis.clearTimeout(timeoutId);
     };
-  }, [filters, initialView.filters, replaceTasksRoute]);
+  }, [filters, initialView.filters, page, replaceTasksRoute]);
 
   const updateFilter = useCallback(
     <Key extends keyof AdminTasksFilters>(
       key: Key,
       value: AdminTasksFilters[Key],
     ) => {
-      setDraftState({
-        filters: {
-          ...filters,
-          [key]: value,
-        },
-        page: 1,
-        routeStateKey,
-      });
+      setDraftState((current) => updateAdminTaskFilterDraft(current, initialDraft, key, value));
     },
-    [filters, routeStateKey],
+    [initialDraft],
   );
 
   const goToPage = useCallback(
@@ -229,14 +147,14 @@ export function useAdminTasksRouteState({
       setDraftState({
         filters,
         page: nextPage,
-        routeStateKey,
+        routeKey: initialDraft.routeKey,
       });
       replaceTasksRoute({
         filters,
         page: nextPage,
       });
     },
-    [filters, replaceTasksRoute, routeStateKey],
+    [filters, initialDraft.routeKey, replaceTasksRoute],
   );
 
   const goToNextPage = useCallback(() => {
@@ -270,29 +188,4 @@ export function useAdminTasksRouteState({
     updateFilter,
     viewerId,
   };
-}
-
-function doesTaskMatchStatusFilter(
-  task: AdminTaskRow,
-  statusFilter: AdminTaskStatusFilter,
-) {
-  if (statusFilter === "all") {
-    return true;
-  }
-
-  if (statusFilter === "to_be_accepted") {
-    return task.accepted_count === 0;
-  }
-
-  if (statusFilter === "accepted") {
-    return task.accepted_count > 0;
-  }
-
-  if (statusFilter === "completed") {
-    return task.completed_count > 0;
-  }
-
-  return task.acceptance_assignees.some(
-    (assignee) => assignee.task_status === statusFilter,
-  );
 }

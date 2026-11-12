@@ -8,7 +8,7 @@ import {
   getAdminPeopleUpdateErrorCode,
   type AdminPeopleUpdateErrorCode,
 } from "@/lib/admin-people-mutations";
-import { isCustomerTypeMark } from "@/lib/admin-people";
+import { isCustomerTypeMark } from "@/lib/admin-people-contract";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
 const STATUS_BY_ERROR_CODE = {

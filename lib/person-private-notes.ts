@@ -1,21 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { PERSON_PRIVATE_NOTE_MAX_LENGTH } from "./person-private-note-constants";
-import { withRequestTimeout } from "./request-timeout";
+import { readPersonPrivateNoteInput, readPersonPrivateNoteReceipt } from "./person-private-note-contract";
+import { REQUEST_TIMEOUT_ERROR_NAME, withRequestTimeout } from "./request-timeout";
 import { getCurrentSessionContext } from "./user-self-service";
 import { isSalesStaffRole } from "./sales-staff-roles";
-import { normalizeOptionalString } from "./value-normalizers";
-
-export type PersonPrivateNotePayload = {
-  targetUserId: string;
-  note: string | null;
-};
-
-export type PersonPrivateNoteResult = {
-  targetUserId: string;
-  note: string | null;
-  updatedAt: string | null;
-};
 
 export type PersonPrivateNoteErrorCode =
   | "forbidden"
@@ -35,8 +23,8 @@ export class PersonPrivateNoteMutationError extends Error {
 
 export async function savePersonPrivateNote(
   supabase: SupabaseClient,
-  input: PersonPrivateNotePayload,
-): Promise<PersonPrivateNoteResult> {
+  input: unknown,
+) {
   const sessionContext = await getCurrentSessionContext(supabase);
 
   if (
@@ -48,7 +36,10 @@ export async function savePersonPrivateNote(
     throw new PersonPrivateNoteMutationError("forbidden");
   }
 
-  const payload = normalizePayload(input);
+  const payload = readPersonPrivateNoteInput(input);
+  if (!payload) throw new PersonPrivateNoteMutationError("invalidInput");
+
+  // 始终使用当前登录身份调用数据库；备注的所有者取自数据库会话。
   const { data, error } = await withRequestTimeout(
     supabase.rpc("save_person_private_note", {
       _note: payload.note,
@@ -60,13 +51,17 @@ export async function savePersonPrivateNote(
     throw error;
   }
 
-  const savedNote = Array.isArray(data)
-    ? normalizePersonPrivateNoteResult(data[0])
-    : normalizePersonPrivateNoteResult(data);
-
-  if (!savedNote) {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
     throw new PersonPrivateNoteMutationError("notFound");
   }
+
+  const savedNote = readPersonPrivateNoteReceipt({
+    targetUserId: row.target_user_id,
+    note: row.private_note,
+    updatedAt: row.updated_at,
+  }, payload);
+  if (!savedNote) throw new PersonPrivateNoteMutationError("unknown");
 
   return savedNote;
 }
@@ -78,7 +73,9 @@ export function getPersonPrivateNoteErrorCode(
     return error.code;
   }
 
-  const message = getRawErrorMessage(error).toLowerCase();
+  const message = typeof error === "object" && error !== null && "message" in error
+    ? String(error.message).toLowerCase()
+    : "";
 
   if (
     message.includes("person_private_note_forbidden") ||
@@ -100,6 +97,7 @@ export function getPersonPrivateNoteErrorCode(
   }
 
   if (
+    (error instanceof Error && error.name === REQUEST_TIMEOUT_ERROR_NAME) ||
     message.includes("failed to fetch") ||
     message.includes("fetch failed") ||
     message.includes("timed out") ||
@@ -109,57 +107,4 @@ export function getPersonPrivateNoteErrorCode(
   }
 
   return "unknown";
-}
-
-function normalizePayload(
-  input: PersonPrivateNotePayload,
-): PersonPrivateNotePayload {
-  const targetUserId =
-    typeof input.targetUserId === "string" ? input.targetUserId.trim() : "";
-  const note = typeof input.note === "string" ? input.note.trim() : "";
-
-  if (!targetUserId || note.length > PERSON_PRIVATE_NOTE_MAX_LENGTH) {
-    throw new PersonPrivateNoteMutationError("invalidInput");
-  }
-
-  return {
-    targetUserId,
-    note: note.length > 0 ? note : null,
-  };
-}
-
-function normalizePersonPrivateNoteResult(
-  value: unknown,
-): PersonPrivateNoteResult | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  const targetUserId = normalizeOptionalString(value.target_user_id);
-
-  if (!targetUserId) {
-    return null;
-  }
-
-  return {
-    targetUserId,
-    note: normalizeOptionalString(value.private_note),
-    updatedAt: normalizeOptionalString(value.updated_at),
-  };
-}
-
-function getRawErrorMessage(error: unknown) {
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String(error.message).trim();
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

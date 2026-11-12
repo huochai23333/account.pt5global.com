@@ -7,10 +7,8 @@ import { useTranslations } from "next-intl";
 import {
   addTeamSalesman,
   deleteTeamProfile,
-  getTeamManagementPageData,
   removeTeamSalesman,
   saveTeamProfile,
-  type TeamManagementPageData,
 } from "@/lib/team-management";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
@@ -22,13 +20,13 @@ import {
 } from "./team-management-view-model-shared";
 
 export function useTeamManagementActions({
-  applyTeamManagementPageData,
+  refreshQuietly,
   currentData,
   setBusyKey,
   setPageFeedback,
   supabase,
 }: {
-  applyTeamManagementPageData: (pageData: TeamManagementPageData) => void;
+  refreshQuietly: (preferredTeamId?: string | null) => Promise<void>;
   currentData: TeamManagementDataState;
   setBusyKey: Dispatch<SetStateAction<string | null>>;
   setPageFeedback: Dispatch<SetStateAction<PageFeedback>>;
@@ -50,55 +48,6 @@ export function useTeamManagementActions({
       throw error;
     }
   }, [supabase]);
-
-  const refreshQuietly = useCallback(
-    async (preferredTeamId?: string | null) => {
-      if (!supabase) {
-        return;
-      }
-
-      const nextPageData = await getTeamManagementPageData(
-        supabase,
-        preferredTeamId ?? currentData.selectedTeamId,
-      );
-
-      applyTeamManagementPageData(nextPageData);
-      setPageFeedback(null);
-    },
-    [applyTeamManagementPageData, currentData.selectedTeamId, supabase, setPageFeedback],
-  );
-
-  const refreshTeamManagementPage = useCallback(
-    async ({ isMounted }: { isMounted: () => boolean }) => {
-      if (!supabase) {
-        return;
-      }
-
-      try {
-        const nextPageData = await getTeamManagementPageData(
-          supabase,
-          currentData.selectedTeamId,
-        );
-
-        if (!isMounted()) {
-          return;
-        }
-
-        applyTeamManagementPageData(nextPageData);
-        setPageFeedback(null);
-      } catch (error) {
-        if (!isMounted()) {
-          return;
-        }
-
-        setPageFeedback({
-          tone: "error",
-          message: toTeamManagementErrorMessage(error, t),
-        });
-      }
-    },
-    [applyTeamManagementPageData, currentData.selectedTeamId, supabase, t, setPageFeedback],
-  );
 
   const handleSaveTeam = useCallback(async () => {
     if (!supabase || !currentData.teamNameDraft.trim()) {
@@ -315,41 +264,11 @@ export function useTeamManagementActions({
     t,
   ]);
 
-  const handleSelectTeam = useCallback(
-    async (teamId: string) => {
-      if (teamId === currentData.selectedTeamId) {
-        return;
-      }
-
-      setBusyKey(`team:${teamId}`);
-
-      try {
-        await refreshQuietly(teamId);
-      } finally {
-        setBusyKey(null);
-      }
-    },
-    [currentData.selectedTeamId, refreshQuietly, setBusyKey],
-  );
-
-  const handleRefresh = useCallback(async () => {
-    setBusyKey("refresh");
-
-    try {
-      await refreshQuietly(currentData.selectedTeamId);
-    } finally {
-      setBusyKey(null);
-    }
-  }, [currentData.selectedTeamId, refreshQuietly, setBusyKey]);
-
   return {
     handleAddSalesman,
     handleCreateTeam,
     handleDeleteTeam,
-    handleRefresh,
     handleRemoveSalesman,
     handleSaveTeam,
-    handleSelectTeam,
-    refreshTeamManagementPage,
   };
 }

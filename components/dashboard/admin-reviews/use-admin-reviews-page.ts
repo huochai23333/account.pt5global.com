@@ -1,18 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
 import {
   getAdminReviewsPageData,
   type AdminReviewsPageData,
-  approveMediaReview,
-  approveProfileChangeReview,
-  approvePrivacyReview,
-  rejectMediaReview,
-  rejectProfileChangeReview,
-  rejectPrivacyReview,
   type PendingMediaReviewWithPreview,
   type PendingPrivacyReviewRow,
 } from "@/lib/admin-reviews";
@@ -24,15 +18,13 @@ import {
   type FeedbackTone,
 } from "../dashboard-shared-ui";
 import { useWorkspaceSyncEffect } from "../workspace-session-provider";
-import { useDashboardConfirm } from "../dashboard-confirm-provider";
+import { useAdminReviewActions } from "./use-admin-review-actions";
 
 import type { BusyAction, ReviewTab } from "./types";
 
 type PageFeedback = { tone: FeedbackTone; message: string } | null;
 
 export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
-  const confirm = useDashboardConfirm();
-  const confirmT = useTranslations("DashboardFramework.confirm");
   const t = useTranslations("Reviews");
   const sharedT = useTranslations("DashboardShared");
   const sharedCopy = useMemo(() => createDashboardSharedCopy(sharedT), [sharedT]);
@@ -44,7 +36,7 @@ export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
   const [privacyRows, setPrivacyRows] = useState<PendingPrivacyReviewRow[]>(initialData.privacyRows);
   const [mediaRows, setMediaRows] = useState<PendingMediaReviewWithPreview[]>(initialData.mediaRows);
   const [profileRows, setProfileRows] = useState<PendingProfileChangeReviewRow[]>(initialData.profileRows);
-  const [busyRows, setBusyRows] = useState<Record<string, BusyAction>>({});
+  const refreshVersion = useRef(0);
   const [previewAsset, setPreviewAsset] = useState<PendingMediaReviewWithPreview | null>(null);
 
   const applyPageData = useCallback((pageData: AdminReviewsPageData) => {
@@ -64,17 +56,18 @@ export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
         return;
       }
 
+      const version = ++refreshVersion.current;
       try {
         const nextPageData = await getAdminReviewsPageData(supabase);
 
-        if (!isMounted()) {
+        if (!isMounted() || version !== refreshVersion.current) {
           return;
         }
 
         applyPageData(nextPageData);
         setPageFeedback(null);
       } catch (error) {
-        if (!isMounted()) {
+        if (!isMounted() || version !== refreshVersion.current) {
           return;
         }
 
@@ -89,177 +82,19 @@ export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
 
   useWorkspaceSyncEffect(refreshReviewsPage);
 
-  const setRowBusyState = useCallback((rowKey: string, action: BusyAction | null) => {
-    setBusyRows((current) => {
-      if (!action) {
-        const next = { ...current };
-        delete next[rowKey];
-        return next;
-      }
+  function removeConfirmedRow(tab: ReviewTab, id: string) {
+    // 先前启动的列表读取可能还含有该行；审核确认后忽略这些旧结果。
+    refreshVersion.current += 1;
+    if (tab === "media") setMediaRows((rows) => rows.filter((row) => row.asset_id !== id));
+    if (tab === "privacy") setPrivacyRows((rows) => rows.filter((row) => row.request_id !== id));
+    if (tab === "profile") setProfileRows((rows) => rows.filter((row) => row.request_id !== id));
+  }
 
-      return {
-        ...current,
-        [rowKey]: action,
-      };
-    });
-  }, []);
-
-  const handlePrivacyReview = useCallback(
-    async (row: PendingPrivacyReviewRow, action: BusyAction) => {
-      if (!supabase) {
-        return;
-      }
-
-      const rowKey = `privacy:${row.request_id}`;
-      const actionLabel =
-        action === "approve" ? t("actions.approve") : t("actions.reject");
-
-      if (busyRows[rowKey]) {
-        return;
-      }
-
-      if (!(await confirm({
-        description: t("confirm.privacy", { action: actionLabel }),
-        title: confirmT("title"),
-        tone: action === "reject" ? "warning" : "normal",
-      }))) {
-        return;
-      }
-
-      setRowBusyState(rowKey, action);
-      setPageFeedback(null);
-
-      try {
-        if (action === "approve") {
-          await approvePrivacyReview(supabase, row.request_id);
-        } else {
-          await rejectPrivacyReview(supabase, row.request_id);
-        }
-
-        setPrivacyRows((current) => current.filter((item) => item.request_id !== row.request_id));
-        setPageFeedback({
-          tone: "success",
-          message:
-            action === "approve"
-              ? t("feedback.privacyApproved")
-              : t("feedback.privacyRejected"),
-        });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toErrorMessage(error, sharedCopy),
-        });
-      } finally {
-        setRowBusyState(rowKey, null);
-      }
-    },
-    [busyRows, confirm, confirmT, setRowBusyState, sharedCopy, supabase, t],
-  );
-
-  const handleMediaReview = useCallback(
-    async (row: PendingMediaReviewWithPreview, action: BusyAction) => {
-      if (!supabase) {
-        return;
-      }
-
-      const rowKey = `media:${row.asset_id}`;
-      const actionLabel =
-        action === "approve" ? t("actions.approve") : t("actions.reject");
-
-      if (busyRows[rowKey]) {
-        return;
-      }
-
-      if (!(await confirm({
-        description: t("confirm.media", { action: actionLabel }),
-        title: confirmT("title"),
-        tone: action === "reject" ? "warning" : "normal",
-      }))) {
-        return;
-      }
-
-      setRowBusyState(rowKey, action);
-      setPageFeedback(null);
-
-      try {
-        if (action === "approve") {
-          await approveMediaReview(supabase, row.asset_id);
-        } else {
-          await rejectMediaReview(supabase, row.asset_id);
-        }
-
-        setMediaRows((current) => current.filter((item) => item.asset_id !== row.asset_id));
-        setPageFeedback({
-          tone: "success",
-          message:
-            action === "approve"
-              ? t("feedback.mediaApproved")
-              : t("feedback.mediaRejected"),
-        });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toErrorMessage(error, sharedCopy),
-        });
-      } finally {
-        setRowBusyState(rowKey, null);
-      }
-    },
-    [busyRows, confirm, confirmT, setRowBusyState, sharedCopy, supabase, t],
-  );
-
-  const handleProfileChangeReview = useCallback(
-    async (row: PendingProfileChangeReviewRow, action: BusyAction) => {
-      if (!supabase) {
-        return;
-      }
-
-      const rowKey = `profile:${row.request_id}`;
-      const actionLabel =
-        action === "approve" ? t("actions.approve") : t("actions.reject");
-
-      if (busyRows[rowKey]) {
-        return;
-      }
-
-      if (!(await confirm({
-        description: t("confirm.profile", { action: actionLabel }),
-        title: confirmT("title"),
-        tone: action === "reject" ? "warning" : "normal",
-      }))) {
-        return;
-      }
-
-      setRowBusyState(rowKey, action);
-      setPageFeedback(null);
-
-      try {
-        if (action === "approve") {
-          await approveProfileChangeReview(supabase, row.request_id);
-        } else {
-          await rejectProfileChangeReview(supabase, row.request_id);
-        }
-
-        setProfileRows((current) =>
-          current.filter((item) => item.request_id !== row.request_id),
-        );
-        setPageFeedback({
-          tone: "success",
-          message:
-            action === "approve"
-              ? t("feedback.profileApproved")
-              : t("feedback.profileRejected"),
-        });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toErrorMessage(error, sharedCopy),
-        });
-      } finally {
-        setRowBusyState(rowKey, null);
-      }
-    },
-    [busyRows, confirm, confirmT, setRowBusyState, sharedCopy, supabase, t],
+  const { busyRows, runReview } = useAdminReviewActions(
+    supabase,
+    removeConfirmedRow,
+    setPageFeedback,
+    (error) => toErrorMessage(error, sharedCopy),
   );
 
   const closePreviewDialog = useCallback((open: boolean) => {
@@ -295,9 +130,12 @@ export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
     activeTab,
     busyRows,
     closePreviewDialog,
-    handleMediaReview,
-    handleProfileChangeReview,
-    handlePrivacyReview,
+    handleMediaReview: (row: PendingMediaReviewWithPreview, action: BusyAction) =>
+      runReview({ tab: "media", id: row.asset_id, userId: row.user_id, action }),
+    handleProfileChangeReview: (row: PendingProfileChangeReviewRow, action: BusyAction) =>
+      runReview({ tab: "profile", id: row.request_id, userId: row.user_id, action }),
+    handlePrivacyReview: (row: PendingPrivacyReviewRow, action: BusyAction) =>
+      runReview({ tab: "privacy", id: row.request_id, userId: row.user_id, action }),
     hasPermission,
     mediaRows,
     pageFeedback,
@@ -307,6 +145,5 @@ export function useAdminReviewsPage(initialData: AdminReviewsPageData) {
     reviewTabs,
     setActiveTab,
     setPreviewAsset,
-    supabase,
   };
 }

@@ -5,29 +5,17 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import {
-  getSalesmanCustomerTypeOptionsForBusinessBoards,
-  isSalesmanCustomerType,
   type SalesmanCustomerRow,
-  type SalesmanCustomerType,
   type SalesmanPeoplePageData,
-} from "@/lib/salesman-people";
+} from "@/lib/salesman-people-contract";
 import { usePersonPrivateNoteEditor } from "@/components/dashboard/person-notes/use-person-private-note-editor";
+
+import { useSalesmanCustomerTypeEditor, type SalesmanPeopleFeedback } from "./use-salesman-customer-type-editor";
 
 import {
   getSalesmanCustomerName,
   salesmanCustomerMatchesSearch,
-  type SalesmanCustomerTypeLabels,
 } from "./salesman-people-display";
-
-type Feedback = {
-  tone: "error" | "success" | "info";
-  message: string;
-};
-
-type UpdateResponse = {
-  customer?: SalesmanCustomerRow;
-  error?: string;
-};
 
 export function useSalesmanPeopleViewModel({
   initialData,
@@ -36,24 +24,14 @@ export function useSalesmanPeopleViewModel({
 }) {
   const t = useTranslations("SalesmanPeople");
   const [customers, setCustomers] = useState(initialData.customers);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [feedback, setFeedback] = useState<SalesmanPeopleFeedback | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<SalesmanCustomerRow | null>(null);
-  const [draftType, setDraftType] = useState<SalesmanCustomerType | "">("");
-  const [saving, setSaving] = useState(false);
-  const businessBoards = initialData.businessBoards;
-  const customerTypeOptions = useMemo(
-    () => getSalesmanCustomerTypeOptionsForBusinessBoards(businessBoards),
-    [businessBoards],
-  );
-
-  const customerTypeLabels = useMemo<SalesmanCustomerTypeLabels>(
-    () => ({
-      retail: t("customerTypes.retail"),
-    }),
-    [t],
-  );
+  // 列表只协调当前资料；客户标记和备注分别交给自己的编辑器。
+  const customerTypeEditor = useSalesmanCustomerTypeEditor({
+    businessBoards: initialData.businessBoards,
+    setCustomers,
+    setFeedback,
+  });
   const personNoteEditor = usePersonPrivateNoteEditor<SalesmanCustomerRow>({
     getTargetName: (customer) =>
       getSalesmanCustomerName(customer, t("fallback.unnamedCustomer")),
@@ -89,160 +67,16 @@ export function useSalesmanPeopleViewModel({
     [customers, searchText],
   );
 
-  const dialogOpen = selectedCustomer !== null;
-  const canSaveDraft =
-    selectedCustomer !== null &&
-    !saving &&
-    isSalesmanCustomerType(draftType) &&
-    customerTypeOptions.includes(draftType) &&
-    selectedCustomer.customer_type !== draftType;
-
-  const openCustomerTypeDialog = (customer: SalesmanCustomerRow) => {
-    setFeedback(null);
-    setSelectedCustomer(customer);
-    setDraftType(customer.customer_type ?? "");
-  };
-
-  const closeCustomerTypeDialog = () => {
-    if (saving) {
-      return;
-    }
-
-    setSelectedCustomer(null);
-  };
-
-  const handleDraftTypeChange = (value: string) => {
-    if (value === "") {
-      setDraftType("");
-      return;
-    }
-
-    if (!isSalesmanCustomerType(value)) {
-      return;
-    }
-
-    setDraftType(value);
-  };
-
-  const handleSaveCustomerType = async () => {
-    if (!selectedCustomer || !isSalesmanCustomerType(draftType) || !canSaveDraft) {
-      return;
-    }
-
-    setSaving(true);
-    setFeedback(null);
-
-    try {
-      const response = await fetch("/api/salesman/people/customer-type", {
-        body: JSON.stringify({
-          customerType: draftType,
-          customerUserId: selectedCustomer.user_id,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const result = await readUpdateResponse(response);
-
-      if (!response.ok || !result.customer) {
-        setFeedback({
-          tone: "error",
-          message: t(`errors.${normalizeErrorCode(result.error)}`),
-        });
-        return;
-      }
-
-      const updatedCustomer = result.customer;
-
-      setCustomers((currentCustomers) =>
-        currentCustomers.map((item) =>
-          item.user_id === updatedCustomer.user_id ? updatedCustomer : item,
-        ),
-      );
-      setSelectedCustomer(null);
-      setDraftType(updatedCustomer.customer_type ?? draftType);
-      setFeedback({
-        tone: "success",
-        message: t("feedback.saved"),
-      });
-    } catch {
-      setFeedback({
-        tone: "error",
-        message: t("errors.serviceUnavailable"),
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return {
-    canSaveDraft,
+    ...customerTypeEditor,
     currentViewerId: initialData.currentViewerId,
-    businessBoards,
-    customerTypeLabels,
-    customerTypeOptions,
-    dialogOpen,
-    draftType,
+    businessBoards: initialData.businessBoards,
     feedback,
     filteredCustomers,
     hasPermission: initialData.hasPermission,
     personNoteEditor,
-    saving,
     searchText,
-    selectedCustomer,
     summary,
-    closeCustomerTypeDialog,
-    handleDraftTypeChange,
-    handleSaveCustomerType,
-    openCustomerTypeDialog,
     setSearchText,
   };
-}
-
-async function readUpdateResponse(response: Response): Promise<UpdateResponse> {
-  try {
-    const value: unknown = await response.json();
-
-    if (!isRecord(value)) {
-      return {};
-    }
-
-    return {
-      customer: isSalesmanCustomerRow(value.customer)
-        ? value.customer
-        : undefined,
-      error: typeof value.error === "string" ? value.error : undefined,
-    };
-  } catch {
-    return {};
-  }
-}
-
-function normalizeErrorCode(value: string | undefined) {
-  switch (value) {
-    case "forbidden":
-    case "invalidInput":
-    case "notFound":
-    case "serviceUnavailable":
-      return value;
-    default:
-      return "unknown";
-  }
-}
-
-function isSalesmanCustomerRow(value: unknown): value is SalesmanCustomerRow {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.user_id === "string" &&
-    typeof value.created_at === "string" &&
-    (value.customer_type === null || isSalesmanCustomerType(value.customer_type))
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

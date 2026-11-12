@@ -71,8 +71,7 @@ export function DatePickerCalendar({
           day: "p-0.5 text-center",
           day_button:
             "mx-auto flex size-11 cursor-pointer items-center justify-center rounded-[12px] text-sm text-content-strong outline-none transition sm:size-10 hover:bg-surface-inset focus-visible:ring-4 focus-visible:ring-ring",
-          disabled:
-            "opacity-35 [&_button]:pointer-events-none [&_button]:cursor-not-allowed",
+          disabled: "opacity-35 [&_button]:pointer-events-none [&_button]:cursor-not-allowed",
           month: "w-full",
           month_caption: "sr-only",
           month_grid: "w-full border-collapse",
@@ -81,10 +80,8 @@ export function DatePickerCalendar({
           root: "w-full",
           selected:
             "[&_button]:bg-surface-brand-soft [&_button]:font-semibold [&_button]:text-primary",
-          today:
-            "[&_button]:border [&_button]:border-filter-control-hover [&_button]:text-primary",
-          weekday:
-            "pb-2 text-center text-[11px] font-semibold text-content-muted",
+          today: "[&_button]:border [&_button]:border-filter-control-hover [&_button]:text-primary",
+          weekday: "pb-2 text-center text-[11px] font-semibold text-content-muted",
           weekdays: "border-b border-border-subtle",
         }}
         disabled={disabled}
@@ -196,11 +193,7 @@ function clampMonth(value: Date, min: string | undefined, max: string | undefine
   return value;
 }
 
-function isMonthWithinBounds(
-  value: Date,
-  min: string | undefined,
-  max: string | undefined,
-) {
+function isMonthWithinBounds(value: Date, min: string | undefined, max: string | undefined) {
   const key = getMonthKey(value);
   return (!min || key >= min.slice(0, 7)) && (!max || key <= max.slice(0, 7));
 }

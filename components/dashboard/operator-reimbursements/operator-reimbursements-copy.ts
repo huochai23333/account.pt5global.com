@@ -36,6 +36,8 @@ export function createOperatorReimbursementsCopy(t: Translator) {
     feedback: {
       savedRefreshError: t("feedback.savedRefreshError"),
       createSuccess: t("feedback.createSuccess"),
+      createDifferent: t("feedback.createDifferent"),
+      createUnconfirmed: t("feedback.createUnconfirmed"),
       deleteConfirm: (content: string) =>
         t("feedback.deleteConfirm", { content }),
       deleteLockedError: t("feedback.deleteLockedError"),
@@ -46,7 +48,7 @@ export function createOperatorReimbursementsCopy(t: Translator) {
       missingContent: t("feedback.missingContent"),
       notFoundError: t("feedback.notFoundError"),
       permissionError: t("feedback.permissionError"),
-      reimburseEmpty: t("feedback.reimburseEmpty"),
+      reimburseUnconfirmed: t("feedback.reimburseUnconfirmed"),
       reimburseSuccess: (count: number) =>
         t("feedback.reimburseSuccess", { count }),
       unknownError: t("feedback.unknownError"),

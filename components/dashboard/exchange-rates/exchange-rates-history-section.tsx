@@ -63,136 +63,128 @@ type ExchangeRatesHistorySectionProps = {
   totalRates: number;
 };
 
-export const ExchangeRatesHistorySection = memo(
-  function ExchangeRatesHistorySection({
-    canManage,
-    deletePendingId,
-    filteredRowsCount,
-    filters,
-    hasActiveFilters,
-    homeHref,
-    onClearFilters,
-    onDeleteRow,
-    onEditRow,
-    onOriginalCurrencyChange,
-    onTargetCurrencyChange,
-    pagination,
-    rows,
-    showBackLink = true,
-    totalRates,
-  }: ExchangeRatesHistorySectionProps) {
-    const t = useTranslations("ExchangeRates");
-    const { locale } = useLocale();
-    const footer = (
-      <DashboardPaginationFooter
-        endIndex={pagination.endIndex}
-        hasNextPage={pagination.hasNextPage}
-        hasPreviousPage={pagination.hasPreviousPage}
-        onNextPage={pagination.onNextPage}
-        onPreviousPage={pagination.onPreviousPage}
-        page={pagination.page}
-        pageCount={pagination.pageCount}
-        startIndex={pagination.startIndex}
-        totalItems={pagination.totalItems}
-      />
-    );
+export const ExchangeRatesHistorySection = memo(function ExchangeRatesHistorySection({
+  canManage,
+  deletePendingId,
+  filteredRowsCount,
+  filters,
+  hasActiveFilters,
+  homeHref,
+  onClearFilters,
+  onDeleteRow,
+  onEditRow,
+  onOriginalCurrencyChange,
+  onTargetCurrencyChange,
+  pagination,
+  rows,
+  showBackLink = true,
+  totalRates,
+}: ExchangeRatesHistorySectionProps) {
+  const t = useTranslations("ExchangeRates");
+  const { locale } = useLocale();
+  const footer = (
+    <DashboardPaginationFooter
+      endIndex={pagination.endIndex}
+      hasNextPage={pagination.hasNextPage}
+      hasPreviousPage={pagination.hasPreviousPage}
+      onNextPage={pagination.onNextPage}
+      onPreviousPage={pagination.onPreviousPage}
+      page={pagination.page}
+      pageCount={pagination.pageCount}
+      startIndex={pagination.startIndex}
+      totalItems={pagination.totalItems}
+    />
+  );
 
-    return (
-      <DashboardListSection
-        actions={
-          showBackLink ? (
-            <Link
-              className="inline-flex h-9 items-center justify-center rounded-full border border-border-subtle bg-surface-interactive px-4 text-sm font-medium text-content-muted transition-colors hover:bg-surface-inset"
-              href={homeHref}
-            >
-              {t("history.backHome")}
-            </Link>
-          ) : null
+  return (
+    <DashboardListSection
+      actions={
+        showBackLink ? (
+          <Link
+            className="inline-flex h-9 items-center justify-center rounded-full border border-border-subtle bg-surface-interactive px-4 text-sm font-medium text-content-muted transition-colors hover:bg-surface-inset"
+            href={homeHref}
+          >
+            {t("history.backHome")}
+          </Link>
+        ) : null
+      }
+      bodyClassName="flex flex-col gap-5"
+      eyebrow={t("history.eyebrow")}
+      title={t("history.title")}
+    >
+      <DashboardResourceFilterSection
+        activeFilterCount={
+          [Boolean(filters.originalCurrency), Boolean(filters.targetCurrency)].filter(Boolean)
+            .length
         }
-        bodyClassName="flex flex-col gap-5"
-        eyebrow={t("history.eyebrow")}
-        title={t("history.title")}
-      >
-        <DashboardResourceFilterSection
-          activeFilterCount={[
-            Boolean(filters.originalCurrency),
-            Boolean(filters.targetCurrency),
-          ].filter(Boolean).length}
-          gridClassName="sm:grid-cols-2"
-          onReset={onClearFilters}
-          primary={
-            <DashboardFilterField label={t("filters.originalCurrencyLabel")}>
-              <FormControls.Input
-                className={dashboardFilterInputClassName}
-                onChange={(event) => onOriginalCurrencyChange(event.target.value)}
-                placeholder={t("filters.originalCurrencyPlaceholder")}
-                type="text"
-                value={filters.originalCurrency}
-              />
-            </DashboardFilterField>
-          }
-          resetDisabled={!hasActiveFilters}
-          resetLabel={t("filters.clear")}
-          summary={t("filters.resultSummary", {
-            matched: filteredRowsCount,
-            total: totalRates,
-          })}
-        >
-          <DashboardFilterField label={t("filters.targetCurrencyLabel")}>
+        gridClassName="sm:grid-cols-2"
+        onReset={onClearFilters}
+        primary={
+          <DashboardFilterField label={t("filters.originalCurrencyLabel")}>
             <FormControls.Input
               className={dashboardFilterInputClassName}
-              onChange={(event) => onTargetCurrencyChange(event.target.value)}
-              placeholder={t("filters.targetCurrencyPlaceholder")}
+              onChange={(event) => onOriginalCurrencyChange(event.target.value)}
+              placeholder={t("filters.originalCurrencyPlaceholder")}
               type="text"
-              value={filters.targetCurrency}
+              value={filters.originalCurrency}
             />
           </DashboardFilterField>
-        </DashboardResourceFilterSection>
+        }
+        resetDisabled={!hasActiveFilters}
+        resetLabel={t("filters.clear")}
+        summary={t("filters.resultSummary", {
+          matched: filteredRowsCount,
+          total: totalRates,
+        })}
+      >
+        <DashboardFilterField label={t("filters.targetCurrencyLabel")}>
+          <FormControls.Input
+            className={dashboardFilterInputClassName}
+            onChange={(event) => onTargetCurrencyChange(event.target.value)}
+            placeholder={t("filters.targetCurrencyPlaceholder")}
+            type="text"
+            value={filters.targetCurrency}
+          />
+        </DashboardFilterField>
+      </DashboardResourceFilterSection>
 
-        {filteredRowsCount === 0 ? (
-          <EmptyState
-            description={
-              totalRates === 0
-                ? t("history.emptyDescription")
-                : t("history.noMatchDescription")
-            }
-            icon={<History className="size-6" />}
-            title={
-              totalRates === 0
-                ? t("history.emptyTitle")
-                : t("history.noMatchTitle")
-            }
-          />
-        ) : (
-          <ResponsiveDataView
-            desktop={
-              <HistoryDesktopTable
-                canManage={canManage}
-                deletePendingId={deletePendingId}
-                locale={locale}
-                onDeleteRow={onDeleteRow}
-                onEditRow={onEditRow}
-                rows={rows}
-              />
-            }
-            footer={footer}
-            mobile={rows.map((row) => (
-              <HistoryMobileCard
-                canManage={canManage}
-                deleting={deletePendingId === row.id}
-                key={row.id}
-                locale={locale}
-                onDeleteRow={onDeleteRow}
-                onEditRow={onEditRow}
-                row={row}
-              />
-            ))}
-          />
-        )}
-      </DashboardListSection>
-    );
-  },
-);
+      {filteredRowsCount === 0 ? (
+        <EmptyState
+          description={
+            totalRates === 0 ? t("history.emptyDescription") : t("history.noMatchDescription")
+          }
+          icon={<History className="size-6" />}
+          title={totalRates === 0 ? t("history.emptyTitle") : t("history.noMatchTitle")}
+        />
+      ) : (
+        <ResponsiveDataView
+          desktop={
+            <HistoryDesktopTable
+              canManage={canManage}
+              deletePendingId={deletePendingId}
+              locale={locale}
+              onDeleteRow={onDeleteRow}
+              onEditRow={onEditRow}
+              rows={rows}
+            />
+          }
+          footer={footer}
+          mobile={rows.map((row) => (
+            <HistoryMobileCard
+              canManage={canManage}
+              deleting={deletePendingId === row.id}
+              key={row.id}
+              locale={locale}
+              onDeleteRow={onDeleteRow}
+              onEditRow={onEditRow}
+              row={row}
+            />
+          ))}
+        />
+      )}
+    </DashboardListSection>
+  );
+});
 
 function HistoryDesktopTable({
   canManage,
@@ -244,12 +236,21 @@ function HistoryDesktopTable({
                   t("summary.noRecord"),
                 )}
               />
-              <HistoryValueCell value={formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)} />
+              <HistoryValueCell
+                value={formatExchangeRateValue(
+                  companyExchangeRate(row.original_currency, row.daily_exchange_rate),
+                  locale,
+                )}
+              />
               <HistoryValueCell
                 value={formatExchangeRateDate(row.rate_date, locale, t("summary.noRecord"))}
               />
-              <HistoryValueCell value={t(`history.sources.${getExchangeRateSourceKind(row.source)}`)} />
-              <HistoryValueCell value={formatExchangeRateQuoteTime(row.provider_updated_at, locale)} />
+              <HistoryValueCell
+                value={t(`history.sources.${getExchangeRateSourceKind(row.source)}`)}
+              />
+              <HistoryValueCell
+                value={formatExchangeRateQuoteTime(row.provider_updated_at, locale)}
+              />
               {canManage ? (
                 <td className="px-3 py-4">
                   <HistoryActions
@@ -296,7 +297,12 @@ function HistoryMobileCard({
         </p>
       </div>
       <MetaGrid className="mt-4 grid-cols-2">
-        <MetaItem label={t("companyRate")}>{formatExchangeRateValue(companyExchangeRate(row.original_currency, row.daily_exchange_rate), locale)}</MetaItem>
+        <MetaItem label={t("companyRate")}>
+          {formatExchangeRateValue(
+            companyExchangeRate(row.original_currency, row.daily_exchange_rate),
+            locale,
+          )}
+        </MetaItem>
         <MetaItem label={t("history.columns.rateDate")}>
           {formatExchangeRateDate(row.rate_date, locale, t("summary.noRecord"))}
         </MetaItem>
@@ -337,13 +343,7 @@ function HistoryActions({
         <PencilLine className="size-3.5" />
         {t("actions.edit")}
       </Button>
-      <Button
-        disabled={deleting}
-        onClick={onDelete}
-        size="compact"
-        type="button"
-        variant="danger"
-      >
+      <Button disabled={deleting} onClick={onDelete} size="compact" type="button" variant="danger">
         {deleting ? (
           <LoaderCircle className="size-3.5 animate-spin" />
         ) : (
@@ -357,9 +357,7 @@ function HistoryActions({
 
 function HistoryHeaderCell({ children }: { children: ReactNode }) {
   return (
-    <th className="px-3 py-4 text-left text-xs font-semibold text-content-muted">
-      {children}
-    </th>
+    <th className="px-3 py-4 text-left text-xs font-semibold text-content-muted">{children}</th>
   );
 }
 

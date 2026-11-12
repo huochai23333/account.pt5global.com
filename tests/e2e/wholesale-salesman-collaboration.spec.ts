@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import {
@@ -13,6 +15,15 @@ const PEER_CUSTOMER_NAME = "业务员协作客户";
 const PEER_ORDER_ID = "c2000000-0000-4000-8000-000000000100";
 const PEER_ORDER_NUMBER = "WH-PEER-LOCAL-001";
 const FIRST_LOCAL_ORDER_NUMBER = buildCurrentLocalOrderNumber(1);
+
+// 这里只检查协作入口/候选业务员，不提交编辑、转派或合并；实际写入和RLS要另行验收。
+// 登录仍可能保存阅读状态，固定账号展示也必须进入可重建专属项目。
+test.beforeEach(({ baseURL }) => {
+  readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+    container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+    execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
+});
 
 test.describe("批发业务员全员协作", () => {
   test("业务员可以查看、编辑和转派同事的客户与订单", async ({ page }) => {
@@ -109,7 +120,7 @@ test.describe("批发业务员全员协作", () => {
   });
 
   test("管理员、业务员和财务在桌面与手机都只看到直接修改入口", async ({
-    browser,
+    browser, baseURL,
   }) => {
     test.setTimeout(120_000);
 
@@ -129,6 +140,7 @@ test.describe("批发业务员全员协作", () => {
           roleCase.role,
           roleCase.url,
           viewport,
+          baseURL,
         );
       }
     }
@@ -186,12 +198,14 @@ async function expectDirectEditEntry(
   role: "administrator" | "salesman" | "finance",
   url: string,
   viewport: { height: number; width: number },
+  baseURL: string | undefined,
 ) {
   // 每个角色使用独立浏览器环境，避免登录状态互相覆盖；手机端从订单卡片进入详情。
-  const context = await browser.newContext({ viewport });
-  const page = await context.newPage();
-
+  if (!baseURL) throw new Error("协作入口测试需要显式本地页面地址");
+  const context = await browser.newContext({ viewport, baseURL }), errors: unknown[] = [];
   try {
+    // 创建页面也可能失败，必须位于本次context的收尾保护范围内。
+    const page = await context.newPage();
     await loginAs(page, role);
     await page.goto(url);
     await page.getByLabel("搜索订单").fill(PEER_ORDER_NUMBER);
@@ -215,9 +229,10 @@ async function expectDirectEditEntry(
     await expect(page.getByText("申请修改", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /通过|退回/ })).toHaveCount(0);
     await expectNoDocumentHorizontalOverflow(page);
-  } finally {
-    await context.close();
-  }
+  } catch (error) { errors.push(error); }
+  // 正文错误包括非Error值；关闭失败时两者一起保留，不用finally中的错误覆盖最初原因。
+  try { await context.close(); } catch (error) { errors.push(error); }
+  if (errors.length) throw new AggregateError(errors, "协作入口验证未完成");
 }
 
 function buildCurrentLocalOrderNumber(index: number) {

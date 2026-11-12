@@ -1,7 +1,8 @@
 "use client";
 
-import type { AdminPersonRow } from "@/lib/admin-people";
+import type { AdminPersonRow } from "@/lib/admin-people-contract";
 import type { Locale } from "@/lib/locale";
+import { normalizeSearchText } from "@/lib/value-normalizers";
 
 export type TourismPeopleTab = "customers" | "promoters";
 
@@ -14,6 +15,20 @@ export function isTourismCustomer(person: AdminPersonRow) {
 
 export function isTourismPromoter(person: AdminPersonRow) {
   return person.role === "promoter";
+}
+
+/** 人员与客户目录先由调用方限定角色，再共用相同的检索字段和状态筛选。 */
+export function filterTourismPeople(people: AdminPersonRow[], searchText: string, statusFilter: string) {
+  const searchValue = normalizeSearchText(searchText);
+  return people.filter((person) => {
+    if (statusFilter !== "all" && person.status !== statusFilter) return false;
+    if (!searchValue) return true;
+
+    return [
+      person.name, person.email, person.phone, person.city, person.referral_code,
+      person.referrer_name, person.referrer_email, person.team_name,
+    ].some((value) => normalizeSearchText(value).includes(searchValue));
+  });
 }
 
 export function getTourismPersonName(person: AdminPersonRow, fallback: string) {

@@ -51,7 +51,7 @@ export type BusinessVipRow = {
   business: WorkspaceBusinessKey;
   targetId: string;
   customerLabel: string;
-  contactLabel: string;
+  contactLabel: string | null;
   secondaryLabel: string | null;
   status: BusinessVipStatus;
   startedAt: string | null;

@@ -1,5 +1,6 @@
 import type { UserStatus } from "./auth-metadata";
 import type { AppRole } from "./auth-routing";
+import type { ClientBusinessCandidate } from "./client-business-access";
 import type { WholesaleCommissionBoard } from "./wholesale-commission-boards";
 import type { CommissionRuleSetting } from "./commission-settings";
 import type { ExchangeRateRow } from "./exchange-rates";
@@ -27,6 +28,8 @@ export type WholesaleCustomer = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  /** 整表编辑提交打开时的版本；档案的任一写入都会更新它。 */
+  edit_revision: number;
   salesman_commission_cohort: "existing" | "new";
   /** 当前账号可见的来源线索编号，用于提示关联客户需要保留档案。 */
   source_sales_lead_id?: string | null;
@@ -191,6 +194,8 @@ export type WholesaleProfile = {
 };
 
 export type WholesalePageData = {
+  businessAddCandidates: ClientBusinessCandidate[];
+  businessAddCandidatesUnavailable: boolean;
   commissionBoards: WholesaleCommissionBoard[];
   commissionBoardErrors: Partial<Record<WholesaleCommissionBoard, string>>;
   commissionPageError: string | null;

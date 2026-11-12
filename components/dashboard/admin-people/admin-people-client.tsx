@@ -3,15 +3,15 @@
 import { useLocale } from "@/components/i18n/locale-provider";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { PersonPrivateNoteDialog } from "@/components/dashboard/person-notes/person-private-note-dialog";
-import type { AdminPeoplePageData } from "@/lib/admin-people";
+import type { AdminPeoplePageData } from "@/lib/admin-people-contract";
 
 import { AdminPeopleAccountDialog } from "./admin-people-account-dialog";
 import {
   AdminPeopleDirectorySection,
   AdminPeopleHeaderSection,
   AdminPeopleNoPermissionSection,
-  AdminPeopleRecentChangesSection,
 } from "./admin-people-sections";
+import { AdminPeopleRecentChangesSection } from "./admin-people-recent-changes";
 import { useAdminPeopleViewModel } from "./use-admin-people-view-model";
 
 export function AdminPeopleClient({

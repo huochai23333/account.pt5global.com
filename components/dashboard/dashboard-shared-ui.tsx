@@ -22,16 +22,15 @@ export {
   createDashboardSharedCopy,
   type DashboardSharedCopy,
 } from "./dashboard-shared-copy";
+// 展示层统一导入，值规范化、日期与大小格式、状态映射各自独立维护。
+export { normalizeOptionalString, normalizeSearchText } from "@/lib/value-normalizers";
+export { formatDateTime, formatFileSize } from "./dashboard-shared-formatters";
 export {
-  formatDateTime,
-  formatFileSize,
   getMediaStatus,
   getReviewStatusTone,
   getStatusLabel,
   mapUserStatus,
   type MediaAssetKey,
-  normalizeOptionalString,
-  normalizeSearchText,
   type ReviewStatus,
 } from "./dashboard-shared-display";
 export { getRawErrorMessage, toErrorMessage } from "./dashboard-shared-errors";

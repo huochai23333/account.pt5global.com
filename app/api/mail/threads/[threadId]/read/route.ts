@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { markMailThreadRead } from "@/lib/mail/mail-service";
+import { markMailThreadRead } from "@/lib/mail/mail-thread-mutations";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../../_shared";
 
+/** 只确认页面实际打开的来信；回执中的未读状态包含事务已看到的更新来信。 */
 export async function POST(request: Request, context: { params: Promise<{ threadId: string }> }) {
   try {
     const { threadId } = await context.params;

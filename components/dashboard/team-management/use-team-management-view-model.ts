@@ -18,12 +18,14 @@ import {
   filterTeamMembers,
 } from "./team-management-utils";
 import {
+  applyTeamManagementReadback,
   createTeamManagementDataState,
   getTeamManagementDataKey,
   type PageFeedback,
   type TeamManagementDataState,
 } from "./team-management-view-model-shared";
 import { useTeamManagementActions } from "./use-team-management-actions";
+import { useTeamManagementRefresh } from "./use-team-management-refresh";
 
 export function useTeamManagementViewModel({
   initialData,
@@ -52,33 +54,38 @@ export function useTeamManagementViewModel({
       ? dataState
       : createTeamManagementDataState(initialData);
 
+  // 新服务端快照到达时先切换本地基线，旧请求的回调不能覆盖新的权限或团队。
+  if (dataState !== currentData) {
+    setDataState(currentData);
+  }
+
   const updateDataState = useCallback(
     (updater: (current: TeamManagementDataState) => TeamManagementDataState) => {
-      setDataState((current) => {
-        const resolvedCurrent =
-          current.dataKey === initialDataKey
-            ? current
-            : createTeamManagementDataState(initialData);
-
-        return updater(resolvedCurrent);
-      });
+      setDataState((current) => current.dataKey === initialDataKey ? updater(current) : current);
     },
-    [initialData, initialDataKey],
+    [initialDataKey],
   );
 
   const applyTeamManagementPageData = useCallback((pageData: TeamManagementPageData) => {
-    setDataState(createTeamManagementDataState(pageData));
-  }, []);
+    setDataState((current) => applyTeamManagementReadback(current, initialDataKey, pageData));
+  }, [initialDataKey]);
 
-  const actions = useTeamManagementActions({
+  const refresh = useTeamManagementRefresh({
     applyTeamManagementPageData,
+    selectedTeamId: currentData.selectedTeamId,
+    setBusyKey,
+    setPageFeedback,
+    supabase,
+  });
+  const actions = useTeamManagementActions({
+    refreshQuietly: refresh.refreshQuietly,
     currentData,
     setBusyKey,
     setPageFeedback,
     supabase,
   });
 
-  useWorkspaceSyncEffect(actions.refreshTeamManagementPage);
+  useWorkspaceSyncEffect(refresh.refreshTeamManagementPage);
 
   const canView = canViewTeamPanel(currentData.viewerRole, currentData.viewerStatus);
   const canManageSelectedTeam = currentData.detail.team?.can_manage === true;
@@ -164,10 +171,10 @@ export function useTeamManagementViewModel({
     handleAddSalesman: actions.handleAddSalesman,
     handleCreateTeam: actions.handleCreateTeam,
     handleDeleteTeam: actions.handleDeleteTeam,
-    handleRefresh: actions.handleRefresh,
+    handleRefresh: refresh.handleRefresh,
     handleRemoveSalesman: actions.handleRemoveSalesman,
     handleSaveTeam: actions.handleSaveTeam,
-    handleSelectTeam: actions.handleSelectTeam,
+    handleSelectTeam: refresh.handleSelectTeam,
     managerCandidates: currentData.managerCandidates,
     managerUserIdDraft: currentData.managerUserIdDraft,
     memberSearchText,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -29,10 +29,11 @@ export function useAdminTaskDeleteAction({
   const t = useTranslations("Tasks.admin");
   const sharedT = useTranslations("Tasks.shared");
   const [deletePendingTaskId, setDeletePendingTaskId] = useState<string | null>(null);
+  const deleting = useRef(false);
 
   const handleDeleteTask = useCallback(
     async (task: AdminTaskRow) => {
-      if (!supabase || deletePendingTaskId) {
+      if (!supabase || deleting.current) {
         return;
       }
 
@@ -40,24 +41,25 @@ export function useAdminTaskDeleteAction({
         task.status === "to_be_accepted" && task.accepted_count === 0
           ? t("confirmDelete", { taskName: task.task_name })
           : t("confirmDeleteWithHistory", { taskName: task.task_name });
-      if (!(await confirm({
-        description: confirmMessage,
-        title: confirmT("title"),
-        tone: "danger",
-      }))) {
-        return;
-      }
-
-      setDeletePendingTaskId(task.id);
-
+      // 用户尚在确认时也要拦住连击，避免并发删除及清理同一份文件。
+      deleting.current = true;
       try {
+        if (!(await confirm({
+          description: confirmMessage,
+          title: confirmT("title"),
+          tone: "danger",
+        }))) return;
+
+        setDeletePendingTaskId(task.id);
         const result = await deleteAdminTask(supabase, task);
-        onPageFeedback({
-          tone: result.storageCleanupFailed ? "info" : "success",
-          message: result.storageCleanupFailed
-            ? t("feedback.deletedWithAttachmentCleanupWarning")
-            : t("feedback.deleted"),
-        });
+        if (result.status === "deleted") {
+          onPageFeedback({ tone: "success", message: t("feedback.deleted") });
+        } else {
+          const messageKey = result.stage === "attachments"
+            ? "feedback.deletedWithAttachmentCleanupWarning"
+            : "feedback.deleteUnconfirmed";
+          onPageFeedback({ tone: "error", message: t(messageKey) });
+        }
         refreshTaskBoard();
       } catch (error) {
         onPageFeedback({
@@ -65,10 +67,11 @@ export function useAdminTaskDeleteAction({
           message: toAdminTaskErrorMessage(error, sharedT),
         });
       } finally {
+        deleting.current = false;
         setDeletePendingTaskId(null);
       }
     },
-    [confirm, confirmT, deletePendingTaskId, onPageFeedback, refreshTaskBoard, sharedT, supabase, t],
+    [confirm, confirmT, onPageFeedback, refreshTaskBoard, sharedT, supabase, t],
   );
 
   return {

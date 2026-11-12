@@ -18,26 +18,22 @@ export async function addWholesaleCustomerOtherNames(
     throw new Error("wholesale_customer_other_name_required");
   }
 
-  const { data, error } = await supabase
-    .from("wholesale_customers")
-    .select("other_names")
-    .eq("id", customerId)
-    .single<{ other_names: unknown }>();
-
+  // 数据库在同一事务内锁定客户并合并别名，浏览器不再覆盖之前读取的数组。
+  const { data, error } = await supabase.rpc("append_wholesale_customer_other_names", {
+    p_customer_id: customerId,
+    p_other_names: nextNames,
+  });
   if (error) throw error;
-
-  const otherNames = mergeOtherNames(readOtherNames(data?.other_names), nextNames);
-  const { data: updatedCustomer, error: updateError } = await supabase
-    .from("wholesale_customers")
-    .update({ other_names: otherNames })
-    .eq("id", customerId)
-    .select("id,other_names")
-    .maybeSingle<{ id: string; other_names: unknown }>();
-
-  if (updateError) throw updateError;
-  if (!updatedCustomer || updatedCustomer.id !== customerId) {
-    throw new Error("客户其他名称没有保存成功。");
+  const receipt = requireMutationRecord(data, "wholesale_customer_alias_receipt_missing");
+  if (
+    receipt.id !== customerId ||
+    !Array.isArray(receipt.other_names) ||
+    receipt.other_names.length === 0 ||
+    typeof receipt.changed !== "boolean"
+  ) {
+    throw new Error("wholesale_customer_alias_receipt_invalid");
   }
+  return receipt.changed;
 }
 
 export async function updateWholesaleCustomer(
@@ -45,12 +41,17 @@ export async function updateWholesaleCustomer(
   formData: FormData,
 ) {
   const customerId = requiredString(formData.get("customer_id"));
+  const expectedRevision = Number(requiredString(formData.get("expected_revision")));
+  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+    throw new Error("wholesale_customer_edit_revision_missing");
+  }
   const { data, error } = await supabase.rpc("update_wholesale_customer", {
     p_assigned_sales_user_id: optionalString(
       formData.get("assigned_sales_user_id"),
     ),
     p_contact_details: optionalString(formData.get("contact_details")),
     p_customer_id: customerId,
+    p_expected_revision: expectedRevision,
     p_notes: optionalString(formData.get("notes")),
     p_other_names: splitList(formData.get("other_names")),
     p_source: optionalString(formData.get("source")),
@@ -60,6 +61,10 @@ export async function updateWholesaleCustomer(
   if (error) throw error;
   const receipt = requireMutationRecord(data, "客户资料没有返回保存结果。");
   if (receipt.id !== customerId) throw new Error("保存结果与当前客户不一致。");
+  // 只有这个档案实际进入下一个版本，页面才可以关闭表单并刷新。
+  if (receipt.edit_revision !== expectedRevision + 1) {
+    throw new Error("wholesale_customer_edit_revision_unconfirmed");
+  }
 }
 
 export async function deleteWholesaleCustomer(
@@ -79,29 +84,4 @@ export async function deleteWholesaleCustomer(
     .maybeSingle<{ id: string }>();
   if (verificationError) throw verificationError;
   if (remaining) throw new Error("客户没有删除成功。");
-}
-
-function readOtherNames(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
-}
-
-function mergeOtherNames(currentNames: string[], nextNames: string[]) {
-  const seenNames = new Set<string>();
-  const mergedNames: string[] = [];
-
-  for (const name of [...currentNames, ...nextNames]) {
-    const normalizedName = name.trim();
-    const compareKey = normalizedName.toLocaleLowerCase("zh-CN");
-
-    if (!normalizedName || seenNames.has(compareKey)) {
-      continue;
-    }
-
-    seenNames.add(compareKey);
-    mergedNames.push(normalizedName);
-  }
-
-  return mergedNames;
 }

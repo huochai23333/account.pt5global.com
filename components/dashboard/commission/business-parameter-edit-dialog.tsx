@@ -8,16 +8,19 @@ import {
   DashboardFormField,
   DashboardFormTextarea,
 } from "@/components/dashboard/dashboard-form-dialog";
+import { FeedbackNotice } from "@/components/dashboard/dashboard-shared-ui";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ChoiceField, Input } from "@/components/ui/form-controls";
 import type { CommissionRuleConfig } from "@/lib/commission-settings";
 
 import { ParameterValueList } from "./admin-commission-settings-ui";
+import { previewBusinessParameterDraft } from "./business-parameter-draft";
 import type { BusinessParameterEditor } from "./use-business-parameter-settings-view-model";
 
 export function BusinessParameterEditDialog({
   editor,
+  errorMessage,
   locale,
   onClose,
   onPublish,
@@ -25,6 +28,7 @@ export function BusinessParameterEditDialog({
   pending,
 }: {
   editor: BusinessParameterEditor | null;
+  errorMessage?: string;
   locale: string;
   onClose: () => void;
   onPublish: () => void;
@@ -37,12 +41,18 @@ export function BusinessParameterEditDialog({
 
   const monthlyOnly =
     editor.setting.parameterCode === "wholesale_referral_waybill_bonus";
-  const previewConfig = draftToPreviewConfig(editor);
+  const previewConfig = previewBusinessParameterDraft(editor.definition, editor.draft);
 
   return (
     <DashboardDialog
       actions={
         <>
+          {/* 错误放在固定底栏，手机滑到确认按钮时仍能看到修改原因。 */}
+          {errorMessage ? (
+            <div className="w-full">
+              <FeedbackNotice tone="error">{errorMessage}</FeedbackNotice>
+            </div>
+          ) : null}
           <Button
             disabled={pending}
             onClick={onClose}
@@ -76,6 +86,7 @@ export function BusinessParameterEditDialog({
           {editor.definition.fields.map((field) => (
             <DashboardFormField
               controlId={`business-parameter-${field.configKey}`}
+              hint={field.kind === "rate" ? t("editor.rateHint") : undefined}
               key={field.configKey}
               label={ruleText(field.labelKey)}
               required
@@ -180,7 +191,7 @@ export function BusinessParameterEditDialog({
         <p className="break-words rounded-surface-card bg-accent-subtle px-4 py-3 text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
           {ruleText(
             editor.definition.calculationKey,
-            calculationValues(editor, locale, t("table.missing")),
+            calculationValues(previewConfig, locale, t("table.missing")),
           )}
         </p>
       </div>
@@ -228,42 +239,28 @@ function DiffColumn({
   );
 }
 
-function draftToPreviewConfig(editor: BusinessParameterEditor) {
-  return editor.definition.fields.reduce<CommissionRuleConfig>(
-    (result, field) => {
-      const parsed = Number(editor.draft[field.configKey]);
-      if (Number.isFinite(parsed)) {
-        result[field.configKey] =
-          field.kind === "rate" && parsed > 1 ? parsed / 100 : parsed;
-      }
-      return result;
-    },
-    {},
-  );
-}
-
 function calculationValues(
-  editor: BusinessParameterEditor,
+  config: CommissionRuleConfig,
   locale: string,
   missing: string,
 ) {
-  const config = draftToPreviewConfig(editor);
   const value = (key: string, options?: Intl.NumberFormatOptions) => {
     const numberValue = config[key];
     return Number.isFinite(numberValue)
       ? new Intl.NumberFormat(locale, options).format(numberValue)
       : missing;
   };
+  const percent = { style: "percent", maximumFractionDigits: 2 } satisfies Intl.NumberFormatOptions;
   return {
     bonusUsd: value("bonus_usd", { currency: "USD", style: "currency" }),
-    rate: value("rate", { style: "percent" }),
+    rate: value("rate", percent),
     tier1BonusUsd: value("tier_1_bonus_usd", {
       currency: "USD",
       style: "currency",
     }),
     tier1Count: value("tier_1_threshold"),
-    existingCustomerRate: value("existing_customer_rate", { style: "percent" }),
-    newCustomerServiceFeeRate: value("new_customer_service_fee_rate", { style: "percent" }),
+    existingCustomerRate: value("existing_customer_rate", percent),
+    newCustomerServiceFeeRate: value("new_customer_service_fee_rate", percent),
     tier2BonusUsd: value("tier_2_bonus_usd", {
       currency: "USD",
       style: "currency",

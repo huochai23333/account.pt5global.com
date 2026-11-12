@@ -3,24 +3,22 @@ import { expect, test } from "@playwright/test";
 import { loginAs, setTestLocale } from "./helpers/auth";
 import {
   capture,
-  disableControlTransitions,
+  expectAnchoredPopupInsideViewport,
+  expectDocumentInsideViewport,
+  routeToName,
+  stabilizeVisualPage,
+} from "./helpers/design-system-visual";
+import {
   expectAuthControlsMeetTouchHeight,
   expectAuthFieldAssociation,
   expectAuthLayout,
-  expectAnchoredPopupInsideViewport,
-  expectDocumentInsideViewport,
-  expectSemanticContrast,
-  expectSemanticControlStyle,
-  expectSoftFilterControlHierarchy,
   isAuthRoute,
-  readControlStyle,
-  readFocusStyle,
-  routeToName,
   signOut,
-  stabilizeVisualPage,
-} from "./helpers/design-system-visual";
+} from "./helpers/design-system-auth";
+import { expectSoftFilterControlHierarchy } from "./helpers/design-system-filters";
 import { openDateControl } from "./helpers/date-control";
 
+// 页面截图、角色可见范围和断点几何在这里；共享控件的跨页面比较见同层 controls 用例。
 const viewports = [
   { height: 900, name: "desktop", width: 1440 },
   { height: 844, name: "mobile", width: 390 },
@@ -83,55 +81,6 @@ for (const viewport of viewports) {
         page.getByRole("heading", { name: "这个页面不在你的工作范围内" }),
       ).toBeVisible();
       await capture(page, `${viewport.name}-access-limited.png`);
-    });
-
-    test("authentication large controls still use shared primitives", async ({
-      page,
-    }) => {
-      await page.goto("/login");
-      await disableControlTransitions(page);
-      await expectSemanticContrast(page);
-      const authInput = page.locator('[data-slot="input"]').first();
-      const authPrimaryButton = page.locator(
-        '[data-slot="button"][data-variant="primary"][type="submit"]',
-      );
-      const authInputStyle = await readControlStyle(authInput);
-      const authButtonStyle = await readControlStyle(authPrimaryButton);
-      await expect(authInput).toHaveAttribute("data-control-size", "large");
-      await expect(authPrimaryButton).toHaveAttribute("data-size", "large");
-      expect(authInputStyle.height).toBe("52px");
-      expect(authButtonStyle.height).toBe("52px");
-      await authInput.focus();
-      const authInputFocusStyle = await readFocusStyle(authInput);
-
-      await loginAs(page, "administrator");
-      await page.goto("/admin/company-expenses");
-      await disableControlTransitions(page);
-      await page.getByRole("button", { name: "新增费用" }).click();
-      const dialog = page.getByRole("dialog", { name: "新增费用" });
-      const workspaceInput = dialog.locator('[data-slot="input"]').first();
-      const workspacePrimaryButton = dialog.locator(
-        '[data-slot="button"][data-variant="primary"]',
-      );
-
-      await expect(workspaceInput).toBeVisible();
-      await expect(workspacePrimaryButton).toBeVisible();
-      await expect(workspaceInput).toHaveAttribute(
-        "data-control-size",
-        "default",
-      );
-      await expect(workspacePrimaryButton).toHaveAttribute(
-        "data-size",
-        "default",
-      );
-      expectSemanticControlStyle(await readControlStyle(workspaceInput), authInputStyle);
-      expectSemanticControlStyle(
-        await readControlStyle(workspacePrimaryButton),
-        authButtonStyle,
-      );
-
-      await workspaceInput.focus();
-      expect(await readFocusStyle(workspaceInput)).toEqual(authInputFocusStyle);
     });
 
     test("representative workspaces and standard form dialog", async ({ page }) => {

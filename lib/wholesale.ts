@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getWholesaleOrderAssessmentSample } from "./wholesale-order-assessment-sample";
 
 import type { AppRole } from "./auth-routing";
+import { getClientBusinessCandidates } from "./client-business-access";
 import {
   type CommissionRuleSetting,
 } from "./commission-settings";
@@ -126,6 +127,8 @@ export async function getWholesalePageData(
 
   return {
     ...baseData,
+    businessAddCandidates: rows.businessAddCandidates,
+    businessAddCandidatesUnavailable: rows.businessAddCandidatesUnavailable,
     commissionBoardErrors: rows.commissionBoardErrors,
     commissionPageError: rows.commissionPageError,
     commissionRuleSettings: rows.commissionRuleSettings,
@@ -136,7 +139,7 @@ export async function getWholesalePageData(
   };
 }
 
-type WholesaleSectionRows = {
+type WholesaleSectionRows = Pick<WholesalePageData, "businessAddCandidates" | "businessAddCandidatesUnavailable"> & {
   commissionBoardErrors: WholesalePageData["commissionBoardErrors"];
   commissionPageError: string | null;
   commissionRuleSettings: CommissionRuleSetting[];
@@ -161,12 +164,20 @@ async function getWholesaleSectionRows(
   const rows = createEmptyWholesaleSectionRows();
 
   if (section === "customers") {
-    const [customers, profileResult] = await Promise.all([
+    const [customers, profileResult, businessCandidates] = await Promise.all([
       getWholesaleCustomers(supabase),
       getWholesaleProfilesWithCandidates(supabase, true),
+      // 开通业务检查授权是否启用，关联档案检查客户是否已有档案，两份名单不能共用。
+      currentRole === "administrator"
+        ? getClientBusinessCandidates(supabase, "wholesale").catch(() => null)
+        : Promise.resolve([]),
     ]);
 
-    return { ...rows, customers, ...profileResult };
+    return {
+      ...rows, customers, ...profileResult,
+      businessAddCandidates: businessCandidates ?? [],
+      businessAddCandidatesUnavailable: businessCandidates === null,
+    };
   }
 
   if (section === "people") {
@@ -226,6 +237,8 @@ function createEmptyWholesalePageData({
 
 function createEmptyWholesaleSectionRows(): WholesaleSectionRows {
   return {
+    businessAddCandidates: [],
+    businessAddCandidatesUnavailable: false,
     commissionBoardErrors: {},
     commissionPageError: null,
     commissionRuleSettings: [],

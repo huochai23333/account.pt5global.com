@@ -23,7 +23,7 @@ import {
 } from "./dashboard-home-invite-section";
 import type { HomeWidgetInstance } from "./dashboard-home-layout";
 import { HomeTodosSection } from "./dashboard-home-todo-section";
-import type { HomeTodoCopy } from "./dashboard-home-todo-display";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
 import type { DashboardHomeTodosState } from "./use-dashboard-home-todos";
 import type { HomeWidgetDisplayMode } from "./use-dashboard-home-display-mode";
 

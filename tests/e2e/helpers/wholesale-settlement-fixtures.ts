@@ -1,44 +1,9 @@
 import { getLocalSupabaseAdminClient } from "./local-supabase-admin";
+import { cleanupLocalSettlementFixtures } from "../../test-support/settlement-fixture-cleanup";
 
 export async function cleanupSettlementReleaseFixtures(notes: string[]) {
-  if (notes.length === 0) return;
-  const admin = getLocalSupabaseAdminClient();
-  if (!admin) throw new Error("结汇回归需要本地 Supabase 管理连接。");
-
-  const { data: releases, error: releaseError } = await admin
-    .from("wholesale_settlement_releases")
-    .select("id")
-    .in("note", notes);
-  if (releaseError) throw releaseError;
-  const releaseIds = (releases ?? []).map((release) => release.id);
-  if (releaseIds.length === 0) return;
-
-  // 先保留订单结汇记录 ID；删除收款会级联删除分配，再删结汇记录让订单重新计算。
-  const { data: settlements, error: settlementError } = await admin
-    .from("wholesale_order_settlements")
-    .select("id")
-    .in("source_settlement_release_id", releaseIds);
-  if (settlementError) throw settlementError;
-  const { data: deleted, error: deleteError } = await admin
-    .from("wholesale_settlement_releases")
-    .delete()
-    .in("id", releaseIds)
-    .select("id");
-  if (deleteError || deleted?.length !== releaseIds.length) {
-    throw deleteError ?? new Error("本次测试收款未全部清理。");
-  }
-
-  const settlementIds = (settlements ?? []).map((settlement) => settlement.id);
-  if (settlementIds.length > 0) {
-    const { data: deletedSettlements, error } = await admin
-      .from("wholesale_order_settlements")
-      .delete()
-      .in("id", settlementIds)
-      .select("id");
-    if (error || deletedSettlements?.length !== settlementIds.length) {
-      throw error ?? new Error("本次测试订单结汇记录未全部清理。");
-    }
-  }
+  // 三类记录同事务清理并独立读回；调用签名保持，原认证套件的执行准入另外管理。
+  cleanupLocalSettlementFixtures(notes);
 }
 
 export async function ensureLocalUsdRate(rateDate: string, rate = 7.2) {
@@ -107,8 +72,16 @@ export async function getActiveAllocationTotal(releaseNote: string) {
     .eq("release_id", release.id)
     .eq("status", "active");
   if (allocationsError) throw allocationsError;
-  return (allocations ?? []).reduce(
-    (sum, allocation) => sum + Number(allocation.allocation_amount),
-    0,
-  );
+  // 空数组才表示没有有效分配；未知正文不能当作清空成功，金额也必须满足数据库的正数合同。
+  if (!Array.isArray(allocations)) throw new Error("本次分配核对缺少记录正文。");
+  return allocations.reduce((sum, allocation) => {
+    const value = allocation?.allocation_amount;
+    if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === ""
+      || !Number.isFinite(Number(value)) || Number(value) <= 0) {
+      throw new Error("本次分配核对包含无效金额。");
+    }
+    const total = sum + Number(value);
+    if (!Number.isFinite(total)) throw new Error("本次分配合计无法核对。");
+    return total;
+  }, 0);
 }

@@ -21,7 +21,7 @@ import {
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-section-header";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
-import type { AdminPeoplePageData } from "@/lib/admin-people";
+import type { AdminPeoplePageData } from "@/lib/admin-people-contract";
 import type { ClientBusinessCandidate } from "@/lib/client-business-access";
 
 import { getTourismPersonName } from "./tourism-people-display";

@@ -39,7 +39,9 @@ export async function verifyResizedAndDraggedLayoutPersistence(page: Page) {
   await expect(card).toHaveAttribute("data-home-widget-width", "4");
   await page.getByTestId("home-edit-button").click();
   const label = card.getByTestId("home-widget-editor-label");
-  await label.scrollIntoViewIfNeeded();
+  // 编辑标题随内层循环摇晃，Playwright 等待它稳定会一直超时。
+  // 外层卡片是静止的网格定位层：滚动外层后，仍在真实标题上按鼠标发起拖动。
+  await card.scrollIntoViewIfNeeded();
   const start = await label.boundingBox();
   if (!start) throw new Error("home drag label has no visible geometry");
   const stride = await page.getByTestId("home-widget-grid").evaluate((element) => {

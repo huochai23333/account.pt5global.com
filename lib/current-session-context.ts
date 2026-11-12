@@ -13,6 +13,7 @@ import {
   getCurrentSession,
   getCurrentUser,
 } from "./current-session-auth";
+import { ensureSessionTracking, getSessionCache, watchSessionCache } from "./current-session-cache";
 import { getVerifiedSessionContext } from "./verified-session-context";
 
 export { resetCurrentAuthContextCache } from "./current-session-cache";
@@ -48,13 +49,20 @@ export async function getCurrentSessionContext(
     ]);
     return { session, ...verified };
   }
+  const cache = getSessionCache(supabase);
+  ensureSessionTracking(supabase, cache);
+  const isCurrent = watchSessionCache(cache);
   const [session, user, claims] = await Promise.all([
     getCurrentSession(supabase),
     getCurrentUser(supabase),
     getCurrentClaims(supabase),
   ]);
   const trustedClaims = user ? claims : null;
-  const accessContext = user ? await getCurrentAppAccessContext(supabase) : null;
+  const accessContext = user && isCurrent()
+    ? await getCurrentAppAccessContext(supabase)
+    : null;
+  // 权限读取可能比身份读取更晚完成，旧身份不能与新会话的数据一起返回。
+  if (!isCurrent()) return { session: null, user: null, role: null, status: null };
 
   return {
     session,

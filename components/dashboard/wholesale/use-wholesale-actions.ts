@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
 import { createWholesaleBusinessActions } from "./wholesale-business-actions";
+import { createWholesaleCustomerAccountActions } from "./wholesale-customer-account-actions";
 import { createWholesaleCustomerActions } from "./wholesale-customer-actions";
 import { createWholesaleOrderActions } from "./wholesale-order-actions";
 import { createWholesaleOrderListActions } from "./wholesale-order-list-actions";
@@ -15,34 +16,78 @@ import { useWholesaleActionRunner } from "./use-wholesale-action-runner";
  */
 export function useWholesaleActions() {
   const accessT = useTranslations("ClientBusinessAccess");
+  const orderT = useTranslations("WholesaleBusiness.ordersUi");
+  const customerT = useTranslations("WholesaleBusiness.customerWrite");
+  const commissionT = useTranslations("WholesaleBusiness.commissionBoards");
+  const aliasT = useTranslations("UiText.components_dashboard_wholesale_wholesale_customer_other_names");
   const runner = useWholesaleActionRunner();
 
   const customerActions = useMemo(
     () =>
       createWholesaleCustomerActions({
-        addRegisteredCustomerSuccessMessage: accessT("success", {
-          business: accessT("businesses.wholesale"),
-        }),
+        recordFeedback: {
+          created: customerT("created"),
+          updated: customerT("updated"),
+          editConflict: customerT("editConflict"),
+          editUnconfirmed: customerT("editUnconfirmed"),
+          deleted: customerT("deleted"),
+        },
+        deleteFeedback: (key) => customerT(key),
+        aliasFeedback: {
+          saved: aliasT("saved"),
+          alreadyPresent: aliasT("alreadyPresent"),
+          failed: aliasT("failed"),
+        },
         runAction: runner.runAction,
       }),
-    [accessT, runner.runAction],
+    [aliasT, customerT, runner.runAction],
+  );
+  const customerAccountActions = useMemo(
+    () => createWholesaleCustomerAccountActions({
+      runAction: runner.runAction,
+      addedMessage: accessT("success", { business: accessT("businesses.wholesale") }),
+      addFeedback: (key) => accessT(key),
+      linkedMessage: customerT("linked"),
+      unconfirmedMessage: customerT("linkUnconfirmed"),
+    }),
+    [accessT, customerT, runner.runAction],
   );
   const orderActions = useMemo(
-    () => createWholesaleOrderActions(runner.runAction),
-    [runner.runAction],
+    () => createWholesaleOrderActions(runner.runAction, {
+      created: orderT("writeFeedback.created"),
+      updated: orderT("writeFeedback.updated"),
+      settlementSaved: orderT("writeFeedback.settlementSaved"),
+      settlementUnconfirmed: orderT("writeFeedback.settlementUnconfirmed"),
+      settlementConflict: orderT("writeFeedback.settlementConflict"),
+      settlementRateMissing: orderT("writeFeedback.settlementRateMissing"),
+      refreshPending: orderT("writeFeedback.refreshPending"),
+    }),
+    [orderT, runner.runAction],
   );
   const orderListActions = useMemo(
-    () => createWholesaleOrderListActions(runner.runAction),
-    [runner.runAction],
+    () => createWholesaleOrderListActions(runner.runAction, {
+      uploaded: orderT("orderList.uploadSaved"),
+      deleted: orderT("orderList.deleteSaved"),
+      uploadUnconfirmed: orderT("orderList.uploadUnconfirmed"),
+      uploadFailed: orderT("orderList.uploadFailed"),
+      deleteIncomplete: orderT("orderList.deleteIncomplete"),
+      deleteFailed: orderT("orderList.deleteFailed"),
+    }),
+    [orderT, runner.runAction],
   );
   const businessActions = useMemo(
-    () => createWholesaleBusinessActions(runner.runAction),
-    [runner.runAction],
+    () => createWholesaleBusinessActions(runner.runAction, {
+      saved: commissionT("settlementSaved"),
+      changed: commissionT("settlementChanged"),
+      unconfirmed: commissionT("settlementUnconfirmed"),
+    }),
+    [commissionT, runner.runAction],
   );
 
   return {
     ...businessActions,
     ...customerActions,
+    ...customerAccountActions,
     ...orderActions,
     ...orderListActions,
     feedback: runner.feedback,

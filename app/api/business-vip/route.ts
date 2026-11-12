@@ -35,8 +35,7 @@ export async function POST(request: Request) {
     const payload = normalizeRequestPayload(await request.json());
     const supabase = await getServerSupabaseClient();
 
-    // Keep mutation dispatch in the route thin; business-specific validation
-    // and RPC selection live in lib/business-vip-management.ts.
+    // 入口解析请求后交给业务服务，当前启用的写入仍由数据库检查账号和客户权限。
     if (payload.operation === "request") {
       await requestBusinessVipRecharge(supabase, {
         business: payload.business,

@@ -1,5 +1,7 @@
 # 中行买入价修复验证凭证
 
+当前银行历史写入用例已按实际业务更名为 [boc_exchange_rate_historical_backfill.sql](../../PT5-dropshipping-supabase/supabase/tests/boc_exchange_rate_historical_backfill.sql)，正文中的旧名称保留当时的执行记录语义；更名没有重新执行本报告验收。
+
 本地和 Supabase 云端已统一 NowAPI 中国银行现汇买入价。原汇率服务运行实现、配置引用、专属数据库函数、索引和云端旧凭据已清理；旧汇率数据及归档表已删除。云端已重新获取第一笔订单日期至今的汇率。历史订单金额重新核算与线上页面验收尚未执行。
 
 ## 规则与范围

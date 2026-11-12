@@ -4,8 +4,8 @@ import { normalizeAppRole, normalizeUserStatus } from "./auth-metadata";
 import {
   ensureSessionTracking,
   getSessionCache,
+  startSessionCacheRequest,
   type AppAccessContext,
-  type SessionCacheState,
 } from "./current-session-cache";
 import { withRequestTimeout } from "./request-timeout";
 
@@ -14,7 +14,8 @@ const ACCESS_CONTEXT_TIMEOUT_MESSAGE = "登录状态同步较慢，请稍后重�
 
 /**
  * 数据库 RPC 是角色和状态的最终可信来源。
- * 读取失败时返回 null，薄编排层会继续使用已验证 JWT 或用户元数据作为降级来源。
+ * 这是浏览器交互使用的缓存读取，失败返回 null 后编排层保留既有 claims/app_metadata 分支。
+ * 严格服务端入口使用 current-app-access-context.ts，失败直接抛出，不能把两个同名导出混用。
  */
 export async function getCurrentAppAccessContext(
   supabase: SupabaseClient,
@@ -30,20 +31,17 @@ export async function getCurrentAppAccessContext(
     return sessionCache.currentAccessContextSnapshot;
   }
   if (!sessionCache.currentAccessContextRequest) {
-    sessionCache.currentAccessContextRequest = resolveCurrentAppAccessContext(
-      supabase,
+    sessionCache.currentAccessContextRequest = startSessionCacheRequest(
       sessionCache,
-    ).finally(() => {
-      sessionCache.currentAccessContextRequest = null;
-    });
+      () => fetchCurrentAppAccessContext(supabase),
+      (context) => { sessionCache.currentAccessContextSnapshot = context; },
+      () => { sessionCache.currentAccessContextRequest = null; },
+    );
   }
   return sessionCache.currentAccessContextRequest;
 }
 
-async function resolveCurrentAppAccessContext(
-  supabase: SupabaseClient,
-  sessionCache: SessionCacheState,
-) {
+async function fetchCurrentAppAccessContext(supabase: SupabaseClient) {
   try {
     const { data, error } = await withRequestTimeout(
       supabase.rpc("get_current_app_access_context"),
@@ -56,16 +54,13 @@ async function resolveCurrentAppAccessContext(
 
     const row = Array.isArray(data) ? data[0] : data;
     const record = readRecord(row);
-    const context = record
+    return record
       ? {
           role: normalizeAppRole(record.role),
           status: normalizeUserStatus(record.status),
         }
       : null;
-    sessionCache.currentAccessContextSnapshot = context;
-    return context;
   } catch {
-    sessionCache.currentAccessContextSnapshot = null;
     return null;
   }
 }

@@ -1,3 +1,4 @@
+/** 首页待办区组合快捷录入、筛选和列表；请求、表单状态及完整列表弹窗由待办 Hook 管理。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -6,24 +7,15 @@ import * as FormControls from "@/components/ui/form-controls";
 
 import { ListTodo, LoaderCircle, Plus, Star } from "lucide-react";
 
-import {
-  MotionList,
-  MotionListItem,
-  PresenceSwap,
-} from "@/components/motion/motion-primitives";
+import { MotionList, MotionListItem, PresenceSwap } from "@/components/motion/motion-primitives";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 
 import { EmptyState, FeedbackNotice } from "../dashboard-shared-ui";
-import {
-  HomeTodoDeleteDialog,
-  HomeTodoDialog,
-} from "./dashboard-home-todo-dialog";
-import {
-  homeTodoFilterValues,
-  type HomeTodoCopy,
-} from "./dashboard-home-todo-display";
+import { HomeTodoDeleteDialog, HomeTodoDialog } from "./dashboard-home-todo-dialog";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
+import { homeTodoFilterValues } from "./dashboard-home-todo-display";
 import { TodoFilterButton, TodoItem } from "./dashboard-home-todo-list";
 import type { DashboardHomeTodosState } from "./use-dashboard-home-todos";
 
@@ -63,15 +55,11 @@ export function HomeTodosSection({
               compact ? "text-lg" : "text-2xl",
             )}
           >
-            <ListTodo
-              className={cn("text-primary", compact ? "size-5" : "size-6")}
-            />
+            <ListTodo className={cn("text-primary", compact ? "size-5" : "size-6")} />
             {copy.title}
           </h3>
           {!compact ? (
-            <p className="mt-2 text-sm leading-7 text-content-muted">
-              {copy.description}
-            </p>
+            <p className="mt-2 text-sm leading-7 text-content-muted">{copy.description}</p>
           ) : null}
         </div>
       </div>
@@ -91,9 +79,7 @@ export function HomeTodosSection({
           aria-label={copy.quickAdd.placeholder}
           className="col-span-full h-12 min-w-0 rounded-record-card border border-border bg-surface-interactive px-4 text-sm text-content-strong outline-none transition placeholder:text-content-subtle focus:border-ring focus:ring-4 focus:ring-ring/30 md:col-span-1"
           data-testid="home-todo-title-input"
-          onChange={(event) =>
-            todoState.updateQuickDraftField("title", event.target.value)
-          }
+          onChange={(event) => todoState.updateQuickDraftField("title", event.target.value)}
           placeholder={copy.quickAdd.placeholder}
           type="text"
           value={todoState.quickDraft.title}
@@ -102,9 +88,7 @@ export function HomeTodosSection({
         <div className="min-w-0">
           <DatePicker
             aria-label={copy.quickAdd.dueDateLabel}
-            onValueChange={(value) =>
-              todoState.updateQuickDraftField("dueDate", value)
-            }
+            onValueChange={(value) => todoState.updateQuickDraftField("dueDate", value)}
             value={todoState.quickDraft.dueDate}
           />
         </div>
@@ -124,10 +108,7 @@ export function HomeTodosSection({
           )}
           data-testid="home-todo-quick-important"
           onClick={() =>
-            todoState.updateQuickDraftField(
-              "isImportant",
-              !todoState.quickDraft.isImportant,
-            )
+            todoState.updateQuickDraftField("isImportant", !todoState.quickDraft.isImportant)
           }
           title={
             todoState.quickDraft.isImportant
@@ -136,12 +117,7 @@ export function HomeTodosSection({
           }
           type="button"
         >
-          <Star
-            className={cn(
-              "size-4",
-              todoState.quickDraft.isImportant ? "fill-current" : "",
-            )}
-          />
+          <Star className={cn("size-4", todoState.quickDraft.isImportant ? "fill-current" : "")} />
         </DesignButton>
 
         <Button
@@ -160,10 +136,7 @@ export function HomeTodosSection({
         </Button>
       </form>
 
-      <div
-        className={cn("flex flex-wrap gap-2", compact ? "mt-2" : "mt-5")}
-        role="tablist"
-      >
+      <div className={cn("flex flex-wrap gap-2", compact ? "mt-2" : "mt-5")} role="tablist">
         {homeTodoFilterValues.map((filterValue) => (
           <TodoFilterButton
             active={todoState.filter === filterValue}
@@ -204,9 +177,7 @@ export function HomeTodosSection({
                   <ListTodo className="size-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-content-strong">
-                    {emptyCopy.title}
-                  </p>
+                  <p className="text-sm font-semibold text-content-strong">{emptyCopy.title}</p>
                   <p className="mt-1 line-clamp-1 text-xs text-content-muted">
                     {emptyCopy.description}
                   </p>
@@ -228,12 +199,8 @@ export function HomeTodosSection({
                     locale={locale}
                     onDelete={() => void todoState.handleDelete(todo)}
                     onEdit={() => todoState.openEditDialog(todo)}
-                    onToggleComplete={() =>
-                      todoState.handleToggleComplete(todo)
-                    }
-                    onToggleImportant={() =>
-                      todoState.handleToggleImportant(todo)
-                    }
+                    onToggleComplete={() => todoState.handleToggleComplete(todo)}
+                    onToggleImportant={() => todoState.handleToggleImportant(todo)}
                     pendingAction={todoState.pendingAction}
                     todo={todo}
                   />

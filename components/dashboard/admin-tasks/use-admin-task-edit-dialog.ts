@@ -15,14 +15,15 @@ import { type getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   parseTaskAcceptanceLimitInput,
   parseTaskCommissionAmountInput,
-  toAdminTaskErrorMessage,
   validateTaskDraft,
-} from "@/components/dashboard/tasks/tasks-display";
+} from "@/components/dashboard/tasks/task-form-validation";
+import { toAdminTaskErrorMessage } from "@/components/dashboard/tasks/tasks-display";
 
 import {
   canEditTask,
   createTaskFormFromTask,
-  formatOptionalTaskCommissionInput,
+  changeTaskFormType,
+  toggleTaskTargetRole,
   type CreateTaskFormState,
 } from "./admin-tasks-utils";
 import { type PageFeedbackValue } from "./admin-tasks-view-model-shared";
@@ -99,40 +100,13 @@ export function useAdminTaskEditDialog({
   const handleEditTargetRoleToggle = useCallback((role: TaskTargetRole) => {
     setEditFormState((current) => ({
       ...current,
-      targetRoles: current.targetRoles.includes(role)
-        ? current.targetRoles.filter((targetRole) => targetRole !== role)
-        : [...current.targetRoles, role],
+      targetRoles: toggleTaskTargetRole(current.targetRoles, role),
     }));
   }, []);
 
   const handleEditTaskTypeChange = useCallback(
     (taskTypeCode: string) => {
-      setEditFormState((current) => {
-        const currentType = taskTypeOptions.find(
-          (taskType) => taskType.code === current.taskTypeCode,
-        );
-        const nextType =
-          taskTypeOptions.find((taskType) => taskType.code === taskTypeCode) ?? null;
-        const currentDefault =
-          currentType !== undefined
-            ? formatOptionalTaskCommissionInput(currentType.defaultCommissionAmountRmb)
-            : "";
-        const nextDefault =
-          nextType !== null
-            ? formatOptionalTaskCommissionInput(nextType.defaultCommissionAmountRmb)
-            : "";
-        const shouldReplaceCommission =
-          current.commissionAmount.trim().length === 0
-          || current.commissionAmount === currentDefault;
-
-        return {
-          ...current,
-          taskTypeCode,
-          commissionAmount: shouldReplaceCommission
-            ? nextDefault
-            : current.commissionAmount,
-        };
-      });
+      setEditFormState((current) => changeTaskFormType(current, taskTypeCode, taskTypeOptions));
     },
     [taskTypeOptions],
   );

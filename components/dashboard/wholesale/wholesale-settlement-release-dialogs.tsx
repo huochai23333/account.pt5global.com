@@ -2,8 +2,9 @@
 
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
+import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
@@ -14,17 +15,18 @@ import {
 import type { WholesaleCustomer } from "@/lib/wholesale";
 import { getBeijingDateString } from "@/lib/exchange-rates";
 import { WholesaleSubmitButton, WholesaleTextarea } from "./wholesale-ui";
+import type { SettlementReleasePublicationActions } from "./use-wholesale-settlement-release-publication";
 type CreateDialogProps = {
   currencyOptions: string[];
   customers: WholesaleCustomer[];
-  onCreateRelease: (formData: FormData) => Promise<boolean>;
+  publication: SettlementReleasePublicationActions;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
 };
 export function WholesaleSettlementReleaseCreateDialog({
   currencyOptions,
   customers,
-  onCreateRelease,
+  publication,
   onOpenChange,
   pending,
 }: CreateDialogProps) {
@@ -33,11 +35,20 @@ export function WholesaleSettlementReleaseCreateDialog({
   );
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [manualCustomerName, setManualCustomerName] = useState("");
+  const [needsCheck, setNeedsCheck] = useState(publication.hasPending);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const selectedCustomer = useMemo(
     () =>
       customers.find((customer) => customer.id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   );
+
+  useEffect(() => {
+    // 手机提交时往往已滚到表单底部，把待核对提示和按钮一起带回视口。
+    if (feedback) feedbackRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }, [feedback]);
+
   return (
     <DashboardDialog
       description={uiText("attribute001")}
@@ -55,14 +66,40 @@ export function WholesaleSettlementReleaseCreateDialog({
         className="grid gap-4 md:grid-cols-2"
         onSubmit={async (event) => {
           event.preventDefault();
-          const succeeded = await onCreateRelease(
+          setFeedback(null);
+          const succeeded = await publication.create(
             new FormData(event.currentTarget),
+            setFeedback,
           );
-          // 发布失败时保留客户、金额、币种和备注，用户无需重新填写。
-          if (!succeeded) return;
-          onOpenChange(false);
+          if (succeeded) onOpenChange(false);
+          else setNeedsCheck(publication.hasPending());
         }}
       >
+        {needsCheck || feedback ? (
+          <div
+            className="space-y-3 rounded-record-card border border-border-subtle bg-surface-inset p-3 md:col-span-2"
+            ref={feedbackRef}
+          >
+            {feedback ? <p role="alert" className="text-sm text-status-danger">{feedback}</p> : null}
+            {needsCheck ? (
+              <>
+                <p className="text-sm text-content-muted">{uiText("publicationRecoveryHint")}</p>
+                <Button
+                  disabled={pending}
+                  onClick={async () => {
+                    setFeedback(null);
+                    if (await publication.recover(setFeedback)) onOpenChange(false);
+                  }}
+                  type="button"
+                  variant="outline"
+                  wrap
+                >
+                  {uiText("recoverPublication")}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        ) : null}
         <DashboardFilterField label={uiText("attribute003")}>
           <Select
             aria-label={uiText("attribute003")}

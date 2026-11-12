@@ -1,0 +1,3005 @@
+{
+  "description": "两个仓库当前工作区相对本地 HEAD 的运行源码、界面文案和相关 SQL 差异。行数不代表人工职责审查或业务验收完成。",
+  "records": [
+    {
+      "repo": "web",
+      "file": "app/(auth)/privacy/page.tsx",
+      "beforeLines": 20,
+      "afterLines": 16
+    },
+    {
+      "repo": "web",
+      "file": "app/(auth)/terms/page.tsx",
+      "beforeLines": 20,
+      "afterLines": 16
+    },
+    {
+      "repo": "web",
+      "file": "app/(document-library)/[workspace]/documents/drafts/[draftId]/page.tsx",
+      "beforeLines": 9,
+      "afterLines": 33
+    },
+    {
+      "repo": "web",
+      "file": "app/(document-library)/[workspace]/documents/layout.tsx",
+      "beforeLines": 12,
+      "afterLines": 24
+    },
+    {
+      "repo": "web",
+      "file": "app/(document-library)/[workspace]/documents/templates/[documentId]/guide/page.tsx",
+      "beforeLines": 13,
+      "afterLines": 37
+    },
+    {
+      "repo": "web",
+      "file": "app/(workspace)/[workspace]/[business]/[section]/section-helpers.ts",
+      "beforeLines": 131,
+      "afterLines": 133
+    },
+    {
+      "repo": "web",
+      "file": "app/(workspace)/[workspace]/[business]/[section]/section-metadata.ts",
+      "beforeLines": 154,
+      "afterLines": 155
+    },
+    {
+      "repo": "web",
+      "file": "app/(workspace)/[workspace]/workspace-global-pages.tsx",
+      "beforeLines": 216,
+      "afterLines": 218
+    },
+    {
+      "repo": "web",
+      "file": "app/api/business-vip/route.ts",
+      "beforeLines": 196,
+      "afterLines": 195
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-document-drafts/[draftId]/content/route.ts",
+      "beforeLines": 14,
+      "afterLines": 37
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-document-drafts/[draftId]/route.ts",
+      "beforeLines": 4,
+      "afterLines": 17
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-document-drafts/route.ts",
+      "beforeLines": 7,
+      "afterLines": 30
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-documents/[documentId]/content/route.ts",
+      "beforeLines": 24,
+      "afterLines": 49
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-documents/route.ts",
+      "beforeLines": 13,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-template-documents/save-as/route.ts",
+      "beforeLines": 16,
+      "afterLines": 37
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-templates/manage/route.ts",
+      "beforeLines": 43,
+      "afterLines": 43
+    },
+    {
+      "repo": "web",
+      "file": "app/api/company-templates/publish/route.ts",
+      "beforeLines": 79,
+      "afterLines": 79
+    },
+    {
+      "repo": "web",
+      "file": "app/api/document-library/batch/route.ts",
+      "beforeLines": 14,
+      "afterLines": 39
+    },
+    {
+      "repo": "web",
+      "file": "app/api/document-library/download/route.ts",
+      "beforeLines": 9,
+      "afterLines": 23
+    },
+    {
+      "repo": "web",
+      "file": "app/api/document-library/files/[id]/content/route.ts",
+      "beforeLines": 28,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "app/api/document-library/manifest/route.ts",
+      "beforeLines": 9,
+      "afterLines": 15
+    },
+    {
+      "repo": "web",
+      "file": "app/api/document-library/upload/route.ts",
+      "beforeLines": 15,
+      "afterLines": 26
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/agents/route.ts",
+      "beforeLines": 24,
+      "afterLines": 39
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/ai/reply/route.ts",
+      "beforeLines": 25,
+      "afterLines": 26
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/ai/report/route.ts",
+      "beforeLines": 27,
+      "afterLines": 28
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/assignable-agents/route.ts",
+      "beforeLines": 10,
+      "afterLines": 10
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/feishu-connect/route.ts",
+      "beforeLines": 17,
+      "afterLines": 17
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/intake-rules/route.ts",
+      "beforeLines": 45,
+      "afterLines": 65
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/mailbox-connect/route.ts",
+      "beforeLines": 15,
+      "afterLines": 15
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/metrics/route.ts",
+      "beforeLines": 11,
+      "afterLines": 11
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/oauth/feishu/callback/route.ts",
+      "beforeLines": 35,
+      "afterLines": 35
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/oauth/feishu/start/route.ts",
+      "beforeLines": 27,
+      "afterLines": 28
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/oauth/google/callback/route.ts",
+      "beforeLines": 52,
+      "afterLines": 52
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/oauth/google/start/route.ts",
+      "beforeLines": 29,
+      "afterLines": 30
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/quarantine/[threadId]/route.ts",
+      "beforeLines": 23,
+      "afterLines": 24
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/quarantine/route.ts",
+      "beforeLines": 27,
+      "afterLines": 27
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/threads/[threadId]/assign/route.ts",
+      "beforeLines": 16,
+      "afterLines": 17
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/threads/[threadId]/read/route.ts",
+      "beforeLines": 14,
+      "afterLines": 15
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/threads/[threadId]/route.ts",
+      "beforeLines": 20,
+      "afterLines": 41
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/threads/[threadId]/state/route.ts",
+      "beforeLines": 19,
+      "afterLines": 20
+    },
+    {
+      "repo": "web",
+      "file": "app/api/mail/webhooks/gmail/route.ts",
+      "beforeLines": 26,
+      "afterLines": 26
+    },
+    {
+      "repo": "web",
+      "file": "app/api/wholesale/order-assessment/route.ts",
+      "beforeLines": 216,
+      "afterLines": 81
+    },
+    {
+      "repo": "web",
+      "file": "app/auth/confirm/route.ts",
+      "beforeLines": 111,
+      "afterLines": 111
+    },
+    {
+      "repo": "web",
+      "file": "app/business-unavailable/page.tsx",
+      "beforeLines": 129,
+      "afterLines": 157
+    },
+    {
+      "repo": "web",
+      "file": "app/global-error.tsx",
+      "beforeLines": 118,
+      "afterLines": 109
+    },
+    {
+      "repo": "web",
+      "file": "components/auth/auth-error-messages.ts",
+      "beforeLines": 199,
+      "afterLines": 200
+    },
+    {
+      "repo": "web",
+      "file": "components/auth/auth-password-policy.ts",
+      "beforeLines": 16,
+      "afterLines": 16
+    },
+    {
+      "repo": "web",
+      "file": "components/auth/auth-route-link.tsx",
+      "beforeLines": 82,
+      "afterLines": 83
+    },
+    {
+      "repo": "web",
+      "file": "components/auth/register-phone-field.tsx",
+      "beforeLines": 143,
+      "afterLines": 125
+    },
+    {
+      "repo": "web",
+      "file": "components/auth/register-wizard-progress.tsx",
+      "beforeLines": 51,
+      "afterLines": 52
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-orders/admin-orders-dialog-ui.tsx",
+      "beforeLines": 96,
+      "afterLines": 93
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/admin-review-media-preview.tsx",
+      "beforeLines": 0,
+      "afterLines": 167
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/admin-reviews-client.tsx",
+      "beforeLines": 120,
+      "afterLines": 129
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/admin-reviews-ui.tsx",
+      "beforeLines": 116,
+      "afterLines": 102
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/media-review-list.tsx",
+      "beforeLines": 370,
+      "afterLines": 188
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/use-admin-review-actions.ts",
+      "beforeLines": 0,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-reviews/use-admin-reviews-page.ts",
+      "beforeLines": 312,
+      "afterLines": 149
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-shell-client.tsx",
+      "beforeLines": 46,
+      "afterLines": 43
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-shell-mobile-nav.tsx",
+      "beforeLines": 139,
+      "afterLines": 127
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-shell.tsx",
+      "beforeLines": 229,
+      "afterLines": 222
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-tasks/admin-task-review-list.tsx",
+      "beforeLines": 352,
+      "afterLines": 292
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/admin-tasks/admin-tasks-view-model-shared.ts",
+      "beforeLines": 32,
+      "afterLines": 27
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/ai-assistant/ai-assistant-client.tsx",
+      "beforeLines": 185,
+      "afterLines": 179
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/ai-assistant/ai-assistant-history.ts",
+      "beforeLines": 74,
+      "afterLines": 68
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/ai-assistant/ai-assistant-panel.tsx",
+      "beforeLines": 309,
+      "afterLines": 295
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/announcements/announcements-client.tsx",
+      "beforeLines": 172,
+      "afterLines": 172
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/announcements/announcements-display.ts",
+      "beforeLines": 102,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/announcements/announcements-sections.tsx",
+      "beforeLines": 315,
+      "afterLines": 316
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/announcements/use-announcement-row-actions.ts",
+      "beforeLines": 0,
+      "afterLines": 65
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/announcements/use-announcements-view-model.ts",
+      "beforeLines": 359,
+      "afterLines": 240
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-adjustment-dialog.tsx",
+      "beforeLines": 0,
+      "afterLines": 128
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-client.tsx",
+      "beforeLines": 90,
+      "afterLines": 91
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-dialogs.tsx",
+      "beforeLines": 370,
+      "afterLines": 256
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-display.ts",
+      "beforeLines": 243,
+      "afterLines": 137
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-record-projection.ts",
+      "beforeLines": 0,
+      "afterLines": 106
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-row-shared.tsx",
+      "beforeLines": 80,
+      "afterLines": 81
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-wholesale-dialogs.tsx",
+      "beforeLines": 282,
+      "afterLines": 284
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-wholesale-list.tsx",
+      "beforeLines": 193,
+      "afterLines": 172
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/business-vip-wholesale-records.tsx",
+      "beforeLines": 182,
+      "afterLines": 181
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/use-business-vip-mutation.ts",
+      "beforeLines": 0,
+      "afterLines": 144
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/business-vip/use-business-vip-view-model.ts",
+      "beforeLines": 177,
+      "afterLines": 153
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/client-business-add-dialog.tsx",
+      "beforeLines": 126,
+      "afterLines": 138
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/commission/admin-commission-settings-section.tsx",
+      "beforeLines": 84,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/commission/business-parameter-draft.ts",
+      "beforeLines": 0,
+      "afterLines": 64
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/commission/business-parameter-edit-dialog.tsx",
+      "beforeLines": 278,
+      "afterLines": 275
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/commission/use-business-parameter-settings-view-model.ts",
+      "beforeLines": 343,
+      "afterLines": 277
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/company-expense-form-dialog.tsx",
+      "beforeLines": 166,
+      "afterLines": 166
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/company-expenses-client.tsx",
+      "beforeLines": 195,
+      "afterLines": 107
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/company-expenses-copy.ts",
+      "beforeLines": 0,
+      "afterLines": 92
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/company-expenses-display.ts",
+      "beforeLines": 222,
+      "afterLines": 74
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/company-expenses-form.ts",
+      "beforeLines": 0,
+      "afterLines": 151
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/use-company-expense-editor.ts",
+      "beforeLines": 0,
+      "afterLines": 120
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-expenses/use-company-expenses-view-model.ts",
+      "beforeLines": 320,
+      "afterLines": 220
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/company-template-card.tsx",
+      "beforeLines": 79,
+      "afterLines": 169
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/company-template-desktop-frame.tsx",
+      "beforeLines": 34,
+      "afterLines": 54
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/company-template-publish-dialog.tsx",
+      "beforeLines": 106,
+      "afterLines": 86
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/company-template-viewer.tsx",
+      "beforeLines": 36,
+      "afterLines": 76
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/company-templates-client.tsx",
+      "beforeLines": 62,
+      "afterLines": 132
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-actions.tsx",
+      "beforeLines": 32,
+      "afterLines": 168
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-create-button.tsx",
+      "beforeLines": 17,
+      "afterLines": 73
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-destination-fields.tsx",
+      "beforeLines": 31,
+      "afterLines": 74
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-editor.tsx",
+      "beforeLines": 49,
+      "afterLines": 205
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-folder-browser.tsx",
+      "beforeLines": 29,
+      "afterLines": 121
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-folder-dialog.tsx",
+      "beforeLines": 26,
+      "afterLines": 82
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/document-save-as-dialog.tsx",
+      "beforeLines": 30,
+      "afterLines": 118
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/draft-editor.tsx",
+      "beforeLines": 28,
+      "afterLines": 168
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/draft-list.tsx",
+      "beforeLines": 11,
+      "afterLines": 93
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/save-as-files.tsx",
+      "beforeLines": 15,
+      "afterLines": 134
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/save-as-name-form.tsx",
+      "beforeLines": 10,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/save-as-navigation.tsx",
+      "beforeLines": 18,
+      "afterLines": 109
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/save-as-new-folder.tsx",
+      "beforeLines": 13,
+      "afterLines": 80
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/save-as-tree.tsx",
+      "beforeLines": 18,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-document-actions.ts",
+      "beforeLines": 27,
+      "afterLines": 99
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-document-frame.ts",
+      "beforeLines": 44,
+      "afterLines": 141
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-document-keyboard.ts",
+      "beforeLines": 7,
+      "afterLines": 20
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-document-save-command.ts",
+      "beforeLines": 0,
+      "afterLines": 53
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-document-save.ts",
+      "beforeLines": 78,
+      "afterLines": 187
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-draft-list.ts",
+      "beforeLines": 12,
+      "afterLines": 94
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-draft-promotion.ts",
+      "beforeLines": 19,
+      "afterLines": 98
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-draft-save.ts",
+      "beforeLines": 86,
+      "afterLines": 190
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-save-as-browser.ts",
+      "beforeLines": 22,
+      "afterLines": 121
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-save-as-folder-create.ts",
+      "beforeLines": 16,
+      "afterLines": 60
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/documents/use-save-as-listing.ts",
+      "beforeLines": 0,
+      "afterLines": 76
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/use-company-template-management.ts",
+      "beforeLines": 53,
+      "afterLines": 69
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/company-templates/use-company-template-publication.ts",
+      "beforeLines": 0,
+      "afterLines": 105
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/customer-inventory/customer-inventory-attachments-dialog.tsx",
+      "beforeLines": 195,
+      "afterLines": 182
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/customer-inventory/customer-inventory-credit-application-dialog.tsx",
+      "beforeLines": 187,
+      "afterLines": 200
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/customer-inventory/customer-inventory-items-dialog.tsx",
+      "beforeLines": 146,
+      "afterLines": 136
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/customer-inventory/customer-inventory-order-item-editor.tsx",
+      "beforeLines": 172,
+      "afterLines": 148
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/customer-inventory/use-inventory-attachment-upload.ts",
+      "beforeLines": 0,
+      "afterLines": 73
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-centered-loading-state.tsx",
+      "beforeLines": 20,
+      "afterLines": 19
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-dialog-focus.ts",
+      "beforeLines": 0,
+      "afterLines": 125
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-dialog.tsx",
+      "beforeLines": 285,
+      "afterLines": 155
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-feedback.tsx",
+      "beforeLines": 45,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-framework-primitives.tsx",
+      "beforeLines": 130,
+      "afterLines": 118
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-client.tsx",
+      "beforeLines": 174,
+      "afterLines": 178
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-customizer.tsx",
+      "beforeLines": 298,
+      "afterLines": 298
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-role-tasks.tsx",
+      "beforeLines": 56,
+      "afterLines": 145
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-todo-copy.ts",
+      "beforeLines": 0,
+      "afterLines": 136
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-todo-dialog.tsx",
+      "beforeLines": 166,
+      "afterLines": 161
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-todo-display.ts",
+      "beforeLines": 315,
+      "afterLines": 189
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-todo-list.tsx",
+      "beforeLines": 257,
+      "afterLines": 231
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-todo-section.tsx",
+      "beforeLines": 271,
+      "afterLines": 238
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-widget-card.tsx",
+      "beforeLines": 293,
+      "afterLines": 281
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/dashboard-home-widget-content.tsx",
+      "beforeLines": 279,
+      "afterLines": 279
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/use-dashboard-home-layout-persistence.ts",
+      "beforeLines": 0,
+      "afterLines": 194
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/use-dashboard-home-layout.ts",
+      "beforeLines": 311,
+      "afterLines": 145
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/use-dashboard-home-todo-list.ts",
+      "beforeLines": 0,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-home/use-dashboard-home-todos.ts",
+      "beforeLines": 383,
+      "afterLines": 355
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-media-preview.tsx",
+      "beforeLines": 237,
+      "afterLines": 231
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-order-filter-section.tsx",
+      "beforeLines": 166,
+      "afterLines": 159
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-profile-cards.tsx",
+      "beforeLines": 149,
+      "afterLines": 142
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-resource-filter-section.tsx",
+      "beforeLines": 168,
+      "afterLines": 173
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-display.ts",
+      "beforeLines": 79,
+      "afterLines": 49
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-formatters.ts",
+      "beforeLines": 0,
+      "afterLines": 26
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-account-switcher-section.tsx",
+      "beforeLines": 206,
+      "afterLines": 195
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-business-referral-panel.tsx",
+      "beforeLines": 204,
+      "afterLines": 185
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-my-content-sections.tsx",
+      "beforeLines": 116,
+      "afterLines": 193
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-shared-my-dialogs.tsx",
+      "beforeLines": 374,
+      "afterLines": 159
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-shared-my-media-content.tsx",
+      "beforeLines": 0,
+      "afterLines": 164
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-shared-my-privacy-content.tsx",
+      "beforeLines": 0,
+      "afterLines": 79
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/dashboard-shared-my-sections.tsx",
+      "beforeLines": 143,
+      "afterLines": 115
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/use-dashboard-business-referrals.ts",
+      "beforeLines": 0,
+      "afterLines": 66
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/use-dashboard-my-bundle.ts",
+      "beforeLines": 0,
+      "afterLines": 136
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/use-dashboard-password-reset.ts",
+      "beforeLines": 114,
+      "afterLines": 114
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-my/use-dashboard-shared-my-state.tsx",
+      "beforeLines": 381,
+      "afterLines": 260
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/dashboard-shared-ui.tsx",
+      "beforeLines": 37,
+      "afterLines": 36
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/document-entry.tsx",
+      "beforeLines": 20,
+      "afterLines": 33
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/document-library-client.tsx",
+      "beforeLines": 45,
+      "afterLines": 206
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/document-pending-operations.tsx",
+      "beforeLines": 14,
+      "afterLines": 55
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/document-upload-results.tsx",
+      "beforeLines": 15,
+      "afterLines": 42
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-background-menu.tsx",
+      "beforeLines": 14,
+      "afterLines": 67
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-batch-results.tsx",
+      "beforeLines": 16,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-content.tsx",
+      "beforeLines": 15,
+      "afterLines": 72
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-dialog.tsx",
+      "beforeLines": 46,
+      "afterLines": 256
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-helpers.ts",
+      "beforeLines": 20,
+      "afterLines": 54
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-inline-name.tsx",
+      "beforeLines": 20,
+      "afterLines": 81
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-items.tsx",
+      "beforeLines": 48,
+      "afterLines": 297
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-location-bar.tsx",
+      "beforeLines": 0,
+      "afterLines": 176
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-menu.tsx",
+      "beforeLines": 19,
+      "afterLines": 116
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-new-document-link.tsx",
+      "beforeLines": 11,
+      "afterLines": 31
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-preview-dialog.tsx",
+      "beforeLines": 0,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-template-save-as.tsx",
+      "beforeLines": 13,
+      "afterLines": 72
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-toolbar.tsx",
+      "beforeLines": 61,
+      "afterLines": 234
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/explorer-tree.tsx",
+      "beforeLines": 39,
+      "afterLines": 224
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/folder-label.ts",
+      "beforeLines": 3,
+      "afterLines": 9
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-document-actions.ts",
+      "beforeLines": 125,
+      "afterLines": 198
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-document-explorer.ts",
+      "beforeLines": 26,
+      "afterLines": 86
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-batches.ts",
+      "beforeLines": 34,
+      "afterLines": 123
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-commands.ts",
+      "beforeLines": 0,
+      "afterLines": 188
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-controller.ts",
+      "beforeLines": 69,
+      "afterLines": 146
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-manifest.ts",
+      "beforeLines": 0,
+      "afterLines": 79
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-operations.ts",
+      "beforeLines": 36,
+      "afterLines": 89
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-explorer-selection.ts",
+      "beforeLines": 24,
+      "afterLines": 90
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/document-library/use-inline-naming.ts",
+      "beforeLines": 46,
+      "afterLines": 116
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rate-history-fetch-dialog.tsx",
+      "beforeLines": 189,
+      "afterLines": 196
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rate-recalculation-items.tsx",
+      "beforeLines": 37,
+      "afterLines": 69
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rate-recalculation-section.tsx",
+      "beforeLines": 30,
+      "afterLines": 87
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rate-sync-section.tsx",
+      "beforeLines": 315,
+      "afterLines": 298
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rates-history-section.tsx",
+      "beforeLines": 368,
+      "afterLines": 366
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/exchange-rates/exchange-rates-latest-card.tsx",
+      "beforeLines": 59,
+      "afterLines": 68
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-admin-panel.tsx",
+      "beforeLines": 73,
+      "afterLines": 165
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-agent-profile-card.tsx",
+      "beforeLines": 48,
+      "afterLines": 112
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-composer.tsx",
+      "beforeLines": 52,
+      "afterLines": 145
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-display.ts",
+      "beforeLines": 43,
+      "afterLines": 4
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-intake-rules-panel.tsx",
+      "beforeLines": 62,
+      "afterLines": 186
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-quarantine-panel.tsx",
+      "beforeLines": 64,
+      "afterLines": 188
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-thread-detail.tsx",
+      "beforeLines": 79,
+      "afterLines": 223
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-thread-list.tsx",
+      "beforeLines": 106,
+      "afterLines": 241
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-workspace-client.tsx",
+      "beforeLines": 126,
+      "afterLines": 260
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/mail-workspace-tabs.tsx",
+      "beforeLines": 30,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-ai-actions.ts",
+      "beforeLines": 0,
+      "afterLines": 88
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-intake-rules.ts",
+      "beforeLines": 0,
+      "afterLines": 100
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-intake.ts",
+      "beforeLines": 191,
+      "afterLines": 246
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-thread-access.ts",
+      "beforeLines": 0,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-thread-mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 80
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-thread-opening.ts",
+      "beforeLines": 0,
+      "afterLines": 119
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-workspace-composer.ts",
+      "beforeLines": 150,
+      "afterLines": 190
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-workspace-services.ts",
+      "beforeLines": 96,
+      "afterLines": 118
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/mail/use-mail-workspace.ts",
+      "beforeLines": 197,
+      "afterLines": 273
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/operator-reimbursement-form-dialog.tsx",
+      "beforeLines": 92,
+      "afterLines": 92
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/operator-reimbursements-copy.ts",
+      "beforeLines": 96,
+      "afterLines": 98
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/operator-reimbursements-display.ts",
+      "beforeLines": 199,
+      "afterLines": 61
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/operator-reimbursements-form.ts",
+      "beforeLines": 0,
+      "afterLines": 134
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/use-operator-reimbursement-actions.ts",
+      "beforeLines": 119,
+      "afterLines": 116
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/operator-reimbursements/use-operator-reimbursement-form.ts",
+      "beforeLines": 98,
+      "afterLines": 123
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/referrals/referrals-company-root.ts",
+      "beforeLines": 77,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/referrals/referrals-display.ts",
+      "beforeLines": 339,
+      "afterLines": 233
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/referrals/referrals-graph.ts",
+      "beforeLines": 0,
+      "afterLines": 110
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/referrals/referrals-tree-view.tsx",
+      "beforeLines": 319,
+      "afterLines": 290
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/referrals/use-referrals-view-model.tsx",
+      "beforeLines": 189,
+      "afterLines": 189
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-action-dialog.tsx",
+      "beforeLines": 115,
+      "afterLines": 150
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-cards.tsx",
+      "beforeLines": 96,
+      "afterLines": 165
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-customer-dialog.tsx",
+      "beforeLines": 44,
+      "afterLines": 147
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-detail-dialog.tsx",
+      "beforeLines": 53,
+      "afterLines": 79
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-history-section.tsx",
+      "beforeLines": 44,
+      "afterLines": 94
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-list-row.tsx",
+      "beforeLines": 82,
+      "afterLines": 217
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-list.tsx",
+      "beforeLines": 20,
+      "afterLines": 43
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-lead-rules.tsx",
+      "beforeLines": 25,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-leads-client.tsx",
+      "beforeLines": 51,
+      "afterLines": 123
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-leads-display.ts",
+      "beforeLines": 41,
+      "afterLines": 37
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-leads-results-section.tsx",
+      "beforeLines": 38,
+      "afterLines": 106
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-leads-sync-status.tsx",
+      "beforeLines": 20,
+      "afterLines": 57
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/sales-leads-toolbar.tsx",
+      "beforeLines": 26,
+      "afterLines": 73
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/use-sales-lead-actions.ts",
+      "beforeLines": 0,
+      "afterLines": 88
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/use-sales-lead-customer.ts",
+      "beforeLines": 67,
+      "afterLines": 67
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/use-sales-leads-list.ts",
+      "beforeLines": 0,
+      "afterLines": 54
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/sales-leads/use-sales-leads-page.ts",
+      "beforeLines": 174,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/salesman-tasks/salesman-tasks-ui.tsx",
+      "beforeLines": 283,
+      "afterLines": 228
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/use-workspace-header-announcements.ts",
+      "beforeLines": 159,
+      "afterLines": 173
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-action-runner.ts",
+      "beforeLines": 106,
+      "afterLines": 109
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-actions.ts",
+      "beforeLines": 51,
+      "afterLines": 96
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-logistics-page.ts",
+      "beforeLines": 265,
+      "afterLines": 273
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-order-assessment.ts",
+      "beforeLines": 107,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-order-draft.ts",
+      "beforeLines": 0,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-order-page.ts",
+      "beforeLines": 45,
+      "afterLines": 52
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-settlement-draft.ts",
+      "beforeLines": 0,
+      "afterLines": 74
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-settlement-release-actions.ts",
+      "beforeLines": 194,
+      "afterLines": 172
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-settlement-release-allocation-form.ts",
+      "beforeLines": 306,
+      "afterLines": 306
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/use-wholesale-settlement-release-publication.ts",
+      "beforeLines": 0,
+      "afterLines": 111
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-account-dialog.tsx",
+      "beforeLines": 30,
+      "afterLines": 71
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-action-utils.ts",
+      "beforeLines": 300,
+      "afterLines": 289
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-business-actions.ts",
+      "beforeLines": 46,
+      "afterLines": 46
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-client.tsx",
+      "beforeLines": 159,
+      "afterLines": 155
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-commission-page.tsx",
+      "beforeLines": 60,
+      "afterLines": 92
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-commission-records.tsx",
+      "beforeLines": 243,
+      "afterLines": 234
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-commission-settings.ts",
+      "beforeLines": 15,
+      "afterLines": 23
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-account-actions.ts",
+      "beforeLines": 0,
+      "afterLines": 83
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-account-link.tsx",
+      "beforeLines": 0,
+      "afterLines": 107
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-actions.ts",
+      "beforeLines": 154,
+      "afterLines": 165
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-delete-dialog.tsx",
+      "beforeLines": 80,
+      "afterLines": 86
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-details.tsx",
+      "beforeLines": 189,
+      "afterLines": 119
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-dialogs.tsx",
+      "beforeLines": 149,
+      "afterLines": 151
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-form.tsx",
+      "beforeLines": 147,
+      "afterLines": 165
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-mutations.ts",
+      "beforeLines": 107,
+      "afterLines": 87
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customer-other-names.tsx",
+      "beforeLines": 111,
+      "afterLines": 111
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customers-directory.tsx",
+      "beforeLines": 0,
+      "afterLines": 192
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-customers-section.tsx",
+      "beforeLines": 226,
+      "afterLines": 181
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-display.ts",
+      "beforeLines": 141,
+      "afterLines": 143
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-logistics-assignment-dialog.tsx",
+      "beforeLines": 363,
+      "afterLines": 357
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-logistics-mutations.ts",
+      "beforeLines": 69,
+      "afterLines": 107
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-logistics-section.tsx",
+      "beforeLines": 183,
+      "afterLines": 191
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-actions.ts",
+      "beforeLines": 98,
+      "afterLines": 128
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-assessment-panel.tsx",
+      "beforeLines": 79,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-detail-rows.ts",
+      "beforeLines": 0,
+      "afterLines": 66
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-details-dialog.tsx",
+      "beforeLines": 260,
+      "afterLines": 197
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-edit-dialog.tsx",
+      "beforeLines": 339,
+      "afterLines": 324
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-form-dialog.tsx",
+      "beforeLines": 243,
+      "afterLines": 225
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-list-actions.ts",
+      "beforeLines": 61,
+      "afterLines": 100
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-list-attachment-dialog.tsx",
+      "beforeLines": 0,
+      "afterLines": 181
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-list-attachments.tsx",
+      "beforeLines": 326,
+      "afterLines": 141
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-order-rate-dialogs.tsx",
+      "beforeLines": 227,
+      "afterLines": 227
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-orders-compact-table.tsx",
+      "beforeLines": 99,
+      "afterLines": 103
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-orders-list-section.tsx",
+      "beforeLines": 153,
+      "afterLines": 163
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-orders-mobile-list.tsx",
+      "beforeLines": 178,
+      "afterLines": 194
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-orders-section.tsx",
+      "beforeLines": 260,
+      "afterLines": 239
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-orders-table.tsx",
+      "beforeLines": 359,
+      "afterLines": 356
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-people-directories.tsx",
+      "beforeLines": 370,
+      "afterLines": 0
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-people-directory.tsx",
+      "beforeLines": 0,
+      "afterLines": 167
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-people-filters.ts",
+      "beforeLines": 0,
+      "afterLines": 51
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-people-section.tsx",
+      "beforeLines": 84,
+      "afterLines": 68
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-people-tabs.tsx",
+      "beforeLines": 282,
+      "afterLines": 280
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-referrals-dialog.tsx",
+      "beforeLines": 0,
+      "afterLines": 84
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-referrals-section.tsx",
+      "beforeLines": 254,
+      "afterLines": 193
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-allocation-dialog.tsx",
+      "beforeLines": 312,
+      "afterLines": 322
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-allocation-order-list.tsx",
+      "beforeLines": 171,
+      "afterLines": 164
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-client.tsx",
+      "beforeLines": 41,
+      "afterLines": 41
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-dialogs.tsx",
+      "beforeLines": 158,
+      "afterLines": 195
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-display.ts",
+      "beforeLines": 172,
+      "afterLines": 170
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-section.tsx",
+      "beforeLines": 283,
+      "afterLines": 291
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-summary.tsx",
+      "beforeLines": 146,
+      "afterLines": 132
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-settlement-release-table.tsx",
+      "beforeLines": 297,
+      "afterLines": 296
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/wholesale/wholesale-ui.tsx",
+      "beforeLines": 268,
+      "afterLines": 241
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/workspace-account-menu.tsx",
+      "beforeLines": 209,
+      "afterLines": 209
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/workspace-announcement-action.tsx",
+      "beforeLines": 154,
+      "afterLines": 141
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/workspace-customization-sidebar.tsx",
+      "beforeLines": 78,
+      "afterLines": 67
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/workspace-loading-shell.tsx",
+      "beforeLines": 90,
+      "afterLines": 91
+    },
+    {
+      "repo": "web",
+      "file": "components/dashboard/workspace-session-provider.tsx",
+      "beforeLines": 163,
+      "afterLines": 166
+    },
+    {
+      "repo": "web",
+      "file": "components/i18n/language-toggle.tsx",
+      "beforeLines": 216,
+      "afterLines": 209
+    },
+    {
+      "repo": "web",
+      "file": "components/legal/legal-page.tsx",
+      "beforeLines": 128,
+      "afterLines": 130
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/button-variants.ts",
+      "beforeLines": 44,
+      "afterLines": 50
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/date-picker-calendar.tsx",
+      "beforeLines": 210,
+      "afterLines": 203
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/date-picker-popup.tsx",
+      "beforeLines": 157,
+      "afterLines": 153
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/date-picker.tsx",
+      "beforeLines": 369,
+      "afterLines": 304
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/form-controls.tsx",
+      "beforeLines": 321,
+      "afterLines": 309
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/select.tsx",
+      "beforeLines": 234,
+      "afterLines": 215
+    },
+    {
+      "repo": "web",
+      "file": "components/ui/use-date-picker-field.ts",
+      "beforeLines": 0,
+      "afterLines": 194
+    },
+    {
+      "repo": "web",
+      "file": "i18n/config.ts",
+      "beforeLines": 6,
+      "afterLines": 7
+    },
+    {
+      "repo": "web",
+      "file": "i18n/request.ts",
+      "beforeLines": 20,
+      "afterLines": 21
+    },
+    {
+      "repo": "web",
+      "file": "lib/admin-commission.ts",
+      "beforeLines": 394,
+      "afterLines": 357
+    },
+    {
+      "repo": "web",
+      "file": "lib/admin-review-mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 81
+    },
+    {
+      "repo": "web",
+      "file": "lib/admin-reviews.ts",
+      "beforeLines": 354,
+      "afterLines": 172
+    },
+    {
+      "repo": "web",
+      "file": "lib/announcement-mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 128
+    },
+    {
+      "repo": "web",
+      "file": "lib/announcements.ts",
+      "beforeLines": 263,
+      "afterLines": 142
+    },
+    {
+      "repo": "web",
+      "file": "lib/auth-access-token.ts",
+      "beforeLines": 37,
+      "afterLines": 38
+    },
+    {
+      "repo": "web",
+      "file": "lib/auth-claims.ts",
+      "beforeLines": 25,
+      "afterLines": 26
+    },
+    {
+      "repo": "web",
+      "file": "lib/auth-metadata.ts",
+      "beforeLines": 60,
+      "afterLines": 61
+    },
+    {
+      "repo": "web",
+      "file": "lib/auth-routing.ts",
+      "beforeLines": 83,
+      "afterLines": 84
+    },
+    {
+      "repo": "web",
+      "file": "lib/auth-session-client.ts",
+      "beforeLines": 90,
+      "afterLines": 91
+    },
+    {
+      "repo": "web",
+      "file": "lib/business-vip-management.normalizers.ts",
+      "beforeLines": 302,
+      "afterLines": 303
+    },
+    {
+      "repo": "web",
+      "file": "lib/business-vip-management.types.ts",
+      "beforeLines": 102,
+      "afterLines": 102
+    },
+    {
+      "repo": "web",
+      "file": "lib/client-business-access.ts",
+      "beforeLines": 100,
+      "afterLines": 114
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-expenses.ts",
+      "beforeLines": 246,
+      "afterLines": 273
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/api.ts",
+      "beforeLines": 36,
+      "afterLines": 100
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/client.ts",
+      "beforeLines": 13,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/draft-api.ts",
+      "beforeLines": 20,
+      "afterLines": 61
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/draft-client.ts",
+      "beforeLines": 15,
+      "afterLines": 97
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/draft-model.ts",
+      "beforeLines": 8,
+      "afterLines": 36
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/draft-mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 71
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/draft-repository.ts",
+      "beforeLines": 32,
+      "afterLines": 56
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/frame-bridge.ts",
+      "beforeLines": 35,
+      "afterLines": 43
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/generic-adapter.ts",
+      "beforeLines": 181,
+      "afterLines": 356
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/model.ts",
+      "beforeLines": 21,
+      "afterLines": 57
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/publish-preflight.ts",
+      "beforeLines": 32,
+      "afterLines": 66
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/documents/repository.ts",
+      "beforeLines": 47,
+      "afterLines": 103
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 127
+    },
+    {
+      "repo": "web",
+      "file": "lib/company-templates/repository.ts",
+      "beforeLines": 196,
+      "afterLines": 84
+    },
+    {
+      "repo": "web",
+      "file": "lib/current-session-access-context.ts",
+      "beforeLines": 77,
+      "afterLines": 78
+    },
+    {
+      "repo": "web",
+      "file": "lib/customer-inventory-attachment-registration.ts",
+      "beforeLines": 0,
+      "afterLines": 79
+    },
+    {
+      "repo": "web",
+      "file": "lib/customer-inventory-attachments.ts",
+      "beforeLines": 248,
+      "afterLines": 233
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/archive-bytes.ts",
+      "beforeLines": 10,
+      "afterLines": 35
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/archive-paths.ts",
+      "beforeLines": 19,
+      "afterLines": 41
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/batch-verification.ts",
+      "beforeLines": 41,
+      "afterLines": 105
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/copy-batches.ts",
+      "beforeLines": 28,
+      "afterLines": 94
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/copy-verification.ts",
+      "beforeLines": 20,
+      "afterLines": 80
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/download-archive.ts",
+      "beforeLines": 33,
+      "afterLines": 44
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/download-client.ts",
+      "beforeLines": 0,
+      "afterLines": 58
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/file-policy.ts",
+      "beforeLines": 40,
+      "afterLines": 72
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/http.ts",
+      "beforeLines": 39,
+      "afterLines": 69
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/model.ts",
+      "beforeLines": 33,
+      "afterLines": 157
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/operation-client.ts",
+      "beforeLines": 0,
+      "afterLines": 70
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/selection.ts",
+      "beforeLines": 11,
+      "afterLines": 22
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/storage-mutations.ts",
+      "beforeLines": 86,
+      "afterLines": 150
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/verified-file-content.ts",
+      "beforeLines": 0,
+      "afterLines": 20
+    },
+    {
+      "repo": "web",
+      "file": "lib/document-library/verify-named-document.ts",
+      "beforeLines": 22,
+      "afterLines": 50
+    },
+    {
+      "repo": "web",
+      "file": "lib/exchange-rate-types.ts",
+      "beforeLines": 123,
+      "afterLines": 120
+    },
+    {
+      "repo": "web",
+      "file": "lib/help-center-content.ts",
+      "beforeLines": 154,
+      "afterLines": 157
+    },
+    {
+      "repo": "web",
+      "file": "lib/i18n-messages.ts",
+      "beforeLines": 108,
+      "afterLines": 109
+    },
+    {
+      "repo": "web",
+      "file": "lib/legal-formal-content.ts",
+      "beforeLines": 349,
+      "afterLines": 347
+    },
+    {
+      "repo": "web",
+      "file": "lib/locale.ts",
+      "beforeLines": 54,
+      "afterLines": 55
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-admin-deletion.ts",
+      "beforeLines": 0,
+      "afterLines": 69
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-admin-reporting.ts",
+      "beforeLines": 0,
+      "afterLines": 154
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-admin-service.ts",
+      "beforeLines": 347,
+      "afterLines": 0
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-agent-directory.ts",
+      "beforeLines": 0,
+      "afterLines": 74
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-agent-profile-service.ts",
+      "beforeLines": 0,
+      "afterLines": 156
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-agent-provisioning.ts",
+      "beforeLines": 0,
+      "afterLines": 96
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-ai-stream.ts",
+      "beforeLines": 64,
+      "afterLines": 78
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-attachment-service.ts",
+      "beforeLines": 70,
+      "afterLines": 70
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google-api.ts",
+      "beforeLines": 0,
+      "afterLines": 18
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google-credentials.ts",
+      "beforeLines": 0,
+      "afterLines": 58
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google-inbound.ts",
+      "beforeLines": 0,
+      "afterLines": 64
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google-outbound.ts",
+      "beforeLines": 0,
+      "afterLines": 32
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google-push.ts",
+      "beforeLines": 0,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-google.ts",
+      "beforeLines": 148,
+      "afterLines": 0
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-inbound-message.ts",
+      "beforeLines": 0,
+      "afterLines": 209
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-inbound-parser.ts",
+      "beforeLines": 0,
+      "afterLines": 132
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-inbound-persistence.ts",
+      "beforeLines": 17,
+      "afterLines": 19
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-inbound-worker.ts",
+      "beforeLines": 336,
+      "afterLines": 136
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-intake-rules-service.ts",
+      "beforeLines": 0,
+      "afterLines": 115
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-intake-service.ts",
+      "beforeLines": 297,
+      "afterLines": 0
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-integrations.ts",
+      "beforeLines": 159,
+      "afterLines": 0
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-maintenance.ts",
+      "beforeLines": 59,
+      "afterLines": 126
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-oauth-provider-urls.ts",
+      "beforeLines": 0,
+      "afterLines": 58
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-oauth-transactions.ts",
+      "beforeLines": 0,
+      "afterLines": 67
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-outbound-content.ts",
+      "beforeLines": 0,
+      "afterLines": 215
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-outbound-persistence.ts",
+      "beforeLines": 0,
+      "afterLines": 205
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-outbound-service.ts",
+      "beforeLines": 96,
+      "afterLines": 146
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-outbound-types.ts",
+      "beforeLines": 0,
+      "afterLines": 39
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-outbound-worker.ts",
+      "beforeLines": 352,
+      "afterLines": 117
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-page-data.ts",
+      "beforeLines": 26,
+      "afterLines": 27
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-quarantine-receipt.ts",
+      "beforeLines": 0,
+      "afterLines": 16
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-quarantine-restore.ts",
+      "beforeLines": 0,
+      "afterLines": 76
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-quarantine-service.ts",
+      "beforeLines": 0,
+      "afterLines": 127
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-reply-context.ts",
+      "beforeLines": 0,
+      "afterLines": 24
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-routing.ts",
+      "beforeLines": 78,
+      "afterLines": 131
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-service.ts",
+      "beforeLines": 335,
+      "afterLines": 217
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-thread-access.ts",
+      "beforeLines": 0,
+      "afterLines": 31
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-thread-mutations.ts",
+      "beforeLines": 0,
+      "afterLines": 96
+    },
+    {
+      "repo": "web",
+      "file": "lib/mail/mail-types.ts",
+      "beforeLines": 161,
+      "afterLines": 163
+    },
+    {
+      "repo": "web",
+      "file": "lib/operator-reimbursements-mutations.ts",
+      "beforeLines": 87,
+      "afterLines": 117
+    },
+    {
+      "repo": "web",
+      "file": "lib/sales-lead-customer.ts",
+      "beforeLines": 60,
+      "afterLines": 55
+    },
+    {
+      "repo": "web",
+      "file": "lib/sales-lead-write.ts",
+      "beforeLines": 0,
+      "afterLines": 76
+    },
+    {
+      "repo": "web",
+      "file": "lib/sales-leads.ts",
+      "beforeLines": 149,
+      "afterLines": 95
+    },
+    {
+      "repo": "web",
+      "file": "lib/salesman-task-data.ts",
+      "beforeLines": 327,
+      "afterLines": 325
+    },
+    {
+      "repo": "web",
+      "file": "lib/server-request-body.ts",
+      "beforeLines": 63,
+      "afterLines": 64
+    },
+    {
+      "repo": "web",
+      "file": "lib/storage-operation-object-presence.ts",
+      "beforeLines": 0,
+      "afterLines": 34
+    },
+    {
+      "repo": "web",
+      "file": "lib/supabase-admin-server.ts",
+      "beforeLines": 21,
+      "afterLines": 22
+    },
+    {
+      "repo": "web",
+      "file": "lib/supabase-server.ts",
+      "beforeLines": 33,
+      "afterLines": 32
+    },
+    {
+      "repo": "web",
+      "file": "lib/task-commissions.ts",
+      "beforeLines": 89,
+      "afterLines": 77
+    },
+    {
+      "repo": "web",
+      "file": "lib/task-reviews.ts",
+      "beforeLines": 370,
+      "afterLines": 345
+    },
+    {
+      "repo": "web",
+      "file": "lib/use-supabase-auth-sync.ts",
+      "beforeLines": 152,
+      "afterLines": 151
+    },
+    {
+      "repo": "web",
+      "file": "lib/user-media-preview-cache.ts",
+      "beforeLines": 72,
+      "afterLines": 80
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-commission-page.ts",
+      "beforeLines": 37,
+      "afterLines": 61
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-commission-settlement.ts",
+      "beforeLines": 0,
+      "afterLines": 30
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-assessment-filters.ts",
+      "beforeLines": 141,
+      "afterLines": 58
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-assessment-messages.ts",
+      "beforeLines": 272,
+      "afterLines": 275
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-assessment-run.ts",
+      "beforeLines": 0,
+      "afterLines": 109
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-assessment-types.ts",
+      "beforeLines": 16,
+      "afterLines": 7
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-list-attachments.ts",
+      "beforeLines": 258,
+      "afterLines": 92
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-list-registration.ts",
+      "beforeLines": 0,
+      "afterLines": 87
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-order-list-upload.ts",
+      "beforeLines": 0,
+      "afterLines": 161
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-people-scope.ts",
+      "beforeLines": 0,
+      "afterLines": 80
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-role-permissions.ts",
+      "beforeLines": 92,
+      "afterLines": 90
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-row-queries.ts",
+      "beforeLines": 25,
+      "afterLines": 48
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-scope-related.ts",
+      "beforeLines": 160,
+      "afterLines": 85
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-scope.ts",
+      "beforeLines": 179,
+      "afterLines": 178
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-settlement-release-clear.ts",
+      "beforeLines": 0,
+      "afterLines": 74
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-settlement-release-publication.ts",
+      "beforeLines": 0,
+      "afterLines": 102
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale-types.ts",
+      "beforeLines": 218,
+      "afterLines": 223
+    },
+    {
+      "repo": "web",
+      "file": "lib/wholesale.ts",
+      "beforeLines": 259,
+      "afterLines": 272
+    },
+    {
+      "repo": "web",
+      "file": "lib/workspace-announcements.ts",
+      "beforeLines": 110,
+      "afterLines": 144
+    },
+    {
+      "repo": "web",
+      "file": "lib/workspace-business-modules.ts",
+      "beforeLines": 246,
+      "afterLines": 247
+    },
+    {
+      "repo": "web",
+      "file": "lib/workspace-config.ts",
+      "beforeLines": 344,
+      "afterLines": 346
+    },
+    {
+      "repo": "web",
+      "file": "messages/en.json",
+      "beforeLines": 5432,
+      "afterLines": 5566
+    },
+    {
+      "repo": "web",
+      "file": "messages/zh.json",
+      "beforeLines": 5432,
+      "afterLines": 5566
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/_shared/storage-operation-receipts.ts",
+      "beforeLines": 47,
+      "afterLines": 77
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/document-library-cleanup/index.ts",
+      "beforeLines": 37,
+      "afterLines": 75
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/exchange-rate-sync/historical-sync.ts",
+      "beforeLines": 31,
+      "afterLines": 63
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/exchange-rate-sync/nowapi-quotes.ts",
+      "beforeLines": 52,
+      "afterLines": 81
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/exchange-rate-sync/storage.ts",
+      "beforeLines": 23,
+      "afterLines": 68
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/sales-lead-sync/import-daily-files.ts",
+      "beforeLines": 0,
+      "afterLines": 81
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/sales-lead-sync/index.ts",
+      "beforeLines": 213,
+      "afterLines": 161
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-cleanup/index.ts",
+      "beforeLines": 282,
+      "afterLines": 282
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-image-review/index.ts",
+      "beforeLines": 230,
+      "afterLines": 231
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-image-review/provider.ts",
+      "beforeLines": 259,
+      "afterLines": 261
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-image-review/repository.ts",
+      "beforeLines": 168,
+      "afterLines": 169
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/delete-handler.ts",
+      "beforeLines": 319,
+      "afterLines": 321
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/index.ts",
+      "beforeLines": 484,
+      "afterLines": 51
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/shared.ts",
+      "beforeLines": 165,
+      "afterLines": 166
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/upload-handler.ts",
+      "beforeLines": 0,
+      "afterLines": 266
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/upload-policy.ts",
+      "beforeLines": 0,
+      "afterLines": 80
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/upload-review.ts",
+      "beforeLines": 0,
+      "afterLines": 48
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/user-media-mutate/upload-storage.ts",
+      "beforeLines": 0,
+      "afterLines": 82
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/functions/wholesale-logistics-sync/sync-runner.ts",
+      "beforeLines": 93,
+      "afterLines": 96
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/local-test-data.sql",
+      "beforeLines": 1999,
+      "afterLines": 2016
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261102084526_learning_foreign_key_indexes.sql",
+      "beforeLines": 0,
+      "afterLines": 35
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261102085313_learning_template_read_policy.sql",
+      "beforeLines": 0,
+      "afterLines": 35
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105075226_wholesale_settlement_request_id.sql",
+      "beforeLines": 0,
+      "afterLines": 105
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105090018_append_wholesale_customer_other_names.sql",
+      "beforeLines": 0,
+      "afterLines": 51
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105093426_guard_wholesale_customer_edit_revision.sql",
+      "beforeLines": 0,
+      "afterLines": 92
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105095537_verify_wholesale_customer_link_retry.sql",
+      "beforeLines": 0,
+      "afterLines": 126
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105102219_verify_wholesale_customer_delete_affected_row.sql",
+      "beforeLines": 0,
+      "afterLines": 41
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105104454_preserve_client_business_grant_on_retry.sql",
+      "beforeLines": 0,
+      "afterLines": 98
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105105857_serialize_customer_archive_delete_guard.sql",
+      "beforeLines": 0,
+      "afterLines": 33
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105114127_verify_document_batch_move_storage.sql",
+      "beforeLines": 0,
+      "afterLines": 95
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105163811_track_mail_read_arrivals.sql",
+      "beforeLines": 0,
+      "afterLines": 121
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/migrations/20261105181717_settle_mail_inbound_event_atomically.sql",
+      "beforeLines": 0,
+      "afterLines": 104
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/rollbacks/mail-inbound-event-settlement.sql",
+      "beforeLines": 0,
+      "afterLines": 2
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/boc_exchange_rate_recalculation.sql",
+      "beforeLines": 167,
+      "afterLines": 167
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/business_parameter_versions.sql",
+      "beforeLines": 403,
+      "afterLines": 409
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/database_governance.sql",
+      "beforeLines": 117,
+      "afterLines": 119
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/document_unified_folder.sql",
+      "beforeLines": 31,
+      "afterLines": 33
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/learning_page_limit.sql",
+      "beforeLines": 0,
+      "afterLines": 42
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/mail_inbound_atomic_recovery.sql",
+      "beforeLines": 83,
+      "afterLines": 91
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/mail_thread_pagination_and_report_metrics.sql",
+      "beforeLines": 90,
+      "afterLines": 93
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/operator_reimbursement_sharing.sql",
+      "beforeLines": 122,
+      "afterLines": 127
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/sales_lead_conversion.sql",
+      "beforeLines": 208,
+      "afterLines": 212
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/wholesale_customer_commission_and_fees.sql",
+      "beforeLines": 103,
+      "afterLines": 108
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/wholesale_order_settlement_idempotency.sql",
+      "beforeLines": 0,
+      "afterLines": 79
+    },
+    {
+      "repo": "supabase",
+      "file": "supabase/tests/wholesale_salesman_collaboration.sql",
+      "beforeLines": 355,
+      "afterLines": 356
+    }
+  ]
+}

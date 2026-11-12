@@ -19,15 +19,13 @@ const controlVariants = cva(
     variants: {
       controlSize: {
         compact: "h-control-compact rounded-control-compact px-3 text-xs",
-        default:
-          "h-control-default rounded-control-default px-3 text-sm sm:px-4",
+        default: "h-control-default rounded-control-default px-3 text-sm sm:px-4",
         large: "h-control-large rounded-control-large px-4 text-[15px]",
       },
       density: {
         // 普通表单需要更明确的静止边界；筛选区一排控件较多，使用更轻的层级减少视觉噪音。
         default: "border-control-border",
-        filter:
-          "border-filter-control-border hover:border-filter-control-hover",
+        filter: "border-filter-control-border hover:border-filter-control-hover",
       },
     },
     defaultVariants: {
@@ -149,10 +147,7 @@ export function Field({
   );
 }
 
-type ControlSizeProps = Pick<
-  VariantProps<typeof controlVariants>,
-  "controlSize"
->;
+type ControlSizeProps = Pick<VariantProps<typeof controlVariants>, "controlSize">;
 
 type InputProps = Omit<ComponentProps<"input">, "size"> & ControlSizeProps;
 
@@ -168,8 +163,7 @@ export function Input({
 }: InputProps) {
   const density = useFormFieldControlDensity();
   // 筛选字段在桌面端优先使用 40px 紧凑控件；紧凑令牌在移动端仍会自动保持 44px 触控高度。
-  const resolvedControlSize =
-    controlSize ?? (density === "filter" ? "compact" : "default");
+  const resolvedControlSize = controlSize ?? (density === "filter" ? "compact" : "default");
   const resolvedRequired = useFormFieldRequired(required);
   const fieldAttributes = useFormFieldControlAttributes({
     ariaDescribedBy,
@@ -180,10 +174,7 @@ export function Input({
 
   return (
     <input
-      className={cn(
-        controlVariants({ controlSize: resolvedControlSize, density }),
-        className,
-      )}
+      className={cn(controlVariants({ controlSize: resolvedControlSize, density }), className)}
       data-control-size={resolvedControlSize}
       data-slot="input"
       {...fieldAttributes}
@@ -278,8 +269,7 @@ export function ChoiceField({
 }: ChoiceFieldProps) {
   const generatedId = useId();
   const resolvedId = id ?? generatedId;
-  const Control =
-    type === "radio" ? Radio : type === "toggle" ? Switch : Checkbox;
+  const Control = type === "radio" ? Radio : type === "toggle" ? Switch : Checkbox;
 
   return (
     <label
@@ -294,9 +284,7 @@ export function ChoiceField({
       <span className="min-w-0">
         <span className="block font-semibold text-content-strong">{label}</span>
         {description ? (
-          <span className="mt-1 block text-xs leading-5 text-content-muted">
-            {description}
-          </span>
+          <span className="mt-1 block text-xs leading-5 text-content-muted">{description}</span>
         ) : null}
       </span>
     </label>

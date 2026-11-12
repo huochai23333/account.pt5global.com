@@ -20,9 +20,8 @@ import type { Locale } from "@/lib/locale";
 import {
   formatBusinessVipAmount,
   formatBusinessVipDate,
-  getBusinessVipMembershipRecords,
-  type BusinessVipMembershipRecord,
 } from "./business-vip-display";
+import { getBusinessVipMembershipRecords, type BusinessVipMembershipRecord } from "./business-vip-record-projection";
 
 export type BusinessVipWholesaleDialogState =
   | {
@@ -42,12 +41,14 @@ type BusinessVipWholesaleDialogFeedback = {
 } | null;
 
 export function BusinessVipWholesaleActionDialog({
+  confirmationRequired,
   dialog,
   feedback,
   onClose,
   onConfirm,
   pending,
 }: {
+  confirmationRequired: boolean;
   dialog: Extract<
     NonNullable<BusinessVipWholesaleDialogState>,
     { kind: "wholesaleAction" }
@@ -116,7 +117,8 @@ export function BusinessVipWholesaleActionDialog({
           }
           onCancel={onClose}
           onSubmit={() => onConfirm(dialog.row, dialog.action)}
-          submitDisabled={pending}
+          // 未确认的客户可以关掉弹窗查看记录，但不能在当前页再次提交。
+          submitDisabled={pending || confirmationRequired}
           submitLabel={t(
             opening
               ? "dialogs.wholesale.openSubmit"

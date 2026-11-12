@@ -17,8 +17,8 @@ import {
   type ReferralsPageData,
 } from "@/lib/referrals";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
+import { buildReferralGraph } from "./referrals-graph";
 import {
-  buildReferralGraph,
   buildTreeDisplayData,
   createReferralsCopy,
   toReferralErrorMessage,

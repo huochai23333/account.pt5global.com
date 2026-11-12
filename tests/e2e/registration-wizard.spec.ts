@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { setTestLocale } from "./helpers/auth";
 
+// 五例只推进/返回步骤及读取邀请码，不点击最终注册；不能算作账号创建或安全规则验收。
+// 非空邀请码依赖专属实例的种子数据；原认证辅助入口受限时，不加载本测试来绕过限制。
 test.describe("registration wizard", () => {
   test.beforeEach(async ({ page }) => {
     await setTestLocale(page, "zh");
@@ -58,6 +60,7 @@ test.describe("registration wizard", () => {
     page,
   }) => {
     await page.goto("/register");
+    // 这两个值是测试数据约定，实际业务归属来自数据库查询，不能由邀请码前缀推断。
     await page.getByRole("textbox", { name: "邀请码" }).fill("SALETEST1");
     await page.getByRole("button", { name: "下一步" }).click();
     await expect(page.getByText("填写账号资料")).toBeVisible();
@@ -90,7 +93,8 @@ test.describe("registration wizard", () => {
     await expectNoDocumentHorizontalOverflow(page);
   });
 
-  test("saved English choice overrides the browser language", async ({
+  // 助手设置 bs-locale Cookie；此例没有改变浏览器语言，只证明显式英文选择生效。
+  test("saved English choice is applied to the registration page", async ({
     page,
   }) => {
     await setTestLocale(page, "en");

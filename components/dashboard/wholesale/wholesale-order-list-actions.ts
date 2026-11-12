@@ -1,15 +1,28 @@
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   deleteWholesaleOrderListAttachment,
-  uploadWholesaleOrderListFiles,
+  WholesaleAttachmentDeleteIncomplete,
   type WholesaleOrderListAttachment,
 } from "@/lib/wholesale-order-list-attachments";
+import { WholesaleOrderListRegistrationPending } from "@/lib/wholesale-order-list-registration";
+import {
+  uploadWholesaleOrderListFiles,
+  WholesaleOrderListUploadPending,
+} from "@/lib/wholesale-order-list-upload";
 
 import type { RunWholesaleAction } from "./use-wholesale-action-runner";
 
 /** Order List 附件在当前订单页局部更新，不触发整页刷新。 */
 export function createWholesaleOrderListActions(
   runAction: RunWholesaleAction,
+  messages: {
+    uploaded: string;
+    deleted: string;
+    uploadUnconfirmed: string;
+    uploadFailed: string;
+    deleteIncomplete: string;
+    deleteFailed: string;
+  },
 ) {
   const uploadOrderListAttachments = ({
     existingAttachments,
@@ -24,11 +37,12 @@ export function createWholesaleOrderListActions(
   }) =>
     runAction(
       `order-list:upload:${orderId}`,
-      "Order List 附件已上传。",
+      messages.uploaded,
       async () => {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
+        // 上传模块按当前用户、订单及原文件摘要保留准确范围，同页和跨页重试走同一条链路。
         await uploadWholesaleOrderListFiles(supabase, {
           existingAttachments,
           files,
@@ -36,7 +50,14 @@ export function createWholesaleOrderListActions(
           uploadedByUserId,
         });
       },
-      { refreshMode: "none" },
+      {
+        refreshMode: "none",
+        getErrorMessage: (error) =>
+          error instanceof WholesaleOrderListRegistrationPending ||
+          error instanceof WholesaleOrderListUploadPending
+            ? messages.uploadUnconfirmed
+            : messages.uploadFailed,
+      },
     );
 
   const deleteOrderListAttachment = (
@@ -44,14 +65,20 @@ export function createWholesaleOrderListActions(
   ) =>
     runAction(
       `order-list:delete:${attachment.id}`,
-      "Order List 附件已删除。",
+      messages.deleted,
       async () => {
         const supabase = getBrowserSupabaseClient();
         if (!supabase) throw new Error("client unavailable");
 
         await deleteWholesaleOrderListAttachment(supabase, attachment);
       },
-      { refreshMode: "none" },
+      {
+        refreshMode: "none",
+        getErrorMessage: (error) =>
+          error instanceof WholesaleAttachmentDeleteIncomplete
+            ? messages.deleteIncomplete
+            : messages.deleteFailed,
+      },
     );
 
   return {

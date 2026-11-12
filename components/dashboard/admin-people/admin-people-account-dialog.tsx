@@ -8,10 +8,7 @@ import { useTranslations } from "next-intl";
 
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  ADMIN_PEOPLE_CITY_MAX_LENGTH,
-  type AdminPersonRow,
-} from "@/lib/admin-people";
+import { ADMIN_PEOPLE_CITY_MAX_LENGTH, type AdminPersonRow } from "@/lib/admin-people-contract";
 import type { Locale } from "@/lib/locale";
 
 import { AdminPeopleAccountDetails } from "./admin-people-account-details";

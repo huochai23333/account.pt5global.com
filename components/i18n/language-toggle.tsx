@@ -8,11 +8,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import {
-  getDocumentLanguage,
-  LOCALE_COOKIE_NAME,
-  type Locale,
-} from "@/lib/locale";
+import { getDocumentLanguage, LOCALE_COOKIE_NAME, type Locale } from "@/lib/locale";
 import { useStaleFocusRecovery } from "@/lib/use-stale-focus-recovery";
 
 export function LanguageToggle() {
@@ -73,10 +69,7 @@ export function LanguageToggle() {
 
   return (
     <>
-      <div
-        ref={mobileMenuRef}
-        className="relative sm:hidden"
-      >
+      <div ref={mobileMenuRef} className="relative sm:hidden">
         <Button
           aria-expanded={mobileMenuOpen}
           aria-haspopup="menu"

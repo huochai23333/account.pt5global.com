@@ -1,3 +1,4 @@
+/** 批发订单与费用：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -9,24 +10,15 @@ import { DashboardTableFrame } from "@/components/dashboard/dashboard-section-pa
 import { Button } from "@/components/ui/button";
 import { RecordCard } from "@/components/ui/data-display";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
-import type {
-  BusinessVipMembershipAction,
-  BusinessVipRow,
-} from "@/lib/business-vip-management";
+import type { BusinessVipMembershipAction, BusinessVipRow } from "@/lib/business-vip-management";
 import type { Locale } from "@/lib/locale";
 
-import {
-  BusinessVipCustomerCell,
-  BusinessVipStatusBlock,
-} from "./business-vip-row-shared";
+import { BusinessVipCustomerCell, BusinessVipStatusBlock } from "./business-vip-row-shared";
 
 type WholesaleVipCustomerListProps = {
   canManage: boolean;
   locale: Locale;
-  onOpenAction: (
-    row: BusinessVipRow,
-    action: BusinessVipMembershipAction,
-  ) => void;
+  onOpenAction: (row: BusinessVipRow, action: BusinessVipMembershipAction) => void;
   onOpenRecords: (row: BusinessVipRow) => void;
   pendingActionKey: string | null;
   rows: BusinessVipRow[];
@@ -57,19 +49,14 @@ export function BusinessVipWholesaleCustomerList({
               <tr>
                 <th className="px-4 py-3">{t("directory.columns.customer")}</th>
                 <th className="px-4 py-3">{t("directory.columns.status")}</th>
-                <th className="px-4 py-3 text-right">
-                  {t("directory.columns.actions")}
-                </th>
+                <th className="px-4 py-3 text-right">{t("directory.columns.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
               {rows.map((row) => (
                 <tr className="align-top" key={row.targetId}>
                   <td className="px-4 py-4">
-                    <WholesaleVipCustomerRecordButton
-                      onOpenRecords={onOpenRecords}
-                      row={row}
-                    />
+                    <WholesaleVipCustomerRecordButton onOpenRecords={onOpenRecords} row={row} />
                   </td>
                   <td className="px-4 py-4">
                     <BusinessVipStatusBlock locale={locale} row={row} />
@@ -95,10 +82,7 @@ export function BusinessVipWholesaleCustomerList({
           {rows.map((row) => (
             <RecordCard key={row.targetId}>
               <div className="flex flex-col gap-3">
-                <WholesaleVipCustomerRecordButton
-                  onOpenRecords={onOpenRecords}
-                  row={row}
-                />
+                <WholesaleVipCustomerRecordButton onOpenRecords={onOpenRecords} row={row} />
               </div>
               <div className="mt-4">
                 <BusinessVipStatusBlock locale={locale} row={row} />
@@ -153,10 +137,7 @@ function WholesaleVipActionButton({
   row,
 }: {
   canManage: boolean;
-  onOpenAction: (
-    row: BusinessVipRow,
-    action: BusinessVipMembershipAction,
-  ) => void;
+  onOpenAction: (row: BusinessVipRow, action: BusinessVipMembershipAction) => void;
   pendingActionKey: string | null;
   row: BusinessVipRow;
 }) {
@@ -186,8 +167,6 @@ function WholesaleVipActionButton({
   );
 }
 
-function getWholesaleVipAction(
-  row: BusinessVipRow,
-): BusinessVipMembershipAction {
+function getWholesaleVipAction(row: BusinessVipRow): BusinessVipMembershipAction {
   return row.status === "active" || row.status === "expired" ? "renew" : "open";
 }

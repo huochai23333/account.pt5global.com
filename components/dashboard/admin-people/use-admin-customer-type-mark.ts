@@ -9,7 +9,7 @@ import {
   isCustomerTypeMark,
   type AdminPersonRow,
   type CustomerTypeMark,
-} from "@/lib/admin-people";
+} from "@/lib/admin-people-contract";
 
 import {
   normalizeAdminPeopleErrorCode,

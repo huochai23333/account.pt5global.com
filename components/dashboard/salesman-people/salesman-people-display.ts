@@ -1,7 +1,4 @@
-import type {
-  SalesmanCustomerRow,
-  SalesmanCustomerType,
-} from "@/lib/salesman-people";
+import type { SalesmanCustomerRow, SalesmanCustomerType } from "@/lib/salesman-people-contract";
 import type { Locale } from "@/lib/locale";
 import { normalizeSearchText } from "@/lib/value-normalizers";
 

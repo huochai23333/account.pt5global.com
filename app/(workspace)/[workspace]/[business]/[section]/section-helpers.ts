@@ -5,6 +5,7 @@ import type {
 import { getWorkspaceBusinessModule } from "@/lib/workspace-business-modules";
 import type { WorkspaceSectionKey } from "@/lib/workspace-sections";
 
+// 页面能力来自岗位配置；这里只判断是否存在该栏目，不能据此判断某条记录是否可读写。
 export function isWorkspaceSectionEnabled(
   section: WorkspaceSectionKey,
   config: WorkspaceRouteConfig,
@@ -33,6 +34,7 @@ export function isWorkspaceSectionEnabled(
   }
 }
 
+// Server 的完整字典按实际页面裁切后才传到 Client；缺少共享子命名空间会在浏览器渲染时失败。
 export function getSectionNamespaces(
   section: string,
   config: WorkspaceRouteConfig,

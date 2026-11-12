@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import type { WholesaleCustomer, WholesaleProfile } from "@/lib/wholesale";
 import { WholesaleCustomerDeleteDialog } from "./wholesale-customer-delete-dialog";
+import type { DeleteWholesaleCustomerAction, SubmitWholesaleCustomerForm } from "./wholesale-customer-actions";
 import { WholesaleCustomerDetails } from "./wholesale-customer-details";
 import { WholesaleCustomerForm } from "./wholesale-customer-form";
 type WholesaleCustomerDialogsProps = {
@@ -16,10 +17,10 @@ type WholesaleCustomerDialogsProps = {
   onAddCustomerOtherName: (formData: FormData) => Promise<boolean>;
   onCreateCustomer: (formData: FormData) => boolean | Promise<boolean>;
   onCreateDialogOpenChange: (open: boolean) => void;
-  onDeleteCustomer: (customerId: string) => boolean | Promise<boolean>;
-  onLinkCustomerAccount: (formData: FormData) => Promise<boolean>;
+  onDeleteCustomer: DeleteWholesaleCustomerAction;
+  onLinkCustomerAccount: SubmitWholesaleCustomerForm;
   onSelectedCustomerIdChange: (id: string | null) => void;
-  onUpdateCustomer: (formData: FormData) => boolean | Promise<boolean>;
+  onUpdateCustomer: SubmitWholesaleCustomerForm;
   pendingKey: string | null;
   profilesById: Map<string, WholesaleProfile>;
   registeredAccounts: WholesaleProfile[];
@@ -84,7 +85,7 @@ export function WholesaleCustomerDialogs({
           }
         }}
         open={Boolean(selectedCustomerId)}
-        title={selectedCustomer?.unique_name ?? "客户详情"}
+        title={selectedCustomer?.unique_name ?? uiText("detailsTitle")}
       >
         {selectedCustomer ? (
           <WholesaleCustomerDetails
@@ -127,9 +128,10 @@ export function WholesaleCustomerDialogs({
       </DashboardDialog>
 
       <WholesaleCustomerDeleteDialog
+        key={customerToDelete?.id}
         customer={customerToDelete}
-        onDeleteCustomer={async (customerId) => {
-          const deleted = await onDeleteCustomer(customerId);
+        onDeleteCustomer={async (customerId, onError) => {
+          const deleted = await onDeleteCustomer(customerId, onError);
           if (deleted) {
             onSelectedCustomerIdChange(null);
           }

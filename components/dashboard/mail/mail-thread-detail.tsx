@@ -34,19 +34,44 @@ export function MailThreadDetailPanel(props: {
   onQuarantine: () => void;
 }) {
   const t = useTranslations("MailWorkspace");
-  const stateLabel = (state: MailThreadState) => state === "waiting_pt5" ? t("waitingPt5") : state === "waiting_customer" ? t("waitingCustomer") : t("closed");
+  const stateLabel = (state: MailThreadState) =>
+    state === "waiting_pt5"
+      ? t("waitingPt5")
+      : state === "waiting_customer"
+        ? t("waitingCustomer")
+        : t("closed");
   if (!props.detail) {
     return (
-      <Surface className="self-start overflow-hidden scroll-mt-4" data-testid="mail-new-message-panel" padding={null}>
+      <Surface
+        className="self-start overflow-hidden scroll-mt-4"
+        data-testid="mail-new-message-panel"
+        padding={null}
+      >
         {/*
           新建邮件没有历史消息区，不应像会话详情那样占满左侧邮件列表的高度。
           使用紧凑标题栏并让面板按内容自然收缩，可以避免表单被大块空白推到页面底部。
         */}
         <div className="flex items-center gap-3 border-b border-border-subtle p-3 text-content-muted sm:p-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inset"><Mail className="size-5" /></span>
-          <div className="min-w-0"><h2 className="text-lg font-bold text-content-strong">{t("newTitle")}</h2><p className="mt-0.5 text-sm leading-5">{t("newDescription")}</p></div>
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inset">
+            <Mail className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-content-strong">{t("newTitle")}</h2>
+            <p className="mt-0.5 text-sm leading-5">{t("newDescription")}</p>
+          </div>
         </div>
-        <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest={false} onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} pendingSend={props.pendingSend} value={props.composer} />
+        <MailComposer
+          aiDraft={props.aiDraft}
+          busy={props.busy}
+          canSend={props.canSend}
+          canSuggest={false}
+          onChange={props.onComposer}
+          onFiles={props.onFiles}
+          onSend={props.onSend}
+          onSuggest={props.onSuggest}
+          pendingSend={props.pendingSend}
+          value={props.composer}
+        />
       </Surface>
     );
   }
@@ -54,26 +79,145 @@ export function MailThreadDetailPanel(props: {
     <Surface className="flex min-h-[36rem] flex-col overflow-hidden" padding={null}>
       <header className="border-b border-border-subtle p-3 sm:p-4">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0"><h2 className="break-words text-xl font-bold text-content-strong">{props.detail.subject}</h2><p className="mt-1 break-all text-sm text-content-muted">{props.detail.customerEmail} · {props.detail.refCode}</p></div>
-          <StatusBadge tone={props.detail.state === "waiting_pt5" ? "warning" : props.detail.state === "closed" ? "neutral" : "info"}>{stateLabel(props.detail.state)}</StatusBadge>
+          <div className="min-w-0">
+            <h2 className="break-words text-xl font-bold text-content-strong">
+              {props.detail.subject}
+            </h2>
+            <p className="mt-1 break-all text-sm text-content-muted">
+              {props.detail.customerEmail} · {props.detail.refCode}
+            </p>
+          </div>
+          {/* 长邮件主题优先换行，给状态徽标保留一行宽度。 */}
+          <StatusBadge
+            className="shrink-0 whitespace-nowrap"
+            tone={
+              props.detail.state === "waiting_pt5"
+                ? "warning"
+                : props.detail.state === "closed"
+                  ? "neutral"
+                  : "info"
+            }
+          >
+            {stateLabel(props.detail.state)}
+          </StatusBadge>
         </div>
         <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <Field className="w-full sm:w-64" label={<span className="flex items-center gap-2"><UserRound className="size-4 shrink-0" />{t("assignee")}{props.busy === "assign" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /> : null}</span>}><Select disabled={props.busy !== null || !props.agentsReady} onValueChange={props.onAssign} options={props.agents.map((agent) => ({ label: agent.displayName, value: agent.memberId }))} placeholder={t(props.agentsReady ? "selectAgent" : "secondaryLoading")} value={props.detail.assignedMemberId} /></Field>
-          {(["waiting_pt5", "waiting_customer", "closed"] as MailThreadState[]).map((state) => <Button disabled={props.busy !== null || props.detail?.state === state} loading={props.busy === `state:${state}`} key={state} onClick={() => props.onState(state)} size="compact" type="button" variant="outline">{state === "closed" ? <Archive className="size-4" /> : null}{stateLabel(state)}</Button>)}
-          {props.canDelete ? <Button disabled={props.busy !== null} loading={props.busy === "delete"} onClick={props.onDelete} size="compact" type="button" variant="outline"><Trash2 className="size-4" />{t("deleteCopy")}</Button> : null}
-          <Button disabled={props.busy !== null} loading={props.busy === "quarantine"} onClick={props.onQuarantine} size="compact" type="button" variant="outline"><ShieldCheck className="size-4" />{t("moveToQuarantine")}</Button>
+          <Field
+            className="w-full sm:w-64"
+            label={
+              <span className="flex items-center gap-2">
+                <UserRound className="size-4 shrink-0" />
+                {t("assignee")}
+                {props.busy === "assign" ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 animate-spin motion-reduce:animate-none"
+                  />
+                ) : null}
+              </span>
+            }
+          >
+            <Select
+              disabled={props.busy !== null || !props.agentsReady}
+              onValueChange={props.onAssign}
+              options={props.agents.map((agent) => ({
+                label: agent.displayName,
+                value: agent.memberId,
+              }))}
+              placeholder={t(props.agentsReady ? "selectAgent" : "secondaryLoading")}
+              value={props.detail.assignedMemberId}
+            />
+          </Field>
+          {(["waiting_pt5", "waiting_customer", "closed"] as MailThreadState[]).map((state) => (
+            <Button
+              disabled={props.busy !== null || props.detail?.state === state}
+              loading={props.busy === `state:${state}`}
+              key={state}
+              onClick={() => props.onState(state)}
+              size="compact"
+              type="button"
+              variant="outline"
+            >
+              {state === "closed" ? <Archive className="size-4" /> : null}
+              {stateLabel(state)}
+            </Button>
+          ))}
+          {props.canDelete ? (
+            <Button
+              disabled={props.busy !== null}
+              loading={props.busy === "delete"}
+              onClick={props.onDelete}
+              size="compact"
+              type="button"
+              variant="outline"
+            >
+              <Trash2 className="size-4" />
+              {t("deleteCopy")}
+            </Button>
+          ) : null}
+          <Button
+            disabled={props.busy !== null}
+            loading={props.busy === "quarantine"}
+            onClick={props.onQuarantine}
+            size="compact"
+            type="button"
+            variant="outline"
+          >
+            <ShieldCheck className="size-4" />
+            {t("moveToQuarantine")}
+          </Button>
         </div>
       </header>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-inset/40 p-3 sm:p-4" data-testid="mail-messages">
+      <div
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-inset/40 p-3 sm:p-4"
+        data-testid="mail-messages"
+      >
         {props.detail.messages.map((message) => (
-          <article className={`max-w-[92%] rounded-surface-inset border border-border-subtle p-3 sm:max-w-[82%] ${message.direction === "outbound" ? "ml-auto bg-surface-interactive" : "bg-surface-panel"}`} key={message.id}>
-            <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-content-muted"><span className="break-all font-semibold">{message.from}</span><time className="ml-auto">{formatMailTime(message.occurredAt)}</time></div>
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-strong">{message.textBody || t("formattedOnly")}</p>
-            {message.attachments.length > 0 ? <ul className="mt-3 space-y-1 text-xs text-content-muted">{message.attachments.map((item) => <li className="break-all" key={item.id}>{item.available ? <a className="font-semibold text-primary underline underline-offset-2" href={`/api/mail/attachments/${item.id}`}>{item.filename}</a> : item.filename} · {item.available ? t("downloadable") : t("securityChecking")}</li>)}</ul> : null}
+          <article
+            className={`max-w-[92%] rounded-surface-inset border border-border-subtle p-3 sm:max-w-[82%] ${message.direction === "outbound" ? "ml-auto bg-surface-interactive" : "bg-surface-panel"}`}
+            key={message.id}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-content-muted">
+              <span className="break-all font-semibold">{message.from}</span>
+              <time className="ml-auto">{formatMailTime(message.occurredAt)}</time>
+            </div>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-strong">
+              {message.textBody || t("formattedOnly")}
+            </p>
+            {message.attachments.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-xs text-content-muted">
+                {message.attachments.map((item) => (
+                  <li className="break-all" key={item.id}>
+                    {item.available ? (
+                      <a
+                        className="font-semibold text-primary underline underline-offset-2"
+                        href={`/api/mail/attachments/${item.id}`}
+                      >
+                        {item.filename}
+                      </a>
+                    ) : (
+                      item.filename
+                    )}{" "}
+                    · {item.available ? t("downloadable") : t("securityChecking")}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </article>
         ))}
       </div>
-      <MailComposer aiDraft={props.aiDraft} busy={props.busy} canSend={props.canSend} canSuggest onChange={props.onComposer} onFiles={props.onFiles} onSend={props.onSend} onSuggest={props.onSuggest} pendingSend={props.pendingSend} value={props.composer} />
+      <MailComposer
+        aiDraft={props.aiDraft}
+        busy={props.busy}
+        canSend={props.canSend}
+        canSuggest
+        onChange={props.onComposer}
+        onFiles={props.onFiles}
+        onSend={props.onSend}
+        onSuggest={props.onSuggest}
+        pendingSend={props.pendingSend}
+        value={props.composer}
+      />
     </Surface>
   );
 }

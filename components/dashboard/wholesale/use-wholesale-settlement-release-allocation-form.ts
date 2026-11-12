@@ -154,7 +154,7 @@ export function useWholesaleSettlementReleaseAllocationForm({
     customerId,
     exceedsReleaseAmount,
     fillSuggestion,
-    hasActiveAllocations: activeAllocations.length > 0,
+    activeAllocationIds: activeAllocations.map((allocation) => allocation.id),
     remainingAmount,
     searchText,
     setAllocationAmount,

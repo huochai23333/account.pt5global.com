@@ -1,4 +1,5 @@
-import { getMailAgentProfile, getMailWorkspace, queryMailThreads } from "./mail-service";
+import { getMailWorkspace, queryMailThreads } from "./mail-service";
+import { getMailAgentProfile } from "./mail-agent-profile-service";
 import { measureServerStage } from "../server-performance";
 import type { MailIdentity } from "./mail-types";
 

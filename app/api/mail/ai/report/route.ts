@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createMailAiStream } from "@/lib/mail/mail-ai-stream";
-import { getAdminReportContext } from "@/lib/mail/mail-service";
+import { getAdminReportContext } from "@/lib/mail/mail-admin-reporting";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../_shared";
@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     if (!body.start || !body.end || !body.requestId) throw new Error("请选择报告日期并重新提交。");
     if (identity.role !== "administrator") return NextResponse.json({ error: "只有管理员可以生成报告。" }, { status: 403 });
     const context = await getAdminReportContext(identity, body.start, body.end);
-    return createMailAiStream({
+    // 启动失败需要先完成账本失败记录，再从本接口返回提示。
+    return await createMailAiStream({
       operationKey: "ai-assistant-generation",
       requestId: body.requestId,
       requestPayload: { start: body.start, end: body.end, inquiryCount: context.metrics.inquiryCount },

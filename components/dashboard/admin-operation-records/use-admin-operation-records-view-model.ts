@@ -8,7 +8,7 @@ import {
   ADMIN_OPERATION_RECORD_ACTIONS,
   ADMIN_OPERATION_RECORD_CATEGORIES,
   type AdminOperationRecordsPageData,
-} from "@/lib/admin-operation-records";
+} from "@/lib/admin-operation-records-contract";
 
 import {
   operationRecordMatchesSearch,
@@ -27,6 +27,14 @@ export function useAdminOperationRecordsViewModel({
   const [searchText, setSearchText] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
+  // 筛选改变后从第一页展示，避免旧页码遮住新匹配项。
+  const paginationKey = JSON.stringify([searchText, categoryFilter, actionFilter]);
+
+  function resetFilters() {
+    setSearchText("");
+    setCategoryFilter("all");
+    setActionFilter("all");
+  }
 
   const categoryLabels = useMemo<OperationCategoryLabels>(
     () => ({
@@ -99,6 +107,8 @@ export function useAdminOperationRecordsViewModel({
     categoryOptions: ADMIN_OPERATION_RECORD_CATEGORIES,
     filteredRecords,
     hasPermission: initialData.hasPermission,
+    paginationKey,
+    resetFilters,
     roleLabels,
     searchText,
     setActionFilter,

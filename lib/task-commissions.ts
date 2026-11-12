@@ -1,10 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getOrderUserOptions } from "./admin-orders";
-import {
-  getDashboardQueryRange,
-  MAX_DASHBOARD_QUERY_ROWS,
-} from "./dashboard-pagination";
+import { getDashboardQueryRange, MAX_DASHBOARD_QUERY_ROWS } from "./dashboard-pagination";
 import { withRequestTimeout } from "./request-timeout";
 import {
   normalizeTaskCommissionRecord,
@@ -14,10 +11,7 @@ import {
   getTaskCommissionTeamRecords,
   getTaskCommissionTypeRecords,
 } from "./task-commission-related-data";
-import type {
-  TaskCommissionRecord,
-  TaskCommissionRow,
-} from "./task-commission-types";
+import type { TaskCommissionRecord, TaskCommissionRow } from "./task-commission-types";
 
 const TASK_COMMISSION_SELECT =
   "id,task_id,review_submission_id,beneficiary_user_id,approved_by_user_id,task_type_code,task_name_snapshot,task_scope,team_id,commission_amount_rmb,calculation_snapshot,settlement_status,settled_at,settlement_note,created_at,updated_at";
@@ -45,9 +39,7 @@ export async function getTaskCommissions(
   const taskTypeCodes = [...new Set(commissionRows.map((row) => row.task_type_code))];
   const teamIds = [
     ...new Set(
-      commissionRows
-        .map((row) => row.team_id)
-        .filter((value): value is string => Boolean(value)),
+      commissionRows.map((row) => row.team_id).filter((value): value is string => Boolean(value)),
     ),
   ];
   const [taskTypes, teams] = await Promise.all([
@@ -67,12 +59,8 @@ async function getTaskCommissionRows(
   supabase: SupabaseClient,
   options?: { beneficiaryUserId?: string | null; limit?: number },
 ): Promise<TaskCommissionRecord[]> {
-  const { from, to } = getDashboardQueryRange(
-    options?.limit ?? MAX_DASHBOARD_QUERY_ROWS,
-  );
-  let query = supabase
-    .from("task_commission_record")
-    .select(TASK_COMMISSION_SELECT);
+  const { from, to } = getDashboardQueryRange(options?.limit ?? MAX_DASHBOARD_QUERY_ROWS);
+  let query = supabase.from("task_commission_record").select(TASK_COMMISSION_SELECT);
   if (options?.beneficiaryUserId) {
     query = query.eq("beneficiary_user_id", options.beneficiaryUserId);
   }

@@ -1,7 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { getTaskTypesByCodes } from "./admin-task-type-management";
 import { TASK_TARGET_ROLES } from "./admin-tasks";
-import { withRequestTimeout } from "./request-timeout";
 import type {
   AdminTaskAttachment,
   AdminTaskMainRow,
@@ -10,9 +10,6 @@ import type {
 } from "./admin-tasks";
 import { getCurrentSessionContext, type AppRole, type UserStatus } from "./user-self-service";
 import {
-  normalizeOptionalString,
-} from "./value-normalizers";
-import {
   getTaskAcceptanceSummaryByTaskId,
   type TaskAcceptanceSummary,
 } from "./task-acceptance-summary";
@@ -20,10 +17,9 @@ import { getTaskAcceptancesByViewer, type TaskAcceptanceRow } from "./task-accep
 import {
   getSalesmanTaskMainRows,
   getSalesmanTaskMainRowsByIds,
-  getTaskTargetRolesByTaskIds,
-  getTaskTypesByCodes,
   getVisibleTaskAttachments,
 } from "./salesman-task-data";
+import { getTaskTargetRolesByTaskIds } from "./task-target-roles";
 
 export type SalesmanTaskViewerContext = {
   user: User;
@@ -44,24 +40,6 @@ export type SalesmanTasksPageData = {
   tasks: SalesmanTaskRow[];
 };
 
-export type SalesmanTaskFocusFilter =
-  | "all"
-  | "available"
-  | "in_progress"
-  | "reviewing"
-  | "rejected"
-  | "completed";
-
-export type SalesmanTasksFilters = {
-  searchText: string;
-  focus: SalesmanTaskFocusFilter;
-};
-
-export type SalesmanTasksSearchParams = {
-  filters: SalesmanTasksFilters;
-  page: number;
-};
-
 export async function getCurrentSalesmanTaskViewerContext(
   supabase: SupabaseClient,
 ): Promise<SalesmanTaskViewerContext | null> {
@@ -80,27 +58,6 @@ export async function getCurrentSalesmanTaskViewerContext(
 
 export function canViewSalesmanTaskBoard(role: AppRole | null, status: UserStatus | null) {
   return status === "active" && TASK_TARGET_ROLES.some((targetRole) => targetRole === role);
-}
-
-export function normalizeSalesmanTasksFilters(
-  filters?: Partial<SalesmanTasksFilters> | null,
-): SalesmanTasksFilters {
-  return {
-    searchText: normalizeOptionalString(filters?.searchText) ?? "",
-    focus: normalizeSalesmanTaskFocusFilter(filters?.focus),
-  };
-}
-
-export function parseSalesmanTasksSearchParams(
-  searchParams: Record<string, string | string[] | undefined>,
-): SalesmanTasksSearchParams {
-  return {
-    filters: normalizeSalesmanTasksFilters({
-      searchText: getSingleSearchParam(searchParams.searchText),
-      focus: normalizeSalesmanTaskFocusFilter(getSingleSearchParam(searchParams.focus)),
-    }),
-    page: normalizePositiveInteger(getSingleSearchParam(searchParams.page), 1),
-  };
 }
 
 export async function getSalesmanTasksPageData(
@@ -140,6 +97,7 @@ export async function getVisibleSalesmanTasks(
   viewerId: string | null,
   limit?: number,
 ): Promise<SalesmanTaskRow[]> {
+  // 保留当前账号已领取但落在基础任务页之外的记录，再合并附件与计数。
   const baseTasks = await getSalesmanTaskMainRows(supabase, limit);
 
   const viewerAcceptances = await getTaskAcceptancesByViewer(supabase, viewerId);
@@ -273,52 +231,6 @@ function buildSalesmanTaskRow(options: {
   };
 }
 
-export async function acceptSalesmanTask(supabase: SupabaseClient, taskId: string) {
-  const { data, error } = await withRequestTimeout(
-    supabase.rpc("accept_task", {
-      p_task_id: taskId,
-    }),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function completeSalesmanTask(supabase: SupabaseClient, acceptanceId: string) {
-  const { data, error } = await withRequestTimeout(
-    supabase.rpc("complete_task", {
-      p_acceptance_id: acceptanceId,
-    }),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function getTaskAttachmentSignedUrl(
-  supabase: SupabaseClient,
-  attachment: Pick<AdminTaskAttachment, "bucket_name" | "task_attachment_storage_path">,
-  expiresIn = 60 * 10,
-) {
-  const { data, error } = await withRequestTimeout(
-    supabase.storage
-      .from(attachment.bucket_name)
-      .createSignedUrl(attachment.task_attachment_storage_path, expiresIn),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  return data.signedUrl;
-}
-
 function createEmptySalesmanTasksPageData(options: {
   viewerId: string | null;
   viewerRole: AppRole | null;
@@ -331,28 +243,4 @@ function createEmptySalesmanTasksPageData(options: {
     canView: canViewSalesmanTaskBoard(options.viewerRole, options.viewerStatus),
     tasks: [],
   };
-}
-
-function getSingleSearchParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizePositiveInteger(value: string | null | undefined, fallback: number) {
-  const parsed = Number.parseInt(value ?? "", 10);
-
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return fallback;
-  }
-
-  return parsed;
-}
-
-function normalizeSalesmanTaskFocusFilter(value: unknown): SalesmanTaskFocusFilter {
-  return value === "available"
-    || value === "in_progress"
-    || value === "reviewing"
-    || value === "rejected"
-    || value === "completed"
-    ? value
-    : "all";
 }

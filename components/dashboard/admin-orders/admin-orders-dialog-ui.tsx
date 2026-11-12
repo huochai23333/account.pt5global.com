@@ -1,3 +1,4 @@
+/** 旅游订单与服务费用：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import type { ReactNode } from "react";
@@ -34,9 +35,7 @@ export function OrderSupplementaryFormSection({
     <section className="rounded-surface-panel border border-border-subtle bg-surface-inset p-5 shadow-surface-interactive sm:p-6">
       <div className="mb-5">
         <h3 className="text-lg font-semibold text-content-strong">{title}</h3>
-        <p className="mt-2 text-sm leading-7 text-content-muted">
-          {description}
-        </p>
+        <p className="mt-2 text-sm leading-7 text-content-muted">{description}</p>
       </div>
       <div className="space-y-5">{children}</div>
     </section>
@@ -56,9 +55,7 @@ export function OrderFormSection({
     <section className="rounded-surface-panel border border-border-subtle bg-surface-inset p-5 shadow-surface-interactive sm:p-6">
       <div className="mb-5">
         <h3 className="text-lg font-semibold text-content-strong">{title}</h3>
-        <p className="mt-2 text-sm leading-7 text-content-muted">
-          {description}
-        </p>
+        <p className="mt-2 text-sm leading-7 text-content-muted">{description}</p>
       </div>
       {children}
     </section>

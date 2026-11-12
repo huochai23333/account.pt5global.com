@@ -4,7 +4,7 @@ import {
   isAdminPeopleStatus,
   type AdminPersonAccountUpdatePayload,
   type AdminPersonRow,
-} from "./admin-people";
+} from "./admin-people-contract";
 import { AdminPeopleMutationError } from "./admin-people-mutation-errors";
 import type { SalesmanBusinessBoard } from "./salesman-business-access";
 import {

@@ -1,7 +1,4 @@
-import type {
-  AiAssistantChatMessage,
-  AiAssistantLocale,
-} from "@/lib/ai-assistant/assistant-types";
+import type { AiAssistantChatMessage, AiAssistantLocale } from "@/lib/ai-assistant/assistant-types";
 
 import type { AiAssistantUiMessage } from "./ai-assistant-ui-types";
 
@@ -21,10 +18,7 @@ export function buildAiAssistantReadableHistory(
     }));
 }
 
-function getReadableMessageContent(
-  message: AiAssistantUiMessage,
-  locale: AiAssistantLocale,
-) {
+function getReadableMessageContent(message: AiAssistantUiMessage, locale: AiAssistantLocale) {
   const settlementRelease = message.settlementRelease;
 
   if (!settlementRelease) {

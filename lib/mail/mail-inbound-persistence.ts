@@ -8,8 +8,10 @@ import { deleteEncryptedObjects } from "./mail-storage";
  */
 export async function deleteUnreferencedInboundObjects(paths: string[]) {
   if (paths.length === 0) return;
-  const { data, error } = await getSupabaseServiceRoleClient().from("mail_attachments")
-    .select("storage_path").in("storage_path", paths);
+  const { data, error } = await getSupabaseServiceRoleClient()
+    .from("mail_attachments")
+    .select("storage_path")
+    .in("storage_path", paths);
   if (error) throw new Error("来信附件引用暂时无法确认。", { cause: error });
   const referenced = new Set((data ?? []).map((row) => String(row.storage_path)));
   const unreferenced = paths.filter((path) => !referenced.has(path));

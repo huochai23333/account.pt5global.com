@@ -40,6 +40,7 @@ export function getRoleFromAuthSession(
   );
 }
 
+// 浏览器恢复导航优先读取数据库；这里保留的 claims 分支仅辅助跳转，服务端准入仍严格读取当前权限。
 export async function getRoleFromAuthClaims(
   supabase: SupabaseClient,
   fallbackUser?: User | null,

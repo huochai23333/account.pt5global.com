@@ -16,15 +16,10 @@ import {
   getProfileName,
 } from "./wholesale-display";
 
-export const WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS: Record<
-  WholesaleSettlementReleaseStatus,
-  string
-> = {
-  allocated: "已分配",
-  cancelled: "已取消",
-  partially_allocated: "部分分配",
-  pending: "待分配",
-};
+// 枚举供筛选与列表共享，界面标签随当前语言从词典读取。
+export const WHOLESALE_SETTLEMENT_RELEASE_STATUSES = [
+  "allocated", "cancelled", "partially_allocated", "pending",
+] as const satisfies readonly WholesaleSettlementReleaseStatus[];
 
 export function getSettlementReleaseStatusTone(
   status: WholesaleSettlementReleaseStatus,
@@ -93,6 +88,7 @@ export function getSettlementReleaseSearchText({
   ordersById,
   profilesById,
   release,
+  statusLabel,
 }: {
   allocationsByReleaseId: Map<
     string,
@@ -101,6 +97,7 @@ export function getSettlementReleaseSearchText({
   ordersById: Map<string, WholesaleOrder>;
   profilesById: Map<string, WholesaleProfile>;
   release: WholesaleSettlementRelease;
+  statusLabel: string;
 }) {
   const allocations = allocationsByReleaseId.get(release.id) ?? [];
 
@@ -108,7 +105,7 @@ export function getSettlementReleaseSearchText({
     release.customer_name,
     release.release_currency,
     release.note ?? "",
-    WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS[release.status],
+    statusLabel,
     ...allocations.map(
       (allocation) => ordersById.get(allocation.order_id)?.order_number ?? "",
     ),
@@ -132,6 +129,7 @@ export function formatSettlementReleaseSummary(
 export function formatSettlementReleaseHandledAt(
   release: WholesaleSettlementRelease,
   allocations: WholesaleSettlementReleaseAllocation[],
+  awaitingLabel: string,
 ) {
   if (release.status === "cancelled") {
     return formatDateTime(release.cancelled_at);
@@ -147,7 +145,7 @@ export function formatSettlementReleaseHandledAt(
     );
   }
 
-  return "等待处理";
+  return awaitingLabel;
 }
 
 export function getSettlementReleaseLatestActorId(

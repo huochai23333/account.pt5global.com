@@ -1,3 +1,4 @@
+/** 个人中心、账号切换与媒体：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -30,8 +31,7 @@ export function DashboardAccountSwitcherSection({
 }: DashboardAccountSwitcherSectionProps) {
   const busyKey = ui.busyKey;
   const alternateAccount = state.alternateAccount;
-  const [confirmAction, setConfirmAction] =
-    useState<AccountSwitcherConfirmAction | null>(null);
+  const [confirmAction, setConfirmAction] = useState<AccountSwitcherConfirmAction | null>(null);
 
   return (
     <>
@@ -129,9 +129,7 @@ function SavedAccountSwitchRow({
   onRemove: () => void;
   onSwitch: () => void;
 }) {
-  const roleLabel = account.role
-    ? getAccountSwitcherRoleLabel(copy, account.role)
-    : null;
+  const roleLabel = account.role ? getAccountSwitcherRoleLabel(copy, account.role) : null;
   const actionBusyKey = needsReauthentication
     ? "account-switcher-reauthenticate"
     : "account-switcher-switch";
@@ -149,9 +147,7 @@ function SavedAccountSwitchRow({
         </div>
         <div className="min-w-0">
           {roleLabel ? (
-            <p className="text-xs font-semibold text-content-muted">
-              {roleLabel}
-            </p>
+            <p className="text-xs font-semibold text-content-muted">{roleLabel}</p>
           ) : null}
           <p className="mt-0.5 truncate text-base font-semibold text-content-muted">
             {account.displayName}
@@ -161,20 +157,13 @@ function SavedAccountSwitchRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button
-          variant="primary"
-          size="compact"
-          disabled={busyKey !== null}
-          onClick={onSwitch}
-        >
+        <Button variant="primary" size="compact" disabled={busyKey !== null} onClick={onSwitch}>
           {busyKey === actionBusyKey ? (
             <LoaderCircle className="size-4 animate-spin" />
           ) : (
             <RefreshCw className="size-4" />
           )}
-          {needsReauthentication
-            ? copy.accountSwitcherReauthenticate
-            : copy.accountSwitcherSwitch}
+          {needsReauthentication ? copy.accountSwitcherReauthenticate : copy.accountSwitcherSwitch}
         </Button>
         <Button
           size="icon-compact"

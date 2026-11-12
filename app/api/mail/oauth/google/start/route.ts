@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 
 import { requireMailIdentity, requireMailAdministrator } from "@/lib/mail/mail-identity";
-import { createGoogleAuthorizationUrl, createOAuthTransaction, createPkcePair } from "@/lib/mail/mail-integrations";
+import { createGoogleAuthorizationUrl } from "@/lib/mail/mail-oauth-provider-urls";
+import { createOAuthTransaction, createPkcePair } from "@/lib/mail/mail-oauth-transactions";
 import { connectionRedirect, setConnectionCookie } from "@/lib/mail/mail-connection-navigation";
 
 export async function GET(request: Request) {

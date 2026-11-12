@@ -1,4 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { expect, test, type Page } from "@playwright/test";
+import { cleanupFixtureResources } from "../test-support/fixture-cleanup-sequence";
 
 import { loginAs } from "./helpers/auth";
 import { fillDateControl } from "./helpers/date-control";
@@ -10,14 +12,20 @@ import {
 } from "./helpers/wholesale-settlement-fixtures";
 
 test("本月有效分配缺少美元换算汇率时不展示部分合计", async ({ browser }) => {
-  const note = `月度换算缺口 ${Date.now()}`;
+  const note = `月度换算缺口 ${randomUUID()}`;
   const admin = getLocalSupabaseAdminClient();
   if (!admin) throw new Error("这项回归必须连接本地 Supabase。");
 
   const missingDate = await findMissingUsdRateDate();
-  const financePage = await browser.newPage();
-  const salesmanPage = await browser.newPage();
+  const pages: Page[] = [];
+  let bodyFailed = false;
+  let bodyError: unknown;
   try {
+    // 第一页创建后立即登记；第二页或后续步骤失败时也能按原顺序回收已创建资源。
+    const financePage = await browser.newPage();
+    pages.push(financePage);
+    const salesmanPage = await browser.newPage();
+    pages.push(salesmanPage);
     await loginAs(financePage, "finance");
     await financePage.goto("/finance/wholesale/settlement-releases");
     await financePage.getByRole("button", { name: "发布收款" }).click();
@@ -79,10 +87,22 @@ test("本月有效分配缺少美元换算汇率时不展示部分合计", async
     await adjustDialog.getByRole("button", { name: "确认清空" }).click();
     await expect.poll(() => getActiveAllocationTotal(note)).toBe(0);
     await expect(monthlyCard).toContainText("US$0.00");
+  } catch (error) {
+    bodyFailed = true;
+    bodyError = error;
+    throw error;
   } finally {
-    await financePage.close();
-    await salesmanPage.close();
-    await cleanupSettlementReleaseFixtures([note]);
+    // 关闭页面失败仍尝试收款清理；聚合保留每个失败，不把中途异常当作清理完成。
+    try {
+      await cleanupFixtureResources(
+        ...pages.map((page) => () => page.close()),
+        () => cleanupSettlementReleaseFixtures([note]),
+      );
+    } catch (cleanupError) {
+      // 收尾异常不能覆盖原业务断言的失败，两个原因都交给原用例报告。
+      if (bodyFailed) throw new AggregateError([bodyError, cleanupError], "monthly_settlement_cleanup_failed");
+      throw cleanupError;
+    }
   }
 });
 

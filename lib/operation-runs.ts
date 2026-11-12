@@ -66,7 +66,12 @@ export async function getOperationRun(
     p_operation_id: operationId,
   });
   if (error) throw error;
-  return parseOperationRun(data);
+  const run = parseOperationRun(data);
+  // 编号是本次请求和账本记录的关联凭证，其他任务的成功结果不能用于当前页面。
+  if (run.operationId.toLowerCase() !== operationId.toLowerCase()) {
+    throw new Error("operation_run_id_mismatch");
+  }
+  return run;
 }
 
 export async function waitForOperationTerminal(
@@ -80,17 +85,21 @@ export async function waitForOperationTerminal(
 
   while (Date.now() < deadline) {
     const run = await getOperationRun(supabase, operationId);
-    if (OPERATION_TERMINAL_STATUSES.includes(run.status as OperationTerminalStatus)) {
+    if (isTerminalStatus(run.status)) {
       return { kind: "terminal" as const, run };
     }
-    await new Promise((resolve) => window.setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) => globalThis.setTimeout(resolve, pollIntervalMs));
   }
 
-  // 超时是“结果尚未确认”，不是失败；调用方应保留 operationId 供用户继续查看。
-  return {
-    kind: "confirming" as const,
-    run: await getOperationRun(supabase, operationId),
-  };
+  // 最后一次查询可能已经到达终态。只有仍未完成时才保留编号供后续查询。
+  const run = await getOperationRun(supabase, operationId);
+  return isTerminalStatus(run.status)
+    ? { kind: "terminal" as const, run }
+    : { kind: "confirming" as const, run };
+}
+
+function isTerminalStatus(status: OperationStatus) {
+  return status !== "queued" && status !== "running";
 }
 
 /**
@@ -155,9 +164,11 @@ function readOptionalString(value: unknown) {
 }
 
 function readNumber(value: unknown) {
-  const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number)) throw new Error("operation_number_invalid");
-  return number;
+  // 账本列为整数，JSON 会保留数字类型；缺失值不能被转换为零。
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error("operation_number_invalid");
+  }
+  return value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

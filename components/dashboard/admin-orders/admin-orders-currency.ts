@@ -84,12 +84,14 @@ export function applyOrderExchangeRateToOrderForm<
     formState.originalCurrency,
   );
   const dailyExchangeRate = formatEditableNumericValue(rate?.daily_exchange_rate);
+  // 人民币金额和页面显示的成交价使用同一次换算结果。
+  const transactionRate = deriveTransactionRateValue(dailyExchangeRate, formState.originalCurrency);
 
   return {
     ...formState,
     dailyExchangeRate,
-    transactionRate: deriveTransactionRateValue(dailyExchangeRate, formState.originalCurrency),
-    rmbAmount: deriveRmbAmountValue(formState.amount, deriveTransactionRateValue(dailyExchangeRate, formState.originalCurrency)),
+    transactionRate,
+    rmbAmount: deriveRmbAmountValue(formState.amount, transactionRate),
   };
 }
 

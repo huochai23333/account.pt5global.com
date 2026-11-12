@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslations } from "next-intl";
 
 import { useDashboardQueryPage } from "@/lib/use-dashboard-query-page";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
@@ -50,6 +51,8 @@ export function useWholesaleLogisticsPage({
   initialPage: WholesaleLogisticsPage;
   initialStoreOptions: WholesaleLogisticsStoreOption[];
 }) {
+  const t = useTranslations("WholesaleBusiness.logisticsArchive");
+  const sourceRefreshDeferred = t("sourceRefreshDeferred");
   const [filters, setFilters] = useState(initialFilters);
   const deferredSearchText = useDeferredValue(filters.searchText);
   const queryFilters = useMemo(
@@ -66,7 +69,7 @@ export function useWholesaleLogisticsPage({
     initialData: initialPage,
     queryKey: JSON.stringify(queryFilters),
     totalItems: (data) => data.totalCount,
-    errorMessage: "物流记录暂时没有加载成功，请稍后重试。",
+    errorMessage: t("loadFailed"),
     queryPage: (pageNumber) => getWholesaleLogisticsPage(requireBrowserClient(), queryFilters, pageNumber),
   });
   const page = query.data ?? initialPage;
@@ -77,6 +80,7 @@ export function useWholesaleLogisticsPage({
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const didRequestSourceRefresh = useRef(false);
+  const writingAssignment = useRef(false);
 
 
   const reloadAll = useCallback(async () => {
@@ -105,7 +109,7 @@ export function useWholesaleLogisticsPage({
       } catch {
         // 自动更新失败时继续展示永久档案，避免短暂网络问题让整个物流页面不可用。
         setFeedback({
-          message: "已显示现有物流记录，最新数据稍后会继续更新。",
+          message: sourceRefreshDeferred,
           scope: "page",
           tone: "error",
         });
@@ -115,11 +119,14 @@ export function useWholesaleLogisticsPage({
     };
 
     void refresh();
-  }, [reloadAll]);
+  }, [reloadAll, sourceRefreshDeferred]);
 
 
   const runMutation = useCallback(
     async (key: string, successMessage: string, action: () => Promise<void>) => {
+      // 先用同步锁拦住同一帧连击，避免在 React 禁用按钮前重复拆分归属区间。
+      if (writingAssignment.current) return false;
+      writingAssignment.current = true;
       setPendingKey(key);
       setFeedback(null);
       try {
@@ -133,16 +140,17 @@ export function useWholesaleLogisticsPage({
         return true;
       } catch (error) {
         setFeedback({
-          message: readMutationError(error),
+          message: t(`assignmentFeedback.${readMutationError(error)}`),
           scope: "assignment",
           tone: "error",
         });
         return false;
       } finally {
+        writingAssignment.current = false;
         setPendingKey(null);
       }
     },
-    [reloadAll],
+    [reloadAll, t],
   );
 
   return {
@@ -191,7 +199,7 @@ export function useWholesaleLogisticsPage({
       salesUserId: string,
       customerId: string | null,
     ) =>
-      runMutation("assign", "店铺归属已保存。", async () => {
+      runMutation("assign", t("assignmentFeedback.assigned"), async () => {
         const supabase = requireBrowserClient();
         await assignWholesaleLogisticsStores(supabase, {
           customerId,
@@ -200,11 +208,11 @@ export function useWholesaleLogisticsPage({
         });
       }),
     changeAssignment: (input: ChangeWholesaleLogisticsAssignmentInput) =>
-      runMutation(`change:${input.assignmentId}`, "店铺归属已调整。", async () => {
+      runMutation(`change:${input.assignment.id}`, t("assignmentFeedback.changed"), async () => {
         await changeWholesaleLogisticsAssignment(requireBrowserClient(), input);
       }),
     endAssignment: (assignmentId: string, effectiveTo: string) =>
-      runMutation(`end:${assignmentId}`, "店铺归属已结束。", async () => {
+      runMutation(`end:${assignmentId}`, t("assignmentFeedback.ended"), async () => {
         await endWholesaleLogisticsAssignment(
           requireBrowserClient(),
           assignmentId,
@@ -251,15 +259,15 @@ function requireBrowserClient() {
 }
 
 
-function readError(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
-
 function readMutationError(error: unknown) {
-  const message = readError(error, "店铺归属暂时没有保存成功，请稍后重试。");
-  if (message.includes("already_assigned")) return "所选店铺已经有归属记录。";
-  if (message.includes("split_outside_range")) return "所选生效时间不在当前归属区间内。";
-  if (message.includes("invalid_logistics_sales_user")) return "请选择正常使用中的业务员账号。";
-  if (message.includes("manage_denied")) return "当前账号不能修改店铺归属。";
-  return "店铺归属暂时没有保存成功，请稍后重试。";
+  // Supabase 可能返回普通对象；只映射已知错误，其余用统一业务提示。
+  const message = error && typeof error === "object" && "message" in error
+    ? String(error.message)
+    : "";
+  if (message.includes("already_assigned")) return "alreadyAssigned";
+  if (message.includes("split_outside_range")) return "dateOutside";
+  if (message.includes("invalid_logistics_sales_user")) return "invalidSalesperson";
+  if (message.includes("manage_denied")) return "forbidden";
+  if (message.includes("logistics_assignment_unconfirmed")) return "unconfirmed";
+  return "failed";
 }

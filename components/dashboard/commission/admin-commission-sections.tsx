@@ -1,13 +1,4 @@
+// 管理页面从同一入口组装三个展示区块。
 export { CommissionFiltersSection } from "./admin-commission-filters-section";
-export {
-  AdminCommissionTableSection,
-  CommissionBeneficiarySummarySection,
-} from "./admin-commission-record-sections";
-export {
-  summarizeByBeneficiary,
-  type BeneficiarySummaryRow,
-  type CategoryFilter,
-  type CommissionFilterOption,
-  type CommissionFilters,
-  type SettlementFilter,
-} from "./admin-commission-view-model";
+export { AdminCommissionTableSection } from "./admin-commission-record-sections";
+export { CommissionBeneficiarySummarySection } from "./commission-beneficiary-summary-section";

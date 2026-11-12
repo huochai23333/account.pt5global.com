@@ -22,7 +22,6 @@ import {
   getSettlementReleaseLatestActorId,
   getSettlementReleaseRemainingAmount,
   getSettlementReleaseStatusTone,
-  WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS,
 } from "./wholesale-settlement-release-display";
 import {
   WholesaleTable,
@@ -152,7 +151,7 @@ export function WholesaleSettlementReleaseTable({
               </WholesaleTd>
               <WholesaleTd>
                 <StatusBadge tone={getSettlementReleaseStatusTone(release.status)}>
-                  {WHOLESALE_SETTLEMENT_RELEASE_STATUS_LABELS[release.status]}
+                  {uiText(`status.${release.status}`)}
                 </StatusBadge>
               </WholesaleTd>
               <WholesaleTd>{formatDate(release.received_on)}</WholesaleTd>
@@ -190,7 +189,7 @@ export function WholesaleSettlementReleaseTable({
                 </p>
               </WholesaleTd>
               <WholesaleTd className="min-w-[160px] whitespace-normal">
-                {formatSettlementReleaseHandledAt(release, allAllocations)}
+                {formatSettlementReleaseHandledAt(release, allAllocations, uiText("awaiting"))}
               </WholesaleTd>
               <WholesaleTd className="min-w-[240px] whitespace-normal">
                 {release.note ?? uiText("noNote")}

@@ -3,7 +3,7 @@ import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import {
   ensureSessionTracking,
   getSessionCache,
-  type SessionCacheState,
+  startSessionCacheRequest,
 } from "./current-session-cache";
 import { withRequestTimeout } from "./request-timeout";
 
@@ -21,15 +21,15 @@ export async function getCurrentSession(
     return sessionCache.currentSessionSnapshot;
   }
   if (!sessionCache.currentSessionRequest) {
-    sessionCache.currentSessionRequest = resolveWithSingleTimeoutRetry(
-      () => fetchCurrentSession(supabase),
-      () => sessionCache.currentSessionSnapshot,
-      (session) => {
-        sessionCache.currentSessionSnapshot = session;
-      },
-    ).finally(() => {
-      sessionCache.currentSessionRequest = null;
-    });
+    sessionCache.currentSessionRequest = startSessionCacheRequest(
+      sessionCache,
+      (isCurrent) => resolveWithSingleTimeoutRetry(
+        () => fetchCurrentSession(supabase),
+        () => isCurrent() ? sessionCache.currentSessionSnapshot : null,
+      ),
+      (session) => { sessionCache.currentSessionSnapshot = session; },
+      () => { sessionCache.currentSessionRequest = null; },
+    );
   }
   return sessionCache.currentSessionRequest;
 }
@@ -44,15 +44,15 @@ export async function getCurrentUser(
     return sessionCache.currentUserSnapshot;
   }
   if (!sessionCache.currentUserRequest) {
-    sessionCache.currentUserRequest = resolveWithSingleTimeoutRetry(
-      () => fetchCurrentUser(supabase),
-      () => sessionCache.currentUserSnapshot,
-      (user) => {
-        sessionCache.currentUserSnapshot = user;
-      },
-    ).finally(() => {
-      sessionCache.currentUserRequest = null;
-    });
+    sessionCache.currentUserRequest = startSessionCacheRequest(
+      sessionCache,
+      (isCurrent) => resolveWithSingleTimeoutRetry(
+        () => fetchCurrentUser(supabase),
+        () => isCurrent() ? sessionCache.currentUserSnapshot : null,
+      ),
+      (user) => { sessionCache.currentUserSnapshot = user; },
+      () => { sessionCache.currentUserRequest = null; },
+    );
   }
   return sessionCache.currentUserRequest;
 }
@@ -74,12 +74,12 @@ export async function getCurrentClaims(
     return sessionCache.currentClaimsSnapshot;
   }
   if (!sessionCache.currentClaimsRequest) {
-    sessionCache.currentClaimsRequest = resolveCurrentClaims(
-      supabase,
+    sessionCache.currentClaimsRequest = startSessionCacheRequest(
       sessionCache,
-    ).finally(() => {
-      sessionCache.currentClaimsRequest = null;
-    });
+      () => fetchCurrentClaims(supabase),
+      (claims) => { sessionCache.currentClaimsSnapshot = claims; },
+      () => { sessionCache.currentClaimsRequest = null; },
+    );
   }
   return sessionCache.currentClaimsRequest;
 }
@@ -105,25 +105,17 @@ async function fetchCurrentUser(supabase: SupabaseClient) {
   return user;
 }
 
-async function resolveCurrentClaims(
-  supabase: SupabaseClient,
-  sessionCache: SessionCacheState,
-) {
+async function fetchCurrentClaims(supabase: SupabaseClient) {
   const { data, error } = await supabase.auth.getClaims();
-  const claims = error ? null : (data?.claims ?? null);
-  sessionCache.currentClaimsSnapshot = claims;
-  return claims;
+  return error ? null : (data?.claims ?? null);
 }
 
 async function resolveWithSingleTimeoutRetry<T>(
   request: () => Promise<T>,
-  readSnapshot: () => T | undefined,
-  writeSnapshot: (value: T) => void,
+  readSnapshot: () => T | null | undefined,
 ) {
   try {
-    const value = await runTimedRequest(request);
-    writeSnapshot(value);
-    return value;
+    return await runTimedRequest(request);
   } catch (error) {
     const snapshot = readSnapshot();
     if (snapshot !== undefined) return snapshot;
@@ -134,9 +126,7 @@ async function resolveWithSingleTimeoutRetry<T>(
     const delayedSnapshot = readSnapshot();
     if (delayedSnapshot !== undefined) return delayedSnapshot;
 
-    const value = await runTimedRequest(request);
-    writeSnapshot(value);
-    return value;
+    return runTimedRequest(request);
   }
 }
 

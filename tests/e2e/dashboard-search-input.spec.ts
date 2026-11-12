@@ -12,9 +12,7 @@ const targetViewports = [
   { height: 844, width: 390 },
 ] as const;
 
-test("线索搜索框在桌面、平板和移动端都为图标保留文字间距", async ({
-  page,
-}) => {
+test("线索搜索框在桌面、平板和移动端都为图标保留文字间距", async ({ page }) => {
   await loginAs(page, "administrator");
 
   for (const viewport of targetViewports) {
@@ -45,7 +43,10 @@ async function expectSearchIconClearance(input: Locator) {
       '[data-slot="dashboard-search-input-icon"]',
     );
 
-    if (!(element instanceof HTMLInputElement) || !(icon instanceof SVGElement)) {
+    if (
+      !(element instanceof HTMLInputElement) ||
+      !(icon instanceof SVGElement)
+    ) {
       return null;
     }
 

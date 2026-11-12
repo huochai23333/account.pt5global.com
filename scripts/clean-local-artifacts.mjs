@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readdir, rename, rm } from "node:fs/promises";
+import { link, mkdir, readdir, realpath, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
-const projectRoot = process.cwd();
+const projectRoot = await realpath(process.cwd());
 const mode = process.argv[2] ?? "artifacts";
 const dryRun = process.argv.includes("--dry-run");
 
@@ -27,7 +27,7 @@ function logAction(action, target, detail = "") {
   console.log(`${action}: ${path.relative(projectRoot, target) || "."}${suffix}`);
 }
 
-function assertInsideProject(targetPath) {
+async function assertInsideProject(targetPath) {
   const relative = path.relative(projectRoot, targetPath);
 
   if (
@@ -37,10 +37,25 @@ function assertInsideProject(targetPath) {
   ) {
     throw new Error(`Refusing to touch unsafe path: ${targetPath}`);
   }
+
+  // 目标尚未建立时向上找实际存在的父目录。拒绝重定向，避免通过链接清理别处的文件。
+  for (let candidate = targetPath; candidate !== projectRoot; candidate = path.dirname(candidate)) {
+    let resolved;
+    try {
+      resolved = await realpath(candidate);
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw error;
+    }
+    if (path.relative(candidate, resolved) !== "") {
+      throw new Error(`Refusing to touch unsafe resolved path: ${targetPath}`);
+    }
+    return;
+  }
 }
 
 async function removePath(targetPath) {
-  assertInsideProject(targetPath);
+  await assertInsideProject(targetPath);
 
   if (!existsSync(targetPath)) {
     stats.skipped += 1;
@@ -59,14 +74,9 @@ async function removePath(targetPath) {
   logAction("remove", targetPath);
 }
 
-async function ensureDir(targetPath) {
-  assertInsideProject(targetPath);
-  await mkdir(targetPath, { recursive: true });
-}
-
 async function movePath(fromPath, toPath) {
-  assertInsideProject(fromPath);
-  assertInsideProject(toPath);
+  await assertInsideProject(fromPath);
+  await assertInsideProject(toPath);
 
   if (!existsSync(fromPath)) {
     stats.skipped += 1;
@@ -74,7 +84,11 @@ async function movePath(fromPath, toPath) {
     return;
   }
 
-  await ensureDir(path.dirname(toPath));
+  if (existsSync(toPath)) {
+    stats.skipped += 1;
+    logAction("skip", fromPath, "destination already exists");
+    return;
+  }
 
   if (dryRun) {
     stats.moved += 1;
@@ -82,13 +96,24 @@ async function movePath(fromPath, toPath) {
     return;
   }
 
-  await rename(fromPath, toPath);
+  await mkdir(path.dirname(toPath), { recursive: true });
+  // 建立硬链接时目标必须不存在。即使另一次运行刚写入归档，也不会覆盖已有证据。
+  try {
+    await link(fromPath, toPath);
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+    stats.skipped += 1;
+    logAction("skip", fromPath, "destination already exists");
+    return;
+  }
+  await unlink(fromPath);
   stats.moved += 1;
   logAction("move", fromPath, `-> ${path.relative(projectRoot, toPath)}`);
 }
 
 async function organizePlaywrightOutput() {
   const playwrightOutputRoot = path.join(projectRoot, "output", "playwright");
+  await assertInsideProject(playwrightOutputRoot);
 
   if (!existsSync(playwrightOutputRoot)) {
     stats.skipped += 1;

@@ -121,7 +121,8 @@ export function mergeAdminOrdersWithServiceFees(
   });
 }
 
-function calculateOrderServiceFeeAmount(
+// 列表和详情共用历史服务费口径，以人民币金额乘已保存的费率并保留两位。
+export function calculateOrderServiceFeeAmount(
   rmbAmount: number | string | null,
   serviceFeeRatio: number | string | null,
 ) {

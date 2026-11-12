@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-admin-server";
 
 import type { RoutingAgent } from "./mail-routing";
+import { listActiveSalesmen } from "./mail-agent-directory";
 
 /** 只把启用且仍在职的业务员交给路由器，避免邮件落到停用账号。 */
 export async function loadMailRoutingAgents(): Promise<RoutingAgent[]> {
@@ -10,14 +11,12 @@ export async function loadMailRoutingAgents(): Promise<RoutingAgent[]> {
   const { data: mailProfiles, error } = await supabase.from("mail_agent_profiles")
     .select("user_id,alias_local_part,ref_prefix").eq("enabled", true);
   if (error) throw new Error("邮件路由人员暂时无法读取。", { cause: error });
-  const ids = (mailProfiles ?? []).map((profile) => profile.user_id as string);
-  if (ids.length === 0) return [];
-  const { data: profiles, error: profileError } = await supabase.from("user_profiles")
-    .select("user_id,name,email,status").in("user_id", ids).eq("status", "active");
-  if (profileError) throw new Error("业务员资料暂时无法读取。", { cause: profileError });
-  const names = new Map((profiles ?? []).map((profile) => [
-    profile.user_id as string,
-    String(profile.name ?? "").trim() || String(profile.email ?? "").trim() || "内部员工",
+  if (!mailProfiles?.length) return [];
+  // 发件设置同时包含管理员；入站分配复用负责人选择器的在职业务员名单。
+  const salesmen = await listActiveSalesmen();
+  const names = new Map(salesmen.map((profile) => [
+    profile.userId,
+    profile.displayName,
   ]));
   return (mailProfiles ?? []).flatMap((profile) => names.has(profile.user_id as string) ? [{
     memberId: profile.user_id as string,

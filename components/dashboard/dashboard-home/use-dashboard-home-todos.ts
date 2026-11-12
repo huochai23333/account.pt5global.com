@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { markBrowserCloudSyncActivity } from "@/lib/browser-sync-recovery";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
   createUserTodo,
   deleteUserTodo,
-  getUserTodos,
-  sortUserTodos,
   toUserTodoErrorMessage,
   updateUserTodo,
   type UserTodoItemRow,
@@ -16,16 +14,13 @@ import {
 } from "@/lib/user-todos";
 
 import type { FeedbackTone } from "../dashboard-shared-ui";
-import { useWorkspaceSyncEffect } from "../workspace-session-provider";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
+import { useDashboardHomeTodoList } from "./use-dashboard-home-todo-list";
 import {
   createEmptyHomeTodoForm,
   createHomeTodoFormFromRow,
-  filterHomeTodos,
-  getHomeTodoCounts,
   toUserTodoMutationInput,
   validateHomeTodoForm,
-  type HomeTodoCopy,
-  type HomeTodoFilter,
   type HomeTodoFormState,
 } from "./dashboard-home-todo-display";
 
@@ -49,8 +44,6 @@ export function useDashboardHomeTodos({
   initialTodos,
 }: UseDashboardHomeTodosOptions) {
   const supabase = getBrowserSupabaseClient();
-  const [todos, setTodos] = useState(() => sortUserTodos(initialTodos));
-  const [filter, setFilter] = useState<HomeTodoFilter>("active");
   const [quickDraft, setQuickDraft] = useState<HomeTodoFormState>(() =>
     createEmptyHomeTodoForm(),
   );
@@ -58,53 +51,30 @@ export function useDashboardHomeTodos({
     createEmptyHomeTodoForm(),
   );
   const [editingTodo, setEditingTodo] = useState<UserTodoItemRow | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<UserTodoItemRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserTodoItemRow | null>(
+    null,
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<Feedback>(null);
   const [dialogFeedback, setDialogFeedback] = useState<Feedback>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
-  const applyTodo = useCallback((updatedTodo: UserTodoItemRow) => {
-    setTodos((current) =>
-      sortUserTodos(
-        current.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)),
-      ),
-    );
-  }, []);
-
-  const refreshTodos = useCallback(
-    async ({ isMounted }: { isMounted: () => boolean }) => {
-      if (!supabase) {
-        return;
-      }
-
-      try {
-        const nextTodos = await getUserTodos(supabase);
-
-        if (isMounted()) {
-          setTodos(nextTodos);
-        }
-      } catch (error) {
-        if (!isMounted()) {
-          return;
-        }
-
-        setPageFeedback({
-          message: toUserTodoErrorMessage(error, copy.errors),
-          tone: "error",
-        });
-      }
-    },
-    [copy.errors, supabase],
-  );
-
-  useWorkspaceSyncEffect(refreshTodos);
-
-  const counts = useMemo(() => getHomeTodoCounts(todos), [todos]);
-  const filteredTodos = useMemo(
-    () => filterHomeTodos(todos, filter),
-    [filter, todos],
-  );
+  // 读回、筛选和已确认的记录更新在列表 Hook；这里保留草稿、弹窗和写入调度。
+  const {
+    addTodo,
+    applyTodo,
+    counts,
+    filter,
+    filteredTodos,
+    removeTodo,
+    setFilter,
+    todos,
+  } = useDashboardHomeTodoList({
+    initialTodos,
+    supabase,
+    errorCopy: copy.errors,
+    onReadError: setPageFeedback,
+  });
 
   const updateQuickDraftField = useCallback(
     <Key extends keyof HomeTodoFormState>(
@@ -154,7 +124,7 @@ export function useDashboardHomeTodos({
       );
 
       markBrowserCloudSyncActivity();
-      setTodos((current) => sortUserTodos([createdTodo, ...current]));
+      addTodo(createdTodo);
       setQuickDraft(createEmptyHomeTodoForm());
       setFilter("active");
       setPageFeedback({
@@ -169,7 +139,7 @@ export function useDashboardHomeTodos({
     } finally {
       setPendingAction(null);
     }
-  }, [copy, pendingAction, quickDraft, supabase]);
+  }, [addTodo, copy, pendingAction, quickDraft, setFilter, supabase]);
 
   const openEditDialog = useCallback((todo: UserTodoItemRow) => {
     setEditingTodo(todo);
@@ -200,7 +170,11 @@ export function useDashboardHomeTodos({
 
   const handleDeleteDialogOpenChange = useCallback(
     (open: boolean) => {
-      if (!open && deleteTarget && pendingAction === `delete:${deleteTarget.id}`) {
+      if (
+        !open &&
+        deleteTarget &&
+        pendingAction === `delete:${deleteTarget.id}`
+      ) {
         return;
       }
 
@@ -333,9 +307,7 @@ export function useDashboardHomeTodos({
       await deleteUserTodo(supabase, deleteTarget.id);
 
       markBrowserCloudSyncActivity();
-      setTodos((current) =>
-        current.filter((item) => item.id !== deleteTarget.id),
-      );
+      removeTodo(deleteTarget.id);
       setDeleteTarget(null);
       setPageFeedback({
         message: copy.feedback.deleteSuccess,
@@ -349,7 +321,7 @@ export function useDashboardHomeTodos({
     } finally {
       setPendingAction(null);
     }
-  }, [copy, deleteTarget, pendingAction, supabase]);
+  }, [copy, deleteTarget, pendingAction, removeTodo, supabase]);
 
   return {
     counts,

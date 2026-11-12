@@ -94,5 +94,13 @@ test("管理员从页面调整账号后，资料、身份、审计和登录信�
     expect(customerCleanupError).toBeNull();
     const { error: userCleanupError } = await admin.auth.admin.deleteUser(userId);
     expect(userCleanupError).toBeNull();
+    // 清理也核对最终结果，避免删除请求被接受但夹具仍残留，影响后续回归。
+    const { count: remainingCustomers, error: customerReadError } = await admin.from("wholesale_customers")
+      .select("id", { count: "exact", head: true }).eq("registered_user_id", userId);
+    expect(customerReadError).toBeNull();
+    expect(remainingCustomers).toBe(0);
+    const { data: removedUser, error: userReadError } = await admin.auth.admin.getUserById(userId);
+    expect(removedUser.user).toBeNull();
+    expect(userReadError?.status).toBe(404);
   }
 });

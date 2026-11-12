@@ -1,3 +1,4 @@
+/** 线索大厅：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { Clock3, MapPin, UserRound } from "lucide-react";
@@ -40,10 +41,22 @@ export function SalesLeadCards({
           <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <StatusBadge tone={lead.priority === "A" ? "danger" : lead.priority === "B" ? "warning" : "neutral"}>
+                <StatusBadge
+                  tone={
+                    lead.priority === "A" ? "danger" : lead.priority === "B" ? "warning" : "neutral"
+                  }
+                >
                   {t("priority", { priority: lead.priority })}
                 </StatusBadge>
-                <StatusBadge tone={lead.status === "converted" ? "success" : lead.status === "claimed" ? "info" : "neutral"}>
+                <StatusBadge
+                  tone={
+                    lead.status === "converted"
+                      ? "success"
+                      : lead.status === "claimed"
+                        ? "info"
+                        : "neutral"
+                  }
+                >
                   {t(`status.${lead.status}`)}
                 </StatusBadge>
               </div>
@@ -55,39 +68,95 @@ export function SalesLeadCards({
               </p>
             </div>
             <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:max-w-[52%] sm:justify-end">
-              {lead.status === "claimed" ? <Button data-testid={`convert-lead-${lead.id}`} disabled={pending === lead.id || !lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} size="compact" wrap>{t("actions.addCustomer")}</Button> : null}
+              {lead.status === "claimed" ? (
+                <Button
+                  data-testid={`convert-lead-${lead.id}`}
+                  disabled={
+                    pending === lead.id ||
+                    !lead.expires_at ||
+                    new Date(lead.expires_at).getTime() <= now
+                  }
+                  onClick={() => onConvert(lead)}
+                  size="compact"
+                  wrap
+                >
+                  {t("actions.addCustomer")}
+                </Button>
+              ) : null}
               {lead.status === "hall" ? (
-                <Button data-testid={`claim-lead-${lead.id}`} disabled={pending === lead.id} loading={pending === lead.id} onClick={() => onClaim(lead.id)} size="compact" wrap>
+                <Button
+                  data-testid={`claim-lead-${lead.id}`}
+                  disabled={pending === lead.id}
+                  loading={pending === lead.id}
+                  onClick={() => onClaim(lead.id)}
+                  size="compact"
+                  wrap
+                >
                   {t(canManage ? "actions.claimForMe" : "actions.claim")}
                 </Button>
               ) : null}
-              <Button disabled={pending === lead.id} onClick={() => onOpen(lead)} size="compact" variant="outline" wrap>
+              <Button
+                disabled={pending === lead.id}
+                onClick={() => onOpen(lead)}
+                size="compact"
+                variant="outline"
+                wrap
+              >
                 {t("actions.details")}
               </Button>
             </div>
           </div>
 
           <MetaGrid className="mt-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
-            <MetaItem label={t("fields.country")}><MapPin className="size-4 shrink-0" />{lead.country}</MetaItem>
-            <MetaItem label={t("fields.regionTimezone")}><SalesLeadValue value={lead.region_timezone} /></MetaItem>
-            <MetaItem label={t("fields.contactToday")}>{t(lead.contact_today ? "detail.recommendedToday" : "detail.normalSchedule")}</MetaItem>
-            <MetaItem label={t("fields.publicPricing")}><SalesLeadValue value={lead.public_pricing} /></MetaItem>
+            <MetaItem label={t("fields.country")}>
+              <MapPin className="size-4 shrink-0" />
+              {lead.country}
+            </MetaItem>
+            <MetaItem label={t("fields.regionTimezone")}>
+              <SalesLeadValue value={lead.region_timezone} />
+            </MetaItem>
+            <MetaItem label={t("fields.contactToday")}>
+              {t(lead.contact_today ? "detail.recommendedToday" : "detail.normalSchedule")}
+            </MetaItem>
+            <MetaItem label={t("fields.publicPricing")}>
+              <SalesLeadValue value={lead.public_pricing} />
+            </MetaItem>
             {lead.status === "claimed" ? (
-              <MetaItem label={t("fields.timeRemaining")}><Clock3 className="size-4 shrink-0" />{formatLeadCountdown(lead, now, {
-                expired: t("countdown.expired"),
-                daysHours: (days, hours) => t("countdown.daysHours", { days, hours }),
-                hoursMinutes: (hours, minutes) => t("countdown.hoursMinutes", { hours, minutes }),
-              })}</MetaItem>
+              <MetaItem label={t("fields.timeRemaining")}>
+                <Clock3 className="size-4 shrink-0" />
+                {formatLeadCountdown(lead, now, {
+                  expired: t("countdown.expired"),
+                  daysHours: (days, hours) => t("countdown.daysHours", { days, hours }),
+                  hoursMinutes: (hours, minutes) => t("countdown.hoursMinutes", { hours, minutes }),
+                })}
+              </MetaItem>
             ) : null}
-            {lead.assignee_name ? <MetaItem label={t("fields.assignee")}><UserRound className="size-4 shrink-0" />{lead.assignee_name}</MetaItem> : null}
-            {lead.next_follow_up_at ? <MetaItem label={t("fields.nextFollowUp")}>{formatLeadDate(lead.next_follow_up_at, locale)}</MetaItem> : null}
+            {lead.assignee_name ? (
+              <MetaItem label={t("fields.assignee")}>
+                <UserRound className="size-4 shrink-0" />
+                {lead.assignee_name}
+              </MetaItem>
+            ) : null}
+            {lead.next_follow_up_at ? (
+              <MetaItem label={t("fields.nextFollowUp")}>
+                {formatLeadDate(lead.next_follow_up_at, locale)}
+              </MetaItem>
+            ) : null}
             <MetaItem label={t("fields.sourceDate")}>{lead.latest_source_date}</MetaItem>
           </MetaGrid>
-          <div className="mt-4 border-t border-border-subtle pt-4"><SalesLeadContactInfo lead={lead} /></div>
+          <div className="mt-4 border-t border-border-subtle pt-4">
+            <SalesLeadContactInfo lead={lead} />
+          </div>
           <MetaGrid className="mt-4 grid-cols-1 md:grid-cols-1 xl:grid-cols-1">
-            <MetaItem label={t("fields.customerProfile")}><SalesLeadValue value={lead.customer_profile} /></MetaItem>
-            <MetaItem label={t("fields.targetCustomer")}><SalesLeadValue value={lead.target_customer} /></MetaItem>
-            <MetaItem label={t("fields.recommendedApproach")}><SalesLeadValue value={lead.recommended_approach} /></MetaItem>
+            <MetaItem label={t("fields.customerProfile")}>
+              <SalesLeadValue value={lead.customer_profile} />
+            </MetaItem>
+            <MetaItem label={t("fields.targetCustomer")}>
+              <SalesLeadValue value={lead.target_customer} />
+            </MetaItem>
+            <MetaItem label={t("fields.recommendedApproach")}>
+              <SalesLeadValue value={lead.recommended_approach} />
+            </MetaItem>
           </MetaGrid>
         </RecordCard>
       ))}

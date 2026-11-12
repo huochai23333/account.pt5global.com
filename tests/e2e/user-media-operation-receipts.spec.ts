@@ -1,47 +1,84 @@
 import { expect, test } from "@playwright/test";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
+import { cleanupFixtureResources } from "../test-support/fixture-cleanup-sequence";
+import {
+  createOwnedUserMediaCase,
+  type MediaReceipt,
+} from "../test-support/user-media-owned-case";
+import {
+  createUserMediaOwnedStore,
+  readOperatorMediaOwner,
+} from "./helpers/user-media-owned-store";
+import { expectUserMediaDeleteOperation } from "./helpers/user-media-operation-verifier";
 
 import { getRegressionAccount } from "./helpers/accounts";
 import { loginAs } from "./helpers/auth";
-import { getLocalSupabaseAdminClient, readLocalEnvValue } from "./helpers/local-supabase-admin";
-
-const BUCKET_NAME = "user-media";
-
-type MediaReceipt = {
-  bucket_name: string;
-  id: string;
-  original_name: string;
-  storage_path: string;
-  user_id: string;
-};
+import {
+  getLocalSupabaseAdminClient,
+  readLocalEnvValue,
+} from "./helpers/local-supabase-admin";
 
 test.describe("个人媒体最终业务凭证", () => {
-  test("上传失败保留文件、提供重试，并把网络和大小错误说清楚", async ({ page }) => {
+  test("上传失败保留文件、提供重试，并把网络和大小错误说清楚", async ({
+    page,
+  }) => {
     await loginAs(page, "operator");
     await page.goto("/operator/my");
     await page.getByRole("button", { name: /个人照片/ }).click();
     const dialog = page.getByRole("dialog", { name: "个人照片" });
     const uploadKeys: string[] = [];
     await page.route("**/functions/v1/user-media-mutate", async (route) => {
+      if (route.request().method() === "OPTIONS") {
+        await route.fulfill({
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "POST,OPTIONS",
+          },
+          body: "",
+        });
+        return;
+      }
       const body = route.request().postData() ?? "";
       uploadKeys.push(body.match(/upload:[0-9a-f-]{36}/)?.[0] ?? "");
       if (uploadKeys.length === 1) {
         await route.abort("failed");
       } else {
-        await route.fulfill({ status: 413, contentType: "application/json", body: JSON.stringify({ message: "图片超过大小限制，请选择更小的文件。" }) });
+        await route.fulfill({
+          status: 413,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+          },
+          contentType: "application/json",
+          body: JSON.stringify({
+            message: "图片超过大小限制，请选择更小的文件。",
+          }),
+        });
       }
     });
     const fileName = "retry-photo.png";
-    await page.locator('input[type="file"][accept="image/*"]').setInputFiles({ buffer: buildTinyPng(), mimeType: "image/png", name: fileName });
-    await expect(dialog.getByText("照片或视频暂时无法上传，请检查网络后重试。")).toBeVisible();
+    await page.locator('input[type="file"][accept="image/*"]').setInputFiles({
+      buffer: buildTinyPng(),
+      mimeType: "image/png",
+      name: fileName,
+    });
+    await expect(
+      dialog.getByText("照片或视频暂时无法上传，请检查网络后重试。"),
+    ).toBeVisible();
     await expect(dialog.getByText(fileName)).toBeVisible();
     await dialog.getByRole("button", { name: "重试上传" }).click();
-    await expect(dialog.getByText("图片超过大小限制，请选择更小的文件。")).toBeVisible();
+    await expect(
+      dialog.getByText("图片超过大小限制，请选择更小的文件。"),
+    ).toBeVisible();
     await expect(dialog.getByText(fileName)).toBeVisible();
     expect(uploadKeys).toHaveLength(2);
     expect(uploadKeys[0]).toBeTruthy();
     expect(uploadKeys[1]).toBe(uploadKeys[0]);
-    await expect(dialog.getByText("个人照片已上传，当前状态为待审核。")).toHaveCount(0);
+    await expect(
+      dialog.getByText("个人照片已上传，当前状态为待审核。"),
+    ).toHaveCount(0);
   });
 
   test("页面拒绝伪造成功，并在真实删除后核对数据库和 Storage", async ({
@@ -49,13 +86,26 @@ test.describe("个人媒体最终业务凭证", () => {
   }) => {
     test.setTimeout(120_000);
     const admin = requireLocalAdminClient();
-    const runKey = Date.now();
+    const runKey = randomUUID();
     const fileName = `user-media-receipt-${runKey}.png`;
     let receipt: MediaReceipt | null = null;
+    let mediaCase: ReturnType<typeof createOwnedUserMediaCase> | undefined;
+    let bodyFailure: { error: unknown } | undefined;
 
     try {
       await page.setViewportSize({ height: 900, width: 1440 });
       const account = await loginAs(page, "operator");
+      const userId = readOperatorMediaOwner(account.email);
+      mediaCase = createOwnedUserMediaCase(
+        createUserMediaOwnedStore(
+          admin,
+          { userId, fileName },
+          process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+        ),
+        userId,
+        fileName,
+        buildTinyPng(),
+      );
       await page.goto(`${account.workspacePath}/my`);
       await page.getByRole("button", { name: /个人照片/ }).click();
 
@@ -65,25 +115,41 @@ test.describe("个人媒体最终业务凭证", () => {
         mimeType: "image/png",
         name: fileName,
       });
-      await expect(dialog.getByText("个人照片已上传，当前状态为待审核。")).toBeVisible();
+      await expect(
+        dialog.getByText("个人照片已上传，当前状态为待审核。"),
+      ).toBeVisible();
 
       // 页面提示不能作为成功凭证；使用服务角色从另一条连接确认数据库记录和真实对象。
-      receipt = await readMediaReceipt(admin, fileName);
-      expect(receipt.bucket_name).toBe(BUCKET_NAME);
-      await expectStorageExists(admin, receipt, true);
+      receipt = await waitForUploadedMedia(mediaCase);
+      expect(receipt.bucket_name).toBe("user-media");
       await page.reload();
       await page.getByRole("button", { name: /个人照片/ }).click();
       const refreshedDialog = page.getByRole("dialog", { name: "个人照片" });
-      const mediaCard = refreshedDialog.locator("article", { hasText: fileName });
+      const mediaCard = refreshedDialog.locator("article", {
+        hasText: fileName,
+      });
       await expect(mediaCard).toBeVisible();
 
       // 故意让删除请求得到 HTTP 200，但省略 Storage 删除后的确认凭证。
       // 页面必须显示错误，数据库和对象都应保持不变，否则这条测试就是无效的。
       await page.route("**/functions/v1/user-media-mutate", async (route) => {
-        const body = route.request().postDataJSON() as { action?: unknown };
+        if (route.request().method() !== "POST") return route.continue();
+        const body = route.request().postDataJSON() as {
+          action?: unknown;
+          assetIds?: unknown;
+        };
         if (body?.action !== "delete") {
           await route.continue();
           return;
+        }
+        // 只允许本次拥有的一张图片进入删除负例；错误编号不能转发去删除别人的资料。
+        if (
+          !Array.isArray(body.assetIds) ||
+          body.assetIds.length !== 1 ||
+          body.assetIds[0] !== receipt!.id
+        ) {
+          await route.abort("failed");
+          throw new Error("media_case_delete_request_outside_scope");
         }
         await route.fulfill({
           body: JSON.stringify({
@@ -93,22 +159,30 @@ test.describe("个人媒体最终业务凭证", () => {
             storageDeletionVerified: false,
           }),
           contentType: "application/json",
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+          },
           status: 200,
         });
       });
       await mediaCard.getByRole("button", { name: "删除" }).click();
       await expect(
-        refreshedDialog.locator('[data-slot="feedback-notice"][data-tone="error"]'),
+        refreshedDialog.locator(
+          '[data-slot="feedback-notice"][data-tone="error"]',
+        ),
       ).toBeVisible();
       await expect(
-        refreshedDialog.locator('[data-slot="feedback-notice"][data-tone="success"]'),
+        refreshedDialog.locator(
+          '[data-slot="feedback-notice"][data-tone="success"]',
+        ),
       ).toHaveCount(0);
-      expect((await readMediaReceipt(admin, fileName)).id).toBe(receipt.id);
-      await expectStorageExists(admin, receipt, true);
+      await mediaCase.unchanged();
 
       await page.unroute("**/functions/v1/user-media-mutate");
       const deleteResponsePromise = page.waitForResponse((response) => {
-        if (!response.url().includes("/functions/v1/user-media-mutate")) return false;
+        if (!response.url().includes("/functions/v1/user-media-mutate"))
+          return false;
         try {
           return response.request().postDataJSON()?.action === "delete";
         } catch {
@@ -121,22 +195,70 @@ test.describe("个人媒体最终业务凭证", () => {
         operationId?: unknown;
       };
       await expect(refreshedDialog.getByText("所选照片已删除。")).toBeVisible();
-      await expectMediaReceiptMissing(admin, receipt);
+      await mediaCase.missing();
       await expectSucceededOperationRun(deleteResult.operationId, receipt.id);
 
       // 整页刷新后再次打开弹窗，证明页面不是只移除了内存中的卡片。
       await page.reload();
       await page.getByRole("button", { name: /个人照片/ }).click();
-      await expect(page.getByRole("dialog", { name: "个人照片" }).getByText(fileName)).toHaveCount(0);
+      await expect(
+        page.getByRole("dialog", { name: "个人照片" }).getByText(fileName),
+      ).toHaveCount(0);
 
       // 移动端复查同一弹窗，防止操作按钮、文件名或反馈区被压出屏幕。
       await page.setViewportSize({ height: 844, width: 390 });
       await expectNoDocumentHorizontalOverflow(page);
+    } catch (error) {
+      bodyFailure = { error };
     } finally {
-      if (receipt) await cleanupMediaReceipt(admin, receipt);
+      await finalizeOwnedMediaCase(page, mediaCase, bodyFailure, (body) =>
+        test
+          .info()
+          .attach("user-media-owned-case", {
+            body,
+            contentType: "application/json",
+          }),
+      );
     }
   });
 });
+
+async function finalizeOwnedMediaCase(
+  page: import("@playwright/test").Page,
+  mediaCase: ReturnType<typeof createOwnedUserMediaCase> | undefined,
+  bodyFailure: { error: unknown } | undefined,
+  attach: (body: Buffer) => Promise<void>,
+) {
+  let pageClosed = false;
+  let cleanupReceipt: unknown;
+  // 正文、关闭和附件错误一同保留；页面未安全关闭时，不能与未知在途写入竞争删除。
+  await cleanupFixtureResources(
+    async () => {
+      if (bodyFailure) throw bodyFailure.error;
+    },
+    async () => {
+      if (!page.isClosed()) {
+        await page.unrouteAll({ behavior: "wait" });
+        await page.close();
+      }
+      pageClosed = true;
+    },
+    async () => {
+      if (pageClosed && mediaCase) cleanupReceipt = await mediaCase.cleanup();
+    },
+    async () => {
+      await attach(
+        Buffer.from(
+          JSON.stringify(
+            { ...mediaCase?.evidence(), cleanupReceipt, pageClosed },
+            null,
+            2,
+          ),
+        ),
+      );
+    },
+  );
+}
 
 function requireLocalAdminClient() {
   const admin = getLocalSupabaseAdminClient();
@@ -145,100 +267,46 @@ function requireLocalAdminClient() {
   return admin;
 }
 
-async function readMediaReceipt(admin: SupabaseClient, fileName: string) {
-  const { data, error } = await admin
-    .from("user_media_assets")
-    .select("id,user_id,bucket_name,storage_path,original_name")
-    .eq("original_name", fileName)
-    .single<MediaReceipt>();
-  if (error) throw error;
-  return data;
-}
-
-async function expectMediaReceiptMissing(
-  admin: SupabaseClient,
-  receipt: MediaReceipt,
+async function waitForUploadedMedia(
+  mediaCase: ReturnType<typeof createOwnedUserMediaCase>,
 ) {
-  await expect.poll(async () => {
-    const { count, error } = await admin
-      .from("user_media_assets")
-      .select("id", { count: "exact", head: true })
-      .eq("id", receipt.id);
-    if (error) throw error;
-    return count;
-  }).toBe(0);
-  await expectStorageExists(admin, receipt, false);
+  let receipt: MediaReceipt | undefined;
+  // 上传对象已存在还不足以稳定回收；等待本地评估终态，超时保留未完成而不伪造成功。
+  await expect
+    .poll(
+      async () => {
+        try {
+          receipt = await mediaCase.uploaded();
+          return true;
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === "media_case_review_not_terminal"
+          )
+            return false;
+          throw error;
+        }
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+  if (!receipt) throw new Error("media_case_upload_not_confirmed");
+  return receipt;
 }
 
 async function expectSucceededOperationRun(
   operationId: unknown,
   deletedAssetId: string,
 ) {
-  expect(operationId).toEqual(expect.any(String));
-  // Playwright 测试进程不自动加载 Next 的 .env.local，使用现有本地读取器保持与页面同一服务。
-  const supabaseUrl = readLocalEnvValue("NEXT_PUBLIC_SUPABASE_URL");
-  const publishableKey =
-    readLocalEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ??
-    readLocalEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !publishableKey) {
-    throw new Error("local_supabase_public_credentials_required");
-  }
-
-  // 使用独立的运营账号连接读取公开 RPC，不复用页面响应或服务角色查询结果。
-  const verifier = createClient(supabaseUrl, publishableKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  await expectUserMediaDeleteOperation(operationId, deletedAssetId, {
+    readLocalEnvValue,
+    getRegressionAccount,
   });
-  const account = getRegressionAccount("operator");
-  const { error: signInError } = await verifier.auth.signInWithPassword({
-    email: account.email,
-    password: account.password,
-  });
-  if (signInError) throw signInError;
-
-  const { data, error } = await verifier.rpc("get_operation_run", {
-    p_operation_id: operationId,
-  });
-  if (error) throw error;
-  expect(data).toMatchObject({
-    completedAt: expect.any(String),
-    failedCount: 0,
-    operationId,
-    operationKey: "user-media-delete",
-    resultProof: {
-      deletedAssetIds: [deletedAssetId],
-      deletedCount: 1,
-      storageDeletionVerified: true,
-    },
-    status: "succeeded",
-    succeededCount: 1,
-  });
-  // 这里不能调用 signOut：Supabase 会撤销这个账号的其它刷新令牌，导致正在验收的
-  // 浏览器会话也被登出。测试客户端不持久化会话，进程结束后会自然释放。
 }
 
-async function expectStorageExists(
-  admin: SupabaseClient,
-  receipt: MediaReceipt,
-  expected: boolean,
+async function expectNoDocumentHorizontalOverflow(
+  page: import("@playwright/test").Page,
 ) {
-  await expect.poll(async () => {
-    const result = await admin.storage
-      .from(receipt.bucket_name)
-      .exists(receipt.storage_path);
-    if (result.error && result.data !== false) throw result.error;
-    return result.data;
-  }).toBe(expected);
-}
-
-async function cleanupMediaReceipt(
-  admin: SupabaseClient,
-  receipt: MediaReceipt,
-) {
-  await admin.storage.from(receipt.bucket_name).remove([receipt.storage_path]);
-  await admin.from("user_media_assets").delete().eq("id", receipt.id);
-}
-
-async function expectNoDocumentHorizontalOverflow(page: import("@playwright/test").Page) {
   const widths = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

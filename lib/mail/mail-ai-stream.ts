@@ -22,7 +22,10 @@ export async function createMailAiStream(input: {
     await releaseApiRequestQuota(input.supabase, current);
   };
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeout = setTimeout(() => {
+    controller.abort(new DOMException("Provider request timed out", "TimeoutError"));
+  }, 30_000);
+  let startupRunId: string | null = null;
   try {
     const operation = await createServerOperationRun({
       idempotencyKey: input.requestId,
@@ -31,6 +34,7 @@ export async function createMailAiStream(input: {
       requestedByUserId: input.userId,
     });
     if (operation.isReplay) throw new Error("这次生成仍在确认结果，请稍后刷新。");
+    startupRunId = operation.operationId;
     const stream = await createDeepSeekAssistantTextStream({
       messages: input.messages,
       onCompleted: async (contentLength) => {
@@ -49,16 +53,32 @@ export async function createMailAiStream(input: {
           errorMessage: code,
         });
       },
-      onSettled: () => { clearTimeout(timeout); void release(); },
+      onSettled: () => {
+        clearTimeout(timeout);
+        // 共用流会等账本进入终态，再等待租约释放。
+        return release();
+      },
       signal: controller.signal,
       userId: input.userId,
     });
+    // 正文流交给回调结算；只有还未建立流的异常由下面的启动分支记录。
+    startupRunId = null;
     return new Response(stream, {
       headers: { "cache-control": "no-store", "content-type": "application/x-ndjson; charset=utf-8" },
     });
   } catch (error) {
     clearTimeout(timeout);
-    await release();
+    try {
+      if (startupRunId) {
+        await finishServerOperationRun({
+          operationId: startupRunId,
+          outcome: "failed",
+          errorCode: "mail_ai_stream_start_failed",
+        });
+      }
+    } finally {
+      await release();
+    }
     throw error;
   }
 }

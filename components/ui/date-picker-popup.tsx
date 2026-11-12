@@ -108,9 +108,7 @@ export function DatePickerPopup({
               locale={locale}
               max={max}
               min={min}
-              onDisplayYearChange={(year) =>
-                onDisplayMonthChange(new Date(year, 0, 1))
-              }
+              onDisplayYearChange={(year) => onDisplayMonthChange(new Date(year, 0, 1))}
               onSelect={commitAndClose}
               selectedValue={currentValue}
             />
@@ -143,9 +141,7 @@ export function DatePickerPopup({
               <DatePickerDayFooter
                 clearLabel={labels.clear}
                 onClear={required ? null : () => commitAndClose("")}
-                onToday={() =>
-                  commitAndClose(getShanghaiDatePickerValue("date"))
-                }
+                onToday={() => commitAndClose(getShanghaiDatePickerValue("date"))}
                 todayLabel={labels.today}
               />
             </>

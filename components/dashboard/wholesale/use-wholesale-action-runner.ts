@@ -17,6 +17,9 @@ export type WholesaleActionRefreshMode = "none" | "router";
 
 export type WholesaleActionOptions = {
   afterSuccess?: () => Promise<void> | void;
+  getErrorMessage?: (error: unknown) => string;
+  onError?: (message: string) => void;
+  refreshPendingMessage?: string;
   refreshMode?: WholesaleActionRefreshMode;
 };
 
@@ -48,10 +51,9 @@ export function useWholesaleActionRunner() {
       const supabase = getBrowserSupabaseClient();
 
       if (!supabase) {
-        setFeedback({
-          tone: "error",
-          message: "当前无法连接系统，请刷新页面后再试。",
-        });
+        const message = "当前无法连接系统，请刷新页面后再试。";
+        if (options?.onError) options.onError(message);
+        else setFeedback({ tone: "error", message });
         return false;
       }
 
@@ -69,9 +71,10 @@ export function useWholesaleActionRunner() {
         if (outcome === "refreshing") {
           setFeedback({
             tone: "info",
-            message: "资料已经保存，页面内容正在刷新，请稍后核对。",
+            message: options?.refreshPendingMessage ?? "资料已经保存，页面内容正在刷新，请稍后核对。",
           });
-          router.refresh();
+          // 订单列表由浏览器读取并保留筛选。失败时交给该列表的重读按钮。
+          if ((options?.refreshMode ?? "router") === "router") router.refresh();
           return true;
         }
 
@@ -83,10 +86,10 @@ export function useWholesaleActionRunner() {
 
         return true;
       } catch (error) {
-        setFeedback({
-          tone: "error",
-          message: toWholesaleActionErrorMessage(error),
-        });
+        // 有输入需要保留的表单可以就地提示，避免浮层遮住手机上的弹窗标题。
+        const message = options?.getErrorMessage?.(error) ?? toWholesaleActionErrorMessage(error);
+        if (options?.onError) options.onError(message);
+        else setFeedback({ tone: "error", message });
         return false;
       } finally {
         if (activeActionKeyRef.current === key) {

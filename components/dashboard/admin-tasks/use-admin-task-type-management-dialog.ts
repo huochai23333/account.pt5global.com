@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -45,6 +45,7 @@ export function useAdminTaskTypeManagementDialog({
     useState<PageFeedbackValue | null>(null);
   const [taskTypePendingCode, setTaskTypePendingCode] = useState<string | null>(null);
   const [taskTypeFormPending, setTaskTypeFormPending] = useState(false);
+  const writing = useRef(false);
   const [editingTaskTypeCode, setEditingTaskTypeCode] = useState<string | null>(null);
   const [taskTypeFormState, setTaskTypeFormState] =
     useState<TaskTypeFormState>(emptyTaskTypeForm);
@@ -122,7 +123,7 @@ export function useAdminTaskTypeManagementDialog({
   }, []);
 
   const handleSubmitTaskType = useCallback(async () => {
-    if (!supabase || taskTypeFormPending) {
+    if (!supabase || writing.current) {
       return;
     }
 
@@ -145,6 +146,8 @@ export function useAdminTaskTypeManagementDialog({
       return;
     }
 
+    // 保存和停用共用写入占用，避免状态更新前收到第二次点击。
+    writing.current = true;
     setTaskTypeFormPending(true);
     setTaskTypeDialogFeedback(null);
 
@@ -178,6 +181,7 @@ export function useAdminTaskTypeManagementDialog({
         message: toAdminTaskErrorMessage(error, sharedT),
       });
     } finally {
+      writing.current = false;
       setTaskTypeFormPending(false);
     }
   }, [
@@ -187,16 +191,16 @@ export function useAdminTaskTypeManagementDialog({
     sharedT,
     supabase,
     t,
-    taskTypeFormPending,
     taskTypeFormState,
   ]);
 
   const handleDeactivateTaskType = useCallback(
     async (taskType: TaskTypeOption) => {
-      if (!supabase || taskTypePendingCode || !taskType.isActive) {
+      if (!supabase || writing.current || !taskType.isActive) {
         return;
       }
 
+      writing.current = true;
       setTaskTypePendingCode(taskType.code);
       setTaskTypeDialogFeedback(null);
 
@@ -214,6 +218,7 @@ export function useAdminTaskTypeManagementDialog({
           message: toAdminTaskErrorMessage(error, sharedT),
         });
       } finally {
+        writing.current = false;
         setTaskTypePendingCode(null);
       }
     },
@@ -223,7 +228,6 @@ export function useAdminTaskTypeManagementDialog({
       sharedT,
       supabase,
       t,
-      taskTypePendingCode,
     ],
   );
 

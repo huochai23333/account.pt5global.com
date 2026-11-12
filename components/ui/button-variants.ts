@@ -23,9 +23,9 @@ export const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        compact: "h-button-compact gap-1.5 rounded-full px-4 text-xs",
-        default: "h-button-default gap-2 rounded-full px-5",
-        large: "h-button-large gap-2 rounded-control-large px-6 text-[15px]",
+        compact: "gap-1.5 rounded-full px-4 text-xs",
+        default: "gap-2 rounded-full px-5",
+        large: "gap-2 rounded-control-large px-6 text-[15px]",
         icon: "size-button-default rounded-full",
         "icon-compact": "size-button-compact rounded-full",
         "icon-large": "size-button-large rounded-control-large",
@@ -35,6 +35,12 @@ export const buttonVariants = cva(
         true: "h-auto min-h-button-default whitespace-normal py-2 leading-5",
       },
     },
+    // 只有单行按钮使用固定主题高度，避免它覆盖可换行按钮的自动高度。
+    compoundVariants: [
+      { size: "compact", wrap: false, class: "h-button-compact" },
+      { size: "default", wrap: false, class: "h-button-default" },
+      { size: "large", wrap: false, class: "h-button-large" },
+    ],
     defaultVariants: {
       variant: "primary",
       size: "default",

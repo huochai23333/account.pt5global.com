@@ -16,20 +16,22 @@ import { paginateDashboardItems } from "@/lib/dashboard-pagination";
 import {
   acceptSalesmanTask,
   getTaskAttachmentSignedUrl,
+} from "@/lib/salesman-task-actions";
+import {
+  buildSalesmanTasksRoute,
   type SalesmanTasksFilters,
-  type SalesmanTasksPageData,
   type SalesmanTasksSearchParams,
-  type SalesmanTaskRow,
-} from "@/lib/salesman-tasks";
+} from "@/lib/salesman-task-route";
+import type { SalesmanTasksPageData, SalesmanTaskRow } from "@/lib/salesman-tasks";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
-  normalizeSearchText,
   type FeedbackTone,
 } from "@/components/dashboard/dashboard-shared-ui";
 import {
   toSalesmanTaskErrorMessage,
 } from "@/components/dashboard/tasks/tasks-display";
 import { useWorkspaceSyncEffect } from "@/components/dashboard/workspace-session-provider";
+import { filterSalesmanTaskList } from "./salesman-task-list-filters";
 import { useSalesmanTaskReviewDialog } from "./use-salesman-task-review-dialog";
 
 type PageFeedback = { tone: FeedbackTone; message: string } | null;
@@ -89,32 +91,13 @@ export function useSalesmanTasksPage({
       filters?: SalesmanTasksFilters;
       page?: number;
     }) => {
-      const nextFilters = next.filters ?? filters;
-      const nextPage = next.page ?? page;
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      if (nextFilters.searchText) {
-        nextParams.set("searchText", nextFilters.searchText);
-      } else {
-        nextParams.delete("searchText");
-      }
-
-      if (nextFilters.focus !== "all") {
-        nextParams.set("focus", nextFilters.focus);
-      } else {
-        nextParams.delete("focus");
-      }
-
-      if (nextPage > 1) {
-        nextParams.set("page", String(nextPage));
-      } else {
-        nextParams.delete("page");
-      }
-
-      const nextQuery = nextParams.toString();
+      const nextRoute = buildSalesmanTasksRoute(pathname, searchParams.toString(), {
+        filters: next.filters ?? filters,
+        page: next.page ?? page,
+      });
 
       startRefreshTransition(() => {
-        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+        router.replace(nextRoute, {
           scroll: false,
         });
       });
@@ -124,63 +107,10 @@ export function useSalesmanTasksPage({
 
   useWorkspaceSyncEffect(refreshTaskBoard);
 
-  const filteredTasks = useMemo(() => {
-    const normalizedText = normalizeSearchText(deferredSearchText);
-
-    return tasks.filter((task) => {
-      if (filters.focus === "all" && task.status === "completed") {
-        return false;
-      }
-
-      if (filters.focus === "available" && task.status !== "to_be_accepted") {
-        return false;
-      }
-
-      if (
-        filters.focus === "in_progress"
-        && !(task.status === "accepted" && task.accepted_by_user_id === viewerId)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.focus === "reviewing"
-        && !(task.status === "reviewing" && task.accepted_by_user_id === viewerId)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.focus === "rejected"
-        && !(task.status === "rejected" && task.accepted_by_user_id === viewerId)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.focus === "completed"
-        && !(task.status === "completed" && task.accepted_by_user_id === viewerId)
-      ) {
-        return false;
-      }
-
-      if (!normalizedText) {
-        return true;
-      }
-
-      const searchableText = [
-        task.task_name,
-        task.task_intro,
-        task.task_type_label,
-        task.review_reject_reason,
-      ]
-        .map((value) => normalizeSearchText(value))
-        .filter(Boolean)
-        .join(" ");
-
-      return searchableText.includes(normalizedText);
-    });
-  }, [deferredSearchText, filters.focus, tasks, viewerId]);
+  const filteredTasks = useMemo(
+    () => filterSalesmanTaskList(tasks, deferredSearchText, filters.focus, viewerId),
+    [deferredSearchText, filters.focus, tasks, viewerId],
+  );
 
   const tasksPagination = useMemo(
     () => paginateDashboardItems(filteredTasks, page),

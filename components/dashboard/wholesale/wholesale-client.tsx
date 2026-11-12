@@ -7,7 +7,6 @@ import type { WholesalePageData } from "@/lib/wholesale";
 import {
   canAssignWholesaleSalesUser,
   getWholesaleRoleCapabilities,
-  canManageEveryWholesaleCustomer,
   canManageEveryWholesaleOrder,
 } from "@/lib/wholesale-role-permissions";
 import { WholesaleCommissionPage } from "./wholesale-commission-page";
@@ -41,10 +40,6 @@ export function WholesaleClient({
   const canAdmin = initialData.currentRole === "administrator";
   const capabilities = getWholesaleRoleCapabilities(initialData.currentRole);
   const canEdit = capabilities.canManageEveryOrder;
-  const canManageWholesaleCustomers = canManageEveryWholesaleCustomer(
-    initialData.currentRole,
-  );
-  const canLinkCustomerAccount = canManageWholesaleCustomers;
   return (
     <div className="space-y-6">
       <WholesaleActionFeedbackNotice feedback={actions.feedback} />
@@ -111,12 +106,13 @@ export function WholesaleClient({
 
       {initialData.section === "customers" ? (
         <WholesaleCustomersSection
+          businessAddCandidates={initialData.businessAddCandidates}
+          businessAddCandidatesUnavailable={initialData.businessAddCandidatesUnavailable}
           canAddRegisteredCustomer={canAdmin}
-          canAssignSalesUser={canAssignWholesaleSalesUser(
-            initialData.currentRole,
-          )}
-          canEdit={canManageWholesaleCustomers}
-          canLinkCustomerAccount={canLinkCustomerAccount}
+          // 负责人写入属于档案编辑，关联登录账号独立按账号关联能力展示。
+          canAssignSalesUser={capabilities.canMaintainCustomerRecords && capabilities.canAssignSalesUser}
+          canEdit={capabilities.canMaintainCustomerRecords}
+          canLinkCustomerAccount={capabilities.canLinkCustomerAccount}
           currentUserId={initialData.currentUserId}
           customers={initialData.customers}
           onAddCustomerOtherName={actions.addCustomerOtherName}

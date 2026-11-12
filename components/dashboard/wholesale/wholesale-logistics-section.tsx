@@ -60,8 +60,7 @@ export function WholesaleLogisticsSection({
     initialPage,
     initialStoreOptions,
   });
-  const canManage =
-    getWholesaleRoleCapabilities(currentRole).canManageLogistics;
+  const canManage = getWholesaleRoleCapabilities(currentRole).canManageLogistics;
   const profilesById = useMemo(
     () => new Map(profiles.map((profile) => [profile.user_id, profile])),
     [profiles],
@@ -92,9 +91,7 @@ export function WholesaleLogisticsSection({
       {logistics.feedback?.scope === "page" ? (
         <FeedbackNotice tone={logistics.feedback.tone}>
           <div className="flex min-w-0 items-start justify-between gap-3">
-            <span className="min-w-0 break-words">
-              {logistics.feedback.message}
-            </span>
+            <span className="min-w-0 break-words">{logistics.feedback.message}</span>
             <DesignButton
               className="shrink-0 text-xs font-semibold underline underline-offset-2"
               onClick={logistics.dismissFeedback}
@@ -128,9 +125,12 @@ export function WholesaleLogisticsSection({
       <DashboardOrderListSection
         ariaLabel={t("list.title")}
         controls={
-          <DashboardOrderPaginationActions {...logistics.pagination} pending={logistics.loading}
+          <DashboardOrderPaginationActions
+            {...logistics.pagination}
+            pending={logistics.loading}
             onNextPage={() => void logistics.goToPage(logistics.pagination.page + 1)}
-            onPreviousPage={() => void logistics.goToPage(logistics.pagination.page - 1)} />
+            onPreviousPage={() => void logistics.goToPage(logistics.pagination.page - 1)}
+          />
         }
         progress={
           logistics.hasPage && logistics.page.rows.length > 0
@@ -148,25 +148,33 @@ export function WholesaleLogisticsSection({
           <p className="mb-3 text-sm text-content-muted">{t("list.loading")}</p>
         ) : null}
         {logistics.loadError ? (
-          <FeedbackNotice tone="error">{logistics.loadError}<Button disabled={logistics.loading} onClick={() => void logistics.goToPage(logistics.pagination.page)} type="button" variant="outline">{t("actions.retry")}</Button></FeedbackNotice>
+          <FeedbackNotice tone="error">
+            {logistics.loadError}
+            <Button
+              disabled={logistics.loading}
+              onClick={() => void logistics.goToPage(logistics.pagination.page)}
+              type="button"
+              variant="outline"
+            >
+              {t("actions.retry")}
+            </Button>
+          </FeedbackNotice>
         ) : null}
 
-        {logistics.hasPage && !logistics.loading ? <WholesaleLogisticsRecords
-          customersById={customersById}
-          page={logistics.page}
-          profilesById={profilesById}
-        /> : null}
+        {logistics.hasPage && !logistics.loading ? (
+          <WholesaleLogisticsRecords
+            customersById={customersById}
+            page={logistics.page}
+            profilesById={profilesById}
+          />
+        ) : null}
       </DashboardOrderListSection>
 
       {canManage ? (
         <WholesaleLogisticsAssignmentDialog
           assignments={logistics.assignments}
           customers={customers}
-          feedback={
-            logistics.feedback?.scope === "assignment"
-              ? logistics.feedback
-              : null
-          }
+          feedback={logistics.feedback?.scope === "assignment" ? logistics.feedback : null}
           onAssign={logistics.assignStores}
           onChange={logistics.changeAssignment}
           onDismissFeedback={logistics.dismissFeedback}

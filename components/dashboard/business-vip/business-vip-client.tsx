@@ -46,7 +46,7 @@ export function BusinessVipClient({
       />
 
       <BusinessVipDirectorySection
-          paginationKey={JSON.stringify([viewModel.searchText, viewModel.statusFilter])}
+        paginationKey={JSON.stringify([viewModel.searchText, viewModel.statusFilter])}
         business={initialData.business}
         canAdmin={initialData.canAdmin}
         canRequest={initialData.canRequest}
@@ -71,6 +71,7 @@ export function BusinessVipClient({
       />
       {viewModel.wholesaleDialog?.kind === "wholesaleAction" ? (
         <BusinessVipWholesaleActionDialog
+          confirmationRequired={viewModel.confirmationRequired}
           dialog={viewModel.wholesaleDialog}
           feedback={viewModel.dialogFeedback}
           onClose={viewModel.closeDialog}

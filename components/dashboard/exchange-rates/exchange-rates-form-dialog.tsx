@@ -11,7 +11,7 @@ import {
 } from "@/components/dashboard/dashboard-form-dialog";
 import type { FeedbackTone } from "@/components/dashboard/dashboard-shared-ui";
 
-import type { ExchangeRateFormState } from "./exchange-rates-utils";
+import type { ExchangeRateFormState } from "./exchange-rate-form";
 
 type ExchangeRateFormDialogProps = {
   feedback?: { tone: FeedbackTone; message: string } | null;

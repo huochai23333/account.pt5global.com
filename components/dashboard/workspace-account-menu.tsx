@@ -96,9 +96,7 @@ export function WorkspaceAccountMenu({
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
           {initials}
         </span>
-        <span className="hidden text-sm font-medium text-primary sm:inline">
-          {accountLabel}
-        </span>
+        <span className="hidden text-sm font-medium text-primary sm:inline">{accountLabel}</span>
         <ChevronDown
           aria-hidden="true"
           className={`hidden size-4 text-content-muted transition-transform duration-200 sm:block ${
@@ -179,9 +177,11 @@ export function WorkspaceAccountMenu({
               </DesignButton>
               {accountSwitch.error ? (
                 <p aria-live="polite" className="px-3 py-2 text-xs leading-5 text-status-danger">
-                  {t(accountSwitch.error === "session-expired"
-                    ? "accountMenu.sessionExpired"
-                    : "accountMenu.switchUnavailable")}
+                  {t(
+                    accountSwitch.error === "session-expired"
+                      ? "accountMenu.sessionExpired"
+                      : "accountMenu.switchUnavailable",
+                  )}
                 </p>
               ) : null}
             </div>

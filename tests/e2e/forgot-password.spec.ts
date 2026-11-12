@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 
 import { getRegressionAccount } from "./helpers/accounts";
 import { loginAs, setTestLocale } from "./helpers/auth";
@@ -61,11 +63,11 @@ test.describe("forgot password page", () => {
     ).toBeDisabled();
   });
 
-  test("invalid deployment origin still returns safe auth redirects", async ({
+  test("forwarded deployment host returns safe auth redirects", async ({
     request,
   }) => {
-    // 线上曾因 NEXT_PUBLIC_SITE_URL 漏写协议而返回 500。
-    // 这里模拟 CDN 传入正式域名，确认两个公开认证入口都能使用安全默认地址完成跳转。
+    // 这里只模拟CDN转发主机头，并不修改NEXT_PUBLIC_SITE_URL；非法配置由origin策略纯测试另验。
+    // 不跟随跳转，避免访问正式站点；这里只核对本地响应中的目标地址。
     const headers = { "x-forwarded-host": "account.pt5global.com" };
     const confirmResponse = await request.get("/auth/confirm", {
       headers,
@@ -117,8 +119,19 @@ test.describe("forgot password page", () => {
   });
 
   test("verified recovery link opens the new password form on desktop and mobile", async ({
-    page,
+    page, baseURL,
   }) => {
+    // generateLink会为固定账号生成恢复令牌，即使没有点击保存密码也不是只读检查。
+    // 先核对声明的专属API实际属于同一项目且调度暂停；这不解除原Auth助手的访问限制。
+    readDisposablePostgresTarget({
+      baseURL,
+      supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE,
+      project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER,
+    }, (args) => execFileSync("docker", args, {
+      encoding: "utf8", timeout: 12_000, windowsHide: true,
+    }).trim());
     const adminClient = getLocalSupabaseAdminClient();
 
     if (!adminClient) {

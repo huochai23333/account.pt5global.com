@@ -1,3 +1,4 @@
+/** 根布局也出错时，使用独立文案和完整 html/body 提供重试入口，避免依赖已经失败的页面 Provider。 */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,12 +9,7 @@ import { MotionSystemProvider } from "@/components/motion/motion-system-provider
 import { PageReveal } from "@/components/motion/page-reveal";
 import { Button } from "@/components/ui/button";
 import { PublicStateCard } from "@/components/ui/public-state-card";
-import {
-  DEFAULT_LOCALE,
-  getDocumentLanguage,
-  normalizeLocale,
-  type Locale,
-} from "@/lib/locale";
+import { DEFAULT_LOCALE, getDocumentLanguage, normalizeLocale, type Locale } from "@/lib/locale";
 
 type GlobalErrorPageProps = {
   error: Error & {
@@ -79,10 +75,7 @@ export default function GlobalError({ error, reset }: GlobalErrorPageProps) {
                 actions={
                   <>
                     <Button onClick={() => reset()}>{copy.retry}</Button>
-                    <Button
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                    >
+                    <Button onClick={() => window.location.reload()} variant="outline">
                       {copy.reload}
                     </Button>
                   </>
@@ -109,9 +102,7 @@ function getPreferredGlobalErrorLocale(): Locale {
   }
 
   if (typeof navigator !== "undefined") {
-    return normalizeLocale(
-      navigator.language.toLowerCase().startsWith("en") ? "en" : "zh",
-    );
+    return normalizeLocale(navigator.language.toLowerCase().startsWith("en") ? "en" : "zh");
   }
 
   return DEFAULT_LOCALE;

@@ -4,10 +4,8 @@ import { LoaderCircle, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
-import {
-  useWholesaleOrderAssessment,
-  type WholesaleOrderAssessmentFilters,
-} from "./use-wholesale-order-assessment";
+import type { WholesaleOrderAssessmentFilters } from "@/lib/wholesale-order-assessment-types";
+import { useWholesaleOrderAssessment } from "./use-wholesale-order-assessment";
 type WholesaleOrderAssessmentPanelProps = {
   filters: WholesaleOrderAssessmentFilters;
   matchedOrderCount: number;
@@ -19,7 +17,7 @@ export function WholesaleOrderAssessmentPanel({
   const t = useTranslations("WholesaleBusiness.ordersUi");
   const {
     assessment,
-    errorMessage,
+    failed,
     generateAssessment,
     hasStaleAssessment,
     pending,
@@ -52,9 +50,9 @@ export function WholesaleOrderAssessmentPanel({
         </p>
       ) : null}
 
-      {errorMessage ? (
-        <p className="mt-3 rounded-control-default border border-border-subtle bg-surface-inset px-4 py-3 text-sm leading-6 text-content-muted">
-          {errorMessage}
+      {failed ? (
+        <p role="alert" className="mt-3 rounded-control-default border border-border-subtle bg-surface-inset px-4 py-3 text-sm leading-6 text-content-muted">
+          {t("assessment.failed")}
         </p>
       ) : null}
 

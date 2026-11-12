@@ -1,3 +1,4 @@
+/** 帮助与公开内容：集中实现本模块的一项服务或规则；修改时沿导出追踪调用方，并核对权限与结果边界。 */
 import type { Locale } from "./locale";
 import type { LegalPageKey, LegalSection } from "./legal-content";
 
@@ -10,10 +11,7 @@ export type FormalLegalPageContent = {
   title: string;
 };
 
-export const FORMAL_LEGAL_CONTENT: Record<
-  Locale,
-  Record<LegalPageKey, FormalLegalPageContent>
-> = {
+export const FORMAL_LEGAL_CONTENT: Record<Locale, Record<LegalPageKey, FormalLegalPageContent>> = {
   zh: {
     privacy: {
       metadataTitle: "隐私政策",

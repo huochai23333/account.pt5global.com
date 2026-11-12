@@ -121,11 +121,7 @@ export function DashboardOrderDateToolbar({
   const activePreset = getActiveOrderDatePreset(range);
 
   return (
-    <div
-      aria-label={t("datePresets.label")}
-      className="flex flex-wrap gap-2"
-      role="group"
-    >
+    <div aria-label={t("datePresets.label")} className="flex flex-wrap gap-2" role="group">
       {ORDER_DATE_PRESETS.map((preset) => (
         <Button
           aria-pressed={activePreset === preset}
@@ -154,10 +150,7 @@ export function DashboardOrderDateToolbar({
 function getActiveOrderDatePreset(range: OrderDateRange): OrderDatePreset {
   for (const preset of ORDER_DATE_PRESETS) {
     const candidate = getOrderDatePresetRange(preset);
-    if (
-      candidate.fromDate === range.fromDate &&
-      candidate.toDate === range.toDate
-    ) {
+    if (candidate.fromDate === range.fromDate && candidate.toDate === range.toDate) {
       return preset;
     }
   }

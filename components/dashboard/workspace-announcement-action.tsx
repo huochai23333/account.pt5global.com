@@ -1,3 +1,4 @@
+/** 铃铛、未读角标与公告弹窗共用同一 Hook；这里不直接查询或保存阅读记录。 */
 "use client";
 
 import { useMemo } from "react";
@@ -6,14 +7,8 @@ import { Bell, LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useLocale } from "@/components/i18n/locale-provider";
-import {
-  MotionList,
-  MotionListItem,
-} from "@/components/motion/motion-primitives";
-import {
-  Button,
-  InteractiveButton as DesignButton,
-} from "@/components/ui/button";
+import { MotionList, MotionListItem } from "@/components/motion/motion-primitives";
+import { Button, InteractiveButton as DesignButton } from "@/components/ui/button";
 import type { AnnouncementRow } from "@/lib/announcements";
 import type { WorkspaceAnnouncementsState } from "@/lib/workspace-announcements";
 
@@ -32,6 +27,7 @@ export function WorkspaceAnnouncementAction({
     () => ({
       loadError: t("announcements.loadError"),
       readError: t("announcements.readError"),
+      readPartialError: t("announcements.readPartialError"),
     }),
     [t],
   );
@@ -70,9 +66,7 @@ export function WorkspaceAnnouncementAction({
               disabled={announcements.markingRead}
               onClick={() => void announcements.acknowledgeAnnouncements()}
             >
-              {announcements.markingRead ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : null}
+              {announcements.markingRead ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t("announcements.acknowledge")}
             </Button>
           ) : undefined
@@ -92,9 +86,7 @@ export function WorkspaceAnnouncementAction({
       >
         <MotionList className="space-y-4">
           {announcements.errorMessage ? (
-            <FeedbackNotice tone="error">
-              {announcements.errorMessage}
-            </FeedbackNotice>
+            <FeedbackNotice tone="error">{announcements.errorMessage}</FeedbackNotice>
           ) : null}
 
           {announcements.displayedAnnouncements.length === 0 ? (
@@ -104,10 +96,7 @@ export function WorkspaceAnnouncementAction({
           ) : (
             announcements.displayedAnnouncements.map((announcement, index) => (
               <MotionListItem index={index} key={announcement.id}>
-                <WorkspaceAnnouncementCard
-                  announcement={announcement}
-                  locale={locale}
-                />
+                <WorkspaceAnnouncementCard announcement={announcement} locale={locale} />
               </MotionListItem>
             ))
           )}
@@ -129,9 +118,7 @@ function WorkspaceAnnouncementCard({
   return (
     <article className="rounded-surface-panel border border-border-subtle bg-surface-interactive p-5 shadow-surface-interactive">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <h4 className="text-lg font-semibold text-content-strong">
-          {announcement.title}
-        </h4>
+        <h4 className="text-lg font-semibold text-content-strong">{announcement.title}</h4>
         <time className="shrink-0 text-xs font-medium text-content-muted">
           {formatWorkspaceAnnouncementDate(publishedAt, locale)}
         </time>

@@ -12,7 +12,8 @@ test("批发订单默认常用列并可切换到完整字段", async ({ page }) 
   await expect(page.locator('[data-testid^="wholesale-order-row-"]').first()).toBeVisible();
   await page.getByRole("button", { name: "查看全部字段" }).click();
   await expect(page.getByRole("button", { name: "显示常用字段" })).toBeVisible();
-  await expect(page.getByRole("columnheader")).toHaveCount(26);
+  // 完整表包含六项内部费用；展示列调整时同步核对表头定义，当前管理员视图共 27 列。
+  await expect(page.getByRole("columnheader")).toHaveCount(27);
   await expect(page.getByRole("button", { name: "管理附件" }).first()).toBeVisible();
 
   // 本地种子单号包含上海时区的当前月份，避免跨月后回归用例误查旧单号。

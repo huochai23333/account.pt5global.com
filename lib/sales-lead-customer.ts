@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withRequestTimeout } from "./request-timeout";
-import { fetchSalesLeadDetail } from "./sales-leads";
+import { fetchSalesLeadDetail, getSalesLeadErrorCode } from "./sales-leads";
 import type { SalesLeadCustomerInput, SalesLeadConversionResult } from "./sales-leads-types";
 
 /** 独立读取真实客户和认领历史；接口返回成功本身不能证明转换已经完成。 */
@@ -43,7 +43,7 @@ export async function convertSalesLeadToCustomer(supabase: SupabaseClient, input
     if (receipt?.lead?.id === input.leadId && receipt.lead.status === "converted"
       && receipt.customer?.id === receipt.lead.customer_id) expectedCustomerId = receipt.customer.id;
   } catch (error) {
-    const code = getSalesLeadCustomerErrorCode(error);
+    const code = getSalesLeadErrorCode(error);
     if (code !== "sales_lead_save_unconfirmed" && code !== "unknown") throw error;
   }
   try {
@@ -52,9 +52,4 @@ export async function convertSalesLeadToCustomer(supabase: SupabaseClient, input
   } catch {
     throw new Error("sales_lead_save_unconfirmed");
   }
-}
-
-export function getSalesLeadCustomerErrorCode(error: unknown) {
-  const message = typeof error === "object" && error && "message" in error ? String(error.message) : "";
-  return message.match(/sales_lead_[a-z_]+/)?.[0] ?? "unknown";
 }

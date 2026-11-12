@@ -1,3 +1,4 @@
+// 这里只解码载荷以辅助浏览器导航，不验证签名；服务端授权必须走 Auth 验证和数据库当前权限。
 export function readAuthClaimsFromAccessToken(accessToken: string | null | undefined) {
   if (!accessToken) {
     return null;

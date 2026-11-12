@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { updateMailThreadState } from "@/lib/mail/mail-service";
+import { updateMailThreadState } from "@/lib/mail/mail-thread-mutations";
 import type { MailThreadState } from "@/lib/mail/mail-types";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../../_shared";
 
+/** 接口只接收三种工作状态，最终版本由写入服务读回确认。 */
 export async function POST(request: Request, context: { params: Promise<{ threadId: string }> }) {
   try {
     const { threadId } = await context.params;

@@ -9,9 +9,11 @@ test("资料格式、空文件和三个大小边界由服务端独立检查", ()
   expect(() => inspectDocument("伪装.pdf", Buffer.from("text"))).toThrow("invalid");
   expect(() => inspectDocument("危险.html", Buffer.from("text"))).toThrow("invalid");
   expect(() => inspectDocument("../越界.txt", Buffer.from("text"))).toThrow("invalid");
-  const image = Buffer.alloc(5 * 1024 * 1024); Buffer.from("89504e470d0a1a0a", "hex").copy(image);
+  const image = Buffer.alloc(5 * 1024 * 1024);
+  Buffer.from("89504e470d0a1a0a", "hex").copy(image);
   expect(() => inspectDocument("超限.png", image)).toThrow("size");
-  const video = Buffer.alloc(30 * 1024 * 1024); video.write("ftyp", 4);
+  const video = Buffer.alloc(30 * 1024 * 1024);
+  video.write("ftyp", 4);
   expect(() => inspectDocument("超限.mp4", video)).toThrow("size");
   const text = Buffer.alloc(20 * 1024 * 1024, 65);
   expect(inspectDocument("边界.txt", text).sha256).toMatch(/^[a-f0-9]{64}$/);

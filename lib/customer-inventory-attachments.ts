@@ -3,14 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { withRequestTimeout } from "./request-timeout";
 import {
   removeStorageObjectsVerified,
-  requireRegisteredStorageRows,
   requireStorageUploadReceipt,
 } from "./storage-operation-receipts";
+import {
+  CUSTOMER_INVENTORY_ORDER_LIST_BUCKET,
+  registerInventoryAttachments,
+} from "./customer-inventory-attachment-registration";
 import type { CustomerInventoryAttachment } from "./customer-inventory-types";
 import { getFileExtension, sanitizeStorageFileName } from "./value-normalizers";
 
-export const CUSTOMER_INVENTORY_ORDER_LIST_BUCKET =
-  "customer-inventory-order-lists";
+export { CUSTOMER_INVENTORY_ORDER_LIST_BUCKET } from "./customer-inventory-attachment-registration";
 export const CUSTOMER_INVENTORY_MAX_FILES = 10;
 export const CUSTOMER_INVENTORY_MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 export const CUSTOMER_INVENTORY_MAX_TOTAL_SIZE_BYTES = 100 * 1024 * 1024;
@@ -84,11 +86,9 @@ export async function uploadCustomerInventoryFiles(
 ) {
   validateCustomerInventoryFiles(options);
 
-  const uploadedPaths: string[] = [];
+  const metadataRows = [];
 
   try {
-    const metadataRows = [];
-
     for (const [index, file] of options.files.entries()) {
       const extension = getRequiredExtension(file.name);
       const storagePath = buildStoragePath({
@@ -119,7 +119,6 @@ export async function uploadCustomerInventoryFiles(
         "Order List 没有确认上传成功，请稍后重试。",
       );
 
-      uploadedPaths.push(storagePath);
       metadataRows.push({
         file_size_bytes: file.size,
         mime_type: mimeType,
@@ -127,39 +126,25 @@ export async function uploadCustomerInventoryFiles(
         storage_path: storagePath,
       });
     }
-
-    const { data, error } = await withRequestTimeout(
-      supabase.rpc("register_customer_inventory_order_list_attachments", {
-        p_attachments: metadataRows,
-        p_order_id: options.orderId,
-      }),
-    );
-
-    if (error) throw error;
-
-    return requireRegisteredStorageRows<CustomerInventoryAttachment>(data, {
-      errorMessage: "Order List 没有全部登记成功，请稍后重试。",
-      expectedParentId: options.orderId,
-      expectedPaths: uploadedPaths,
-      parentField: "order_id",
-      pathField: "storage_path",
-    });
   } catch (error) {
-    // 元数据登记失败时清理刚上传的对象，避免私有存储留下无法从页面访问的孤立文件。
-    if (uploadedPaths.length > 0) {
-      await removeStorageObjectsVerified(
-        supabase,
-        CUSTOMER_INVENTORY_ORDER_LIST_BUCKET,
-        uploadedPaths,
-        {
-          confirmationMessage: "失败文件没有全部清理，请联系管理员核对。",
-          timeoutMessage: "失败文件清理超时，请联系管理员核对。",
-        },
-      );
-    }
-
+    // 此处尚未尝试登记，之前确认上传的对象可安全清理。
+    await cleanUploadedFiles(supabase, metadataRows.map((row) => row.storage_path));
     throw error;
   }
+
+  const result = await registerInventoryAttachments(supabase, options.orderId, metadataRows);
+  if (result.kind === "rejected") {
+    await cleanUploadedFiles(supabase, metadataRows.map((row) => row.storage_path));
+    throw result.error;
+  }
+  return result.rows;
+}
+
+function cleanUploadedFiles(supabase: SupabaseClient, paths: string[]) {
+  return removeStorageObjectsVerified(supabase, CUSTOMER_INVENTORY_ORDER_LIST_BUCKET, paths, {
+    confirmationMessage: "失败文件没有全部清理，请联系管理员核对。",
+    timeoutMessage: "失败文件清理超时，请联系管理员核对。",
+  });
 }
 
 export async function deleteCustomerInventoryAttachment(

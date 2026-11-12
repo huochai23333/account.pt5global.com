@@ -2,6 +2,17 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
 
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
+import { widgetCard, expectTouchTarget, expectNoClippedHomeWidgets } from "./helpers/home-widget-assertions";
+import { resetHomeLayout } from "./helpers/home-manager";
+
+// 会重置固定管理员布局；声明之外仍必须提供实际可重建的完整隔离实例。
+test.beforeAll(() => requireDisposableFixture({
+  baseURL: process.env.PLAYWRIGHT_BASE_URL,
+  supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  mode: process.env.PT5_E2E_FIXTURE_MODE,
+}));
+
 const EXPECTED_MINIMUMS = {
   announcements: { height: 2, width: 2 },
   clock: { height: 2, width: 2 },
@@ -120,54 +131,4 @@ async function openAdjustDialog(page: Page, card: Locator) {
 
   await expect(dialog).toBeVisible();
   return dialog;
-}
-
-async function resetHomeLayout(page: Page) {
-  await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/admin/home");
-  await page.getByTestId("home-manage-button").click();
-  const manager = page.getByRole("dialog", { name: "管理首页" });
-
-  await expect(manager).toBeVisible();
-  await manager.getByTestId("home-manager-reset").click();
-  await page.waitForTimeout(900);
-  await expect(
-    manager.getByText("首页调整还没有保存，请检查网络后重试。"),
-  ).toHaveCount(0);
-  await manager.getByTestId("home-manager-done").click();
-}
-
-function widgetCard(page: Page, type: string) {
-  return page.locator(
-    `[data-testid="home-widget-card"][data-home-widget-type="${type}"]`,
-  );
-}
-
-async function expectNoClippedHomeWidgets(page: Page) {
-  const clippedWidgets = await page
-    .getByTestId("home-widget-card")
-    .evaluateAll((cards) =>
-      cards
-        .map((card) => ({
-          overflow: card.scrollHeight - card.clientHeight,
-          type: card.getAttribute("data-home-widget-type"),
-        }))
-        .filter((item) => item.overflow > 2),
-    );
-
-  expect(clippedWidgets).toEqual([]);
-}
-
-async function expectTouchTarget(locator: Locator, minimum: number) {
-  const box = await requiredBox(locator);
-
-  expect(box.height).toBeGreaterThanOrEqual(minimum - 0.1);
-  expect(box.width).toBeGreaterThanOrEqual(minimum - 0.1);
-}
-
-async function requiredBox(locator: Locator) {
-  const box = await locator.boundingBox();
-
-  expect(box).not.toBeNull();
-  return box!;
 }

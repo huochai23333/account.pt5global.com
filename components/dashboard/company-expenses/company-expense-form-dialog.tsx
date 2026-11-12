@@ -19,7 +19,7 @@ import type { FeedbackTone } from "../dashboard-shared-ui";
 import {
   companyExpenseCurrencyOptions,
   type CompanyExpenseFormState,
-} from "./company-expenses-display";
+} from "./company-expenses-form";
 
 type CompanyExpenseFormDialogProps = {
   copy: {

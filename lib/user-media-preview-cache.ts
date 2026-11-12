@@ -11,8 +11,11 @@ const previewUrlCache = new Map<
   { expiresAt: number; url: string | null }
 >();
 const previewUrlRequestCache = new Map<string, Promise<string | null>>();
+let previewGeneration = 0;
 
 export function resetUserMediaPreviewCache() {
+  // 清空 Map 不会取消已发出的签名请求；递增代次，拒绝旧会话的迟到结果重新填回缓存。
+  previewGeneration += 1;
   previewUrlCache.clear();
   previewUrlRequestCache.clear();
 }
@@ -32,19 +35,24 @@ export async function createUserMediaAssetPreviewUrl(
 
   const pendingRequest = previewUrlRequestCache.get(cacheKey);
   if (pendingRequest) return pendingRequest;
+  const generation = previewGeneration;
 
   // 同一资源并发只签名一次，弹窗和缩略图不会各自请求一个短期链接。
   const request = supabase.storage
     .from(asset.bucket_name)
     .createSignedUrl(asset.storage_path, SIGNED_URL_TTL_SECONDS)
     .then(({ data, error }) => {
+      if (generation !== previewGeneration) return null;
       const previewUrl = error ? null : (data?.signedUrl ?? null);
-      cachePreviewUrl(asset, previewUrl);
+      // 暂时断网不是“这个对象永远没有预览”；不缓存失败，下一次打开可以重新签名。
+      if (previewUrl) cachePreviewUrl(asset, previewUrl);
       return previewUrl;
     })
     .catch(() => null)
     .finally(() => {
-      previewUrlRequestCache.delete(cacheKey);
+      // 旧请求结束时，不能删掉 reset 后同一对象的新请求，否则会失去并发合并。
+      if (previewUrlRequestCache.get(cacheKey) === request)
+        previewUrlRequestCache.delete(cacheKey);
     });
   previewUrlRequestCache.set(cacheKey, request);
   return request;

@@ -9,10 +9,7 @@ import { ChevronDown, LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { ADMIN_NAV_ICONS, MobileAdminNavLink } from "./admin-shell-nav-links";
-import type {
-  AdminShellNavGroup,
-  AdminShellNavLink,
-} from "./admin-shell-nav-types";
+import type { AdminShellNavGroup, AdminShellNavLink } from "./admin-shell-nav-types";
 import { useAdminShellNavigation } from "./use-admin-shell-navigation";
 
 type AdminShellMobileNavProps = {
@@ -31,13 +28,8 @@ export function AdminShellMobileNav({
     () => [...globalItems, ...groups.flatMap((group) => group.items)],
     [globalItems, groups],
   );
-  const {
-    activeItem,
-    handleNavClick,
-    pathname,
-    prefetchRoute,
-    resolvedPendingHref,
-  } = useAdminShellNavigation(items);
+  const { activeItem, handleNavClick, pathname, prefetchRoute, resolvedPendingHref } =
+    useAdminShellNavigation(items);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!activeItem) {
@@ -72,9 +64,7 @@ export function AdminShellMobileNav({
           ) : (
             <ActiveIcon className="size-4 shrink-0" />
           )}
-          <span className="min-w-0 truncate text-sm font-semibold">
-            {activeLabel}
-          </span>
+          <span className="min-w-0 truncate text-sm font-semibold">{activeLabel}</span>
         </span>
         <ChevronDown
           className={cn(
@@ -128,9 +118,7 @@ export function AdminShellMobileNav({
               </div>
             ))
           ) : (
-            <p className="px-3 py-3 text-sm leading-6 text-content-muted">
-              {emptyGroupsLabel}
-            </p>
+            <p className="px-3 py-3 text-sm leading-6 text-content-muted">{emptyGroupsLabel}</p>
           )}
         </div>
       </nav>

@@ -12,6 +12,7 @@ type MessageTree = {
   [key: string]: MessageValue;
 };
 
+/** 只向局部 Provider 传递所声明的消息树；复制后合并，避免不同页面互相修改共享字典。 */
 export async function getScopedMessages(
   locale: Locale,
   namespaces: readonly string[],

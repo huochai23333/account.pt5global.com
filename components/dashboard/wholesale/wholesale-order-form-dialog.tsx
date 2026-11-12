@@ -1,9 +1,8 @@
 "use client";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
-import { useDashboardConfirm } from "@/components/dashboard/dashboard-confirm-provider";
 import { DashboardFilterField } from "@/components/dashboard/dashboard-section-panel";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
@@ -20,6 +19,7 @@ import {
   WHOLESALE_PAYMENT_PLATFORM_OPTIONS,
 } from "./wholesale-order-form-options";
 import { useWholesaleOrderCreateSubmission } from "./use-wholesale-order-create-submission";
+import { useWholesaleOrderDraft } from "./use-wholesale-order-draft";
 import { useWholesaleOrderFees } from "./use-wholesale-order-fees";
 import { WholesaleOrderFeeFields } from "./wholesale-order-fee-fields";
 type WholesaleOrderFormDialogProps = {
@@ -44,22 +44,18 @@ export function WholesaleOrderFormDialog({
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_form_dialog",
   );
-  const [dirty, setDirty] = useState(false);
-  const confirm = useDashboardConfirm();
-  useEffect(() => {
-    if (!open || !dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty, open]);
   const submission = useWholesaleOrderCreateSubmission({
     onCreateOrder,
     onOpenChange,
     open,
     pending,
+  });
+  const draft = useWholesaleOrderDraft({
+    open,
+    pending: submission.pending,
+    onOpenChange: submission.handleOpenChange,
+    title: uiText("attribute002"),
+    discardMessage: uiText("discardDraftConfirm"),
   });
   const currencyOptions = useMemo(() => {
     const options = dedupeWholesaleCurrencyOptions(
@@ -75,33 +71,19 @@ export function WholesaleOrderFormDialog({
   return (
     <DashboardDialog
       description={uiText("attribute001")}
-      onOpenChange={(nextOpen) => {
-        // Escape、遮罩和关闭按钮都经过这里；保留输入直到用户明确选择放弃。
-        if (!nextOpen && submission.pending) return;
-        if (!nextOpen && dirty) {
-          void confirm({
-            title: uiText("attribute002"),
-            description: uiText("discardDraftConfirm"),
-            tone: "warning",
-          }).then((accepted) => {
-            if (!accepted) return;
-            setDirty(false);
-            submission.handleOpenChange(false);
-          });
-          return;
-        }
-        if (!nextOpen) setDirty(false);
-        submission.handleOpenChange(nextOpen);
-      }}
+      onOpenChange={draft.handleOpenChange}
       open={open}
       title={uiText("attribute002")}
     >
       <form
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        onChange={(event) => { setDirty(true); feePreview.updateFromForm(event.currentTarget); }}
+        onChange={(event) => {
+          draft.markDirty();
+          feePreview.updateFromForm(event.currentTarget);
+        }}
         onSubmit={async (event) => {
           event.preventDefault();
-          if (await submission.submit(event.currentTarget)) setDirty(false);
+          if (await submission.submit(event.currentTarget)) draft.clearDraft();
         }}
       >
         <DashboardFilterField label={uiText("attribute003")} required>

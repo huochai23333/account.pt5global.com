@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -13,13 +13,15 @@ import {
 } from "@/lib/admin-task-reviews";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import {
-  approveTaskReview,
+  decideTaskReview,
+  TaskReviewDecisionUnconfirmedError,
+} from "@/lib/task-review-decisions";
+import {
   downloadTaskReviewSubmissionAssetBlob,
   getTaskReviewSubmissionAssetSignedUrl,
-  rejectTaskReview,
-  type PendingTaskReviewWithAssets,
   type TaskReviewSubmissionAsset,
-} from "@/lib/task-reviews";
+} from "@/lib/task-review-assets";
+import type { PendingTaskReviewWithAssets } from "@/lib/task-reviews";
 
 import {
   createDashboardSharedCopy,
@@ -33,6 +35,7 @@ import type {
 } from "./admin-task-file-preview-dialog";
 import type { PageFeedback } from "./admin-tasks-view-model-shared";
 import type { AdminTaskReviewAction } from "./admin-task-review-types";
+import { downloadTaskFileBlob, useAdminTaskFilePreview } from "./use-admin-task-file-preview";
 
 type PreviewTaskReviewAsset = AdminTaskFilePreviewItem & {
   asset: TaskReviewSubmissionAsset;
@@ -52,9 +55,14 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
   const [rows, setRows] = useState<PendingTaskReviewWithAssets[]>(initialData.rows);
   const [pageFeedback, setPageFeedback] = useState<PageFeedback>(null);
   const [busyRows, setBusyRows] = useState<Record<string, AdminTaskReviewAction>>({});
-  const [assetBusyKey, setAssetBusyKey] = useState<string | null>(null);
+  const reviewingRows = useRef(new Set<string>());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [previewAsset, setPreviewAsset] = useState<PreviewTaskReviewAsset | null>(null);
+  const {
+    closePreview: clearPreview,
+    openPreview,
+    previewBusyKey: assetBusyKey,
+    previewItem: previewAsset,
+  } = useAdminTaskFilePreview<PreviewTaskReviewAsset>();
   const [previewDownloadBusy, setPreviewDownloadBusy] = useState(false);
 
   const applyPageData = useCallback((pageData: AdminTaskReviewBoardData) => {
@@ -136,45 +144,39 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
       const actionLabel =
         action === "approve" ? reviewsT("actions.approve") : reviewsT("actions.reject");
 
-      if (busyRows[rowKey]) {
+      if (reviewingRows.current.has(rowKey)) {
         return;
       }
 
-      if (!(await confirm({
-        description: t("reviewBoard.confirm", { action: actionLabel }),
-        title: confirmT("title"),
-        tone: action === "reject" ? "warning" : "normal",
-      }))) {
-        return;
-      }
-
-      let rejectReason: string | null = null;
-
-      if (action === "reject" && typeof window !== "undefined") {
-        const input = window.prompt(t("reviewBoard.rejectReasonPrompt"), "");
-
-        if (input === null) {
+      // 确认弹窗出现前先占用领取编号，防止同一帧提交两个审核意图。
+      reviewingRows.current.add(rowKey);
+      try {
+        if (!(await confirm({
+          description: t("reviewBoard.confirm", { action: actionLabel }),
+          title: confirmT("title"),
+          tone: action === "reject" ? "warning" : "normal",
+        }))) {
           return;
         }
 
-        rejectReason = input;
-      }
-
-      setRowBusyState(rowKey, action);
-      setPageFeedback(null);
-
-      try {
-        if (action === "approve") {
-          await approveTaskReview(supabase, row.acceptance_id);
-        } else {
-          await rejectTaskReview(supabase, {
-            acceptanceId: row.acceptance_id,
-            reason: rejectReason,
-          });
+        let rejectReason: string | null = null;
+        if (action === "reject" && typeof window !== "undefined") {
+          rejectReason = window.prompt(t("reviewBoard.rejectReasonPrompt"), "");
+          if (rejectReason === null) return;
         }
 
+        setRowBusyState(rowKey, action);
+        setPageFeedback(null);
+        await decideTaskReview(supabase, {
+          action,
+          acceptanceId: row.acceptance_id,
+          submissionId: row.submission_id,
+          reason: rejectReason,
+        });
+
+        // 刷新可能已经载入后续轮次，只移除已确认处理的那张卡片。
         setRows((current) =>
-          current.filter((item) => item.acceptance_id !== row.acceptance_id),
+          current.filter((item) => item.submission_id !== row.submission_id),
         );
         setPageFeedback({
           tone: "success",
@@ -189,10 +191,11 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
           message: toAdminTaskReviewErrorMessage(error, t, sharedCopy),
         });
       } finally {
+        reviewingRows.current.delete(rowKey);
         setRowBusyState(rowKey, null);
       }
     },
-    [busyRows, confirm, confirmT, reviewsT, setRowBusyState, sharedCopy, supabase, t],
+    [confirm, confirmT, reviewsT, setRowBusyState, sharedCopy, supabase, t],
   );
 
   const handleOpenAsset = useCallback(
@@ -201,42 +204,23 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
         return;
       }
 
-      const nextBusyKey = `${row.submission_id}:${asset.id}`;
-
-      if (assetBusyKey === nextBusyKey) {
-        return;
-      }
-
-      setAssetBusyKey(nextBusyKey);
       setPageFeedback(null);
-
-      try {
-        const signedUrl = await getTaskReviewSubmissionAssetSignedUrl(supabase, asset);
-
-        setPreviewAsset({
-          asset,
-          file_size_bytes: asset.file_size_bytes,
-          id: asset.id,
-          kind: getAdminTaskMediaLibraryKind(asset.mime_type, asset.original_name),
-          mime_type: asset.mime_type,
-          original_name: asset.original_name,
-          signedUrl,
-          submitted_at: row.submitted_at,
-          submitted_by_name: row.accepted_by_name ?? row.accepted_by_email,
-          submission_round: row.submission_round,
-          submissionId: row.submission_id,
-          task_name: row.task_name,
-        });
-      } catch (error) {
-        setPageFeedback({
-          tone: "error",
-          message: toErrorMessage(error, sharedCopy),
-        });
-      } finally {
-        setAssetBusyKey((current) => (current === nextBusyKey ? null : current));
-      }
+      await openPreview(`${row.submission_id}:${asset.id}`, async () => ({
+        asset,
+        file_size_bytes: asset.file_size_bytes,
+        id: asset.id,
+        kind: getAdminTaskMediaLibraryKind(asset.mime_type, asset.original_name),
+        mime_type: asset.mime_type,
+        original_name: asset.original_name,
+        signedUrl: await getTaskReviewSubmissionAssetSignedUrl(supabase, asset),
+        submitted_at: row.submitted_at,
+        submitted_by_name: row.accepted_by_name ?? row.accepted_by_email,
+        submission_round: row.submission_round,
+        submissionId: row.submission_id,
+        task_name: row.task_name,
+      }), (error) => setPageFeedback({ tone: "error", message: toErrorMessage(error, sharedCopy) }));
     },
-    [assetBusyKey, sharedCopy, supabase],
+    [openPreview, sharedCopy, supabase],
   );
 
   const handlePreviewDownload = useCallback(
@@ -255,7 +239,7 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
           supabase,
           currentAsset.asset,
         );
-        downloadBlob(blob, currentAsset.original_name);
+        downloadTaskFileBlob(blob, currentAsset.original_name);
       } catch (error) {
         setPageFeedback({
           tone: "error",
@@ -270,10 +254,10 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
 
   const closePreview = useCallback((open: boolean) => {
     if (!open) {
-      setPreviewAsset(null);
+      clearPreview();
       setPreviewDownloadBusy(false);
     }
-  }, []);
+  }, [clearPreview]);
 
   return {
     assetBusyKey,
@@ -292,26 +276,14 @@ export function useAdminTaskReviewBoard(initialData: AdminTaskReviewBoardData) {
   };
 }
 
-function downloadBlob(blob: Blob, fileName: string) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const objectUrl = window.URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fileName;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30_000);
-}
-
 function toAdminTaskReviewErrorMessage(
   error: unknown,
   t: ReturnType<typeof useTranslations>,
   sharedCopy: ReturnType<typeof createDashboardSharedCopy>,
 ) {
+  if (error instanceof TaskReviewDecisionUnconfirmedError) {
+    return t("reviewBoard.errors.unconfirmed");
+  }
   const rawMessage = getRawErrorMessage(error);
   const baseMessage = toErrorMessage(error, sharedCopy);
 
@@ -325,6 +297,10 @@ function toAdminTaskReviewErrorMessage(
 
   if (rawMessage.includes("task is not in reviewing status")) {
     return t("reviewBoard.errors.notReviewing");
+  }
+
+  if (rawMessage.includes("task review submission changed")) {
+    return t("reviewBoard.errors.submissionChanged");
   }
 
   if (rawMessage.includes("task review submission not found")) {

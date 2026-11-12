@@ -85,10 +85,7 @@ export function WholesaleSettlementReleaseAllocationOrderList({
 
                   <AllocationValue
                     label={uiText("orderAmountColumn")}
-                    value={formatCurrency(
-                      candidate.order.customer_payment_amount,
-                      currency,
-                    )}
+                    value={formatCurrency(candidate.order.customer_payment_amount, currency)}
                   />
                   <AllocationValue
                     label={uiText("availableColumn")}
@@ -116,9 +113,7 @@ export function WholesaleSettlementReleaseAllocationOrderList({
                     >
                       <FormControls.Input
                         min="0"
-                        onChange={(event) =>
-                          onAmountChange(candidate.order.id, event.target.value)
-                        }
+                        onChange={(event) => onAmountChange(candidate.order.id, event.target.value)}
                         step="0.01"
                         type="number"
                         value={candidate.allocationInput}
@@ -160,9 +155,7 @@ export function WholesaleSettlementReleaseAllocationOrderList({
 function AllocationValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-semibold text-content-muted sm:sr-only">
-        {label}
-      </p>
+      <p className="text-xs font-semibold text-content-muted sm:sr-only">{label}</p>
       <p className="mt-1 break-words text-sm text-content-strong [overflow-wrap:anywhere] sm:mt-0">
         {value}
       </p>

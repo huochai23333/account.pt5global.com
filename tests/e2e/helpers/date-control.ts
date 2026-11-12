@@ -3,7 +3,7 @@ import { expect, type Locator } from "@playwright/test";
 /**
  * 日期输入在界面上会按语言显示斜杠或年月，但业务层仍保存 ISO 字符串。
  * 测试通过真正的键盘录入和 Enter 提交，再读取组件公开的 data-value，
- * 同时覆盖用户操作与最终 FormData 值，不依赖 DatePicker 的内部隐藏 input 结构。
+ * 同时覆盖用户操作与组件公开的业务值；真实 FormData 提交由表单流程另外核对。
  */
 export async function fillDateControl(input: Locator, value: string) {
   // 连续修改日期范围时，前一个字段会触发路由回写。先像用户一样聚焦并全选，

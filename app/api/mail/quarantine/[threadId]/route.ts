@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { requireMailIdentity, requireMailAdministrator } from "@/lib/mail/mail-identity";
-import { getMailThread, restoreMailThread } from "@/lib/mail/mail-service";
+import { getMailThread } from "@/lib/mail/mail-service";
+import { restoreMailThread } from "@/lib/mail/mail-quarantine-restore";
 
 import { mailApiError, readAuthenticatedMailJson } from "../../_shared";
 

@@ -23,9 +23,9 @@ export {
   applyOrderFormDefaults,
   createOrderFormState,
   createOrderFormStateFromOrder,
-  parseCreateOrderForm,
   type OrderFormState,
 } from "./admin-orders-form";
+export { parseCreateOrderForm } from "./admin-orders-form-validation";
 export {
   applyOrderExchangeRateToOrderForm,
   buildOrderCurrencyOptions,

@@ -6,10 +6,7 @@ import { ChevronDown, RefreshCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "../ui/button";
-import {
-  DashboardFilterPanel,
-  DashboardSectionPanel,
-} from "./dashboard-section-panel";
+import { DashboardFilterPanel, DashboardSectionPanel } from "./dashboard-section-panel";
 
 /**
  * 非订单和订单页面共同使用的筛选卡底座。
@@ -53,9 +50,7 @@ export function DashboardResourceFilterSection({
   const resolvedFooter =
     summary || footer ? (
       <div className="flex flex-col gap-2">
-        {summary ? (
-          <div className="text-sm leading-6 text-content-muted">{summary}</div>
-        ) : null}
+        {summary ? <div className="text-sm leading-6 text-content-muted">{summary}</div> : null}
         {footer}
       </div>
     ) : undefined;
@@ -66,9 +61,18 @@ export function DashboardResourceFilterSection({
         <div className="flex min-w-0 items-end gap-2">
           {primary ? <div className="min-w-0 flex-1">{primary}</div> : null}
           {collapseDesktop && hasSecondaryFilters ? (
-            <Button aria-expanded={showDesktopFilters} className="hidden shrink-0 sm:inline-flex" onClick={() => setDesktopExpanded((current) => !current)} size="compact" type="button" variant="outline">
+            <Button
+              aria-expanded={showDesktopFilters}
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={() => setDesktopExpanded((current) => !current)}
+              size="compact"
+              type="button"
+              variant="outline"
+            >
               {showDesktopFilters ? t("collapse") : t("expand")}
-              <ChevronDown className={`size-4 transition-transform ${showDesktopFilters ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`size-4 transition-transform ${showDesktopFilters ? "rotate-180" : ""}`}
+              />
             </Button>
           ) : null}
           {onReset ? (
@@ -102,10 +106,7 @@ export function DashboardResourceFilterSection({
       ) : null}
 
       {resolvedActiveSummary ? (
-        <p
-          aria-live="polite"
-          className="mt-1.5 text-xs leading-5 text-content-muted sm:text-sm"
-        >
+        <p aria-live="polite" className="mt-1.5 text-xs leading-5 text-content-muted sm:text-sm">
           {resolvedActiveSummary}
         </p>
       ) : null}
@@ -122,9 +123,7 @@ export function DashboardResourceFilterSection({
           >
             <span className="truncate">
               {mobileExpanded ? t("collapse") : t("expand")}
-              {activeFilterCount > 0
-                ? ` · ${t("count", { count: activeFilterCount })}`
-                : ""}
+              {activeFilterCount > 0 ? ` · ${t("count", { count: activeFilterCount })}` : ""}
             </span>
             <ChevronDown
               className={`size-4 shrink-0 transition-transform ${
@@ -148,9 +147,15 @@ export function DashboardResourceFilterSection({
       ) : null}
 
       <div
-        className={mobileExpanded
-          ? showDesktopFilters ? "block" : "block sm:hidden"
-          : showDesktopFilters ? "hidden sm:block" : "hidden"}
+        className={
+          mobileExpanded
+            ? showDesktopFilters
+              ? "block"
+              : "block sm:hidden"
+            : showDesktopFilters
+              ? "hidden sm:block"
+              : "hidden"
+        }
         data-mobile-filter-expanded={mobileExpanded ? "true" : "false"}
       >
         {hasSecondaryFilters || resolvedFooter ? (

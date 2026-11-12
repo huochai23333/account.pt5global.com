@@ -1,44 +1,22 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./helpers/reimbursement-sharing-fixture";
+import {
+  waitForRecords,
+  expectNoOverflow,
+} from "./helpers/reimbursement-sharing-pages";
+import {
+  sharingOwnerId as ownerId,
+  sharingPeerId as peerId,
+} from "../test-support/reimbursement-sharing-case";
 import { loginAs, loginWithAccount } from "./helpers/auth";
 import { getRegressionAccount } from "./helpers/accounts";
-import { runLocalSupabaseSql as sql } from "./helpers/local-supabase";
 import { chooseSelectOption } from "./helpers/select-control";
 
-const ownerId = "33333333-3333-4333-8333-333333333333";
-const peerId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
-const marker = `协作报销回归-${Date.now()}`;
-
-async function waitForRecords(page: Page) {
-  await expect(page.getByText("正在读取报销记录…")).toHaveCount(0);
-  await expect(
-    page.getByText("报销记录暂时无法读取，请重新加载。"),
-  ).toHaveCount(0);
-}
-
 test.describe("operator reimbursement sharing and historical periods", () => {
-  test.beforeAll(() => {
-    // 205 条记录确保浏览器确实翻到原先读取上限以外；同事在同周期另有一笔费用。
-    sql(`insert into public.operator_reimbursements(operator_user_id,spent_at,content,amount)
-      select '${ownerId}', '2024-07-25', '${marker} 历史费用 ' || n, 1 from generate_series(1,205) n;
-      insert into public.operator_reimbursements(operator_user_id,spent_at,content,amount) values
-      ('${peerId}','2024-07-25','${marker} 同事费用',99),
-      ('${ownerId}','2024-08-25','${marker} 其他周期',7),
-      ('${ownerId}','2024-09-02','${marker} 竞态删除',8),
-      ('${peerId}','2024-09-01','${marker} 上海时间边界',1);
-
-      -- 测试需要同时固定报销时间和更新时间。临时关闭触发器后直接写入完整时间戳，
-      -- 才能稳定覆盖 UTC 前一天 16:30 对应上海次日 00:30 的跨日边界。
-      set session_replication_role = replica;
-      update public.operator_reimbursements
-      set status = 'reimbursed',
-          reimbursed_at = '2026-09-08T16:30:00Z',
-          reimbursed_by_user_id = '${peerId}',
-          updated_at = '2026-09-08T16:30:00Z'
-      where content = '${marker} 上海时间边界';
-      set session_replication_role = origin;`);
-  });
-
-  test("search waits 300ms and sends only the final query", async ({ page }) => {
+  test("search waits 300ms and sends only the final query", async ({
+    page,
+    sharingCase,
+  }) => {
     await loginAs(page, "operator");
     await page.goto("/operator/reimbursements");
     await waitForRecords(page);
@@ -77,12 +55,15 @@ test.describe("operator reimbursement sharing and historical periods", () => {
       .poll(() => requestedSearches, { timeout: 1_500 })
       .toEqual(["debounce"]);
     await waitForRecords(page);
+    sharingCase.unchanged();
   });
 
   test("a delayed delete refreshes the latest operator scope", async ({
     page,
+    sharingCase,
   }) => {
     test.setTimeout(90_000);
+    const { marker, createGate, createSignal } = sharingCase;
     const deleteGate = createGate();
     const firstPeerQueryGate = createGate();
     const deleteStarted = createSignal();
@@ -152,9 +133,25 @@ test.describe("operator reimbursement sharing and historical periods", () => {
     await expect(
       page.getByRole("region", { name: "本地协作运营的费用汇总" }),
     ).toBeVisible();
+    expect(sharingCase.deleted().deleted).toBe(1);
+    await page.reload();
+    await chooseSelectOption(
+      page.getByRole("combobox", { name: "运营", exact: true }),
+      { value: peerId },
+    );
+    await page.getByRole("searchbox").fill(marker);
+    await waitForRecords(page);
+    await expect(
+      page.getByText(`${marker} 同事费用`, { exact: true }),
+    ).toBeVisible();
+    sharingCase.unchanged();
   });
 
-  test("timestamps use the Shanghai cross-day boundary", async ({ page }) => {
+  test("timestamps use the Shanghai cross-day boundary", async ({
+    page,
+    sharingCase,
+  }) => {
+    const { marker } = sharingCase;
     await loginWithAccount(page, {
       ...getRegressionAccount("operator"),
       email: "local.peer-operator@bs.test",
@@ -171,23 +168,22 @@ test.describe("operator reimbursement sharing and historical periods", () => {
       row.getByText("2026年9月9日 00:30", { exact: true }),
     ).toHaveCount(2);
   });
-  test.afterAll(() => {
-    sql(
-      `delete from public.operator_reimbursements where content like '${marker}%';`,
-    );
-  });
-
   test("operators read both ways, paginate and reimburse only their own selected period", async ({
     page,
     browser,
+    sharingCase,
   }) => {
+    const { marker } = sharingCase;
     test.setTimeout(150_000);
     await loginAs(page, "operator");
     await page.goto("/operator/reimbursements");
     // 搜索有 300ms 防抖；先订阅本次查询，再录入，避免沿用上一页的旧列表。
-    const searchedPage = page.waitForResponse((response) =>
-      response.url().includes("/rpc/get_operator_reimbursements_page") &&
-      (response.request().postData() ?? "").includes(`${marker} 历史费用`) && response.ok());
+    const searchedPage = page.waitForResponse(
+      (response) =>
+        response.url().includes("/rpc/get_operator_reimbursements_page") &&
+        (response.request().postData() ?? "").includes(`${marker} 历史费用`) &&
+        response.ok(),
+    );
     await page.getByRole("searchbox").fill(`${marker} 历史费用`);
     await searchedPage;
     await waitForRecords(page);
@@ -248,18 +244,20 @@ test.describe("operator reimbursement sharing and historical periods", () => {
     );
     await expect(dialog.getByText("共 205 条待报销记录")).toBeVisible();
     await expect(dialog.getByText("¥205.00")).toBeVisible();
+    sharingCase.assertPeriodOwned();
     await dialog.getByRole("button", { name: "确认报销", exact: true }).click();
     await expect(page.getByText("已将 205 条记录标记为已报销。")).toBeVisible();
-    expect(
-      sql(
-        `select status from public.operator_reimbursements where content='${marker} 同事费用';`,
-      ),
-    ).toBe("unreimbursed");
-    expect(
-      sql(
-        `select status from public.operator_reimbursements where content='${marker} 其他周期';`,
-      ),
-    ).toBe("unreimbursed");
+    expect(sharingCase.reimbursed().updated).toBe(205);
+    await page.reload();
+    await page.getByRole("searchbox").fill(`${marker} 历史费用`);
+    await chooseSelectOption(
+      page.getByRole("combobox", { name: "报销状态", exact: true }),
+      { value: "reimbursed" },
+    );
+    await waitForRecords(page);
+    await expect(page.locator("article")).toHaveCount(20);
+    await expect(page.getByText("第 1 页，共 11 页")).toBeVisible();
+    sharingCase.unchanged();
 
     // 第二个独立浏览器上下文登录乙，验证乙可以查看甲刚刚报销完成的记录。
     const context = await browser.newContext();
@@ -296,7 +294,9 @@ test.describe("operator reimbursement sharing and historical periods", () => {
   for (const width of [1440, 390, 320]) {
     test(`history dialog and shared records fit ${width}px`, async ({
       page,
+      sharingCase,
     }, testInfo) => {
+      const { marker } = sharingCase;
       const pageErrors: string[] = [];
       page.on("pageerror", (error) => pageErrors.push(error.message));
       await page.setViewportSize({ width, height: 900 });
@@ -348,6 +348,7 @@ test.describe("operator reimbursement sharing and historical periods", () => {
 
   test("failed query can be reloaded without showing stale amounts", async ({
     page,
+    sharingCase,
   }) => {
     await loginAs(page, "operator");
     await page.goto("/operator/reimbursements");
@@ -364,42 +365,6 @@ test.describe("operator reimbursement sharing and historical periods", () => {
     await page.unroute("**/rest/v1/rpc/get_operator_reimbursements_page");
     await page.getByRole("button", { name: "重新加载", exact: true }).click();
     await expect(page.getByText("暂无报销记录")).toBeVisible();
+    sharingCase.unchanged();
   });
 });
-
-async function expectNoOverflow(page: Page) {
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    ),
-  ).toBeLessThanOrEqual(2);
-  // 检查每个可见按钮的文字没有挤出自身容器。
-  const overflow = await page
-    .locator("main, [role=dialog]")
-    .getByRole("button")
-    .evaluateAll((buttons) =>
-      buttons
-        .filter(
-          (button) =>
-            button.getBoundingClientRect().width > 0 &&
-            Boolean(button.textContent?.trim()) &&
-            button.scrollWidth > button.clientWidth + 2,
-        )
-        .map((button) => button.textContent),
-    );
-  expect(overflow).toEqual([]);
-}
-
-/** 创建一个由测试主动放行的异步闸门，用来稳定排列并发请求的先后顺序。 */
-function createGate() {
-  let resolve: () => void = () => undefined;
-  const promise = new Promise<void>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
-
-/** 创建只等待事件发生、不参与阻塞的信号，避免依赖不稳定的固定等待时间。 */
-function createSignal() {
-  return createGate();
-}

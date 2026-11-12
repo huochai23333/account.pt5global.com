@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
-import { convertSalesLeadToCustomer, getSalesLeadCustomerErrorCode } from "@/lib/sales-lead-customer";
-import { fetchSalesLeadDetail } from "@/lib/sales-leads";
+import { convertSalesLeadToCustomer } from "@/lib/sales-lead-customer";
+import { fetchSalesLeadDetail, getSalesLeadErrorCode } from "@/lib/sales-leads";
 import type { SalesLead, SalesLeadCustomerInput, SalesLeadDetail } from "@/lib/sales-leads-types";
 
 /** 弹窗生命周期和提交互斥独立管理；页面只负责打开入口及刷新看板。 */
@@ -30,7 +30,7 @@ export function useSalesLeadCustomer(onSaved: () => Promise<void>) {
       }
       setDetail(fresh);
     } catch (error) {
-      setErrorCode(getSalesLeadCustomerErrorCode(error));
+      setErrorCode(getSalesLeadErrorCode(error));
     } finally {
       busy.current = false;
       setPending(false);
@@ -55,7 +55,7 @@ export function useSalesLeadCustomer(onSaved: () => Promise<void>) {
       // 已核对真实客户后，列表刷新失败只能影响展示，不能让用户再建一份客户档案。
       try { await onSaved(); } catch { setNotice("confirming"); }
     } catch (error) {
-      const code = getSalesLeadCustomerErrorCode(error);
+      const code = getSalesLeadErrorCode(error);
       setErrorCode(code);
       if (code === "sales_lead_save_unconfirmed") setNotice("confirming");
     } finally {

@@ -1,24 +1,19 @@
 "use client";
 
-import { StatusBadge } from "@/components/ui/status-badge";
-import { DocumentEntry } from "@/components/dashboard/document-library/document-entry";
+import { PencilLine, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
-import * as FormControls from "@/components/ui/form-controls";
-import { UiMessage } from "@/components/i18n/ui-message";
-import { useTranslations } from "next-intl";
-import { Link2, PencilLine, Trash2 } from "lucide-react";
+import { DocumentEntry } from "@/components/dashboard/document-library/document-entry";
 import { Button } from "@/components/ui/button";
-import { DashboardFilterField } from "@/components/dashboard/dashboard-section-panel";
-import { Select } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { WholesaleCustomer, WholesaleProfile } from "@/lib/wholesale";
+
+import { formatRegisteredCustomerAccount, WholesaleCustomerAccountLink } from "./wholesale-customer-account-link";
+import type { SubmitWholesaleCustomerForm } from "./wholesale-customer-actions";
 import { WholesaleCustomerOtherNames } from "./wholesale-customer-other-names";
 import { WholesaleDetailGrid } from "./wholesale-detail-grid";
-import {
-  formatDate,
-  getProfileName,
-  WHOLESALE_STATUS_LABELS,
-} from "./wholesale-display";
-import { WholesaleEmptyState, WholesaleSubmitButton } from "./wholesale-ui";
+import { getProfileName } from "./wholesale-display";
+
 type WholesaleCustomerDetailsProps = {
   canEdit: boolean;
   canLinkAccount: boolean;
@@ -27,11 +22,12 @@ type WholesaleCustomerDetailsProps = {
   onAddOtherName: (formData: FormData) => Promise<boolean>;
   onDeleteCustomer: () => void;
   onEditCustomer: () => void;
-  onLinkRegisteredUser: (formData: FormData) => Promise<boolean>;
+  onLinkRegisteredUser: SubmitWholesaleCustomerForm;
   pendingKey: string | null;
   profilesById: Map<string, WholesaleProfile>;
   registeredAccounts: WholesaleProfile[];
 };
+
 export function WholesaleCustomerDetails({
   canEdit,
   canLinkAccount,
@@ -45,54 +41,48 @@ export function WholesaleCustomerDetails({
   profilesById,
   registeredAccounts,
 }: WholesaleCustomerDetailsProps) {
-  const uiText = useTranslations(
-    "UiText.components_dashboard_wholesale_wholesale_customer_details",
-  );
+  const t = useTranslations("UiText.components_dashboard_wholesale_wholesale_customer_details");
+  const directory = useTranslations("WholesaleBusiness.directoryUi");
+  const locale = useLocale();
+  const notRecorded = directory("fallbacks.notRecorded");
   const linkedProfile = customer.registered_user_id
     ? profilesById.get(customer.registered_user_id)
-    : null;
-  const availableRegisteredAccounts = registeredAccounts.filter(
-    (profile) => !linkedRegisteredUserIds.has(profile.user_id),
-  );
+    : undefined;
+  // 档案可能有已关联的用户编号，但当前账号没有读取该用户资料的权限。
+  const linkedAccount = linkedProfile
+    ? formatRegisteredCustomerAccount(linkedProfile, t("unnamedAccount"))
+    : customer.registered_user_id ? t("linkedAccount") : directory("fallbacks.notLinked");
+  const createdAt = new Date(customer.created_at);
+  const createdDate = Number.isFinite(createdAt.getTime())
+    ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit" }).format(createdAt)
+    : notRecorded;
+
   const rows = [
-    { label: "客户唯一名称", value: customer.unique_name },
-    { label: "联系方式", value: customer.contact_details ?? "未记录" },
-    { label: "客户来源", value: customer.source ?? "未记录" },
+    { label: t("uniqueName"), value: customer.unique_name },
+    { label: t("contact"), value: customer.contact_details ?? notRecorded },
+    { label: t("source"), value: customer.source ?? notRecorded },
     {
-      label: uiText("ownerLabel"),
-      value: getProfileName(profilesById, customer.assigned_sales_user_id),
+      label: t("ownerLabel"),
+      value: getProfileName(profilesById, customer.assigned_sales_user_id, directory("fallbacks.unassigned")),
     },
     {
-      label: "客户类型",
-      value: (
-        <StatusBadge>
-          {WHOLESALE_STATUS_LABELS[customer.customer_kind]}
-        </StatusBadge>
-      ),
+      label: t("customerKind"),
+      value: <StatusBadge>{directory(`customerKinds.${customer.customer_kind}`)}</StatusBadge>,
     },
-    {
-      label: "关联注册账号",
-      value: linkedProfile
-        ? getRegisteredAccountLabel(linkedProfile)
-        : "未关联",
-    },
-    { label: "登记时间", value: formatDate(customer.created_at) },
-    { label: "备注", value: customer.notes ?? "未记录" },
+    { label: t("account"), value: linkedAccount },
+    { label: t("registeredOn"), value: createdDate },
+    { label: t("notes"), value: customer.notes ?? notRecorded },
   ];
+
   return (
     <div className="space-y-5">
-      {/* 未注册客户也按客户档案编号保存资料；关联账号后仍打开同一归属。 */}
+      {/* 资料始终按客户档案编号查找，关联登录账号后仍打开同一档案。 */}
       <DocumentEntry customerId={customer.id} />
       {canEdit ? (
         <div className="flex flex-wrap justify-end gap-2">
-          <Button
-            size="compact"
-            onClick={onEditCustomer}
-            type="button"
-            variant="outline"
-          >
+          <Button size="compact" onClick={onEditCustomer} type="button" variant="outline">
             <PencilLine className="size-3.5" />
-            <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text001" />
+            {t("text001")}
           </Button>
           <Button
             size="compact"
@@ -102,88 +92,28 @@ export function WholesaleCustomerDetails({
             variant="danger"
           >
             <Trash2 className="size-3.5" />
-            <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text002" />
+            {t("text002")}
           </Button>
         </div>
       ) : null}
       <WholesaleDetailGrid rows={rows} />
-      {customer.source_sales_lead_id ? <p className="text-sm leading-6 text-content-muted"><UiMessage id="components_dashboard_wholesale_wholesale_customer_details.linkedLeadNotice" /></p> : null}
+      {customer.source_sales_lead_id ? (
+        <p className="text-sm leading-6 text-content-muted">{t("linkedLeadNotice")}</p>
+      ) : null}
       <WholesaleCustomerOtherNames
         canEdit={canEdit}
         customer={customer}
         onAddOtherName={onAddOtherName}
         pending={pendingKey === `customer:add-other-name:${customer.id}`}
       />
-      {customer.registered_user_id ? (
-        <p className="rounded-record-card border border-border-subtle bg-surface-inset px-4 py-3 text-sm leading-6 text-content-muted">
-          <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text003" />
-        </p>
-      ) : canLinkAccount ? (
-        <div className="rounded-record-card border border-border-subtle bg-surface-interactive p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-content-muted">
-            <Link2 className="size-4 text-primary" />
-            <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text004" />
-          </div>
-          {availableRegisteredAccounts.length > 0 ? (
-            <form
-              className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                // 关联失败时不改变当前选择，错误信息由页面统一反馈区展示。
-                await onLinkRegisteredUser(new FormData(event.currentTarget));
-              }}
-            >
-              <FormControls.Input
-                name="customer_id"
-                type="hidden"
-                value={customer.id}
-              />
-              <DashboardFilterField label={uiText("attribute001")}>
-                <Select
-                  aria-label={uiText("attribute001")}
-                  name="registered_user_id"
-                  options={[
-                    {
-                      label: (
-                        <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text005" />
-                      ),
-                      value: "",
-                    },
-                    ...availableRegisteredAccounts.map((profile) => ({
-                      label: getRegisteredAccountLabel(profile),
-                      value: profile.user_id,
-                    })),
-                  ]}
-                  required
-                />
-              </DashboardFilterField>
-              <div className="flex items-end justify-end">
-                <WholesaleSubmitButton
-                  pending={
-                    pendingKey === `customer:link-account:${customer.id}`
-                  }
-                >
-                  <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text006" />
-                </WholesaleSubmitButton>
-              </div>
-              <p className="text-sm leading-6 text-content-muted sm:col-span-2">
-                <UiMessage id="components_dashboard_wholesale_wholesale_customer_details.text007" />
-              </p>
-            </form>
-          ) : (
-            <WholesaleEmptyState
-              description={uiText("attribute002")}
-              icon={<Link2 className="size-5" />}
-              title={uiText("attribute003")}
-            />
-          )}
-        </div>
-      ) : null}
+      <WholesaleCustomerAccountLink
+        canLink={canLinkAccount}
+        customer={customer}
+        linkedUserIds={linkedRegisteredUserIds}
+        onLink={onLinkRegisteredUser}
+        pending={pendingKey === `customer:link-account:${customer.id}`}
+        registeredAccounts={registeredAccounts}
+      />
     </div>
   );
-}
-function getRegisteredAccountLabel(profile: WholesaleProfile) {
-  const displayName = profile.name?.trim() || "未填写姓名";
-  const contact = [profile.email, profile.phone].filter(Boolean).join(" / ");
-  return contact ? `${displayName}（${contact}）` : displayName;
 }

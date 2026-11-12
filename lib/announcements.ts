@@ -1,9 +1,7 @@
 import { queryCompleteDashboardRows } from "./dashboard-complete-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  getDashboardQueryRange,
-} from "./dashboard-pagination";
+import { getDashboardQueryRange } from "./dashboard-pagination";
 import { withRequestTimeout } from "./request-timeout";
 import {
   getCurrentSessionContext,
@@ -13,7 +11,6 @@ import {
 
 export type AnnouncementAudience = "client" | "internal" | "all";
 export type AnnouncementStatus = "draft" | "published" | "offline";
-export type AnnouncementFilterValue = AnnouncementAudience | AnnouncementStatus | "all";
 
 export type AnnouncementRow = {
   id: string;
@@ -43,7 +40,7 @@ type AnnouncementReaderContext = {
   status: UserStatus | null;
 };
 
-const ANNOUNCEMENT_SELECT =
+export const ANNOUNCEMENT_SELECT =
   "id,title,content,audience,status,created_by_user_id,created_at,updated_at,published_at";
 
 export function canManageAnnouncements(role: AppRole | null) {
@@ -70,6 +67,7 @@ export async function getVisibleAnnouncements(
   }
 
   const audiences = getVisibleAnnouncementAudiences(role);
+  // 界面按角色减少读取结果，数据库行级策略仍独立决定用户能看到哪些记录。
   const { from, to } = getDashboardQueryRange(limit);
   const { data, error } = await withRequestTimeout(
     supabase
@@ -132,129 +130,10 @@ export async function getAdminAnnouncementsPageData(
   };
 }
 
-export async function createAnnouncement(
-  supabase: SupabaseClient,
-  input: AnnouncementFormInput,
-) {
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("announcements")
-      .insert(toAnnouncementPayload(input))
-      .select(ANNOUNCEMENT_SELECT)
-      .maybeSingle<AnnouncementRow>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Announcement was not created.");
-  }
-
-  return data;
-}
-
-export async function updateAnnouncement(
-  supabase: SupabaseClient,
-  announcementId: string,
-  input: AnnouncementFormInput,
-) {
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("announcements")
-      .update(toAnnouncementPayload(input))
-      .eq("id", announcementId)
-      .select(ANNOUNCEMENT_SELECT)
-      .maybeSingle<AnnouncementRow>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Announcement was not found.");
-  }
-
-  return data;
-}
-
-export async function deleteAnnouncement(
-  supabase: SupabaseClient,
-  announcementId: string,
-) {
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("announcements")
-      .delete()
-      .eq("id", announcementId)
-      .select("id")
-      .maybeSingle<{ id: string }>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Announcement was not found.");
-  }
-
-  return data;
-}
-
-export async function publishAnnouncement(
-  supabase: SupabaseClient,
-  announcementId: string,
-) {
-  return updateAnnouncementStatus(supabase, announcementId, "published");
-}
-
-export async function takeAnnouncementOffline(
-  supabase: SupabaseClient,
-  announcementId: string,
-) {
-  return updateAnnouncementStatus(supabase, announcementId, "offline");
-}
-
 export function sortAnnouncements(rows: readonly AnnouncementRow[]) {
   return [...rows].sort((left, right) => {
     return getAnnouncementSortTime(right) - getAnnouncementSortTime(left);
   });
-}
-
-function toAnnouncementPayload(input: AnnouncementFormInput) {
-  return {
-    audience: input.audience,
-    content: input.content.trim(),
-    title: input.title.trim(),
-  };
-}
-
-async function updateAnnouncementStatus(
-  supabase: SupabaseClient,
-  announcementId: string,
-  status: AnnouncementStatus,
-) {
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("announcements")
-      .update({ status })
-      .eq("id", announcementId)
-      .select(ANNOUNCEMENT_SELECT)
-      .maybeSingle<AnnouncementRow>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Announcement was not found.");
-  }
-
-  return data;
 }
 
 function getAnnouncementSortTime(row: AnnouncementRow) {

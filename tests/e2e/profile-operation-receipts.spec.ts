@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
+import { cleanupFixtureResources } from "../test-support/fixture-cleanup-sequence";
 
 import { loginAs } from "./helpers/auth";
 import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
@@ -12,15 +16,24 @@ type ProfileReceipt = {
 };
 
 test.describe("个人资料最终业务凭证", () => {
+  test.beforeEach(({ baseURL }) => {
+    // 本用例写固定管理员资料；显式声明和实际专属API/DB/暂停状态都通过后，才接触账号。
+    readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+      execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
+  });
+
   test("0 行更新拒绝成功，写入后刷新失败显示确认中状态", async ({ page }) => {
     test.setTimeout(120_000);
     const admin = requireLocalAdminClient();
     const account = await loginAs(page, "administrator");
     const original = await readProfileByEmail(admin, account.email);
-    const runKey = Date.now().toString().slice(-7);
+    const runKey = randomUUID();
     const savedName = `回执管理员${runKey}`;
     const savedCity = `上海${runKey.slice(-3)}`;
 
+    let primaryError: unknown;
     try {
       await page.setViewportSize({ height: 900, width: 1440 });
       await page.goto(`${account.workspacePath}/my`);
@@ -92,8 +105,22 @@ test.describe("个人资料最终业务凭证", () => {
 
       await page.setViewportSize({ height: 844, width: 390 });
       await expectNoDocumentHorizontalOverflow(page);
+    } catch (error) {
+      primaryError = error;
     } finally {
-      await restoreProfile(admin, original);
+      const cleanupErrors: unknown[] = [];
+      try {
+        // 先关闭本次页面，避免继续发送交互请求；关闭失败仍尝试独立恢复，两个原因均保留。
+        await cleanupFixtureResources(
+          () => page.close(),
+          () => restoreProfile(admin, original, { name: savedName, city: savedCity }),
+        );
+      } catch (error) {
+        cleanupErrors.push(...(error instanceof AggregateError ? error.errors : [error]));
+      }
+      if (primaryError || cleanupErrors.length) {
+        throw new AggregateError([...(primaryError ? [primaryError] : []), ...cleanupErrors], "个人资料回执测试未完成");
+      }
     }
   });
 });
@@ -115,16 +142,31 @@ async function readProfileByEmail(admin: SupabaseClient, email: string) {
   return data;
 }
 
-async function restoreProfile(admin: SupabaseClient, profile: ProfileReceipt) {
-  const { data, error } = await admin
+async function readProfileById(admin: SupabaseClient, userId: string) {
+  const { data, error } = await admin.from("user_profiles")
+    .select("user_id,name,city,email").eq("user_id", userId).single<ProfileReceipt>();
+  if (error || !data || data.user_id !== userId) throw error ?? new Error("profile_test_readback_missing");
+  return data;
+}
+
+async function restoreProfile(admin: SupabaseClient, profile: ProfileReceipt, expected: { name: string; city: string }) {
+  const current = await readProfileById(admin, profile.user_id);
+  // 测试尚未写入或已经恢复时保持原行不动；别人的新值不属于本次夹具，拒绝覆盖。
+  if (current.name === profile.name && current.city === profile.city) return;
+  if (current.name !== expected.name || current.city !== expected.city) throw new Error("profile_test_ownership_changed");
+  const { data, error, count } = await admin
     .from("user_profiles")
-    .update({ city: profile.city, name: profile.name })
+    .update({ city: profile.city, name: profile.name }, { count: "exact" })
     .eq("user_id", profile.user_id)
+    // 将归属比较放进同一次UPDATE，防止独立读取后、实际恢复前被另一处修改。
+    .eq("name", expected.name).eq("city", expected.city)
     .select("user_id")
     .single<{ user_id: string }>();
-  if (error || data.user_id !== profile.user_id) {
+  if (error || count !== 1 || !data || data.user_id !== profile.user_id) {
     throw error ?? new Error("profile_test_cleanup_failed");
   }
+  const restored = await readProfileById(admin, profile.user_id);
+  if (restored.name !== profile.name || restored.city !== profile.city) throw new Error("profile_test_cleanup_unconfirmed");
 }
 
 async function expectNoDocumentHorizontalOverflow(page: Page) {

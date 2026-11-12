@@ -7,7 +7,6 @@ import type {
   WholesaleOrderAssessmentFilters,
 } from "./wholesale-order-assessment-types";
 
-const ALL = "all";
 const MAX_ORDER_EXAMPLES = 24;
 
 /**
@@ -191,6 +190,10 @@ function buildFilterDescription(
   customersById: Map<string, { unique_name: string }>,
   profilesById: Map<string, { email: string | null; name: string | null }>,
 ) {
+  // 精确单号模式忽略其他筛选，描述应与数据库实际采用的范围一致。
+  if (filters.searchMode === "exact_all_time") {
+    return `不限日期的精确订单编号：${filters.searchText}`;
+  }
   const parts = [
     `下单日期：${formatDateRange(filters.orderedFromDate, filters.orderedToDate)}`,
     `计入月份：${filters.orderMonth || "全部月份"}`,
@@ -232,7 +235,7 @@ function formatCustomerFilter(
   customerId: string,
   customersById: Map<string, { unique_name: string }>,
 ) {
-  return customerId === ALL
+  return !customerId
     ? "全部客户"
     : (customersById.get(customerId)?.unique_name ?? "指定客户");
 }
@@ -241,7 +244,7 @@ function formatSalesFilter(
   salesUserId: string,
   profilesById: Map<string, { email: string | null; name: string | null }>,
 ) {
-  if (salesUserId === ALL) return "全部业务员";
+  if (!salesUserId) return "全部业务员";
   const profile = profilesById.get(salesUserId);
   return profile?.name || profile?.email || "指定业务员";
 }

@@ -1,3 +1,4 @@
+/** 批发订单与费用：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -27,18 +28,11 @@ type WholesaleOrdersMobileListProps = {
   canViewInternalFields: boolean;
   clientContactsByOrderId: Record<string, string>;
   customersById: Map<string, WholesaleCustomer>;
-  getOrderEditAction: (
-    order: WholesaleOrderListItem,
-  ) => WholesaleOrderEditAction | null;
-  onDeleteOrderListAttachment: (
-    attachment: WholesaleOrderListAttachment,
-  ) => void | Promise<void>;
+  getOrderEditAction: (order: WholesaleOrderListItem) => WholesaleOrderEditAction | null;
+  onDeleteOrderListAttachment: (attachment: WholesaleOrderListAttachment) => void | Promise<void>;
   onOpenOrderEdit: (order: WholesaleOrderListItem) => void;
   onOpenOrderSettlement: (order: WholesaleOrderListItem) => void;
-  onUploadOrderListAttachments: (
-    order: WholesaleOrderListItem,
-    files: File[],
-  ) => Promise<boolean>;
+  onUploadOrderListAttachments: (order: WholesaleOrderListItem, files: File[]) => Promise<boolean>;
   orderListAttachmentsByOrderId: Map<string, WholesaleOrderListAttachment[]>;
   orders: WholesaleOrderListItem[];
   orderSettlementsByOrderId: Map<string, WholesaleOrderSettlement[]>;
@@ -66,8 +60,7 @@ export function WholesaleOrdersMobileList({
     "UiText.components_dashboard_wholesale_wholesale_orders_mobile_list",
   );
   const t = useTranslations("WholesaleBusiness.ordersUi");
-  const [selectedOrder, setSelectedOrder] =
-    useState<WholesaleOrderListItem | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<WholesaleOrderListItem | null>(null);
   return (
     <div className="grid gap-3">
       {orders.map((order) => {
@@ -93,11 +86,11 @@ export function WholesaleOrdersMobileList({
                   {getCustomerName(customersById, order.customer_id)}
                 </p>
               </div>
-              {canViewInternalFields ? <StatusBadge
-                tone={order.status === "settled" ? "success" : "warning"}
-              >
-                {t(`statuses.${order.status}`)}
-              </StatusBadge> : null}
+              {canViewInternalFields ? (
+                <StatusBadge tone={order.status === "settled" ? "success" : "warning"}>
+                  {t(`statuses.${order.status}`)}
+                </StatusBadge>
+              ) : null}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -108,16 +101,33 @@ export function WholesaleOrdersMobileList({
                   order.customer_payment_currency,
                 )}
               />
-              {canViewInternalFields ? <MobileOrderValue
-                label={uiText("attribute002")}
-                value={`${formatCurrency(settledAmount, order.customer_payment_currency)} / ${formatCurrency(order.customer_payment_amount, order.customer_payment_currency)}`}
-              /> : <MobileOrderValue
-                label={t("clientColumns.courier")}
-                value={order.courier_company ?? t("fallbacks.notRecorded")}
-              />}
+              {canViewInternalFields ? (
+                <MobileOrderValue
+                  label={uiText("attribute002")}
+                  value={`${formatCurrency(settledAmount, order.customer_payment_currency)} / ${formatCurrency(order.customer_payment_amount, order.customer_payment_currency)}`}
+                />
+              ) : (
+                <MobileOrderValue
+                  label={t("clientColumns.courier")}
+                  value={order.courier_company ?? t("fallbacks.notRecorded")}
+                />
+              )}
               <MobileOrderValue
                 label={uiText("attribute003")}
-                value={canViewInternalFields ? getProfileName(profilesById, order.sales_user_id) : getClientOrderContactName(order, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}
+                value={
+                  canViewInternalFields
+                    ? getProfileName(
+                        profilesById,
+                        order.sales_user_id,
+                        t("fallbacks.unassigned"),
+                      )
+                    : getClientOrderContactName(
+                        order,
+                        clientContactsByOrderId,
+                        t("fallbacks.unassigned"),
+                        t("fallbacks.assignedNameUnavailable"),
+                      )
+                }
               />
               <MobileOrderValue
                 label={uiText("attribute004")}
@@ -131,14 +141,9 @@ export function WholesaleOrdersMobileList({
       {selectedOrder ? (
         <WholesaleOrderDetailsDialog
           canMarkOrderSettled={canMarkOrderSettled(selectedOrder)}
-          canManageOrderListAttachments={canManageOrderListAttachments(
-            selectedOrder,
-          )}
+          canManageOrderListAttachments={canManageOrderListAttachments(selectedOrder)}
           canViewInternalFields={canViewInternalFields}
-          customerName={getCustomerName(
-            customersById,
-            selectedOrder.customer_id,
-          )}
+          customerName={getCustomerName(customersById, selectedOrder.customer_id)}
           editAction={getOrderEditAction(selectedOrder)}
           onClose={() => setSelectedOrder(null)}
           onDeleteOrderListAttachment={onDeleteOrderListAttachment}
@@ -155,11 +160,22 @@ export function WholesaleOrdersMobileList({
           }
           open
           order={selectedOrder}
-          orderListAttachments={
-            orderListAttachmentsByOrderId.get(selectedOrder.id) ?? []
-          }
+          orderListAttachments={orderListAttachmentsByOrderId.get(selectedOrder.id) ?? []}
           pendingKey={pendingKey}
-          salesName={canViewInternalFields ? getProfileName(profilesById, selectedOrder.sales_user_id) : getClientOrderContactName(selectedOrder, clientContactsByOrderId, t("fallbacks.unassigned"), t("fallbacks.assignedNameUnavailable"))}
+          salesName={
+            canViewInternalFields
+              ? getProfileName(
+                  profilesById,
+                  selectedOrder.sales_user_id,
+                  t("fallbacks.unassigned"),
+                )
+              : getClientOrderContactName(
+                  selectedOrder,
+                  clientContactsByOrderId,
+                  t("fallbacks.unassigned"),
+                  t("fallbacks.assignedNameUnavailable"),
+                )
+          }
           settlements={orderSettlementsByOrderId.get(selectedOrder.id) ?? []}
         />
       ) : null}

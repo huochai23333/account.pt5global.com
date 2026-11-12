@@ -1,10 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  getAdminPersonRowById,
-  type AdminPersonAccountUpdatePayload,
-  type AdminPersonRow,
-} from "./admin-people";
+import { getAdminPersonRowById } from "./admin-people";
+import { type AdminPersonAccountUpdatePayload, type AdminPersonRow } from "./admin-people-contract";
 import { syncPendingTargetAuthMetadata } from "./admin-people-auth-metadata";
 import {
   applyAdminPersonAccountBundle,

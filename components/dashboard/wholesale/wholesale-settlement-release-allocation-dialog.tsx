@@ -17,6 +17,7 @@ import type {
   WholesaleSettlementRelease,
   WholesaleSettlementReleaseAllocation,
 } from "@/lib/wholesale-settlement-releases";
+import type { SettlementReleaseClearSubmission } from "@/lib/wholesale-settlement-release-clear";
 import { formatCurrency } from "./wholesale-display";
 import { formatSettlementReleaseSummary } from "./wholesale-settlement-release-display";
 import type { SettlementReleaseAllocationSubmission } from "./use-wholesale-settlement-release-actions";
@@ -27,8 +28,8 @@ type AllocationDialogProps = {
   allocations: WholesaleSettlementReleaseAllocation[];
   customers: WholesaleCustomer[];
   onClearAllocations: (
-    releaseId: string,
-    expectedRevision: number,
+    submission: SettlementReleaseClearSubmission,
+    onError: (message: string) => void,
   ) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
   onSaveAllocations: (
@@ -55,12 +56,14 @@ export function WholesaleSettlementReleaseAllocationDialog({
     "UiText.components_dashboard_wholesale_wholesale_settlement_release_allocation_dialog",
   );
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
   const form = useWholesaleSettlementReleaseAllocationForm({
     allocations,
     orderSettlements,
     orders,
     release,
   });
+  const [clearAllocationIds] = useState(() => form.activeAllocationIds);
   const hasFixedCustomer = Boolean(release.customer_id);
   const isPending = pendingAction !== null;
 
@@ -202,7 +205,10 @@ export function WholesaleSettlementReleaseAllocationDialog({
             <div className="mt-4 flex flex-wrap justify-end gap-2">
               <Button
                 disabled={isPending}
-                onClick={() => setConfirmingClear(false)}
+                onClick={() => {
+                  setClearError(null);
+                  setConfirmingClear(false);
+                }}
                 type="button"
                 variant="outline"
               >
@@ -211,10 +217,13 @@ export function WholesaleSettlementReleaseAllocationDialog({
               <Button
                 disabled={isPending}
                 onClick={async () => {
-                  const succeeded = await onClearAllocations(
-                    release.id,
-                    release.allocation_revision,
-                  );
+                  setClearError(null);
+                  // 保存点来自表单打开时的版本和分配编号，不能用最新列表覆盖这次确认。
+                  const succeeded = await onClearAllocations({
+                    releaseId: release.id,
+                    expectedRevision: release.allocation_revision,
+                    activeAllocationIds: clearAllocationIds,
+                  }, setClearError);
                   if (succeeded) onOpenChange(false);
                 }}
                 type="button"
@@ -228,12 +237,13 @@ export function WholesaleSettlementReleaseAllocationDialog({
                 {uiText("confirmClear")}
               </Button>
             </div>
+            {clearError ? <p role="alert" className="mt-3 text-sm text-status-danger">{clearError}</p> : null}
           </div>
         ) : null}
 
         <div className="flex min-w-0 flex-col-reverse gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            {form.hasActiveAllocations && !confirmingClear ? (
+            {clearAllocationIds.length > 0 && !confirmingClear ? (
               <Button
                 disabled={isPending}
                 onClick={() => setConfirmingClear(true)}

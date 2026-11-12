@@ -9,7 +9,6 @@ import {
 } from "./dashboard-structure/source-facts.mjs";
 
 const workspaceRoot = process.cwd();
-const dashboardRoot = path.join(workspaceRoot, "components", "dashboard");
 const appRoot = path.join(workspaceRoot, "app");
 const componentsRoot = path.join(workspaceRoot, "components");
 const authMaterialOwners = new Set([
@@ -50,6 +49,8 @@ const dashboardMaterialOwners = new Set([
   "components/dashboard/dashboard-shared-my/dashboard-my-content-sections.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-my-section-ui.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-shared-my-dialogs.tsx",
+  // 原弹窗的媒体卡片材质随职责拆分迁移，仍限定在该中层展示组件。
+  "components/dashboard/dashboard-shared-my/dashboard-shared-my-media-content.tsx",
   "components/dashboard/dashboard-shared-my/dashboard-shared-my-sections.tsx",
   "components/dashboard/dashboard-shared-photo-stack-preview.tsx",
   "components/dashboard/exchange-rates/exchange-rates-latest-card.tsx",
@@ -62,10 +63,7 @@ const dashboardMaterialOwners = new Set([
   "components/dashboard/workspace-announcement-action.tsx",
 ]);
 
-const violations = await collectDashboardSourceRuleViolations({
-  dashboardRoot,
-  workspaceRoot,
-});
+const violations = [];
 
 /**
  * 下面的规则覆盖全站，而不只覆盖工作台目录。
@@ -82,7 +80,14 @@ for (const absolutePath of allSourceFiles) {
     .relative(workspaceRoot, absolutePath)
     .replaceAll("\\", "/");
   const ast = collectAstFacts(source, absolutePath);
+  const lineCount = source.split(/\r?\n/).length;
 
+  // 每份文件只解析一次，工作台专项规则和全站规则共用同一份 JSX 信息。
+  if (relativePath.startsWith("components/dashboard/")) {
+    violations.push(...collectDashboardSourceRuleViolations({
+      source, relativePath, jsxElements: ast.jsx, lineCount,
+    }));
+  }
   violations.push(
     ...collectInformationHierarchyViolations({
       jsxElements: ast.jsx,
@@ -270,7 +275,6 @@ for (const absolutePath of allSourceFiles) {
     );
   }
 
-  const lineCount = source.split(/\r?\n/).length;
   if (
     lineCount > 400 &&
     (relativePath.startsWith("components/auth/") ||
@@ -278,50 +282,6 @@ for (const absolutePath of allSourceFiles) {
   ) {
     violations.push(
       `${relativePath}: 认证或基础 UI 文件超过 400 行，请按 view-model 或展示区块拆分。`,
-    );
-  }
-}
-
-const responsiveWhitelist = new Set([
-  "components/dashboard/admin-shell.tsx",
-  "components/dashboard/dashboard-home/dashboard-home-customizer.tsx",
-]);
-
-for (const absolutePath of await collectSourceFiles(dashboardRoot)) {
-  const source = await readFile(absolutePath, "utf8");
-  const relativePath = path
-    .relative(workspaceRoot, absolutePath)
-    .replaceAll("\\", "/");
-  const lineCount = source.split(/\r?\n/).length;
-  const ast = collectAstFacts(source, absolutePath);
-
-  if (lineCount > 400) {
-    violations.push(
-      `${relativePath}: 工作台文件超过 400 行，请先按查询、状态、弹窗或展示区块拆分。`,
-    );
-  }
-
-  const classTexts = ast.jsx.map((element) => element.classText);
-  const hasManualResponsivePair = ["md", "lg"].some(
-    (breakpoint) =>
-      classTexts.some((classText) =>
-        new RegExp(`\\bhidden\\s+${breakpoint}:block`).test(classText),
-      ) &&
-      classTexts.some((classText) =>
-        new RegExp(`\\b${breakpoint}:hidden`).test(classText),
-      ),
-  );
-  const usesResponsiveDataView = ast.jsx.some(
-    (element) => element.tagName === "ResponsiveDataView",
-  );
-
-  if (
-    !responsiveWhitelist.has(relativePath) &&
-    hasManualResponsivePair &&
-    !usesResponsiveDataView
-  ) {
-    violations.push(
-      `${relativePath}: 数据双形态视图必须使用 ResponsiveDataView。`,
     );
   }
 }

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { createFeishuAuthorizationUrl, createOAuthTransaction } from "@/lib/mail/mail-integrations";
+import { createFeishuAuthorizationUrl } from "@/lib/mail/mail-oauth-provider-urls";
+import { createOAuthTransaction } from "@/lib/mail/mail-oauth-transactions";
 import { feishuFailureRedirect } from "@/lib/mail/mail-feishu-navigation";
 import type { MailIdentity } from "@/lib/mail/mail-types";
 

@@ -1,3 +1,4 @@
+/** 线索大厅：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -9,7 +10,7 @@ import type { SalesLead, SalesLeadDetail } from "@/lib/sales-leads-types";
 import { SalesLeadPublicInfo } from "./sales-lead-public-info";
 import { SalesLeadProgressSection } from "./sales-lead-progress-section";
 import { SalesLeadHistorySection } from "./sales-lead-history-section";
-import type { LeadAction } from "./use-sales-leads-page";
+import type { LeadAction } from "./use-sales-lead-actions";
 
 export function SalesLeadDetailDialog({
   canManage,
@@ -32,12 +33,37 @@ export function SalesLeadDetailDialog({
 
   return (
     <DashboardDialog
-      actions={lead.status !== "converted" && (lead.status === "claimed" || canManage) ? <>
-        {lead.status === "claimed" ? <Button onClick={() => onAction("contact")} wrap>{t("actions.addContact")}</Button> : null}
-        {lead.status === "claimed" ? <Button onClick={() => onAction("return")} variant="outline" wrap>{t("actions.return")}</Button> : null}
-        {lead.status === "claimed" ? <Button disabled={!lead.expires_at || new Date(lead.expires_at).getTime() <= now} onClick={() => onConvert(lead)} variant="outline" wrap>{t("actions.addCustomer")}</Button> : null}
-        {canManage ? <Button onClick={() => onAction("assign")} variant="outline" wrap>{t("actions.assign")}</Button> : null}
-      </> : undefined}
+      actions={
+        lead.status !== "converted" && (lead.status === "claimed" || canManage) ? (
+          <>
+            {lead.status === "claimed" ? (
+              <Button onClick={() => onAction("contact")} wrap>
+                {t("actions.addContact")}
+              </Button>
+            ) : null}
+            {lead.status === "claimed" ? (
+              <Button onClick={() => onAction("return")} variant="outline" wrap>
+                {t("actions.return")}
+              </Button>
+            ) : null}
+            {lead.status === "claimed" ? (
+              <Button
+                disabled={!lead.expires_at || new Date(lead.expires_at).getTime() <= now}
+                onClick={() => onConvert(lead)}
+                variant="outline"
+                wrap
+              >
+                {t("actions.addCustomer")}
+              </Button>
+            ) : null}
+            {canManage ? (
+              <Button onClick={() => onAction("assign")} variant="outline" wrap>
+                {t("actions.assign")}
+              </Button>
+            ) : null}
+          </>
+        ) : undefined
+      }
       description={t("detail.description")}
       onOpenChange={onOpenChange}
       open

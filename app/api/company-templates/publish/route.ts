@@ -1,7 +1,7 @@
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { requireCompanyTemplateApiAccess } from "@/lib/company-templates/access";
 import { readCompanyTemplateErrorMessage } from "@/lib/company-templates/display-error";
-import { publishCompanyTemplateVersion } from "@/lib/company-templates/repository";
+import { publishCompanyTemplateVersion } from "@/lib/company-templates/mutations";
 import { normalizeTemplateSlug, validateHtmlFile } from "@/lib/company-templates/validation";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

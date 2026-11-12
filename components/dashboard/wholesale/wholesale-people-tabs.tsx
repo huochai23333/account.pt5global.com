@@ -14,10 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { WholesaleCustomer, WholesaleProfile } from "@/lib/wholesale";
-import {
-  WholesaleCustomerDirectory,
-  WholesaleSalesAccountDirectory,
-} from "./wholesale-people-directories";
+import { WholesaleCustomerDirectory } from "./wholesale-customers-directory";
+import { WholesaleSalesAccountDirectory } from "./wholesale-people-directory";
 type WholesaleCustomerPeopleTabProps = {
   customerKindFilter: string;
   customerSalesFilter: string;

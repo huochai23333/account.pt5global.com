@@ -1,105 +1,25 @@
+/** 工作台 AI 助手：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { usePathname } from "next/navigation";
 import { Bot, MessageCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useTranslations } from "next-intl";
 
 import { useLocale } from "@/components/i18n/locale-provider";
-import type {
-  AiAssistantLocale,
-  AiAssistantSettlementReleaseAction,
-} from "@/lib/ai-assistant/assistant-types";
-import { getCompanyText } from "@/lib/company-config";
+import type { AiAssistantLocale } from "@/lib/ai-assistant/assistant-types";
 
 import { AiAssistantPanel } from "./ai-assistant-panel";
 import { useAiAssistantChat } from "./use-ai-assistant-chat";
+import { useAiAssistantCopy } from "./use-ai-assistant-copy";
 
 export function AiAssistantClient() {
-  const t = useTranslations("DashboardShell.aiAssistant");
   const pathname = usePathname();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const assistantLocale: AiAssistantLocale = locale === "en" ? "en" : "zh";
-  const companyText = getCompanyText(assistantLocale);
-  const copy = useMemo(
-    () => ({
-      close:
-        assistantLocale === "en"
-          ? `Close ${companyText.assistantName}`
-          : `关闭${companyText.assistantName}`,
-      greeting: t("greeting"),
-      inputLabel: t("inputLabel"),
-      open:
-        assistantLocale === "en"
-          ? `Open ${companyText.assistantName}`
-          : `打开${companyText.assistantName}`,
-      placeholder: t("placeholder"),
-      reset: t("reset"),
-      resetConfirmAction: t("resetConfirmAction"),
-      resetConfirmCancel: t("resetConfirmCancel"),
-      resetConfirmDescription: t("resetConfirmDescription"),
-      requestTooLarge: t("requestTooLarge"),
-      resultConfirming: t("resultConfirming"),
-      send: t("send"),
-      serviceUnavailable: t("serviceUnavailable"),
-      settlementRelease: {
-        amountLabel: t("settlementAmount"),
-        cancel: t("settlementCancel"),
-        cancelled: t("settlementCancelled"),
-        cancelledMessage: (action: AiAssistantSettlementReleaseAction) =>
-          t("settlementCancelledMessage", {
-            customer: action.customerName,
-          }),
-        confirmationIntro: t("settlementConfirmationIntro"),
-        confirm: t("settlementConfirm"),
-        customerLabel: t("settlementCustomer"),
-        dateLabel: t("settlementDate"),
-        errorMessages: {
-          customerChanged: t("settlementErrorCustomerChanged"),
-          forbidden: t("settlementErrorForbidden"),
-          invalidInput: t("settlementErrorInvalidInput"),
-          notSignedIn: t("settlementErrorNotSignedIn"),
-          requestConflict: t("settlementErrorRequestConflict"),
-          requestTooLarge: t("settlementErrorRequestTooLarge"),
-          serviceUnavailable: t("settlementErrorServiceUnavailable"),
-        },
-        existingCustomer: t("settlementExistingCustomer"),
-        guidance: {
-          ambiguousCustomer: t("settlementGuidanceAmbiguousCustomer"),
-          invalidAmount: t("settlementGuidanceInvalidAmount"),
-          invalidCurrency: t("settlementGuidanceInvalidCurrency"),
-          invalidDate: t("settlementGuidanceInvalidDate"),
-          missingAmount: t("settlementGuidanceMissingAmount"),
-          missingCurrency: t("settlementGuidanceMissingCurrency"),
-          missingCustomer: t("settlementGuidanceMissingCustomer"),
-          multipleAmounts: t("settlementGuidanceMultipleAmounts"),
-          notAllowed: t("settlementGuidanceNotAllowed"),
-        },
-        inputCustomerLabel: t("settlementInputCustomer"),
-        noNote: t("settlementNoNote"),
-        noteLabel: t("settlementNote"),
-        published: t("settlementPublished"),
-        publishedMessage: (action: AiAssistantSettlementReleaseAction) =>
-          t("settlementPublishedMessage", {
-            amount: formatSettlementAmount(action.amount, assistantLocale),
-            currency: action.currency,
-            customer: action.customerName,
-            date: action.receivedOn,
-          }),
-        publishing: t("settlementPublishing"),
-        retry: t("settlementRetry"),
-        temporaryCustomer: t("settlementTemporaryCustomer"),
-        title: t("settlementTitle"),
-      },
-      thinking: t("thinking"),
-      title: companyText.assistantName,
-      tooManyRequests: t("tooManyRequests"),
-    }),
-    [assistantLocale, companyText.assistantName, t],
-  );
+  const copy = useAiAssistantCopy(assistantLocale);
   const chat = useAiAssistantChat({
     copy,
     locale: assistantLocale,
@@ -162,24 +82,10 @@ export function AiAssistantClient() {
             initial={{ opacity: 0, rotate: open ? 12 : -12, scale: 0.86 }}
             key={open ? "assistant-open" : "assistant-closed"}
           >
-            {open ? (
-              <Bot className="size-6" />
-            ) : (
-              <MessageCircle className="size-6" />
-            )}
+            {open ? <Bot className="size-6" /> : <MessageCircle className="size-6" />}
           </motion.span>
         </AnimatePresence>
       </motion.button>
     </>
   );
-}
-
-function formatSettlementAmount(
-  amount: number,
-  locale: AiAssistantLocale,
-) {
-  return new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  }).format(amount);
 }

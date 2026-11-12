@@ -39,17 +39,32 @@ export function useMailWorkspaceComposer(input: {
   filters: MailThreadQuery;
   loadThreads: (filters: MailThreadQuery, options?: { skipDraftGuard?: boolean }) => Promise<void>;
   draftGuard: ReturnType<typeof useMailDraftGuard>;
+  restoreThread: (threadId: string) => Promise<"unavailable" | void>;
+  getViewVersion: () => number;
+  onStartNew: () => void;
   setBusy: SetValue<string | null>;
   setFeedback: SetValue<string | null>;
   setAiDraft: SetValue<string>;
+  onUnavailable: () => void;
 }) {
-  const { draftGuard, filters, loadThreads, selected, setAiDraft, setBusy, setFeedback, setSelected, viewerId } = input;
+  const { draftGuard, filters, loadThreads, restoreThread, getViewVersion, onStartNew, onUnavailable, selected, setAiDraft, setBusy, setFeedback, setSelected, viewerId } = input;
   const { setDirty } = draftGuard;
   const [composer, setComposer] = useState<ComposerState>(EMPTY_COMPOSER);
   const [pendingSend, setPendingSend] = useState(false);
   const pendingIntentRef = useRef<MailSendIntent | null>(null);
   const draftThreadIdRef = useRef<string | null>(null);
+  const draftEditVersion = useRef(0);
+  const getDraftEditVersion = useCallback(() => draftEditVersion.current, []);
   const [draftReady, setDraftReady] = useState(false);
+  const clearReply = useCallback(() => {
+    // 回复草稿含会话主题和客户地址。失去查看权限后，也清除同一封的页面备份。
+    draftEditVersion.current += 1;
+    draftThreadIdRef.current = null;
+    writeMailDraft(viewerId, null);
+    setComposer(EMPTY_COMPOSER);
+    setAiDraft("");
+    setDirty(false);
+  }, [setAiDraft, setDirty, viewerId]);
 
   useEffect(() => {
     // 刷新后继续查询同一个任务；不会把邮件正文存入持久数据库。
@@ -59,18 +74,33 @@ export function useMailWorkspaceComposer(input: {
 
   useEffect(() => {
     const saved = readMailDraft(viewerId);
-    if (saved) {
-      draftThreadIdRef.current = saved.threadId;
-      setComposer(saved.composer);
-      setDirty(true);
-      if (saved.composer.mode === "reply" && saved.threadId) {
-        void requestMailJson<MailThreadDetail>(`/api/mail/threads/${saved.threadId}`)
-          .then(setSelected)
-          .catch(() => setFeedback("草稿已恢复，请重新打开原会话后再发送回复。"));
-      }
+    if (!saved) {
+      setDraftReady(true);
+      return;
     }
-    setDraftReady(true);
-  }, [viewerId, setDirty, setSelected, setFeedback]);
+    // 刷新时先确认回复还能访问，再展示会话地址和草稿，拒绝时不短暂露出旧内容。
+    let active = true;
+    const editVersion = draftEditVersion.current;
+    const restore = saved.composer.mode === "reply" && saved.threadId
+      ? restoreThread(saved.threadId)
+      : Promise.resolve();
+    const viewVersion = getViewVersion();
+    void restore.then((result) => {
+      if (!active) return;
+      if (editVersion === draftEditVersion.current && viewVersion === getViewVersion()) {
+        if (result === "unavailable") {
+          clearReply();
+          onUnavailable();
+        } else {
+          draftThreadIdRef.current = saved.threadId;
+          setComposer(saved.composer);
+          setDirty(true);
+        }
+      }
+      setDraftReady(true);
+    });
+    return () => { active = false; };
+  }, [viewerId, setDirty, restoreThread, clearReply, onUnavailable, getViewVersion]);
 
   useEffect(() => {
     if (!draftReady) return;
@@ -88,6 +118,7 @@ export function useMailWorkspaceComposer(input: {
     if (!files) return;
     if (composer.attachments.length + files.length > 10) { setFeedback("一封邮件最多添加 10 个附件。"); return; }
     setBusy("attachment"); setFeedback(null);
+    const viewVersion = getViewVersion();
     try {
       const uploaded = [] as ComposerState["attachments"];
       for (const file of Array.from(files)) {
@@ -97,12 +128,15 @@ export function useMailWorkspaceComposer(input: {
         });
         uploaded.push({ id: receipt.attachmentId, name: receipt.filename, status: receipt.status });
       }
+      // 转交或切换会话后，迟到的附件不能进入另一封邮件的编辑器。
+      if (viewVersion !== getViewVersion()) return;
       setComposer((current) => ({ ...current, attachments: [...current.attachments, ...uploaded], attachmentIds: [...current.attachmentIds, ...uploaded.map((item) => item.id)] }));
       if (uploaded.length > 0) draftGuard.setDirty(true);
       if (uploaded.some((item) => item.status !== "clean")) setFeedback("附件已保存，正在等待安全检查，暂时不能发送。");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "附件没有上传完成。"); }
-    finally { setBusy(null); }
-  }, [composer.attachments.length, draftGuard, setBusy, setFeedback]);
+    } catch (error) {
+      if (viewVersion === getViewVersion()) setFeedback(error instanceof Error ? error.message : "附件没有上传完成。");
+    } finally { setBusy((current) => current === "attachment" ? null : current); }
+  }, [composer.attachments.length, draftGuard, getViewVersion, setBusy, setFeedback]);
 
   const send = useCallback(async () => {
     setBusy("send"); setFeedback("邮件正在发送，请稍候…");
@@ -135,16 +169,22 @@ export function useMailWorkspaceComposer(input: {
 
   const startNew = useCallback(async () => {
     if (!await draftGuard.canDiscard()) return false;
+    // 先取消待返回的旧详情，再显示新邮件，防止正文和收件人被恢复成旧会话。
+    onStartNew();
+    draftEditVersion.current += 1;
+    draftThreadIdRef.current = null;
     draftGuard.setDirty(false);
     setSelected(null); setComposer(EMPTY_COMPOSER); setAiDraft("");
     return true;
-  }, [draftGuard, setAiDraft, setSelected]);
+  }, [draftGuard, onStartNew, setAiDraft, setSelected]);
 
   const updateComposer = useCallback((next: ComposerState) => {
+    // 人工输入即刻推进编辑版本，已经在途的建议不能覆盖这些修改。
+    draftEditVersion.current += 1;
     draftGuard.setDirty(true);
     setComposer(next);
     writeMailDraft(viewerId, { composer: next, threadId: selected?.id ?? draftThreadIdRef.current });
   }, [draftGuard, viewerId, selected?.id]);
 
-  return { composer, pendingSend, send, setComposer, startNew, updateComposer, uploadFiles };
+  return { composer, pendingSend, send, setComposer, startNew, updateComposer, uploadFiles, getDraftEditVersion, clearReply };
 }

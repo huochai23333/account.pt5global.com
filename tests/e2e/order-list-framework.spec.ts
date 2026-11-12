@@ -112,13 +112,8 @@ test.describe("批发订单与物流列表统一框架", () => {
     const loadMore = page.getByRole("button", { name: "下一页" });
     await expect(progress).toBeVisible();
 
-    // 本地种子数量可能调整，因此设置安全上限，并以按钮禁用作为到达末页的信号。
-    for (let batch = 0; batch < 10 && (await loadMore.isEnabled()); batch += 1) {
-      const previousProgress = await progress.textContent();
-      await loadMore.click();
-      // 必须等当前批次真正写入列表，避免下一轮在按钮的加载禁用状态下重复点击。
-      await expect(progress).not.toHaveText(previousProgress ?? "");
-    }
+    // 加载中也会禁用按钮；必须等分页空闲且当前页等于总页数，才能把禁用视作末页。
+    await reachLastOrderListPage(page);
 
     await expect(loadMore).toBeDisabled();
     await expect(progress).toBeVisible();
@@ -129,6 +124,38 @@ test.describe("批发订单与物流列表统一框架", () => {
 
 function getOrderListProgress(page: Page) {
   return page.getByText(/^第 \d+-\d+ 条，共 \d+ 条$/);
+}
+
+/** 只读翻页最多推进十次；等待真实分页就绪，不把暂时不可点击当作已经走到末页。 */
+async function reachLastOrderListPage(page: Page) {
+  const pagination = page.getByRole("navigation", { name: "列表分页", exact: true });
+  const nextPage = pagination.getByRole("button", { name: "下一页", exact: true });
+  const pageLabel = pagination.locator("p");
+  const progress = getOrderListProgress(page);
+  for (let step = 0; step <= 10; step += 1) {
+    await expect(pagination).toHaveAttribute("aria-busy", "false");
+    await expect(pageLabel).toHaveText(/^第 \d+ 页，共 \d+ 页$/);
+    const match = /^第 (\d+) 页，共 (\d+) 页$/.exec((await pageLabel.textContent()) ?? "");
+    expect(match).not.toBeNull();
+    const currentPage = Number(match![1]);
+    const pageCount = Number(match![2]);
+    expect(currentPage).toBeGreaterThanOrEqual(1);
+    expect(pageCount).toBeGreaterThanOrEqual(currentPage);
+    if (currentPage === pageCount) {
+      // 页码、范围计数和按钮共同证明终态；网络错误留下的旧列表不能仅凭按钮通过。
+      const range = /^第 (\d+)-(\d+) 条，共 (\d+) 条$/.exec((await progress.textContent()) ?? "");
+      expect(range).not.toBeNull();
+      expect(Number(range![2])).toBe(Number(range![3]));
+      await expect(nextPage).toBeDisabled();
+      return;
+    }
+    expect(step, "本次种子超过十次翻页上限，请准备更小的专属数据").toBeLessThan(10);
+    await expect(nextPage).toBeEnabled();
+    const previousProgress = await progress.textContent();
+    await nextPage.click();
+    await expect(pageLabel).toHaveText(`第 ${currentPage + 1} 页，共 ${pageCount} 页`);
+    await expect(progress).not.toHaveText(previousProgress ?? "");
+  }
 }
 
 async function expectLeftOf(left: Locator, right: Locator) {

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { removeStoredTaskAttachments } from "./admin-task-attachments";
 import { withRequestTimeout } from "./request-timeout";
-import { removeTaskStorageObjects } from "./task-attachment-policy";
 import {
   getTaskReviewSubmissionAssetsForTask,
   removeStoredTaskReviewSubmissionAssets,
-} from "./task-reviews";
+} from "./task-review-assets";
 import { normalizeOptionalString } from "./value-normalizers";
 
 const TASK_ATTACHMENT_BUCKET = "task-attachments";
@@ -15,16 +15,6 @@ type TaskStorageAsset = {
   task_attachment_storage_path: string | null;
 };
 
-export async function removeStoredTaskAttachments(
-  supabase: SupabaseClient,
-  attachments: TaskStorageAsset[],
-) {
-  await removeTaskStorageObjects(supabase, attachments, {
-    defaultBucket: TASK_ATTACHMENT_BUCKET,
-    timeoutMessage: "任务附件删除超时，请稍后重试。",
-  });
-}
-
 export async function prepareDeletedTaskStorageCleanup(
   supabase: SupabaseClient,
   options: {
@@ -32,52 +22,35 @@ export async function prepareDeletedTaskStorageCleanup(
     taskAttachments: TaskStorageAsset[];
   },
 ) {
-  const taskIds = await getDeletedTaskIds(supabase, options.taskId);
   const [taskAttachments, reviewSubmissionAssets] = await Promise.all([
-    getTaskAttachmentsForTasks(supabase, taskIds, options.taskAttachments),
-    getTaskReviewSubmissionAssetsForTasks(supabase, taskIds),
+    getTaskAttachmentsForDeletion(supabase, options.taskId, options.taskAttachments),
+    getTaskReviewSubmissionAssetsForTask(supabase, options.taskId),
   ]);
 
   return async function runDeletedTaskStorageCleanup() {
-    const cleanupResults = await Promise.allSettled([
+    // 两种文件独立清理，某组失败不能掩盖另一组的结果。
+    const [taskFiles, reviewFiles] = await Promise.allSettled([
       removeStoredTaskAttachments(supabase, taskAttachments),
-      removeStoredTaskReviewSubmissionAssets(supabase, reviewSubmissionAssets),
+      removeStoredTaskReviewSubmissionAssets(supabase, dedupeStorageAssets(reviewSubmissionAssets)),
     ]);
 
-    return cleanupResults.some((result) => result.status === "rejected");
+    const unconfirmedGroups: Array<"task_attachments" | "review_attachments"> = [];
+    if (taskFiles.status === "rejected") unconfirmedGroups.push("task_attachments");
+    if (reviewFiles.status === "rejected") unconfirmedGroups.push("review_attachments");
+    return unconfirmedGroups;
   };
 }
 
-async function getDeletedTaskIds(supabase: SupabaseClient, taskId: string) {
-  const { data, error } = await withRequestTimeout(
-    supabase
-      .from("task_main")
-      .select("id")
-      .eq("id", taskId)
-      .returns<Array<{ id: string | null }>>(),
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  const ids = (data ?? [])
-    .map((row) => normalizeOptionalString(row.id))
-    .filter((id): id is string => id !== null);
-
-  return ids.length > 0 ? ids : [taskId];
-}
-
-async function getTaskAttachmentsForTasks(
+async function getTaskAttachmentsForDeletion(
   supabase: SupabaseClient,
-  taskIds: string[],
+  taskId: string,
   fallbackAttachments: TaskStorageAsset[],
 ) {
   const { data, error } = await withRequestTimeout(
     supabase
       .from("task_sub")
       .select("bucket_name,task_attachment_storage_path")
-      .in("task_id", taskIds)
+      .eq("task_id", taskId)
       .returns<TaskStorageAsset[]>(),
   );
 
@@ -86,17 +59,6 @@ async function getTaskAttachmentsForTasks(
   }
 
   return dedupeStorageAssets([...(data ?? []), ...fallbackAttachments]);
-}
-
-async function getTaskReviewSubmissionAssetsForTasks(
-  supabase: SupabaseClient,
-  taskIds: string[],
-) {
-  const result = await Promise.all(
-    taskIds.map((taskId) => getTaskReviewSubmissionAssetsForTask(supabase, taskId)),
-  );
-
-  return dedupeStorageAssets(result.flat());
 }
 
 function dedupeStorageAssets<T extends TaskStorageAsset>(assets: T[]) {

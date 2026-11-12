@@ -41,7 +41,8 @@ export async function readLimitedJsonBody(
       receivedBytes += value.byteLength;
 
       if (receivedBytes > maxBytes) {
-        await reader.cancel("request body too large");
+        // 取消底层读取可能失败或延迟；立即保留超限错误供路由返回 413。
+        void reader.cancel("request body too large").catch(() => {});
         throw new RequestBodyTooLargeError();
       }
 

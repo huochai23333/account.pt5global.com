@@ -12,19 +12,19 @@ import {
   verifyPublishedBusinessParameterVersion,
   type BusinessParameterSetting,
   type BusinessParameterVersion,
-  type CommissionRuleConfig,
 } from "@/lib/commission-settings";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 
 import {
   COMMISSION_RULE_DEFINITIONS,
-  formatCommissionSettingInput,
-  getRuleConfigValue,
   type CommissionRuleDefinition,
-  type CommissionRuleField,
 } from "./commission-settings-display";
+import {
+  createBusinessParameterDraft,
+  parseBusinessParameterDraft,
+  type BusinessParameterDraft,
+} from "./business-parameter-draft";
 
-export type BusinessParameterDraft = Record<string, string>;
 export type EffectiveMode = "immediate" | "scheduled";
 export type SettingsFeedback = { message: string; tone: FeedbackTone } | null;
 
@@ -78,7 +78,7 @@ export function useBusinessParameterSettingsViewModel({
 
     setEditor({
       definition,
-      draft: createDraft(definition, sourceConfig),
+      draft: createBusinessParameterDraft(definition, sourceConfig),
       effectiveLocal: monthlyOnly ? getNextShanghaiMonthStartLocal() : "",
       effectiveMode: monthlyOnly ? "scheduled" : "immediate",
       reason: sourceVersion
@@ -97,7 +97,7 @@ export function useBusinessParameterSettingsViewModel({
 
   async function publish() {
     if (!editor || !supabase || pendingKey) return;
-    const parsed = parseDraft(editor.definition, editor.draft);
+    const parsed = parseBusinessParameterDraft(editor.definition, editor.draft);
     if (!parsed.ok) {
       setFeedback({ message: t(parsed.messageKey), tone: "error" });
       return;
@@ -225,72 +225,6 @@ export function useBusinessParameterSettingsViewModel({
     settings,
     updateEditor,
   };
-}
-
-function createDraft(
-  definition: CommissionRuleDefinition,
-  config: CommissionRuleConfig,
-) {
-  return definition.fields.reduce<BusinessParameterDraft>((result, field) => {
-    result[field.configKey] = formatCommissionSettingInput(
-      field.kind,
-      getRuleConfigValue(config, field.configKey),
-    );
-    return result;
-  }, {});
-}
-
-function parseDraft(
-  definition: CommissionRuleDefinition,
-  draft: BusinessParameterDraft,
-):
-  | { config: CommissionRuleConfig; ok: true }
-  | {
-      messageKey:
-        | "validation.amount"
-        | "validation.count"
-        | "validation.rate"
-        | "validation.tierOrder";
-      ok: false;
-    } {
-  const config: CommissionRuleConfig = {};
-  for (const field of definition.fields) {
-    const value = parseFieldValue(field, draft[field.configKey] ?? "");
-    if (value === null) {
-      return {
-        messageKey:
-          field.kind === "rate"
-            ? "validation.rate"
-            : field.kind === "count"
-              ? "validation.count"
-              : "validation.amount",
-        ok: false,
-      };
-    }
-    config[field.configKey] = value;
-  }
-
-  if (definition.code === "wholesale_referral_waybill_bonus") {
-    if (
-      config.tier_1_threshold >= config.tier_2_threshold ||
-      config.tier_2_threshold >= config.tier_3_threshold
-    )
-      return { messageKey: "validation.tierOrder", ok: false };
-  }
-  return { config, ok: true };
-}
-
-function parseFieldValue(field: CommissionRuleField, rawValue: string) {
-  const parsed = Number(rawValue.trim());
-  if (!Number.isFinite(parsed)) return null;
-  if (field.kind === "rate") {
-    const ratio = parsed > 1 ? parsed / 100 : parsed;
-    return ratio > 0 && ratio <= 1 ? Math.round(ratio * 10000) / 10000 : null;
-  }
-  if (field.kind === "count") {
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }
-  return parsed > 0 ? Math.round(parsed * 100) / 100 : null;
 }
 
 function getNextShanghaiMonthStartLocal() {

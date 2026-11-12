@@ -1,9 +1,16 @@
 import { installGenericTemplateAdapter } from "./generic-adapter";
 
 /** 共用沙箱桥：原文件不变，普通模板在运行时采集数据，本站保存权限仍留在父页。 */
-export function documentBridge(content: string, token: string, parentOrigin: string, readOnly = false) {
+export function documentBridge(
+  content: string,
+  token: string,
+  parentOrigin: string,
+  readOnly = false,
+) {
   const config = JSON.stringify({ token, parentOrigin, readOnly }).replace(/</g, "\\u003c");
-  return content + `<script>(function(){
+  return (
+    content +
+    `<script>(function(){
     (${installGenericTemplateAdapter.toString()})();
     var config=${config}, initialized=false,initializing=false,timer;
     function send(type,extra){parent.postMessage(Object.assign({type:'pt5.document.'+type,token:config.token},extra||{}),config.parentOrigin);}
@@ -31,5 +38,6 @@ export function documentBridge(content: string, token: string, parentOrigin: str
     window.addEventListener('load',function(){send('boot');},{once:true});
     // 保存命令由父页执行，模板沙箱不能自行决定存储位置；其他编辑快捷键不接管。
     window.addEventListener('keydown',function(event){if(!config.readOnly&&initialized&&(event.ctrlKey||event.metaKey)&&!event.altKey&&event.key.toLowerCase()==='s'){event.preventDefault();send('save-shortcut',{copy:event.shiftKey});}});
-  })();</script>`;
+  })();</script>`
+  );
 }

@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import {
   getPersonPrivateNoteErrorCode,
   savePersonPrivateNote,
-  type PersonPrivateNotePayload,
 } from "@/lib/person-private-notes";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
@@ -17,7 +16,8 @@ const STATUS_BY_ERROR_CODE = {
 
 export async function POST(request: Request) {
   try {
-    const payload = normalizeRequestPayload(await request.json());
+    // 无效 JSON 进入同一输入校验，不会被补成可以清空备注的默认值。
+    const payload: unknown = await request.json().catch(() => null);
     const supabase = await getServerSupabaseClient();
     const savedNote = await savePersonPrivateNote(supabase, payload);
 
@@ -34,22 +34,4 @@ export async function POST(request: Request) {
       },
     );
   }
-}
-
-function normalizeRequestPayload(
-  value: unknown,
-): PersonPrivateNotePayload {
-  if (!isRecord(value)) {
-    throw new Error("person_private_note_invalid_input");
-  }
-
-  return {
-    targetUserId:
-      typeof value.targetUserId === "string" ? value.targetUserId : "",
-    note: typeof value.note === "string" ? value.note : null,
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

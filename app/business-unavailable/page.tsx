@@ -52,25 +52,47 @@ export default async function BusinessUnavailablePage({
       <main className="flex min-h-screen items-center justify-center bg-background px-5 py-12 sm:px-6 sm:py-16">
         <PublicStateCard
           actions={
-            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-center">
-              {/* 没有已开通业务的账号仍可在电脑端进入本人资料库，与工作台入口一致。 */}
-              {role && <span className={styles.documentAction}><Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")} href={`${getDefaultWorkspaceBasePath(role)}/documents`}>{documentText("title")}</Link></span>}
-              {role && role !== "client" ? (
-                <>
-                  {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}
-                  <span className={styles.desktopAction}>
-                    <Link className={cn(buttonVariants({ size: "default", variant: "primary" }), "min-w-0 whitespace-normal text-center")}
-                      href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}>{copy.companyTemplates}</Link>
-                  </span>
-                  {role === "administrator" || role === "salesman" ? <Link
+            // 多个桌面入口允许换行，避免把最后的退出按钮压成逐字显示。
+            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+              {/* 员工无需开通业务即可进入本人资料库；客户仍遵守资料库服务端的禁止规则。 */}
+              {role && role !== "client" && (
+                <span className={styles.documentAction}>
+                  <Link
                     className={cn(
                       buttonVariants({ size: "default", variant: "primary" }),
                       "min-w-0 whitespace-normal text-center",
                     )}
-                    href={`${getDefaultWorkspaceBasePath(role)}/mail`}
+                    href={`${getDefaultWorkspaceBasePath(role)}/documents`}
                   >
-                    {copy.emailReminders}
-                  </Link> : null}
+                    {documentText("title")}
+                  </Link>
+                </span>
+              )}
+              {role && role !== "client" ? (
+                <>
+                  {/* 模板入口只在桌面展示；没有业务工作区的岗位也遵守这一规则。 */}
+                  <span className={styles.desktopAction}>
+                    <Link
+                      className={cn(
+                        buttonVariants({ size: "default", variant: "primary" }),
+                        "min-w-0 whitespace-normal text-center",
+                      )}
+                      href={`${getDefaultWorkspaceBasePath(role)}/company-templates`}
+                    >
+                      {copy.companyTemplates}
+                    </Link>
+                  </span>
+                  {role === "administrator" || role === "salesman" ? (
+                    <Link
+                      className={cn(
+                        buttonVariants({ size: "default", variant: "primary" }),
+                        "min-w-0 whitespace-normal text-center",
+                      )}
+                      href={`${getDefaultWorkspaceBasePath(role)}/mail`}
+                    >
+                      {copy.emailReminders}
+                    </Link>
+                  ) : null}
                 </>
               ) : null}
               <a
@@ -83,7 +105,13 @@ export default async function BusinessUnavailablePage({
                 {copy.help}
               </a>
               {/* 退出是写操作，表单不会被 Next 的链接预加载触发。 */}
-              <PostActionForm action={SIGN_OUT_TO_LOGIN_PATH} buttonClassName={cn(buttonVariants({ size: "default", variant: "secondary" }), "min-w-0 whitespace-normal text-center")}>
+              <PostActionForm
+                action={SIGN_OUT_TO_LOGIN_PATH}
+                buttonClassName={cn(
+                  buttonVariants({ size: "default", variant: "secondary" }),
+                  "min-w-0 whitespace-normal text-center",
+                )}
+              >
                 {copy.signOut}
               </PostActionForm>
             </div>

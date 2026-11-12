@@ -41,12 +41,7 @@ export function WholesalePageShell({
   return (
     <DashboardPageShell
       header={
-        <DashboardSectionHeader
-          actions={actions}
-          meta={meta}
-          presentation="work"
-          title={title}
-        />
+        <DashboardSectionHeader actions={actions} meta={meta} presentation="work" title={title} />
       }
     >
       {children}
@@ -88,9 +83,7 @@ export function WholesaleEmptyState({
   title: string;
   description: string;
 }) {
-  return (
-    <DashboardEmptyState description={description} icon={icon} title={title} />
-  );
+  return <DashboardEmptyState description={description} icon={icon} title={title} />;
 }
 
 export function WholesaleStatGrid({
@@ -145,13 +138,7 @@ export function WholesaleTable({
   );
 }
 
-export function WholesaleTh({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function WholesaleTh({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <th
       className={cn(
@@ -164,13 +151,7 @@ export function WholesaleTh({
   );
 }
 
-export function WholesaleTd({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function WholesaleTd({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <td
       className={cn(
@@ -232,10 +213,7 @@ export function WholesaleTextarea({
   return (
     <DashboardFilterField label={label}>
       <FormControls.Textarea
-        className={cn(
-          dashboardFilterInputClassName,
-          "h-auto min-h-24 py-3 sm:h-auto",
-        )}
+        className={cn(dashboardFilterInputClassName, "h-auto min-h-24 py-3 sm:h-auto")}
         defaultValue={defaultValue}
         name={name}
         placeholder={placeholder}
@@ -255,12 +233,7 @@ export function WholesaleSubmitButton({
   pending: boolean;
 }) {
   return (
-    <Button
-      variant="primary"
-      size="large"
-      disabled={disabled || pending}
-      type="submit"
-    >
+    <Button variant="primary" size="large" disabled={disabled || pending} type="submit">
       {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
       {children}
     </Button>

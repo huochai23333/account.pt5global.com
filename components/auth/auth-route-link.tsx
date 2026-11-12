@@ -20,6 +20,7 @@ type AuthRouteLinkProps = {
   href: string;
 };
 
+// 普通站内跳转保留 Next 导航，长时间闲置后整页读取；修饰键点击继续由浏览器处理。
 export function AuthRouteLink({
   children,
   className,

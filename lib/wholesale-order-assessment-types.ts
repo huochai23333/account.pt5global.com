@@ -1,16 +1,7 @@
-import { getWholesalePageData } from "@/lib/wholesale";
+import type { getWholesalePageData } from "./wholesale";
+import type { WholesaleOrderFilters } from "./wholesale-order-page";
 
-/** 订单评估接口只接受这些已经清洗过的筛选条件。 */
-export type WholesaleOrderAssessmentFilters = {
-  customerId: string;
-  orderMonth: string;
-  orderedFromDate: string;
-  orderedToDate: string;
-  salesUserId: string;
-  searchText: string;
-  status: string;
-};
+/** 订单列表和评估的筛选字段共用同一类型，包括按单号跨日期精确查找。 */
+export type WholesaleOrderAssessmentFilters = WholesaleOrderFilters;
 
-export type WholesaleOrderAssessmentData = Awaited<
-  ReturnType<typeof getWholesalePageData>
->;
+export type WholesaleOrderAssessmentData = Awaited<ReturnType<typeof getWholesalePageData>>;

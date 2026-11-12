@@ -5,13 +5,17 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientBusinessAddDialog } from "@/components/dashboard/client-business-add-dialog";
 import { useTranslations } from "next-intl";
-import { normalizeSearchText } from "@/lib/value-normalizers";
+import type { ClientBusinessCandidate } from "@/lib/client-business-access";
 import type { WholesaleCustomer, WholesaleProfile } from "@/lib/wholesale";
-import { getProfileName } from "./wholesale-display";
 import { WholesaleCustomerDialogs } from "./wholesale-customer-dialogs";
+import type { DeleteWholesaleCustomerAction, SubmitWholesaleCustomerForm } from "./wholesale-customer-actions";
+import type { AddRegisteredWholesaleCustomer } from "./wholesale-customer-account-actions";
 import { WholesaleCustomerPeopleTab } from "./wholesale-people-tabs";
 import { WholesalePageShell } from "./wholesale-ui";
+import { ALL_DIRECTORY_ITEMS as ALL, filterWholesaleCustomers } from "./wholesale-people-filters";
 type WholesaleCustomersSectionProps = {
+  businessAddCandidates: ClientBusinessCandidate[];
+  businessAddCandidatesUnavailable: boolean;
   canAssignSalesUser: boolean;
   canAddRegisteredCustomer: boolean;
   canEdit: boolean;
@@ -19,18 +23,19 @@ type WholesaleCustomersSectionProps = {
   currentUserId: string | null;
   customers: WholesaleCustomer[];
   onAddCustomerOtherName: (formData: FormData) => Promise<boolean>;
-  onAddRegisteredCustomer: (userId: string) => boolean | Promise<boolean>;
+  onAddRegisteredCustomer: AddRegisteredWholesaleCustomer;
   onCreateCustomer: (formData: FormData) => boolean | Promise<boolean>;
-  onDeleteCustomer: (customerId: string) => boolean | Promise<boolean>;
-  onLinkCustomerAccount: (formData: FormData) => Promise<boolean>;
-  onUpdateCustomer: (formData: FormData) => boolean | Promise<boolean>;
+  onDeleteCustomer: DeleteWholesaleCustomerAction;
+  onLinkCustomerAccount: SubmitWholesaleCustomerForm;
+  onUpdateCustomer: SubmitWholesaleCustomerForm;
   pendingKey: string | null;
   profilesById: Map<string, WholesaleProfile>;
   registeredAccounts: WholesaleProfile[];
   salesAccounts: WholesaleProfile[];
 };
-const ALL = "all";
 export function WholesaleCustomersSection({
+  businessAddCandidates,
+  businessAddCandidatesUnavailable,
   canAssignSalesUser,
   canAddRegisteredCustomer,
   canEdit,
@@ -69,69 +74,19 @@ export function WholesaleCustomersSection({
       ),
     [customers],
   );
-  const businessAddCandidates = useMemo(
-    () =>
-      registeredAccounts
-        .filter(
-          (profile) =>
-            profile.status !== "suspended" &&
-            !linkedRegisteredUserIds.has(profile.user_id),
-        )
-        .map((profile) => ({
-          email: profile.email,
-          name: profile.name,
-          phone: profile.phone,
-          userId: profile.user_id,
-        })),
-    [linkedRegisteredUserIds, registeredAccounts],
-  );
   const selectedCustomer = useMemo(
     () =>
       customers.find((customer) => customer.id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   );
-  const filteredCustomers = useMemo(() => {
-    const searchValue = normalizeSearchText(customerSearch);
-    return customers.filter((customer) => {
-      if (
-        customerKindFilter !== ALL &&
-        customer.customer_kind !== customerKindFilter
-      ) {
-        return false;
-      }
-      if (
-        customerSalesFilter !== ALL &&
-        (customer.assigned_sales_user_id ?? "") !== customerSalesFilter
-      ) {
-        return false;
-      }
-      if (!searchValue) return true;
-      const assignedSales = getProfileName(
-        profilesById,
-        customer.assigned_sales_user_id,
-      );
-      const linkedProfile = customer.registered_user_id
-        ? profilesById.get(customer.registered_user_id)
-        : null;
-      return [
-        customer.unique_name,
-        customer.other_names.join(" "),
-        customer.contact_details ?? "",
-        customer.source ?? "",
-        customer.notes ?? "",
-        assignedSales,
-        linkedProfile?.name ?? "",
-        linkedProfile?.email ?? "",
-        linkedProfile?.phone ?? "",
-      ].some((value) => normalizeSearchText(value).includes(searchValue));
-    });
-  }, [
-    customerKindFilter,
-    customerSalesFilter,
-    customerSearch,
-    customers,
-    profilesById,
-  ]);
+  const filteredCustomers = useMemo(
+    () => filterWholesaleCustomers(customers, profilesById, {
+      search: customerSearch,
+      kind: customerKindFilter,
+      owner: customerSalesFilter,
+    }),
+    [customerKindFilter, customerSalesFilter, customerSearch, customers, profilesById],
+  );
   const hasCustomerFilters =
     customerSearch || customerKindFilter !== ALL || customerSalesFilter !== ALL;
   return (
@@ -211,8 +166,8 @@ export function WholesaleCustomersSection({
       <ClientBusinessAddDialog
         business="wholesale"
         candidates={businessAddCandidates}
-        error={null}
-        onAdd={async (userId) => onAddRegisteredCustomer(userId)}
+        error={businessAddCandidatesUnavailable ? accessT("serviceUnavailable") : null}
+        onAdd={onAddRegisteredCustomer}
         onOpenChange={setBusinessAddDialogOpen}
         open={businessAddDialogOpen}
         pendingUserId={

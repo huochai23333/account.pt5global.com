@@ -1,6 +1,10 @@
 # 真实 E2E：逐项阻塞与最小人工准备
 
+> 本文保留原始审计时的历史环境与结果。2026-11-02 的服务恢复、当前测试集合及单独页面验收见[改造验证报告](onboarding/implementation-report.md)；下文的“本轮”“当前观察”指原始基线，不是最新服务状态。
+
 本轮基线 Web `db8626f41eaa8314923f7b01c4cecdb96b5b0682`、Supabase `fc210bb9340d8f89eadfcd5a29e043e0fabc3cc8`。以下 57 项是原 86 个文件中未执行的文件；另列原始三个失败。没有用重跑次数增加覆盖，也没有恢复旧 39 个通过用例缺失的完整日志。
+
+核对当期入口时，运行 `node scripts/audit-real-e2e-prerequisites.mjs`。表内能力列保存原准备记录，脚本的 `prerequisiteChanges` 列出其中与当前静态依赖不同的入口。准入及执行结果继续以对应证据为准。[最新静态复核](onboarding/reference/verification-2026-11-11-lead-sync-cli.md#静态测试准入复核)
 
 ## 当前可直接执行的范围
 
@@ -45,7 +49,7 @@
 | `business-parameter-order-lock.spec.ts` | unrun | H+A | 可发布全局参数的隔离实例、两版本订单、结汇与上海月份预期 | M1/M2/M3/M4/M5；整套可丢弃 API/Auth/DB 与已接受版本值，不只设置 disposable 标志 |
 | `business-parameter-settings.spec.ts` | unrun | H+A | 全局参数发布/预约/取消、唯一版本和写后断连读回；不能改共享费率 | M1/M2/M3/M4/M5；隔离全局参数、恢复记录和独立版本凭证 |
 | `client-business-access.spec.ts` | unrun | H+A | 可新增并核实的批发客户账号；旅游访问拒绝与客户链接身份 | M1/M2/M3/M4；专用客户身份及管理员添加/清理范围 |
-| `company-expenses.spec.ts` | unrun | H；无 A | 管理员/财务/业务员；创建删除需要自有唯一费用，不能借用共享费用 | M1/M2/M4；唯一费用标识、失败后清理及最终行数证明 |
+| `company-expenses.spec.ts` | unrun | H+A | 管理员/财务/业务员；专属 UUID 标题费用，写后及取消、刷新、删除须独立查表，失败也限定清理 | M1/M2/M3/M4；原认证入口与本地管理员读回须获正式准入，不执行替代入口 |
 | `company-templates.spec.ts` | unrun | H+A | 内部角色与客户、七类模板、正文/版本/修订/哈希、发布回滚与受控故障 | M1/M2/M3/M4/M7；专用模板和指南文件，保留正文 GET 与独立哈希凭证 |
 | `customer-inventory-orders.spec.ts` | unrun | H；无 A；另有执行拒绝 | 固定 200、终身资格、叠加三档尚未确定；专用订单/额度/延期/还款数据 | M4/M5；先确定规则并准备隔离库存夹具；库存执行拒绝保留，不重试 |
 | `dashboard-numbered-pages.spec.ts` | unrun | H+A | 超 200 条自有费用及各完整列表、当天汇率；角色页码与独立顺序 | M1/M2/M3/M4；至少 205 条自有费用及各列表数据/总数清单 |
@@ -78,7 +82,7 @@
 | `system-health.spec.ts` | unrun | H+A | 管理员/财务、真实运行记录和终态；前置会创建/结束服务任务 | M1/M2/M3/M4；专用运行账本、任务创建范围；服务监听不等于任务正确 |
 | `user-media-operation-receipts.spec.ts` | unrun | H+A | 专用运营、真实本地 Storage 对象/媒体行/操作运行 | M1/M2/M3/M4；自有媒体文件、逐对象存在/缺失与最终行数读回 |
 | `wholesale-customer-management.spec.ts` | unrun | H；无 A | 自有客户可编辑删除；末项不能借用有订单的 Wholesale Alpha | M1/M2/M4；无订单与有自有订单的两客户、清理与拒删证明 |
-| `wholesale-customer-other-names.spec.ts` | unrun | H；无 A | 原测试向共享 Wholesale Alpha 加别名且不恢复 | M1/M2/M4；专用客户及别名快照/恢复范围，不能写共享客户 |
+| `wholesale-customer-other-names.spec.ts` | unrun | H+A | 已改为页面创建UUID专属客户、独立记录/版本和刷新核对，finally限定回收 | M1/M2/M3/M4；同项目可丢弃API/Auth/DB准入；SDK内存HTTP和SQL诊断不代替原两页面场景 |
 | `wholesale-logistics-sync.spec.ts` | unrun | H+A | 本地来源服务、真实 Edge、限流/续跑配置、SQL 进度及账本凭证 | M1/M2/M3/M4/M6；只读本地来源和隔离后台任务，不能连第三方数据库 |
 | `wholesale-logistics.spec.ts` | unrun | H；无 A | 独立 55 行 Local Paging Shop 清单；历史归属用例不能改共享 Local Shop Alpha；同步刷新被模拟 503 | M1/M2/M4；优先只验收真实分页，准备清单/冻结来源；归属写入另用自有历史 |
 | `wholesale-mutation-failures.spec.ts` | unrun | H；无 A | 订单/客户/归属/推荐/收款自有数据及全部写出口故障拦截 | M1/M2/M4/M6；防止接口匹配遗漏写共享数据；这些故障注入不能当正常真实写成功 |
@@ -91,11 +95,13 @@
 | `wholesale-order-settlements.spec.ts` | unrun | H+A | 自有可结汇订单、选定日期汇率和多笔结汇最终记录 | M1/M2/M3/M4/M5；已接受金额与报价快照，不改共享订单或自行裁定钱财规则 |
 | `wholesale-orders-i18n.spec.ts` | unrun | H；无 A | 英文 390px 下可见订单及完整字段 | M1/M2/M4/M7；可见合成订单，语言固定为英文 |
 | `wholesale-salesman-collaboration.spec.ts` | unrun | H；无 A | 两业务员协作客户/订单，会修改转派；原用例使用固定协作订单 | M1/M2/M4；两专用业务员及自有协作订单，原归属快照和恢复 |
-| `wholesale-settlement-monthly-summary.spec.ts` | unrun | H+A | 当月有效收款/分配与故意缺汇率的独立月份；会影响汇总 | M1/M2/M3/M4/M5；专用月份/客户/分配与汇率快照，不能删除共享报价 |
+| `wholesale-settlement-monthly-summary.spec.ts` | unrun | H+A | 当月有效分配和收款日缺USD报价；手动创建两页，收尾改为专属原子清理 | M1/M2/M3/M4/M5；专用客户/分配与汇率快照、同项目API/DB准入；专项内核/失败生命周期不代替原页面运行 |
 | `wholesale-settlement-releases.spec.ts` | unrun | H+A | 财务/业务员、自有客户多订单/收款/部分分配/整组修改 | M1/M2/M3/M4/M5；金额、剩余额度、币种和日期预期及独立分配 ID |
 | `workspace-entrypoints.spec.ts` | unrun | H；无 A | 27 个角色页面的真实标题/控件、可见订单/人员；管理员账号页受服务配置影响 | M1/M2/M3/M4；管理员/业务员/财务角色和各页最少可见记录；刷新后检查正文 |
 
 ## 三个已有失败
+
+当前新增的`wholesale-settlement-monthly-unallocated.spec.ts`不属于上表原57个未执行入口，仍为unrun，不能继承历史通过记录。源码已拆为专属数据准备、三岗位卡片和逐资源收尾；执行需要H/A正式准入、同项目可丢弃Web/API/Auth/DB、全局本月余额空基线及精确收款日样例。SDK内存HTTP、抽取声明和订单/客户SQL诊断结果不代替原页面发布/分配/清空/取消、刷新和数据库凭证。
 
 | 文件 | 状态 | 已知失败与当前阻塞 | 你需要准备什么 | 真实成功凭证 |
 | --- | --- | --- | --- | --- |

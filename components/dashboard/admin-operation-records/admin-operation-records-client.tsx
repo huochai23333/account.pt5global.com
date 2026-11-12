@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/i18n/locale-provider";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
-import type { AdminOperationRecordsPageData } from "@/lib/admin-operation-records";
+import type { AdminOperationRecordsPageData } from "@/lib/admin-operation-records-contract";
 
 import {
   OperationRecordsFilterSection,
@@ -35,17 +35,13 @@ export function AdminOperationRecordsClient({
             categoryOptions={viewModel.categoryOptions}
             onActionFilterChange={viewModel.setActionFilter}
             onCategoryFilterChange={viewModel.setCategoryFilter}
-            onReset={() => {
-              viewModel.setSearchText("");
-              viewModel.setCategoryFilter("all");
-              viewModel.setActionFilter("all");
-            }}
+            onReset={viewModel.resetFilters}
             onSearchTextChange={viewModel.setSearchText}
             searchText={viewModel.searchText}
           />
 
           <OperationRecordsListSection
-          paginationKey={JSON.stringify([viewModel.searchText, viewModel.categoryFilter, viewModel.actionFilter])}
+            paginationKey={viewModel.paginationKey}
             actionLabels={viewModel.actionLabels}
             categoryLabels={viewModel.categoryLabels}
             locale={locale}

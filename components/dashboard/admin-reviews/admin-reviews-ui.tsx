@@ -15,19 +15,7 @@ import {
 } from "./admin-reviews-shared-ui";
 import type { BusyAction } from "./types";
 
-function ReviewLoadingState() {
-  const t = useTranslations("ReviewsUI");
-
-  return (
-    <div className="mx-auto flex min-h-[60vh] w-full max-w-[1320px] items-center justify-center">
-      <div className="rounded-surface-panel border border-surface-panel-border bg-surface-panel px-6 py-5 text-sm text-content-muted shadow-surface-interactive">
-        {t("loading")}
-      </div>
-    </div>
-  );
-}
-
-function PrivacyReviewList({
+export function PrivacyReviewList({
   rows,
   busyRows,
   onAction,
@@ -112,5 +100,3 @@ function PrivacyReviewList({
     </div>
   );
 }
-
-export { PrivacyReviewList, ReviewLoadingState };

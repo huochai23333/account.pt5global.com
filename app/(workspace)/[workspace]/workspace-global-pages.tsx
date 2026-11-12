@@ -21,6 +21,8 @@ type WorkspaceGlobalPageProps = {
   params: Promise<{ workspace: string }>;
 };
 
+// 这里只协调五个全局栏目的标题、页面能力与领域读取；各领域的查询和写入继续在 lib 服务中。
+// pageVariants 限制页面入口，不能代替服务自身的身份校验和数据库授权。
 const AdminAnnouncementsClient = dynamic(() =>
   import("@/components/dashboard/announcements/announcements-client").then(
     (mod) => mod.AdminAnnouncementsClient,

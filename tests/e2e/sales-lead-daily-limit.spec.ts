@@ -1,223 +1,160 @@
-import { requireDisposableFixture } from "../test-support/disposable-fixture";
 import { expect, test, type Page } from "@playwright/test";
-
+import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { loginAs, setTestLocale } from "./helpers/auth";
-import {
-  isLocalSupabaseTestTarget,
-  runLocalSupabaseSql,
-} from "./helpers/local-supabase";
+import { runLocalSupabaseSql } from "./helpers/local-supabase";
+import { readLocalPostgresRows, localSqlValue as quote } from "./helpers/local-postgres-query";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
+import { cleanupFixtureResources } from "../test-support/fixture-cleanup-sequence";
+import { buildLearningLeadWriteSql, buildLearningLeadReadSql, verifyLearningLeadReceipt } from "../../../PT5-dropshipping-supabase/scripts/learning-lead-fixture-sql.mjs";
 
-const SALESMAN_ID = "55555555-5555-4555-8555-555555555555";
-const TEST_SOURCE_PREFIX = "E2E-DAILY-LIMIT-";
-
-// 在任何准备/清理 hook 前拒绝默认共享环境；专用声明仍需实际夹具隔离。
-test.beforeAll(async ({ baseURL }) => {
-  requireDisposableFixture({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL, mode: process.env.PT5_E2E_FIXTURE_MODE });
+test.beforeEach(({ baseURL }) => {
+  // 声明与实际DB/Kong/API、暂停状态都核对后，才允许登录和准备前四次认领。
+  readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+    container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+    execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
 });
 
 test.describe("sales lead daily claim limit", () => {
   test.setTimeout(120_000);
-
-  test("the fifth lead succeeds and every later page attempt keeps the database at five", async ({
-    page,
-  }) => {
-    test.skip(
-      !isLocalSupabaseTestTarget(),
-      "This regression requires the local Docker Supabase authority.",
-    );
-
-    prepareDailyLimitFixture();
-
-    try {
+  test("the fifth lead succeeds and every later page attempt keeps the database at five", async ({ page }) => {
+    const account = await loginAs(page, "salesman");
+    await withDailyLimitFixture(page, account.email, async fixture => {
+      const fifth = fixture.leads[4], sixth = fixture.leads[5];
       await page.setViewportSize({ width: 1440, height: 900 });
-      await loginAs(page, "salesman");
       await page.goto("/salesman/wholesale/leads");
-
-      const rules = page.getByTestId("sales-lead-rules");
-      await expect(rules).toContainText("每人每天最多领取5条");
+      // 页面当前介绍30天期限；每日5次仍由数据库及拒绝提示证明，不断言已移除的规则文案。
+      const rules = page.getByTestId("sales-lead-rules-desktop");
+      await expect(rules.locator("dt")).toHaveText(["30天内成为客户"]);
       await expectNoHorizontalOverflow(page);
-
-      // 前四个周期由数据库夹具准备，第五次必须从真实页面发起并取得 RPC 最终响应。
-      await page.getByLabel("搜索线索").fill("每日限额页面测试 5");
-      const fifthLead = getLeadRow(page, "每日限额页面测试 5");
+      await page.getByRole("button", { name: "线索大厅", exact: true }).click();
+      await page.getByLabel("搜索线索").fill(fifth.name);
+      const fifthLead = getLeadRow(page, fifth.name);
       await expect(fifthLead).toBeVisible();
-      const fifthResponse = page.waitForResponse(
-        (response) =>
-          response.url().endsWith("/rpc/claim_sales_lead") &&
-          response.request().method() === "POST",
-      );
+      const fifthResponse = page.waitForResponse(response => response.url().endsWith("/rpc/claim_sales_lead") && response.request().method() === "POST");
+      // 第五次必须由原页面发起；独立读回实际负责人、唯一周期和全天总数才算完成。
       await fifthLead.getByRole("button", { name: "认领线索" }).click();
       expect((await fifthResponse).ok()).toBe(true);
-
-      // HTTP 成功不作为凭证：独立数据库查询必须确认当天正好 5 个周期，且第五条真实归当前账号。
-      expect(readDailyLimitProof(5)).toBe(`5|1|claimed|${SALESMAN_ID}`);
-      await expect(page.getByRole("button", { name: "我的线索" })).toHaveAttribute(
-        "aria-pressed",
-        "true",
-      );
+      await expect.poll(() => readDailyLimitProof(fixture.actorId, fifth.id).daily_claims).toBe(5);
+      const claimed = readDailyLimitProof(fixture.actorId, fifth.id);
+      expect(claimed).toMatchObject({ daily_claims: 5, status: "claimed", current_assignee_user_id: fixture.actorId });
+      expect(claimed.history).toHaveLength(1);
+      expect(claimed.history[0]).toMatchObject({ id: claimed.current_assignment_id, assignee_user_id: fixture.actorId,
+        claimed_by_user_id: fixture.actorId, ended_at: null });
+      await expect(page.getByRole("button", { name: "我的线索" })).toHaveAttribute("aria-pressed", "true");
 
       await page.getByRole("button", { name: "线索大厅" }).click();
-      await page.getByLabel("搜索线索").fill("每日限额页面测试 6");
-      const sixthLead = getLeadRow(page, "每日限额页面测试 6");
+      await page.getByLabel("搜索线索").fill(sixth.name);
+      const unclaimed = readDailyLimitProof(fixture.actorId, sixth.id);
+      expect(unclaimed).toMatchObject({ daily_claims: 5, status: "hall", current_assignee_user_id: null, current_assignment_id: null });
+      expect(unclaimed.history).toHaveLength(0);
+      expect(unclaimed.contacts).toHaveLength(0);
+      const sixthLead = getLeadRow(page, sixth.name);
       await expect(sixthLead).toBeVisible();
-      const sixthResponse = page.waitForResponse(
-        (response) =>
-          response.url().endsWith("/rpc/claim_sales_lead") &&
-          response.request().method() === "POST",
-      );
+      const sixthResponse = page.waitForResponse(response => response.url().endsWith("/rpc/claim_sales_lead") && response.request().method() === "POST");
       await sixthLead.getByRole("button", { name: "认领线索" }).click();
       const rejected = await sixthResponse;
       expect(rejected.ok()).toBe(false);
-      expect(await rejected.json()).toMatchObject({
-        message: "sales_lead_daily_limit_reached",
-      });
-      await expect(
-        page.getByText("你今天已领取 5 条线索，请明天再领取。"),
-      ).toBeVisible();
-      expect(readDailyLimitProof(6)).toBe("5|0|hall|");
-
-      // 刷新后仍以权威状态为准：第六条留在大厅，按钮仍可见而不会伪装成已领取。
+      expect(await rejected.json()).toMatchObject({ message: "sales_lead_daily_limit_reached" });
+      await expect(page.getByText("你今天已领取 5 条线索，请明天再领取。")).toBeVisible();
+      // 拒绝不能新增周期或改写任何已有字段/版本，两条目标均独立保持。
+      expect(readDailyLimitProof(fixture.actorId, sixth.id)).toEqual(unclaimed);
+      expect(readDailyLimitProof(fixture.actorId, fifth.id)).toEqual(claimed);
       await page.reload();
       await page.getByRole("button", { name: "线索大厅" }).click();
-      await page.getByLabel("搜索线索").fill("每日限额页面测试 6");
-      await expect(
-        getLeadRow(page, "每日限额页面测试 6").getByRole("button", {
-          name: "认领线索",
-        }),
-      ).toBeVisible();
+      await page.getByLabel("搜索线索").fill(sixth.name);
+      await expect(getLeadRow(page, sixth.name).getByRole("button", { name: "认领线索" })).toBeVisible();
+      expect(readDailyLimitProof(fixture.actorId, sixth.id)).toEqual(unclaimed);
 
-      // 手机宽度下再次从页面发起第六次请求，同时核对英文提示和长规则文字的排版。
       await setTestLocale(page, "en");
-      await page.setViewportSize({ width: 375, height: 900 });
-      await page.reload();
-      await expect(page.getByTestId("sales-lead-rules")).toContainText(
-        "up to 5 claims per person each day",
-      );
-      await page.getByRole("button", { name: "Lead Hall" }).click();
-      await page.getByLabel("Search leads").fill("每日限额页面测试 6");
-      await getLeadRow(page, "每日限额页面测试 6")
-        .getByRole("button", { name: "Claim lead" })
-        .click();
-      await expect(
-        page.getByText(
-          "You have already received 5 leads today. Please continue tomorrow.",
-        ),
-      ).toBeVisible();
-      expect(readDailyLimitProof(6)).toBe("5|0|hall|");
-      await expectNoHorizontalOverflow(page);
-    } finally {
-      cleanupDailyLimitFixture();
-    }
+      for (const width of [375, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.reload();
+        const mobileRules = page.getByTestId("sales-lead-rules");
+        if (await mobileRules.getAttribute("open") === null) await mobileRules.locator("summary").click();
+        await expect(mobileRules.locator("dt")).toHaveText(["Convert within 30 days"]);
+        await page.getByRole("button", { name: "Lead Hall" }).click();
+        await page.getByLabel("Search leads").fill(sixth.name);
+        const response = page.waitForResponse(item => item.url().endsWith("/rpc/claim_sales_lead") && item.request().method() === "POST");
+        await getLeadRow(page, sixth.name).getByRole("button", { name: "Claim lead" }).click();
+        expect((await response).ok()).toBe(false);
+        await expect(page.getByText("You have already received 5 leads today. Please continue tomorrow.")).toBeVisible();
+        expect(readDailyLimitProof(fixture.actorId, sixth.id)).toEqual(unclaimed);
+        expect(readDailyLimitProof(fixture.actorId, fifth.id)).toEqual(claimed);
+        await expectNoHorizontalOverflow(page);
+      }
+    });
   });
 });
 
+type DailyLead = { id: string; name: string };
+type DailyFixture = { actorId: string; leads: DailyLead[] };
+type DailyProof = { id: string; status: string; daily_claims: number; current_assignee_user_id: string | null;
+  current_assignment_id: string | null; history: Record<string, unknown>[]; contacts: Record<string, unknown>[] };
+
+/** 上下界都先在上海取自然日，再转换为时刻，结果不依赖连接时区。 */
+function dailyCountSql(actorId: string) {
+  return `(select count(*)::integer from public.sales_lead_assignments where assignee_user_id=${quote(actorId)}
+    and claimed_at >= (date_trunc('day',now() at time zone 'Asia/Shanghai') at time zone 'Asia/Shanghai')
+    and claimed_at < ((date_trunc('day',now() at time zone 'Asia/Shanghai')+interval '1 day') at time zone 'Asia/Shanghai'))`;
+}
+function readDailyCount(actorId: string) {
+  const rows = readLocalPostgresRows<{ count: number }>(`select ${dailyCountSql(actorId)} as count`);
+  expect(rows).toHaveLength(1);
+  expect(Number.isSafeInteger(rows[0].count)).toBe(true);
+  return rows[0].count;
+}
+function readDailyLimitProof(actorId: string, id: string) {
+  const rows = readLocalPostgresRows<DailyProof>(`select l.*,l.xmin::text as row_version,${dailyCountSql(actorId)} as daily_claims,
+    (select coalesce(jsonb_agg(to_jsonb(a)||jsonb_build_object('row_version',a.xmin::text)order by a.claimed_at,a.id),'[]'::jsonb)
+      from public.sales_lead_assignments a where a.lead_id=l.id) as history,
+    (select coalesce(jsonb_agg(to_jsonb(n)||jsonb_build_object('row_version',n.xmin::text)order by n.created_at,n.id),'[]'::jsonb)
+      from public.sales_lead_contact_notes n where n.lead_id=l.id) as contacts
+    from public.sales_leads l where l.id=${quote(id)}`);
+  expect(rows).toHaveLength(1);
+  return rows[0];
+}
+function writeDailyLead(action: "create" | "cleanup", id: string) {
+  const output = runLocalSupabaseSql(buildLearningLeadWriteSql(action, id));
+  const receipts = output.split(/\r?\n/).filter(line => line.startsWith("WRITE_RECEIPT "));
+  if (receipts.length !== 1) throw new Error("daily_limit_fixture_receipt_missing");
+  return verifyLearningLeadReceipt(action, JSON.parse(runLocalSupabaseSql(buildLearningLeadReadSql(id))),
+    JSON.parse(receipts[0].slice("WRITE_RECEIPT ".length)).affected);
+}
+
+/** 只回收准备前登记的六个随机编号；已有本日记录时拒绝，不清空固定账号或按前缀删除。 */
+async function withDailyLimitFixture(page: Page, email: string, run: (fixture: DailyFixture) => Promise<void>) {
+  const leads: DailyLead[] = [], errors: unknown[] = [];
+  try {
+    const actors = readLocalPostgresRows<{ user_id: string }>(`select user_id from public.user_profiles where email=${quote(email)} and status='active'`);
+    expect(actors).toHaveLength(1);
+    const actorId = actors[0].user_id;
+    expect(actorId).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
+    expect(readDailyCount(actorId), "需要本次专属身份当天零认领，不能清除既有历史").toBe(0);
+    for (let index = 0; index < 6; index++) {
+      const lead = { id: randomUUID(), name: "" };
+      leads.push(lead);
+      lead.name = writeDailyLead("create", lead.id).lead.name;
+    }
+    for (let index = 0; index < 4; index++) {
+      runLocalSupabaseSql(`begin;set local request.jwt.claim.sub=${quote(actorId)};set local role authenticated;
+        select public.claim_sales_lead(${quote(leads[index].id)});commit;`);
+      const proof = readDailyLimitProof(actorId, leads[index].id);
+      expect(proof).toMatchObject({ daily_claims: index + 1, status: "claimed", current_assignee_user_id: actorId });
+      expect(proof.history).toHaveLength(1);
+    }
+    await run({ actorId, leads });
+  } catch (error) { errors.push(error); }
+  try {
+    // 页面先关闭，避免迟到请求在数据回收后重新写入；单条失败不挡住其余自有线索。
+    await cleanupFixtureResources(() => page.close(), ...leads.slice().reverse().map(lead => async () => writeDailyLead("cleanup", lead.id)));
+  } catch (error) { errors.push(...(error instanceof AggregateError ? error.errors : [error])); }
+  if (errors.length) throw new AggregateError(errors, `每日认领验证未完成，本次编号 ${leads.map(lead => lead.id).join(",")}`);
+}
+
 function getLeadRow(page: Page, name: string) {
-  return page
-    .getByTestId("sales-lead-list")
-    .locator('[data-testid^="sales-lead-row-"]')
-    .filter({ has: page.getByRole("heading", { name, exact: true }) });
-}
-
-function prepareDailyLimitFixture() {
-  runLocalSupabaseSql(`
-    begin;
-
-    -- 清除这个本地测试账号当天可能由其他回归留下的周期，保证额度测试可重复执行。
-    delete from public.sales_lead_contact_notes
-    where assignment_id in (
-      select id
-      from public.sales_lead_assignments
-      where assignee_user_id = '${SALESMAN_ID}'
-        and claimed_at >= date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai'
-        and claimed_at < (date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai') + interval '1 day'
-    );
-
-    update public.sales_leads
-    set status = 'hall', current_assignee_user_id = null, current_assignment_id = null,
-        claimed_at = null, first_contact_at = null, last_contact_at = null,
-        next_follow_up_at = null, expires_at = null, hard_deadline_at = null,
-        converted_at = null, converted_by_user_id = null, customer_id = null
-    where current_assignment_id in (
-      select id
-      from public.sales_lead_assignments
-      where assignee_user_id = '${SALESMAN_ID}'
-        and claimed_at >= date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai'
-        and claimed_at < (date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai') + interval '1 day'
-    );
-
-    delete from public.sales_lead_assignments
-    where assignee_user_id = '${SALESMAN_ID}'
-      and claimed_at >= date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai'
-      and claimed_at < (date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai') + interval '1 day';
-
-    delete from public.sales_leads where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%';
-
-    insert into public.sales_leads (
-      primary_source_lead_id, latest_source_date, name, category, country, priority, source_url
-    )
-    select
-      '${TEST_SOURCE_PREFIX}' || n,
-      timezone('Asia/Shanghai', now())::date,
-      '每日限额页面测试 ' || n,
-      '测试',
-      'CN',
-      'A',
-      'https://example.test/e2e-daily-limit/' || n
-    from generate_series(1, 6) as n;
-
-    select private.start_sales_lead_assignment(
-      lead.id,
-      '${SALESMAN_ID}',
-      '${SALESMAN_ID}',
-      now()
-    )
-    from public.sales_leads as lead
-    where lead.primary_source_lead_id in (
-      '${TEST_SOURCE_PREFIX}1',
-      '${TEST_SOURCE_PREFIX}2',
-      '${TEST_SOURCE_PREFIX}3',
-      '${TEST_SOURCE_PREFIX}4'
-    )
-    order by lead.primary_source_lead_id;
-
-    commit;
-  `);
-}
-
-function readDailyLimitProof(number: 5 | 6) {
-  return runLocalSupabaseSql(`
-    with bounds as (
-      select date_trunc('day', timezone('Asia/Shanghai', now())) at time zone 'Asia/Shanghai' as day_start
-    ), target as (
-      select * from public.sales_leads where primary_source_lead_id = '${TEST_SOURCE_PREFIX}${number}'
-    )
-    select concat_ws('|',
-      (select count(*) from public.sales_lead_assignments, bounds where assignee_user_id = '${SALESMAN_ID}' and claimed_at >= day_start and claimed_at < day_start + interval '1 day'),
-      (select count(*) from public.sales_lead_assignments where lead_id = (select id from target)),
-      (select status from target),
-      coalesce((select current_assignee_user_id::text from target), '')
-    );
-  `);
-}
-
-function cleanupDailyLimitFixture() {
-  if (!isLocalSupabaseTestTarget()) return;
-
-  runLocalSupabaseSql(`
-    begin;
-    delete from public.sales_lead_contact_notes
-    where lead_id in (select id from public.sales_leads where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%');
-    update public.sales_leads
-    set status = 'hall', current_assignee_user_id = null, current_assignment_id = null,
-        claimed_at = null, first_contact_at = null, last_contact_at = null,
-        next_follow_up_at = null, expires_at = null, hard_deadline_at = null,
-        converted_at = null, converted_by_user_id = null, customer_id = null
-    where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%';
-    delete from public.sales_lead_assignments
-    where lead_id in (select id from public.sales_leads where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%');
-    delete from public.sales_leads where primary_source_lead_id like '${TEST_SOURCE_PREFIX}%';
-    commit;
-  `);
+  return page.getByTestId("sales-lead-list").locator('[data-testid^="sales-lead-row-"]').filter({ has: page.getByRole("heading", { name, exact: true }) });
 }
 
 async function expectNoHorizontalOverflow(page: Page) {

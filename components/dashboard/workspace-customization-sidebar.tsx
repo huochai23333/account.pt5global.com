@@ -1,3 +1,4 @@
+/** 首页编辑器通过 Context 临时替换桌面侧栏内容；调用方卸载时负责撤下自定义内容。 */
 "use client";
 
 import {
@@ -23,11 +24,7 @@ const WorkspaceCustomizationSidebarContext =
     setSidebar: () => {},
   });
 
-export function WorkspaceCustomizationSidebarProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function WorkspaceCustomizationSidebarProvider({ children }: { children: ReactNode }) {
   const [sidebar, setSidebar] = useState<ReactNode | null>(null);
   const value = useMemo(() => ({ sidebar, setSidebar }), [sidebar]);
 
@@ -42,11 +39,7 @@ export function useWorkspaceCustomizationSidebar() {
   return useContext(WorkspaceCustomizationSidebarContext).setSidebar;
 }
 
-export function WorkspaceDesktopSidebar({
-  defaultContent,
-}: {
-  defaultContent: ReactNode;
-}) {
+export function WorkspaceDesktopSidebar({ defaultContent }: { defaultContent: ReactNode }) {
   const { sidebar } = useContext(WorkspaceCustomizationSidebarContext);
   const hasCustomSidebar = Boolean(sidebar);
 
@@ -55,9 +48,7 @@ export function WorkspaceDesktopSidebar({
       <div
         className={cn(
           "absolute inset-0 flex flex-col px-4 py-6 transition duration-300 ease-out",
-          hasCustomSidebar
-            ? "-translate-x-full opacity-0"
-            : "translate-x-0 opacity-100 delay-100",
+          hasCustomSidebar ? "-translate-x-full opacity-0" : "translate-x-0 opacity-100 delay-100",
         )}
       >
         {defaultContent}
@@ -66,9 +57,7 @@ export function WorkspaceDesktopSidebar({
       <div
         className={cn(
           "absolute inset-0 flex flex-col px-4 py-6 transition duration-300 ease-out",
-          hasCustomSidebar
-            ? "translate-x-0 opacity-100 delay-100"
-            : "-translate-x-full opacity-0",
+          hasCustomSidebar ? "translate-x-0 opacity-100 delay-100" : "-translate-x-full opacity-0",
         )}
       >
         {sidebar}

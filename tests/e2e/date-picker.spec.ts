@@ -36,8 +36,9 @@ test.describe("全站日期选择控件", () => {
 
     await fillDateControl(dateInput, "2023/02/29");
     await expect(dateInput).toHaveAttribute("aria-invalid", "true");
-    await expect(dialog.getByText("请输入有效日期，例如 2026/06/18。"))
-      .toBeVisible();
+    await expect(
+      dialog.getByText("请输入有效日期，例如 2026/06/18。"),
+    ).toBeVisible();
 
     // Escape 只丢弃尚未提交的错误文本，不改变最后一个有效业务值。
     await dateInput.press("Escape");
@@ -75,8 +76,9 @@ test.describe("全站日期选择控件", () => {
     const previousTo = await toInput.getAttribute("data-value");
     await fillDateControl(toInput, "2000/01/01");
     await expect(toInput).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByText("请选择允许范围内的日期或时间。"))
-      .toBeVisible();
+    await expect(
+      page.getByText("请选择允许范围内的日期或时间。"),
+    ).toBeVisible();
     await expectDateControlValue(toInput, previousTo ?? "");
     await expect(fromInput).not.toHaveAttribute("data-value", "");
   });

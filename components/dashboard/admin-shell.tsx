@@ -54,27 +54,20 @@ type AdminShellProps = {
   wide?: boolean;
 };
 
+// 外壳只准备导航、公告初值和共享容器；页面准入及业务写入仍在服务端与数据库核验。
 export async function AdminShell({
   children,
   config,
   workspaceBusinessAccess,
   wide = false,
 }: AdminShellProps) {
-  const [
-    t,
-    initialAnnouncementsState,
-    locale,
-  ] = await Promise.all([
+  const [t, initialAnnouncementsState, locale] = await Promise.all([
     getTranslations("DashboardShell"),
     getInitialWorkspaceAnnouncementsState(),
     getLocale(),
   ]);
   const companyText = getCompanyText(normalizeLocale(locale));
-  const workspace = getWorkspaceConfig(
-    config,
-    t,
-    workspaceBusinessAccess,
-  );
+  const workspace = getWorkspaceConfig(config, t, workspaceBusinessAccess);
 
   return (
     <ScopedIntlProvider namespaces={["DashboardShell", "LanguageToggle"]}>
@@ -88,35 +81,37 @@ export async function AdminShell({
               </div>
 
               <div className="relative flex min-h-screen">
-                {!wide ? <WorkspaceDesktopSidebar
-                  defaultContent={
-                    <>
-                      <div className="mb-10 flex items-center gap-3 px-3">
-                        <BrandMark priority size={48} />
-                        <div>
-                          <h2 className="text-sm font-bold tracking-wide text-primary">
-                            {workspace.title}
-                          </h2>
-                          <p className="text-xs text-content-muted">
-                            {workspace.subtitle}
-                          </p>
+                {!wide ? (
+                  <WorkspaceDesktopSidebar
+                    defaultContent={
+                      <>
+                        <div className="mb-10 flex items-center gap-3 px-3">
+                          <BrandMark priority size={48} />
+                          <div>
+                            <h2 className="text-sm font-bold tracking-wide text-primary">
+                              {workspace.title}
+                            </h2>
+                            <p className="text-xs text-content-muted">{workspace.subtitle}</p>
+                          </div>
                         </div>
-                      </div>
 
-                      <AdminShellNav
-                        emptyGroupsLabel={t("business.noAccess")}
-                        globalItems={workspace.globalNavItems}
-                        groups={workspace.navGroups}
-                        mode="desktop"
-                      />
+                        <AdminShellNav
+                          emptyGroupsLabel={t("business.noAccess")}
+                          globalItems={workspace.globalNavItems}
+                          groups={workspace.navGroups}
+                          mode="desktop"
+                        />
 
-                      <AdminShellLogoutButton label={t("logout")} />
-                    </>
-                  }
-                /> : null}
+                        <AdminShellLogoutButton label={t("logout")} />
+                      </>
+                    }
+                  />
+                ) : null}
 
                 {/* 768px 平板仍使用顶部导航，把完整内容宽度留给两列工作区；1024px 起再让出桌面侧栏。 */}
-                <div className={`flex min-h-screen min-w-0 flex-1 flex-col ${wide ? "lg:ml-0" : "lg:ml-[284px]"}`}>
+                <div
+                  className={`flex min-h-screen min-w-0 flex-1 flex-col ${wide ? "lg:ml-0" : "lg:ml-[284px]"}`}
+                >
                   <header
                     className="sticky top-0 z-10 border-b border-border-subtle bg-surface-chrome/80 shadow-surface-header backdrop-blur"
                     data-slot="workspace-header"
@@ -158,9 +153,7 @@ export async function AdminShell({
                     </div>
                   </header>
 
-                  <main className="flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
-                    {children}
-                  </main>
+                  <main className="flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">{children}</main>
                   <AiAssistantClient />
                 </div>
               </div>
@@ -178,6 +171,7 @@ async function getInitialWorkspaceAnnouncementsState() {
 
     return await getWorkspaceAnnouncementsState(supabase);
   } catch {
+    // 公告读取暂时失败不能阻止整个工作台；铃铛仍可重新读取，不在这里伪造已读记录。
     return EMPTY_WORKSPACE_ANNOUNCEMENTS_STATE;
   }
 }
@@ -189,10 +183,9 @@ function getWorkspaceConfig(
 ): WorkspaceConfig {
   const roleKey = config.routeSegment;
   const globalNavItems = config.globalNavItems;
+  // 注册表声明岗位能力，这里再与本次账号的已启用业务相交；隐藏菜单不授予数据权限。
   const navGroups = config.navGroups
-    .filter((group) =>
-      workspaceBusinessAccessIncludes(workspaceBusinessAccess, group.business),
-    )
+    .filter((group) => workspaceBusinessAccessIncludes(workspaceBusinessAccess, group.business))
     .map((group) => {
       return {
         items: group.navItems.map((item) => {

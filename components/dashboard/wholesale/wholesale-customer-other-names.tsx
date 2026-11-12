@@ -51,7 +51,7 @@ export function WholesaleCustomerOtherNames({
             ) : (
               <Plus className="size-3.5" />
             )}
-            {isAdding ? "收起" : "新增名称"}
+            {isAdding ? uiText("collapse") : uiText("open")}
           </Button>
         ) : null}
       </div>

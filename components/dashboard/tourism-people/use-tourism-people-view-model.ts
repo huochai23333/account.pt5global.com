@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 
-import type { AdminPeoplePageData, AdminPersonRow } from "@/lib/admin-people";
-import { normalizeSearchText } from "@/lib/value-normalizers";
+import type { AdminPeoplePageData, AdminPersonRow } from "@/lib/admin-people-contract";
 
-import { isTourismPromoter } from "./tourism-people-display";
+import { filterTourismPeople, isTourismPromoter } from "./tourism-people-display";
 
 const ALL_STATUSES = "all";
 
@@ -25,30 +24,10 @@ export function useTourismPeopleViewModel(initialData: AdminPeoplePageData) {
     () => initialData.people.filter(isTourismPromoter),
     [initialData.people],
   );
-  const filteredPeople = useMemo(() => {
-    const searchValue = normalizeSearchText(searchText);
-
-    return promoters.filter((person) => {
-      if (
-        statusFilter !== ALL_STATUSES &&
-        person.status !== statusFilter
-      ) {
-        return false;
-      }
-      if (!searchValue) return true;
-
-      return [
-        person.name ?? "",
-        person.email ?? "",
-        person.phone ?? "",
-        person.city ?? "",
-        person.referral_code ?? "",
-        person.referrer_name ?? "",
-        person.referrer_email ?? "",
-        person.team_name ?? "",
-      ].some((value) => normalizeSearchText(value).includes(searchValue));
-    });
-  }, [promoters, searchText, statusFilter]);
+  const filteredPeople = useMemo(
+    () => filterTourismPeople(promoters, searchText, statusFilter),
+    [promoters, searchText, statusFilter],
+  );
 
   return {
     activeCount: promoters.filter((person) => person.status === "active").length,
@@ -68,4 +47,3 @@ export function useTourismPeopleViewModel(initialData: AdminPeoplePageData) {
     statusFilter,
   };
 }
-

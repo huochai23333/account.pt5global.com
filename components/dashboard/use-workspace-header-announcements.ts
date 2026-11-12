@@ -14,6 +14,7 @@ type DialogMode = "auto" | "manual";
 type WorkspaceHeaderAnnouncementsCopy = {
   loadError: string;
   readError: string;
+  readPartialError: string;
 };
 
 type UseWorkspaceHeaderAnnouncementsOptions = {
@@ -28,6 +29,8 @@ export function useWorkspaceHeaderAnnouncements({
   const supabase = getBrowserSupabaseClient();
   const initialHasUnreadAnnouncements = initialState.unreadAnnouncements.length > 0;
   const autoOpenedRef = useRef(initialHasUnreadAnnouncements);
+  const readInProgress = useRef(false);
+  const readGeneration = useRef(0);
 
   const [announcementsState, setAnnouncementsState] =
     useState<WorkspaceAnnouncementsState>(initialState);
@@ -63,41 +66,53 @@ export function useWorkspaceHeaderAnnouncements({
 
     setLoading(true);
     setErrorMessage(null);
+    const generation = readGeneration.current;
 
     try {
       const nextState = await getWorkspaceAnnouncementsState(supabase);
 
-      applyAnnouncementsState(nextState);
+      if (!readInProgress.current && generation === readGeneration.current) {
+        applyAnnouncementsState(nextState);
+      }
     } catch {
-      setErrorMessage(copy.loadError);
+      if (!readInProgress.current && generation === readGeneration.current) {
+        setErrorMessage(copy.loadError);
+      }
     } finally {
       setLoading(false);
     }
   }, [applyAnnouncementsState, copy.loadError, supabase]);
 
   const markUnreadAsRead = useCallback(async () => {
-    if (!supabase || announcementsState.unreadAnnouncements.length === 0) {
-      return;
-    }
+    const unread = announcementsState.unreadAnnouncements;
+    if (unread.length === 0) return true;
+    if (!supabase || readInProgress.current) return false;
 
+    // 同一渲染帧可能收到两次确认。同步锁还保护写入时发回的旧列表。
+    readInProgress.current = true;
+    readGeneration.current += 1;
     setMarkingRead(true);
 
     try {
-      await markWorkspaceAnnouncementsRead(
-        supabase,
-        announcementsState.unreadAnnouncements,
-      );
+      const { status, confirmedIds } = await markWorkspaceAnnouncementsRead(supabase, unread);
       setAnnouncementsState((current) => ({
         ...current,
-        unreadAnnouncements: [],
+        unreadAnnouncements: current.unreadAnnouncements.filter(({ id }) => !confirmedIds.has(id)),
       }));
-      setErrorMessage(null);
+      if (status === "succeeded") {
+        setErrorMessage(null);
+        return true;
+      }
+      setErrorMessage(status === "partial_failed" ? copy.readPartialError : copy.readError);
+      return false;
     } catch {
       setErrorMessage(copy.readError);
+      return false;
     } finally {
+      readInProgress.current = false;
       setMarkingRead(false);
     }
-  }, [announcementsState.unreadAnnouncements, copy.readError, supabase]);
+  }, [announcementsState.unreadAnnouncements, copy.readError, copy.readPartialError, supabase]);
 
   const closeDialog = useCallback(
     (open: boolean) => {
@@ -125,8 +140,7 @@ export function useWorkspaceHeaderAnnouncements({
   }, [loading, refreshAnnouncements]);
 
   const acknowledgeAnnouncements = useCallback(async () => {
-    await markUnreadAsRead();
-    setDialogOpen(false);
+    if (await markUnreadAsRead()) setDialogOpen(false);
   }, [markUnreadAsRead]);
 
   const displayedAnnouncements = useMemo(() => {

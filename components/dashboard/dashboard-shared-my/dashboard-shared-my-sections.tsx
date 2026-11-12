@@ -1,15 +1,15 @@
+/** 个人中心、账号切换与媒体：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
-import {
-  IdCard,
-  KeyRound,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { IdCard, KeyRound, ShieldCheck, UserRound } from "lucide-react";
 
 import { LegalFooterLinks } from "@/components/legal/legal-footer-links";
 import { DashboardAccountCenterSection } from "./dashboard-account-center-section";
-import { AccountVerificationSection, PersonalCenterSection, ProfileInfoSection } from "./dashboard-my-content-sections";
+import {
+  AccountVerificationSection,
+  PersonalCenterSection,
+  ProfileInfoSection,
+} from "./dashboard-my-content-sections";
 import type { DashboardMyCopy } from "./dashboard-shared-my-copy";
 import { DashboardAccountSwitcherSection } from "./dashboard-account-switcher-section";
 import type { DashboardSharedMyState } from "./use-dashboard-shared-my-state";
@@ -18,12 +18,7 @@ type DashboardSharedMySectionsProps = {
   copy: DashboardMyCopy;
   state: Pick<
     DashboardSharedMyState,
-    | "account"
-    | "accountSwitcher"
-    | "assetDialog"
-    | "page"
-    | "profileDialog"
-    | "ui"
+    "account" | "accountSwitcher" | "assetDialog" | "page" | "profileDialog" | "ui"
   >;
 };
 
@@ -50,32 +45,17 @@ const SECTION_ITEMS = [
   },
 ] as const;
 
-export function DashboardSharedMySections({
-  copy,
-  state,
-}: DashboardSharedMySectionsProps) {
-  const { account, accountSwitcher, assetDialog, page, profileDialog, ui } =
-    state;
-  const [
-    phoneStat,
-    emailStat,
-    passwordStat,
-    inviteCodeStat,
-    accountStatusStat,
-    lastLoginStat,
-  ] = account.profileStats;
+export function DashboardSharedMySections({ copy, state }: DashboardSharedMySectionsProps) {
+  const { account, accountSwitcher, assetDialog, page, profileDialog, ui } = state;
+  const [phoneStat, emailStat, passwordStat, inviteCodeStat, accountStatusStat, lastLoginStat] =
+    account.profileStats;
   const profileStats = [
     { label: copy.nameLabel, value: account.displayName },
     { label: copy.cityLabel, value: account.displayCity },
     phoneStat,
     emailStat,
   ];
-  const accountStats = [
-    passwordStat,
-    inviteCodeStat,
-    accountStatusStat,
-    lastLoginStat,
-  ];
+  const accountStats = [passwordStat, inviteCodeStat, accountStatusStat, lastLoginStat];
 
   return (
     <>
@@ -99,17 +79,9 @@ export function DashboardSharedMySections({
         />
       </div>
 
-      <AccountVerificationSection
-        account={account}
-        assetDialog={assetDialog}
-        copy={copy}
-      />
+      <AccountVerificationSection account={account} assetDialog={assetDialog} copy={copy} />
 
-      <DashboardAccountSwitcherSection
-        copy={copy}
-        state={accountSwitcher}
-        ui={ui}
-      />
+      <DashboardAccountSwitcherSection copy={copy} state={accountSwitcher} ui={ui} />
 
       <footer className="flex flex-col gap-4 border-t border-border-subtle px-1 pt-8 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
         <p>{copy.copyright}</p>

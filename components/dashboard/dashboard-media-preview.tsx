@@ -125,11 +125,7 @@ function useLazyDashboardMediaPreview(asset: PreviewAsset, rootMargin: string) {
   const { previewStatus, previewUrl } = resolvedPreviewState;
 
   const resolvePreviewUrl = useEffectEvent(async () => {
-    if (
-      previewUrl ||
-      previewStatus === "loading" ||
-      previewStatus === "ready"
-    ) {
+    if (previewUrl || previewStatus !== "idle") {
       return;
     }
 
@@ -169,11 +165,9 @@ function useLazyDashboardMediaPreview(asset: PreviewAsset, rootMargin: string) {
   });
 
   useEffect(() => {
-    if (
-      previewUrl ||
-      previewStatus === "loading" ||
-      previewStatus === "ready"
-    ) {
+    // 失败后保留本次打开的提示；若重新观察同一个可见节点，会不断签名并让错误提示闪烁。
+    // 关闭后重开（或换资产）会进入新的 idle 状态，允许用户再次读取。
+    if (previewUrl || previewStatus !== "idle") {
       return;
     }
 

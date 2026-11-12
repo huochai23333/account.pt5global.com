@@ -32,6 +32,7 @@ export const WORKSPACE_BASE_PATHS = [
   "/client",
 ] as const satisfies readonly WorkspaceBasePath[];
 
+// 这是现有导航默认值，不是账号角色；严格服务端入口先 assertWorkspaceRole，不能凭默认值放行。
 const UNKNOWN_ROLE_WORKSPACE_BASE_PATHS: readonly WorkspaceBasePath[] = ["/client"];
 
 const WORKSPACE_ACCESS_BY_ROLE = {

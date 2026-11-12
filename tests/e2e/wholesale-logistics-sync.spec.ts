@@ -1,16 +1,18 @@
 import { test, expect } from "@playwright/test";
 import { loginAs } from "./helpers/auth";
 import { chooseSelectOption } from "./helpers/select-control";
-import { executeLocalSql, startLogisticsSourceFixture } from "./helpers/logistics-source-fixture";
-import { localSqlValue, readLocalPostgresRows } from "./helpers/local-postgres-query";
+import { fixtureSqlValue, startLogisticsSourceFixture } from "./helpers/logistics-source-fixture";
+import { requireDisposableFixture } from "../test-support/disposable-fixture";
 
 test.use({ video: "off", trace: "off" });
 
-// 页面回归只允许本机地址；地址配置意外变为生产时立即失败，不能继续发请求。
-test.beforeEach(async ({ page }) => {
+// 回环地址也可能属于另一项目；只允许当前Web与已声明API两个源，拦住错误端口的真实写入。
+test.beforeEach(async ({ page, baseURL }) => {
+  requireDisposableFixture({baseURL,supabaseURL:process.env.NEXT_PUBLIC_SUPABASE_URL,mode:process.env.PT5_E2E_FIXTURE_MODE});
+  const allowed=new Set([new URL(baseURL!).origin,new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin]);
   await page.route("**/*", (route) => {
     const url = new URL(route.request().url());
-    if (["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)) return route.continue();
+    if (allowed.has(url.origin)) return route.continue();
     return route.abort("blockedbyclient");
   });
 });
@@ -18,6 +20,8 @@ test.beforeEach(async ({ page }) => {
 test("页面同步限流后保存进度，后台按原运行续跑，刷新分页显示真实结果", async ({ page, request }, testInfo) => {
   test.setTimeout(180_000);
   const fixture = await startLogisticsSourceFixture();
+  let bodyFailed=false;
+  let bodyError: unknown;
   const consoleErrors: string[] = [];
   page.on("pageerror", (error) => consoleErrors.push(error.message));
   try {
@@ -29,26 +33,27 @@ test("页面同步限流后保存进度，后台按原运行续跑，刷新分�
     const partial = await (await firstResponse).json();
     expect(partial.outcome).toBe("partial_failed");
     expect(partial.syncedCount).toBe(25);
-    fixture.operationIds.add(partial.operationId);
+    fixture.recordOperation(partial.operationId);
     await expect(page.getByText("已显示现有物流记录，最新数据稍后会继续更新。")).toBeVisible();
-    const [run] = readLocalPostgresRows<{ status: string; succeeded_count: number; next_attempt_at: string }>(
-      `select status,succeeded_count,next_attempt_at from private.operation_runs where id=${localSqlValue(partial.operationId)}::uuid`,
+    const [run] = fixture.readRows<{ status: string; succeeded_count: number; next_attempt_at: string }>(
+      `select status,succeeded_count,next_attempt_at from private.operation_runs where id=${fixtureSqlValue(partial.operationId)}::uuid`,
     );
     expect(run.status).toBe("queued");
     expect(run.succeeded_count).toBe(25);
     expect(Date.parse(run.next_attempt_at)).toBeGreaterThan(Date.now() + 100_000);
-    const [checkpoint] = readLocalPostgresRows<{ cursor: { orderId: number }; processed_count: number }>("select cursor,processed_count from public.wholesale_logistics_checkpoints where mode='incremental'");
+    const [checkpoint] = fixture.readRows<{ cursor: { orderId: number }; processed_count: number }>("select cursor,processed_count from public.wholesale_logistics_checkpoints where mode='incremental'");
     expect(checkpoint.cursor.orderId).toBe(9_000_025);
     expect(checkpoint.processed_count).toBe(25);
-    const before = readLocalPostgresRows<{ package_number: string; version: string }>("select package_number,xmin::text as version from public.wholesale_logistics_records where package_number like 'LOCAL-RETRY-%' order by package_number");
+    const before = fixture.readRows<{ package_number: string; version: string }>("select package_number,xmin::text as version from public.wholesale_logistics_records where package_number like 'LOCAL-RETRY-%' order by package_number");
     expect(before).toHaveLength(25);
 
     // 仅把本地时钟等待提前，模拟调度器第二次派发；生产等待规则在 SQL/重试单测中另行核对。
     fixture.recover();
-    executeLocalSql(`update public.wholesale_logistics_sync_state set retry_not_before=null;
-      update private.operation_runs set status='queued',attempt_count=2,next_attempt_at=now()+interval '1 hour' where id=${localSqlValue(partial.operationId)}::uuid;
-      insert into private.operation_attempts(operation_run_id,attempt_number) values(${localSqlValue(partial.operationId)}::uuid,2);`);
-    const retry = await request.post("http://127.0.0.1:54321/functions/v1/wholesale-logistics-sync", {
+    fixture.execute(`begin;
+      update public.wholesale_logistics_sync_state set retry_not_before=null where sync_key='dianxiaomi-archive';
+      update private.operation_runs set status='queued',attempt_count=2,next_attempt_at=now()+interval '1 hour' where id=${fixtureSqlValue(partial.operationId)}::uuid;
+      insert into private.operation_attempts(operation_run_id,attempt_number) values(${fixtureSqlValue(partial.operationId)}::uuid,2);commit;`);
+    const retry = await request.post(`${fixture.apiUrl}/functions/v1/wholesale-logistics-sync`, {
       headers: { "x-wholesale-logistics-job-token": "local-job-fixture" },
       data: { trigger: "page", operationId: partial.operationId, attempt: 2 },
     });
@@ -56,26 +61,28 @@ test("页面同步限流后保存进度，后台按原运行续跑，刷新分�
     expect(retry.status(), JSON.stringify(completed)).toBe(200);
     expect(completed.outcome).toBe("succeeded");
     expect(completed.syncedCount).toBe(50);
-    const [finalRun] = readLocalPostgresRows<{ status: string; result_proof: { completed: boolean }; succeeded_count: number }>(
-      `select status,result_proof,succeeded_count from private.operation_runs where id=${localSqlValue(partial.operationId)}::uuid`,
+    const [finalRun] = fixture.readRows<{ status: string; result_proof: { completed: boolean }; succeeded_count: number }>(
+      `select status,result_proof,succeeded_count from private.operation_runs where id=${fixtureSqlValue(partial.operationId)}::uuid`,
     );
     expect(finalRun.status).toBe("succeeded");
     expect(finalRun.result_proof.completed).toBe(true);
     expect(finalRun.succeeded_count).toBe(50);
-    const after = readLocalPostgresRows<{ package_number: string; version: string }>("select package_number,xmin::text as version from public.wholesale_logistics_records where package_number like 'LOCAL-RETRY-%' order by package_number");
+    const after = fixture.readRows<{ package_number: string; version: string }>("select package_number,xmin::text as version from public.wholesale_logistics_records where package_number like 'LOCAL-RETRY-%' order by package_number");
     expect(after).toHaveLength(50);
     expect(after.filter((row) => before.some((old) => old.package_number === row.package_number))).toEqual(before);
     expect(fixture.calls.map((call) => call.orderId)).toEqual([0, 9_000_025, 9_000_025]);
     const countBeforeReplay = fixture.calls.length;
-    await request.post("http://127.0.0.1:54321/functions/v1/wholesale-logistics-sync", {
+    await request.post(`${fixture.apiUrl}/functions/v1/wholesale-logistics-sync`, {
       headers: { "x-wholesale-logistics-job-token": "local-job-fixture" }, data: { trigger: "page", operationId: partial.operationId, attempt: 2 },
     });
     expect(fixture.calls.length).toBe(countBeforeReplay);
+    // 重放后另查实际档案版本，避免只因没有来源请求就误认没有重写数据。
+    expect(fixture.readRows("select package_number,xmin::text as version from public.wholesale_logistics_records where package_number like 'LOCAL-RETRY-%' order by package_number")).toEqual(after);
 
     const reloadResponse = page.waitForResponse((response) => response.url().endsWith("/functions/v1/wholesale-logistics-sync") && response.request().method() === "POST");
     await page.reload();
     const refreshed = await (await reloadResponse).json();
-    fixture.operationIds.add(refreshed.operationId);
+    fixture.recordOperation(refreshed.operationId);
     expect(refreshed.reason).toBe("already_fresh");
     await chooseSelectOption(page.getByLabel("店小秘店铺"), { label: "Local Retry Shop" });
     await expect(page.getByText("第 1-20 条，共 50 条")).toBeVisible();
@@ -90,7 +97,13 @@ test("页面同步限流后保存进度，后台按原运行续跑，刷新分�
     expect(consoleErrors).toEqual([]);
     // 开发工具本身也使用 portal，只有错误覆盖层才表示页面异常。
     await expect(page.locator("nextjs-portal [data-nextjs-dialog-overlay]")).toHaveCount(0);
-  } finally { await fixture.close(); }
+  } catch(error){bodyFailed=true;bodyError=error;throw error;}
+  finally {
+    try{await fixture.close();}catch(cleanupError){
+      if(bodyFailed)throw new AggregateError([bodyError,cleanupError],"logistics_test_and_cleanup_failed");
+      throw cleanupError;
+    }
+  }
 });
 
 for (const state of ["queued", "incomplete", "already_running"] as const) {

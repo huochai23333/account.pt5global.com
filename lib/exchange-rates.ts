@@ -4,6 +4,7 @@
  */
 export * from "./exchange-rate-display";
 export * from "./exchange-rate-errors";
+export * from "./exchange-rate-manual-mutations";
 export * from "./exchange-rate-mutations";
 export * from "./exchange-rate-permissions";
 export * from "./exchange-rate-queries";

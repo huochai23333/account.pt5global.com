@@ -3,16 +3,44 @@ import { expect, test } from "@playwright/test";
 import { expectNotForbiddenPage, loginAs } from "./helpers/auth";
 
 for (const item of [
-  { role: "administrator", home: "/admin/home", name: "处理账号", target: /\/admin\/accounts$/ },
-  { role: "finance", home: "/finance/home", name: "处理结汇发布", target: /\/finance\/wholesale\/settlement-releases$/ },
-  { role: "salesman", home: "/salesman/home", name: "跟进线索", target: /\/salesman\/wholesale\/leads$/ },
-  { role: "client", home: "/client/home", name: "查看批发订单", target: /\/client\/wholesale\/orders$/ },
-  { role: "operator", home: "/operator/home", name: "登记报销", target: /\/operator\/reimbursements$/ },
+  {
+    role: "administrator",
+    home: "/admin/home",
+    name: "处理账号",
+    target: /\/admin\/accounts$/,
+  },
+  {
+    role: "finance",
+    home: "/finance/home",
+    name: "处理结汇发布",
+    target: /\/finance\/wholesale\/settlement-releases$/,
+  },
+  {
+    role: "salesman",
+    home: "/salesman/home",
+    name: "跟进线索",
+    target: /\/salesman\/wholesale\/leads$/,
+  },
+  {
+    role: "client",
+    home: "/client/home",
+    name: "查看批发订单",
+    target: /\/client\/wholesale\/orders$/,
+  },
+  {
+    role: "operator",
+    home: "/operator/home",
+    name: "登记报销",
+    target: /\/operator\/reimbursements$/,
+  },
 ] as const) {
   test(`${item.role} 首页显示岗位入口并可进入工作页面`, async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
-    await page.setViewportSize({ width: item.role === "client" ? 390 : 1440, height: 844 });
+    await page.setViewportSize({
+      width: item.role === "client" ? 390 : 1440,
+      height: 844,
+    });
     await loginAs(page, item.role);
     await page.goto(item.home);
     await expect(page.getByRole("heading", { name: "常用工作" })).toBeVisible();
@@ -22,19 +50,30 @@ for (const item of [
     await expect(page).toHaveURL(item.target);
     await expectNotForbiddenPage(page);
     if (item.role === "administrator") {
-      await expect(page.getByRole("heading", { name: "账号管理", exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "账号管理", exact: true }),
+      ).toBeVisible();
     }
     await page.reload();
     await expectNotForbiddenPage(page);
-    await expect(page.locator("nextjs-portal [data-nextjs-dialog]")).toHaveCount(0);
+    await expect(
+      page.locator("nextjs-portal [data-nextjs-dialog]"),
+    ).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText("Application error:");
-    await expect(page.getByRole("heading", {
-      name: /当前页面暂时打不开|This page is temporarily unavailable|页面出现异常|Something went wrong/,
-    })).toHaveCount(0);
-    expect(pageErrors, "destination must render without browser runtime errors").toEqual([]);
+    await expect(
+      page.getByRole("heading", {
+        name: /当前页面暂时打不开|This page is temporarily unavailable|页面出现异常|Something went wrong/,
+      }),
+    ).toHaveCount(0);
+    expect(
+      pageErrors,
+      "destination must render without browser runtime errors",
+    ).toEqual([]);
     if (item.role === "client") {
       // 首屏入口与手机宽度都要可用，不能让用户横向寻找工作入口。
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
       expect(overflow).toBeLessThanOrEqual(2);
     }
   });

@@ -25,6 +25,8 @@ import type {
 } from "./admin-task-file-preview-dialog";
 import type { PageFeedback } from "./admin-tasks-view-model-shared";
 
+import { downloadTaskFileBlob, useAdminTaskFilePreview } from "./use-admin-task-file-preview";
+
 export type AdminTaskMediaLibraryKindFilter = "all" | AdminTaskMediaLibraryKind;
 
 type PreviewMediaLibraryItem = AdminTaskFilePreviewItem & {
@@ -40,9 +42,15 @@ export function useAdminTaskMediaLibrary(initialData: AdminTaskMediaLibraryData)
   const [items, setItems] = useState<AdminTaskMediaLibraryItem[]>(initialData.items);
   const [searchText, setSearchText] = useState("");
   const [kindFilter, setKindFilter] = useState<AdminTaskMediaLibraryKindFilter>("all");
-  const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [downloadBusyItemId, setDownloadBusyItemId] = useState<string | null>(null);
   const [previewDownloadBusy, setPreviewDownloadBusy] = useState(false);
-  const [previewItem, setPreviewItem] = useState<PreviewMediaLibraryItem | null>(null);
+  const {
+    closePreview: clearPreview,
+    openPreview,
+    previewBusyKey,
+    previewItem,
+  } = useAdminTaskFilePreview<PreviewMediaLibraryItem>();
+  const busyItemId = previewBusyKey ?? downloadBusyItemId;
   const [pageFeedback, setPageFeedback] = useState<PageFeedback>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -133,60 +141,47 @@ export function useAdminTaskMediaLibrary(initialData: AdminTaskMediaLibraryData)
         return;
       }
 
-      setBusyItemId(item.id);
       setPageFeedback(null);
-
-      try {
-        const signedUrl = await getAdminTaskMediaLibraryItemSignedUrl(supabase, item);
-
-        setPreviewItem({
-          file_size_bytes: item.file_size_bytes,
-          id: item.id,
-          kind: item.kind,
-          mime_type: item.mime_type,
-          original_name: item.original_name,
-          reviewed_at: item.reviewed_at,
-          signedUrl,
-          sourceItem: item,
-          submitted_at: item.submitted_at,
-          submitted_by_name: getDisplayName(item.submitted_by_name, item.submitted_by_email),
-          submission_round: item.submission_round,
-          task_name: item.task_name,
-        });
-      } catch {
-        setPageFeedback({
-          tone: "error",
-          message: t("previewFailed"),
-        });
-      } finally {
-        setBusyItemId((current) => (current === item.id ? null : current));
-      }
+      await openPreview(item.id, async () => ({
+        file_size_bytes: item.file_size_bytes,
+        id: item.id,
+        kind: item.kind,
+        mime_type: item.mime_type,
+        original_name: item.original_name,
+        reviewed_at: item.reviewed_at,
+        signedUrl: await getAdminTaskMediaLibraryItemSignedUrl(supabase, item),
+        sourceItem: item,
+        submitted_at: item.submitted_at,
+        submitted_by_name: item.submitted_by_name ?? item.submitted_by_email,
+        submission_round: item.submission_round,
+        task_name: item.task_name,
+      }), () => setPageFeedback({ tone: "error", message: t("previewFailed") }));
     },
-    [busyItemId, supabase, t],
+    [busyItemId, openPreview, supabase, t],
   );
 
   const handleDownload = useCallback(
     async (item: AdminTaskMediaLibraryItem) => {
-      if (!supabase || busyItemId === item.id) {
+      if (!supabase || previewBusyKey === item.id || downloadBusyItemId === item.id) {
         return;
       }
 
-      setBusyItemId(item.id);
+      setDownloadBusyItemId(item.id);
       setPageFeedback(null);
 
       try {
         const blob = await downloadAdminTaskMediaLibraryItemBlob(supabase, item);
-        downloadBlob(blob, item.original_name);
+        downloadTaskFileBlob(blob, item.original_name);
       } catch {
         setPageFeedback({
           tone: "error",
           message: t("downloadFailed"),
         });
       } finally {
-        setBusyItemId((current) => (current === item.id ? null : current));
+        setDownloadBusyItemId((current) => (current === item.id ? null : current));
       }
     },
-    [busyItemId, supabase, t],
+    [downloadBusyItemId, previewBusyKey, supabase, t],
   );
 
   const handlePreviewDownload = useCallback(
@@ -203,7 +198,7 @@ export function useAdminTaskMediaLibrary(initialData: AdminTaskMediaLibraryData)
 
       try {
         const blob = await downloadAdminTaskMediaLibraryItemBlob(supabase, item);
-        downloadBlob(blob, item.original_name);
+        downloadTaskFileBlob(blob, item.original_name);
       } catch {
         setPageFeedback({
           tone: "error",
@@ -218,10 +213,10 @@ export function useAdminTaskMediaLibrary(initialData: AdminTaskMediaLibraryData)
 
   const closePreview = useCallback((open: boolean) => {
     if (!open) {
-      setPreviewItem(null);
+      clearPreview();
       setPreviewDownloadBusy(false);
     }
-  }, []);
+  }, [clearPreview]);
 
   return {
     busyItemId,
@@ -242,23 +237,4 @@ export function useAdminTaskMediaLibrary(initialData: AdminTaskMediaLibraryData)
     setKindFilter,
     setSearchText,
   };
-}
-
-function getDisplayName(name: string | null, email: string | null) {
-  return name ?? email ?? null;
-}
-
-function downloadBlob(blob: Blob, fileName: string) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const objectUrl = window.URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fileName;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30_000);
 }

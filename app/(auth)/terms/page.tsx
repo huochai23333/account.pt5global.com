@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { ScopedIntlProvider } from "@/components/i18n/scoped-intl-provider";
 import { LegalPage } from "@/components/legal/legal-page";
 import { getLegalPageCopy, getLegalPageMetadata } from "@/lib/legal-content";
 import { TERMS_OF_SERVICE_PATH } from "@/lib/legal-routes";
@@ -12,9 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TermsPage() {
   const copy = await getLegalPageCopy("terms");
 
-  return (
-    <ScopedIntlProvider namespaces={["LanguageToggle"]}>
-      <LegalPage activePath={TERMS_OF_SERVICE_PATH} copy={copy} />
-    </ScopedIntlProvider>
-  );
+  // 共用页面结构内已为语言切换按钮提供所需文案。
+  return <LegalPage activePath={TERMS_OF_SERVICE_PATH} copy={copy} />;
 }

@@ -8,10 +8,7 @@ import { useTranslations } from "next-intl";
 
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import { Button } from "@/components/ui/button";
-import type {
-  SalesmanCustomerRow,
-  SalesmanCustomerType,
-} from "@/lib/salesman-people";
+import type { SalesmanCustomerRow, SalesmanCustomerType } from "@/lib/salesman-people-contract";
 
 import {
   getSalesmanCustomerContact,

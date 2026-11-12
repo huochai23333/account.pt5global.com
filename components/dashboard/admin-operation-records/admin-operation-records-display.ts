@@ -4,7 +4,7 @@ import type {
   AdminOperationRecord,
   AdminOperationRecordAction,
   AdminOperationRecordCategory,
-} from "@/lib/admin-operation-records";
+} from "@/lib/admin-operation-records-contract";
 import type { AppRole } from "@/lib/auth-routing";
 import type { Locale } from "@/lib/locale";
 import type { UserStatus } from "@/lib/user-self-service";

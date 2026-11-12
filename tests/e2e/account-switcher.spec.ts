@@ -1,14 +1,24 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { getRegressionAccount } from "./helpers/accounts";
-import { loginAs, loginWithAccount, setTestLocale } from "./helpers/auth";
+import { loginAs, loginWithAccount } from "./helpers/auth";
 import { getLocalSupabaseAdminClient } from "./helpers/local-supabase-admin";
 
+// 用例组织与断言留在 spec，公共页面步骤和浏览器存储夹具分别维护。
+import {
+  addClientAndSwitchBackToAdministrator,
+  openMyPage,
+  submitLogin,
+  expectAccountSwitcherLayoutToFit,
+} from "./helpers/account-switcher-ui";
+import {
+  expireStoredAccount,
+  replaceStoredSessionWithInvalidTokens,
+  readStoredAccountSummary,
+  readPendingLoginSummary,
+} from "./helpers/account-switcher-storage";
+
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const STORED_ACCOUNT_KEY =
-  "pt5-dropshipping.account-switcher.v2.alternate";
-const PENDING_LOGIN_KEY =
-  "pt5-dropshipping.account-switcher.v2.pending";
 
 test.describe("common account switching", () => {
   test("顶部菜单可添加账号，并以服务端身份核对一键切换", async ({ page }) => {
@@ -106,30 +116,34 @@ test.describe("common account switching", () => {
     browser,
   }) => {
     const firstContext = await browser.newContext({ baseURL: BASE_URL });
-    const firstPage = await firstContext.newPage();
+    let client: ReturnType<typeof getRegressionAccount>;
+    let browserState: Awaited<ReturnType<typeof firstContext.storageState>>;
+    // 首次登录、断言或保存状态失败时，也关闭本用例创建的上下文。
+    try {
+      const firstPage = await firstContext.newPage();
+      ({ client } = await addClientAndSwitchBackToAdministrator(firstPage));
 
-    const { client } = await addClientAndSwitchBackToAdministrator(firstPage);
+      const savedBeforeRestart = await readStoredAccountSummary(firstPage);
+      expect(savedBeforeRestart).toMatchObject({
+        email: client.email,
+        hasSession: true,
+        state: "ready",
+      });
+      expect(savedBeforeRestart?.remainingDays).toBeGreaterThanOrEqual(29);
+      expect(await readPendingLoginSummary(firstPage)).toBeNull();
 
-    const savedBeforeRestart = await readStoredAccountSummary(firstPage);
-    expect(savedBeforeRestart).toMatchObject({
-      email: client.email,
-      hasSession: true,
-      state: "ready",
-    });
-    expect(savedBeforeRestart?.remainingDays).toBeGreaterThanOrEqual(29);
-    expect(await readPendingLoginSummary(firstPage)).toBeNull();
-
-    // storageState 会同时保存登录 Cookie 和 localStorage，等价于浏览器关闭后再次打开。
-    const browserState = await firstContext.storageState();
-    await firstContext.close();
+      // storageState 保存 Cookie 和 localStorage，下一上下文据此模拟重新打开。
+      browserState = await firstContext.storageState();
+    } finally {
+      await firstContext.close();
+    }
 
     const reopenedContext = await browser.newContext({
       baseURL: BASE_URL,
       storageState: browserState,
     });
-    const reopenedPage = await reopenedContext.newPage();
-
     try {
+      const reopenedPage = await reopenedContext.newPage();
       await openMyPage(reopenedPage, "/admin/my");
       await expect(
         reopenedPage.getByText(client.email, { exact: true }),
@@ -305,184 +319,3 @@ test.describe("common account switching", () => {
     });
   });
 });
-
-async function addClientAndSwitchBackToAdministrator(page: Page) {
-  const administrator = await loginAs(page, "administrator");
-  const client = getRegressionAccount("client");
-
-  await openMyPage(page, "/admin/my");
-  await page.getByRole("button", { name: /添加账户/ }).click();
-  await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 30_000 });
-  await expect(page.getByText(/请登录另一个账号/)).toBeVisible();
-
-  expect(await readStoredAccountSummary(page)).toBeNull();
-  expect(await readPendingLoginSummary(page)).toMatchObject({
-    currentEmail: administrator.email,
-    kind: "add",
-  });
-
-  await loginWithAccount(page, client);
-  await openMyPage(page, "/client/my");
-  await expect(page.getByText(administrator.email, { exact: true })).toBeVisible();
-
-  await page.getByRole("button", { name: /^切换$/ }).click();
-  await expect(page).toHaveURL(/\/admin\/home(?:[?#].*)?$/, {
-    timeout: 30_000,
-  });
-  await openMyPage(page, "/admin/my");
-  await expect(page.getByText(client.email, { exact: true })).toBeVisible();
-
-  return { administrator, client };
-}
-
-async function openMyPage(page: Page, path: string) {
-  await page.goto(path);
-  await expect(page.locator("#common-account")).toBeVisible();
-}
-
-async function submitLogin(page: Page, email: string, password: string) {
-  await setTestLocale(page, "zh");
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await page.locator('form button[type="submit"]').click();
-}
-
-async function expireStoredAccount(page: Page) {
-  await page.evaluate((storageKey) => {
-    const rawAccount = window.localStorage.getItem(storageKey);
-
-    if (!rawAccount) {
-      throw new Error("Expected a stored alternate account before expiring it.");
-    }
-
-    const account = JSON.parse(rawAccount) as Record<string, unknown>;
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({ ...account, expiresAt: Date.now() - 1 }),
-    );
-  }, STORED_ACCOUNT_KEY);
-}
-
-async function replaceStoredSessionWithInvalidTokens(page: Page) {
-  await page.evaluate((storageKey) => {
-    const rawAccount = window.localStorage.getItem(storageKey);
-
-    if (!rawAccount) {
-      throw new Error("Expected a stored alternate account before invalidating it.");
-    }
-
-    const account = JSON.parse(rawAccount) as Record<string, unknown>;
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        ...account,
-        session: {
-          accessToken: "invalid-access-token",
-          refreshToken: "invalid-refresh-token",
-        },
-      }),
-    );
-  }, STORED_ACCOUNT_KEY);
-}
-
-async function expectAccountSwitcherLayoutToFit(
-  page: Page,
-  requireMobileTouchTargets: boolean,
-) {
-  const commonAccountSection = page.locator("#common-account");
-  const switchButton = commonAccountSection.getByRole("button", {
-    name: /^切换$/,
-  });
-  const removeButton = commonAccountSection.getByRole("button", { name: "移除" });
-
-  await expect(commonAccountSection).toBeVisible();
-  await expect(switchButton).toBeVisible();
-  await expect(removeButton).toBeVisible();
-
-  const layout = await page.evaluate(() => ({
-    documentWidth: document.documentElement.scrollWidth,
-    viewportWidth: window.innerWidth,
-  }));
-  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
-
-  const sectionBox = await commonAccountSection.boundingBox();
-  const switchBox = await switchButton.boundingBox();
-  const removeBox = await removeButton.boundingBox();
-
-  expect(sectionBox).not.toBeNull();
-  expect(switchBox).not.toBeNull();
-  expect(removeBox).not.toBeNull();
-
-  if (!sectionBox || !switchBox || !removeBox) {
-    return;
-  }
-
-  for (const actionBox of [switchBox, removeBox]) {
-    expect(actionBox.x).toBeGreaterThanOrEqual(sectionBox.x);
-    expect(actionBox.x + actionBox.width).toBeLessThanOrEqual(
-      sectionBox.x + sectionBox.width + 1,
-    );
-  }
-
-  if (requireMobileTouchTargets) {
-    expect(switchBox.height).toBeGreaterThanOrEqual(44);
-    expect(removeBox.height).toBeGreaterThanOrEqual(44);
-    expect(removeBox.width).toBeGreaterThanOrEqual(44);
-  }
-}
-
-async function readStoredAccountSummary(page: Page) {
-  return page.evaluate((storageKey) => {
-    const rawAccount = window.localStorage.getItem(storageKey);
-
-    if (!rawAccount) {
-      return null;
-    }
-
-    const account = JSON.parse(rawAccount) as Record<string, unknown>;
-    const expiresAt =
-      typeof account.expiresAt === "number" ? account.expiresAt : null;
-
-    return {
-      email: typeof account.email === "string" ? account.email : null,
-      hasSession: Object.hasOwn(account, "session"),
-      reauthenticationReason:
-        typeof account.reauthenticationReason === "string"
-          ? account.reauthenticationReason
-          : null,
-      remainingDays:
-        expiresAt === null
-          ? null
-          : Math.floor((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)),
-      state: typeof account.state === "string" ? account.state : null,
-    };
-  }, STORED_ACCOUNT_KEY);
-}
-
-async function readPendingLoginSummary(page: Page) {
-  return page.evaluate((storageKey) => {
-    const rawPending = window.sessionStorage.getItem(storageKey);
-
-    if (!rawPending) {
-      return null;
-    }
-
-    const pending = JSON.parse(rawPending) as {
-      currentAccount?: { email?: unknown };
-      kind?: unknown;
-      targetAccount?: { email?: unknown };
-    };
-
-    return {
-      currentEmail:
-        typeof pending.currentAccount?.email === "string"
-          ? pending.currentAccount.email
-          : null,
-      kind: typeof pending.kind === "string" ? pending.kind : null,
-      targetEmail:
-        typeof pending.targetAccount?.email === "string"
-          ? pending.targetAccount.email
-          : null,
-    };
-  }, PENDING_LOGIN_KEY);
-}

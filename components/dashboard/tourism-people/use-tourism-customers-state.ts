@@ -9,11 +9,10 @@ import {
   addClientToBusiness,
   type ClientBusinessCandidate,
 } from "@/lib/client-business-access";
-import type { AdminPeoplePageData, AdminPersonRow } from "@/lib/admin-people";
+import type { AdminPeoplePageData, AdminPersonRow } from "@/lib/admin-people-contract";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
-import { normalizeSearchText } from "@/lib/value-normalizers";
 
-import { isTourismCustomer } from "./tourism-people-display";
+import { filterTourismPeople, isTourismCustomer } from "./tourism-people-display";
 
 const ALL = "all";
 
@@ -48,30 +47,10 @@ export function useTourismCustomersState(
     () => people.filter(isTourismCustomer),
     [people],
   );
-  const filteredCustomers = useMemo(() => {
-    const searchValue = normalizeSearchText(searchText);
-
-    return tourismCustomers.filter((customer) => {
-      if (statusFilter !== ALL && customer.status !== statusFilter) {
-        return false;
-      }
-
-      if (!searchValue) {
-        return true;
-      }
-
-      return [
-        customer.name ?? "",
-        customer.email ?? "",
-        customer.phone ?? "",
-        customer.city ?? "",
-        customer.referral_code ?? "",
-        customer.referrer_name ?? "",
-        customer.referrer_email ?? "",
-        customer.team_name ?? "",
-      ].some((value) => normalizeSearchText(value).includes(searchValue));
-    });
-  }, [searchText, statusFilter, tourismCustomers]);
+  const filteredCustomers = useMemo(
+    () => filterTourismPeople(tourismCustomers, searchText, statusFilter),
+    [tourismCustomers, searchText, statusFilter],
+  );
 
   const addCustomer = async (userId: string) => {
     const supabase = getBrowserSupabaseClient();

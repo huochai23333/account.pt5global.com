@@ -4,7 +4,7 @@ import {
   isCustomerTypeMark,
   type AdminPeopleChangeLogRow,
   type AdminPersonRow,
-} from "@/lib/admin-people";
+} from "@/lib/admin-people-contract";
 
 export type AdminPeopleFeedback = {
   tone: "error" | "success" | "info";

@@ -32,6 +32,7 @@ import {
   announcementAudienceValues,
   announcementStatusValues,
   formatAnnouncementDate,
+  type AnnouncementAudienceFilter,
 } from "./announcements-display";
 
 type AnnouncementsHeaderSectionProps = {
@@ -43,7 +44,7 @@ type AnnouncementsHeaderSectionProps = {
 };
 
 type AnnouncementsFilterSectionProps = {
-  audienceFilter: AnnouncementAudience | "all";
+  audienceFilter: AnnouncementAudienceFilter;
   copy: {
     allAudiences: string;
     allStatuses: string;
@@ -52,7 +53,7 @@ type AnnouncementsFilterSectionProps = {
     statusLabel: string;
     statusOptions: Record<AnnouncementStatus, string>;
   };
-  onAudienceFilterChange: (value: AnnouncementAudience | "all") => void;
+  onAudienceFilterChange: (value: AnnouncementAudienceFilter) => void;
   onReset: () => void;
   onStatusFilterChange: (value: AnnouncementStatus | "all") => void;
   statusFilter: AnnouncementStatus | "all";
@@ -114,12 +115,12 @@ export function AnnouncementsFilterSection({
   return (
     <DashboardResourceFilterSection
       activeFilterCount={[
-        audienceFilter !== "all",
+        audienceFilter !== "any",
         statusFilter !== "all",
       ].filter(Boolean).length}
       gridClassName="md:grid-cols-2"
       onReset={onReset}
-      resetDisabled={audienceFilter === "all" && statusFilter === "all"}
+      resetDisabled={audienceFilter === "any" && statusFilter === "all"}
     >
       <DashboardFilterField label={copy.statusLabel}>
         <Select
@@ -139,7 +140,7 @@ export function AnnouncementsFilterSection({
         <Select
           onValueChange={onAudienceFilterChange}
           options={[
-            { label: copy.allAudiences, value: "all" },
+            { label: copy.allAudiences, value: "any" },
             ...announcementAudienceValues.map((audience) => ({
               label: copy.audienceOptions[audience],
               value: audience,

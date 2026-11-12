@@ -10,7 +10,7 @@ import {
 } from "@/components/dashboard/dashboard-form-dialog";
 
 import type { FeedbackTone } from "../dashboard-shared-ui";
-import type { OperatorReimbursementFormState } from "./operator-reimbursements-display";
+import type { OperatorReimbursementFormState } from "./operator-reimbursements-form";
 
 type OperatorReimbursementFormDialogProps = {
   copy: {

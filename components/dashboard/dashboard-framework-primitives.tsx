@@ -35,21 +35,12 @@ export function DashboardInlineEditActions({
 }) {
   return editing ? (
     <div className="flex flex-wrap gap-2">
-      <Button
-        disabled={pending}
-        onClick={onCancel}
-        type="button"
-        variant="outline"
-      >
+      <Button disabled={pending} onClick={onCancel} type="button" variant="outline">
         <X className="size-4" />
         {cancelLabel}
       </Button>
       <Button disabled={pending} onClick={onSave} type="button">
-        {saving ? (
-          <LoaderCircle className="size-4 animate-spin" />
-        ) : (
-          <Save className="size-4" />
-        )}
+        {saving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
         {saveLabel}
       </Button>
     </div>
@@ -116,10 +107,7 @@ export function DashboardFilePicker({
       {files?.length ? (
         <ul className="grid gap-1.5 text-sm text-content-muted">
           {files.map((file, index) => (
-            <li
-              className="break-all"
-              key={`${file.name}:${file.size}:${index}`}
-            >
+            <li className="break-all" key={`${file.name}:${file.size}:${index}`}>
               {file.name}
             </li>
           ))}

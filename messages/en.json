@@ -405,7 +405,8 @@
     "serviceUnavailable": "The system cannot be reached right now. Please try again later.",
     "forbidden": "This account cannot change customer business access.",
     "invalidTarget": "This customer cannot be added to the business right now. Refresh and try again.",
-    "unknownError": "The customer could not be added. Please try again later."
+    "unknownError": "The customer could not be added. Please try again later.",
+    "unconfirmed": "We could not confirm the change. Reload the page and check this customer's business access before trying again."
   },
   "ForgotPasswordForm": {
     "recoverySuccess": "The reset link has been verified. Please set a new password.",
@@ -436,6 +437,7 @@
     "authSessionMissing": "The reset link has expired. Please request a new reset email.",
     "weakPassword": "This new password is too common. Please choose a stronger one.",
     "samePassword": "The new password must be different from the current one.",
+    "passwordUpdateUnconfirmed": "We couldn't confirm the password change. Try your new password in a private browser window before continuing.",
     "invalidEmail": "Enter a valid email address.",
     "emailDeliveryFailed": "The reset email could not be sent. Confirm the email can receive messages or contact an administrator."
   },
@@ -594,7 +596,8 @@
       "acknowledge": "Got It",
       "empty": "There are no announcements available right now.",
       "loadError": "Announcements could not be loaded. Please try again later.",
-      "readError": "The read status could not be saved. Please try again later."
+      "readError": "The read status could not be saved. Please try again later.",
+      "readPartialError": "Some announcements could not be marked as read. Please try again."
     },
     "accountMenu": {
       "open": "Open Account Menu",
@@ -692,12 +695,14 @@
     },
     "feedback": {
       "createSuccess": "Expense saved.",
+      "createUnconfirmed": "We couldn't confirm the expense was saved. Try again with the original details.",
+      "createDifferent": "The previous expense is still unconfirmed. Restore the original details and try again.",
       "updateSuccess": "Expense updated.",
       "deleteSuccess": "Expense deleted.",
       "deleteConfirm": "Delete “{title}”?",
       "missingTitle": "Enter an expense name.",
       "missingAmount": "Enter an amount.",
-      "invalidAmount": "Amount must be greater than 0.",
+      "invalidAmount": "Enter an amount greater than 0 with up to two decimal places.",
       "invalidMonth": "Choose a month.",
       "notFoundError": "This expense record no longer exists.",
       "permissionError": "This account cannot manage company expenses.",
@@ -763,13 +768,16 @@
     },
     "feedback": {
       "createSuccess": "Record saved.",
+      "createDifferent": "The previous record is still unconfirmed. Restore the original details and try again.",
+      "createUnconfirmed": "We couldn't confirm the record was saved. Try again with the original details.",
       "deleteSuccess": "Record deleted.",
       "deleteConfirm": "Delete “{content}”?",
       "reimburseSuccess": "{count} records marked as reimbursed.",
       "reimburseEmpty": "No outstanding records in this period.",
+      "reimburseUnconfirmed": "We couldn't confirm this reimbursement. Reload the page to check the period.",
       "missingContent": "Enter the reimbursement content.",
       "missingAmount": "Enter the reimbursement amount.",
-      "invalidAmount": "Amount must be greater than 0.",
+      "invalidAmount": "Enter an amount greater than 0 with up to two decimal places.",
       "invalidDate": "Choose a date.",
       "notFoundError": "This reimbursement record no longer exists.",
       "deleteLockedError": "Reimbursed records cannot be deleted.",
@@ -959,10 +967,12 @@
     },
     "attachments": {
       "title": "Order List for {number}",
-      "description": "Only spreadsheet files are accepted. Customers and finance can view and download.",
+      "description": "Attachments must be spreadsheets. People with access can view and download them.",
       "choose": "Choose spreadsheets",
       "rules": "CSV, XLS, or XLSX; up to 10 files, 20 MB each, 100 MB total.",
       "upload": "Upload selected files",
+      "uploadUnconfirmed": "We couldn't confirm these attachments yet. Check this upload before trying again.",
+      "checkUpload": "Check this upload",
       "empty": "This order has no Order List attachment.",
       "download": "Download",
       "delete": "Delete",
@@ -1147,7 +1157,48 @@
         "status": "Status"
       }
     },
+    "customerWrite": {
+      "created": "Wholesale customer saved.",
+      "updated": "Customer details updated.",
+      "deleted": "Customer deleted.",
+      "deleteHasDocuments": "This customer still has files. Take care of those files before deleting the customer record.",
+      "deleteHasOrders": "This customer has wholesale orders and their record must be kept.",
+      "deleteHasLead": "This customer was added from a lead. Keep this record; customer details can still be edited.",
+      "deleteForbidden": "Your account cannot delete this customer record.",
+      "deleteUnconfirmed": "The deletion could not be confirmed. Reload the page and check whether the customer record is still there.",
+      "deleteFailed": "The customer record could not be deleted. Please try again later.",
+      "linked": "Customer account link confirmed.",
+      "linkUnconfirmed": "The account link could not be confirmed. Reload the page and check this profile before trying again.",
+      "editConflict": "This profile changed while you were editing. Copy your changes, reload the page and review the latest details.",
+      "editUnconfirmed": "The save could not be confirmed. Reload the page and check this customer profile before trying again."
+    },
     "ordersUi": {
+      "loadError": "Wholesale orders could not load. Please try again.",
+      "writeFeedback": {
+        "created": "Wholesale order saved.",
+        "updated": "Wholesale order updated.",
+        "settlementSaved": "Settlement record saved.",
+        "settlementUnconfirmed": "This settlement is unconfirmed. Keep the original amount and date. Saving again checks the original record first.",
+        "settlementConflict": "This settlement was already recorded. Use the original amount and date to confirm it before recording another.",
+        "settlementRateMissing": "There is no exchange rate for this date. Add it in Exchange Rate Settings before saving.",
+        "refreshPending": "Order saved. The list could not refresh yet. Reload the list to check it."
+      },
+      "detailFields": {
+        "title": "Order {number}",
+        "salesperson": "Salesperson",
+        "status": "Status",
+        "payment": "Customer payment",
+        "platform": "Payment platform",
+        "smallOrderCount": "Small orders",
+        "purchase": "Product purchase amount",
+        "packing": "Packing fee",
+        "shipping": "International shipping",
+        "otherFee": "Other expenses",
+        "referralFee": "Referral commission fee",
+        "profit": "Gross profit",
+        "margin": "Gross margin",
+        "noNotes": "No notes recorded."
+      },
       "clientDetailDescription": "View the order amount, shipping details, and attachments. Contact the assigned sales representative if you need help.",
       "clientColumns": {
         "orderNumber": "Order number",
@@ -1197,7 +1248,8 @@
       },
       "assessment": {
         "pending": "Assessing",
-        "generate": "Assess Current Results"
+        "generate": "Assess Current Results",
+        "failed": "The assessment could not be completed. Please try again."
       },
       "orderList": {
         "title": "Order List Attachments",
@@ -1213,6 +1265,12 @@
         "delete": "Delete",
         "confirmDelete": "Delete “{name}”?",
         "downloadFailed": "This attachment cannot be downloaded right now. Please try again later.",
+        "uploadSaved": "Attachments uploaded.",
+        "deleteSaved": "Attachment deleted.",
+        "deleteIncomplete": "The file is gone, but the attachment list could not be confirmed. Refresh and delete again if the attachment still appears.",
+        "deleteFailed": "The deletion could not be confirmed. Refresh and try again.",
+        "uploadUnconfirmed": "The upload is unconfirmed. Keep the original files and try again. If you left this page, select the same files again. This upload will be checked first.",
+        "uploadFailed": "The upload failed. Check the files and your permissions before trying again.",
         "connectionFailed": "The system cannot be reached right now. Refresh the page and try again."
       },
       "fees": {
@@ -1224,6 +1282,8 @@
     "logisticsArchive": {
       "title": "Logistics Management",
       "updating": "Logistics data is being updated. Existing records remain available.",
+      "sourceRefreshDeferred": "Existing logistics records are available. New data will be checked again later.",
+      "loadFailed": "Logistics records could not load. Please try again.",
       "missingCost": "Missing freight",
       "actions": {
         "settings": "Store Assignment Settings",
@@ -1275,6 +1335,17 @@
       "list": {
         "title": "Logistics Orders",
         "loading": "Loading logistics orders…"
+      },
+      "assignmentFeedback": {
+        "assigned": "Store assignment saved.",
+        "changed": "Store assignment updated.",
+        "ended": "Store assignment ended.",
+        "alreadyAssigned": "The selected stores already have an assignment.",
+        "dateOutside": "Choose a date within the current assignment period.",
+        "invalidSalesperson": "Choose an active salesperson.",
+        "forbidden": "Your account cannot change store assignments.",
+        "unconfirmed": "We couldn't confirm this change yet. Refresh to check the assignment history.",
+        "failed": "The store assignment could not be saved. Please try again."
       },
       "assignments": {
         "title": "Store Assignment Settings",
@@ -1334,6 +1405,9 @@
       "retry": "Reload",
       "salesmanError": "Salesperson incentives could not be loaded. Please reload and try again.",
       "referralsError": "Customer referral commissions could not be loaded. Please reload and try again.",
+      "settlementSaved": "The incentive has been marked as settled.",
+      "settlementChanged": "This incentive is no longer pending. Reload the page to check its status.",
+      "settlementUnconfirmed": "We couldn't confirm the settlement. Reload the page and check before trying again.",
       "incentiveTotal": "Total incentives",
       "incentivePending": "Pending incentives",
       "incentiveRecords": "Incentive records",
@@ -1591,11 +1665,13 @@
       "invalidInput": "Check the entered details and submit again.",
       "notFound": "The matching customer or VIP record was not found.",
       "processed": "This request has already been handled.",
+      "unconfirmed": "VIP status has not been confirmed. Reload the page and check the customer's records before submitting again.",
       "serviceUnavailable": "The service is temporarily unavailable. Please try again later.",
       "unknown": "The action did not go through. Please try again later."
     },
     "fallback": {
-      "noRecord": "No record yet"
+      "noRecord": "No record yet",
+      "noContact": "No contact details provided"
     }
   },
   "DashboardHome": {
@@ -1994,7 +2070,9 @@
     "accountSwitcherRoleOperator": "Operator account",
     "accountSwitcherRoleFinance": "Finance account",
     "accountSwitcherRolePromoter": "Promoter account",
-    "accountSwitcherRoleRecruiter": "Recruiter account"
+    "accountSwitcherRoleRecruiter": "Recruiter account",
+    "businessInviteLoadFailed": "Invite links could not be loaded. Please try again.",
+    "businessInviteRetry": "Reload Invite Links"
   },
   "DashboardMyState": {
     "unnamedUser": "Unnamed User",
@@ -2467,6 +2545,7 @@
       "privacyRejected": "Privacy information rejected.",
       "mediaApproved": "Media approved.",
       "mediaRejected": "Media rejected.",
+      "unconfirmed": "We couldn't confirm the review result. Reload the page to check this request.",
       "profileApproved": "Profile change approved and the user profile has been updated.",
       "profileRejected": "Profile change request rejected."
     }
@@ -2935,7 +3014,8 @@
     },
     "feedback": {
       "orderMarkedPaid": "The commission for order {orderNumber} is now marked as paid.",
-      "taskMarkedPaid": "The commission for task {taskName} is now marked as paid."
+      "taskMarkedPaid": "The commission for task {taskName} is now marked as paid.",
+      "settlementRefreshFailed": "The commission was marked as paid. Refresh the page to see the updated list."
     },
     "taskSection": {
       "title": "Task Commission Records",
@@ -3034,7 +3114,7 @@
         "confirmPublish": "Publish"
       },
       "validation": {
-        "rate": "Enter a rate between 0 and 100.",
+        "rate": "Enter a percentage from 0.01 to 100.",
         "amount": "Enter an amount greater than 0.",
         "count": "Enter a whole number greater than 0.",
         "tierOrder": "Waybill thresholds must increase from the first tier to the third.",
@@ -3080,7 +3160,8 @@
         "reason": "Change reason",
         "reasonHint": "For example: adjusted for the latest business plan. This note is kept in history.",
         "before": "Before",
-        "after": "After"
+        "after": "After",
+        "rateHint": "Enter a percentage. For example, 1 means 1%."
       },
       "publish": {
         "confirmTitle": "Publish this change?",
@@ -3188,6 +3269,8 @@
       "errors": {
         "noAdminAccess": "The current account cannot view the full commission board.",
         "noSalesmanAccess": "The current account cannot view personal commission records.",
+        "settlementChanged": "This commission is no longer pending. Refresh the page to see its current status.",
+        "settlementUnconfirmed": "We couldn't confirm the change. Refresh the page and check the commission before trying again.",
         "unknown": "The commission action did not go through. Please try again later."
       }
     },
@@ -3272,6 +3355,9 @@
           "taskTypeRequired": "Please choose a valid task type.",
           "targetRolesRequired": "Choose at least one target role.",
           "targetRolesLocked": "This task has already been accepted, so target roles cannot be changed right now.",
+          "targetRolesUnconfirmed": "We couldn’t confirm the target roles were updated. Refresh the list to check.",
+          "taskDeleteUnconfirmed": "We couldn’t confirm the task was deleted. Refresh the list to check.",
+          "taskTypeUnconfirmed": "We couldn’t confirm the task type change. Refresh the list to check.",
           "taskTypeNameRequired": "Enter a task type name.",
           "commissionAmountInvalid": "The commission amount can be left blank. If filled, it must be a number that is 0 or above.",
           "acceptanceLimitInvalid": "Enter a whole number above 0, or choose unlimited accepts.",
@@ -3321,7 +3407,10 @@
         "updated": "The task has been updated.",
         "updatedWithCommissionSyncWarning": "The task was updated, but the related commission information has not fully refreshed yet. Check the commission board again later.",
         "assignmentUpdated": "Target roles have been updated.",
+        "assignmentUnchanged": "These target roles are already selected. No update was needed.",
         "deletedWithAttachmentCleanupWarning": "The task was deleted, but some task or review files have not been fully cleared yet. Check again later.",
+        "deleteUnconfirmed": "We couldn’t confirm the task was deleted. Its files were kept. Refresh the list to check.",
+        "createCleanupUnconfirmed": "The file upload didn’t finish, and we couldn’t confirm cleanup. Check the task list before creating the task again.",
         "deleted": "The task has been deleted."
       },
       "confirmDelete": "Delete task \"{taskName}\"? Attached files will be removed as well.",
@@ -3358,6 +3447,8 @@
         "errors": {
           "noPermission": "The current account cannot review this task submission.",
           "notReviewing": "This task is no longer waiting for review.",
+          "submissionChanged": "The task materials have changed. Refresh the list before reviewing them.",
+          "unconfirmed": "We couldn’t confirm the review result. Refresh the list to check it.",
           "submissionMissing": "The current task submission is missing. Refresh and try again.",
           "taskMissing": "The task no longer exists. Refresh the list and try again."
         }
@@ -3571,6 +3662,8 @@
         "accepted": "Task accepted. You can start working on it now.",
         "reviewSubmitted": "Task submitted for review.",
         "reviewResubmitted": "Task resubmitted for review.",
+        "reviewUnconfirmed": "We couldn’t confirm your submission. Refresh the task list and check its progress before trying again.",
+        "reviewCleanupIncomplete": "The task wasn’t submitted and some attachments may still be saved. Refresh the task list to check its progress.",
         "completed": "Task completed."
       },
       "header": {
@@ -4549,10 +4642,10 @@
     },
     "components_dashboard_wholesale_wholesale_customer_delete_dialog": {
       "text004": " Confirm deletion ",
-      "text002": " If this customer already has a wholesale order, the system will retain the customer to avoid loss of order data. ",
-      "attribute001": "After deletion, the customer will be removed from customer management; customers with existing orders cannot be deleted.",
-      "text001": " Confirm deletion\"",
-      "text003": " Don’t delete it yet ",
+      "text002": " Records with existing orders or files are protected. ",
+      "attribute001": "This permanently removes the record from the customer directory.",
+      "text001": "Delete “{name}”?",
+      "text003": " Cancel ",
       "attribute002": "Delete wholesale customer"
     },
     "components_dashboard_wholesale_wholesale_customer_details": {
@@ -4567,13 +4660,23 @@
       "text007": " After the merge, this registered account will receive the customer's existing and future wholesale orders and commissions. ",
       "attribute002": "There are currently no unmerged customer registration accounts. Once the customer has completed registration, they can select and merge here.",
       "linkedLeadNotice": "This customer was added from a lead. Keep this record; customer details can still be edited.",
-      "ownerLabel": "Customer owner"
+      "ownerLabel": "Customer owner",
+      "uniqueName": "Customer name",
+      "contact": "Contact details",
+      "source": "Customer source",
+      "customerKind": "Customer type",
+      "account": "Linked account",
+      "linkedAccount": "Account linked",
+      "unnamedAccount": "Unnamed account",
+      "registeredOn": "Date added",
+      "notes": "Notes"
     },
     "components_dashboard_wholesale_wholesale_customer_dialogs": {
       "attribute002": "Add new wholesale customers",
       "attribute004": "Edit wholesale customers",
       "attribute003": "Modify the customer's unique name, contact information, source, other names, customer owner and remarks.",
-      "attribute001": "Use a unique name to identify the customer. Other names can include common nicknames or store names."
+      "attribute001": "Use a unique name to identify the customer. Other names can include common nicknames or store names.",
+      "detailsTitle": "Customer details"
     },
     "components_dashboard_wholesale_wholesale_customer_form": {
       "attribute005": "Contact information",
@@ -4584,7 +4687,9 @@
       "text001": "Not allocated yet",
       "text002": "Customer owner",
       "attribute001": "Customer unique identification name",
-      "attribute004": "Multiple entries can be entered at one time, separated by commas or newlines."
+      "attribute004": "Multiple entries can be entered at one time, separated by commas or newlines.",
+      "saveNew": "Save customer",
+      "saveChanges": "Save changes"
     },
     "components_dashboard_wholesale_wholesale_customer_other_names": {
       "attribute002": "Multiple entries can be entered at one time, separated by commas or newlines.",
@@ -4592,7 +4697,12 @@
       "text002": " Common customer nicknames, store names or reconciliation names can be recorded. ",
       "attribute001": "Add another name",
       "text001": "Other names",
-      "text003": "No other names have been recorded yet."
+      "text003": "No other names have been recorded yet.",
+      "open": "Add another name",
+      "collapse": "Hide form",
+      "saved": "Other names saved.",
+      "alreadyPresent": "These names are already on this customer profile.",
+      "failed": "The names could not be confirmed. Refresh the profile to check them before trying again."
     },
     "components_dashboard_wholesale_wholesale_customers_section": {
       "attribute003": "Customer management",
@@ -4689,22 +4799,24 @@
       "attribute001": "An order number is automatically generated. In the entry stage, only customer payments and costs are recorded. During foreign exchange settlement, the exchange rate is confirmed and the RMB amount, gross profit and commission are calculated."
     },
     "components_dashboard_wholesale_wholesale_order_rate_dialogs": {
-      "dialogDescription": "Record each settled amount and date. The selected date's exchange rate is used, and the order becomes settled once the accumulated amount reaches the order total.",
+      "dialogDescription": "Enter the amount and date for this settlement. The order is marked settled when the recorded amounts reach the order total.",
       "attribute002": "Order number",
       "text006": "Exchange rate ",
       "attribute003": "Customer pays",
-      "text004": " There is no settlement record yet. ",
-      "text002": " The exchange rate for this date will be used when saving. ",
-      "text001": " The amount uses the payment currency of the order customer and cannot exceed the remaining amount that can be settled. ",
-      "attribute008": "Match exchange rate",
-      "text005": "Registered records",
-      "attribute005": "The amount of foreign exchange settlement this time",
-      "attribute009": "The amount of RMB this time",
-      "attribute004": "The remaining amount can be settled",
-      "text003": "Save foreign exchange settlement records",
-      "attribute006": "Fill in the amount of this exchange settlement",
-      "attribute007": "Exchange settlement date",
-      "attribute001": "Confirm exchange settlement"
+      "text004": "No settlements yet.",
+      "text002": "The rate for this date applies.",
+      "text001": "Use the order currency. A new settlement cannot exceed the remaining amount.",
+      "attribute008": "Exchange rate",
+      "text005": "Recorded settlements",
+      "attribute005": "Settlement amount",
+      "attribute009": "Amount in CNY",
+      "attribute004": "Remaining amount",
+      "text003": "Save settlement",
+      "attribute006": "Enter an amount",
+      "attribute007": "Settlement date",
+      "attribute001": "Record settlement",
+      "noRateForDate": "No exchange rate for this date",
+      "previewUnavailable": "Enter an amount and select a date with an exchange rate"
     },
     "components_dashboard_wholesale_wholesale_orders_mobile_list": {
       "attribute003": "Salesman",
@@ -4839,6 +4951,12 @@
     },
     "components_dashboard_wholesale_wholesale_settlement_release_dialogs": {
       "selectCurrency": "Select the received currency",
+      "publicationSuccess": "The settlement payment has been published.",
+      "publicationUnconfirmed": "We couldn't confirm this payment was published. Check the previous publication first.",
+      "publicationDifferent": "A previous payment still needs checking. Check it or retry with the original details.",
+      "publicationFailed": "This payment couldn't be published. Check the details and try again.",
+      "publicationRecoveryHint": "A previous payment needs checking. If it's still unconfirmed, retry with the original details.",
+      "recoverPublication": "Check previous publication",
       "attribute003": "Select customer",
       "attribute010": "Remark",
       "attribute004": "Customer name",
@@ -4858,6 +4976,11 @@
       "adjustTitle": "Adjust payment allocation",
       "allocatedAmount": "Allocated now",
       "clearAllocations": "Clear current allocation",
+      "clearSuccess": "The allocations for this payment have been cleared.",
+      "clearUnconfirmed": "We couldn't confirm whether the allocations were cleared. Refresh to check.",
+      "clearRevisionChanged": "This payment was just updated. Refresh to check the latest allocations.",
+      "clearCommissionPaid": "These allocations cannot be cleared because commission has already been paid on a linked order.",
+      "clearFailed": "These allocations could not be cleared. Please try again later.",
       "clearConfirmDescription": "This removes all order settlement records created from this payment and returns it to pending. Orders with paid commission cannot be cleared.",
       "clearConfirmTitle": "Clear every allocation for this payment?",
       "confirmClear": "Confirm clear",
@@ -4939,6 +5062,13 @@
       "moreOrders": "{count} more orders",
       "noNote": "Not recorded",
       "notAllocated": "Not allocated",
+      "awaiting": "Awaiting action",
+      "status": {
+        "allocated": "Allocated",
+        "cancelled": "Cancelled",
+        "partially_allocated": "Partly allocated",
+        "pending": "Pending allocation"
+      },
       "publishedAs": "Posted as: {customerName}",
       "remainingAmount": "Remaining {amount}",
       "removedOrder": "Order removed"
@@ -4989,6 +5119,18 @@
     "newMail": "New email",
     "waitingPt5": "Waiting for us",
     "waitingCustomer": "Waiting for customer",
+    "threadStateSaved": "Conversation status saved.",
+    "threadOpenFailed": "Could not open this conversation.",
+    "threadDraftRestoreFailed": "Draft restored. Reopen the original conversation before sending your reply.",
+    "threadUnavailable": "This conversation is no longer available to you.",
+    "replySuggestionReady": "Reply suggestion ready. You can edit it before sending.",
+    "replySuggestionFailed": "Could not finish the reply suggestion. Try again shortly.",
+    "aiReportReady": "Email analysis report ready.",
+    "aiReportFailed": "Could not finish the email analysis report. Try again shortly.",
+    "threadReadFailed": "Could not confirm that the email was marked as read. Reopen it to check.",
+    "threadStateFailed": "Could not confirm the conversation status.",
+    "threadAssigned": "Conversation reassigned.",
+    "threadAssignFailed": "Could not confirm the reassignment.",
     "unread": "Unread",
     "closed": "Closed",
     "unassigned": "Unassigned",
@@ -5004,6 +5146,7 @@
     "restoreToWorkspace": "Restore to workspace",
     "moveToQuarantine": "Move to quarantine",
     "quarantineSelected": "Quarantine {count} selected",
+    "quarantineUnconfirmed": "We couldn’t confirm that every selected email was moved to quarantine.",
     "selectThread": "Select email: {subject}",
     "futureMail": "Future email",
     "quarantineOnly": "This email only",
@@ -5072,6 +5215,8 @@
     "plusAlias": "Plus alias",
     "refPrefix": "Ref prefix",
     "senderDisplayName": "Sender display name",
+    "senderSaveUnconfirmed": "We couldn’t confirm that your sender settings were saved.",
+    "senderSaved": "Sender settings saved.",
     "signature": "Email signature",
     "replyToPreview": "Customer reply address: chinapt5+{alias}@gmail.com",
     "refPreview": "Ref example: PT5-{year}-{prefix}-XXXXXXXX",
@@ -5170,6 +5315,7 @@
     "publish": {
       "createTitle": "Create company template",
       "updateTitle": "Upload template version",
+      "recoveryNotice": "We couldn't confirm the upload. Select Upload and enable again to check the same submission.",
       "description": "After validation and confirmed storage, the file becomes the current employee version immediately."
     },
     "feedback": {
@@ -5318,6 +5464,8 @@
     "download": "Download",
     "preview": "Preview",
     "rename_file": "Rename file",
+    "previewFailed": "This document cannot be previewed right now. Please try again.",
+    "previewRetry": "Try preview again",
     "move_file": "Move file",
     "delete_file": "Delete file",
     "create_folder": "New folder",

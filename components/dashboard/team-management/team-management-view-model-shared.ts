@@ -58,3 +58,13 @@ export function createTeamManagementDataState(
     viewerStatus: pageData.viewerStatus,
   };
 }
+
+export function applyTeamManagementReadback(
+  current: TeamManagementDataState,
+  sourceKey: string,
+  pageData: TeamManagementPageData,
+): TeamManagementDataState {
+  // 本地读回沿用发起时的服务端快照标识，返回的团队编号不能替换这个标识。
+  if (current.dataKey !== sourceKey) return current;
+  return { ...createTeamManagementDataState(pageData), dataKey: sourceKey };
+}

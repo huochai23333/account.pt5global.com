@@ -1,3 +1,4 @@
+/** 个人资料卡片只展示字段输入和审核状态；提交回调来自个人中心状态层，不在卡片中重写权限规则。 */
 "use client";
 
 import type { ReactNode } from "react";
@@ -44,9 +45,7 @@ export function InputCard({
           <p className="font-label text-[11px] font-semibold tracking-[0.18em] text-content-muted uppercase">
             {label}
           </p>
-          <p className="mt-1 text-sm text-content-muted">
-            {helperText ?? t("inputHint")}
-          </p>
+          <p className="mt-1 text-sm text-content-muted">{helperText ?? t("inputHint")}</p>
         </div>
       </div>
       <div className="mt-5 space-y-4">
@@ -88,17 +87,11 @@ export function StatusNotice({
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${approved ? "bg-status-success" : "bg-status-warning"}`}
         >
-          {approved ? (
-            <BadgeCheck className="size-4.5" />
-          ) : (
-            <ShieldAlert className="size-4.5" />
-          )}
+          {approved ? <BadgeCheck className="size-4.5" /> : <ShieldAlert className="size-4.5" />}
         </div>
         <div>
           <p className="text-sm font-semibold">
-            {approved
-              ? t("statusHeadings.approved")
-              : t("statusHeadings.pending")}
+            {approved ? t("statusHeadings.approved") : t("statusHeadings.pending")}
           </p>
           <p className="mt-1 text-sm leading-6 opacity-80">{description}</p>
         </div>

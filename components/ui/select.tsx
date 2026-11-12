@@ -69,8 +69,7 @@ export function Select<Value extends string = string>({
 }: SelectProps<Value>) {
   const density = useFormFieldControlDensity();
   // 未显式指定尺寸时跟随字段密度，普通表单仍保持 default，筛选区才使用 compact。
-  const resolvedControlSize =
-    controlSize ?? (density === "filter" ? "compact" : "default");
+  const resolvedControlSize = controlSize ?? (density === "filter" ? "compact" : "default");
   const resolvedRequired = useFormFieldRequired(required);
   const fieldAttributes = useFormFieldControlAttributes({
     ariaDescribedBy,
@@ -133,13 +132,8 @@ export function Select<Value extends string = string>({
           ref={triggerRef}
           type="button"
         >
-          <SelectPrimitive.Value
-            className="min-w-0 flex-1 truncate"
-            placeholder={placeholder}
-          />
-          <SelectPrimitive.Icon
-            className="shrink-0 text-content-muted transition-transform data-popup-open:rotate-180"
-          >
+          <SelectPrimitive.Value className="min-w-0 flex-1 truncate" placeholder={placeholder} />
+          <SelectPrimitive.Icon className="shrink-0 text-content-muted transition-transform data-popup-open:rotate-180">
             <ChevronDown aria-hidden="true" className="size-4" />
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
@@ -155,12 +149,7 @@ export function Select<Value extends string = string>({
               className="min-w-[var(--anchor-width)] max-w-[min(32rem,calc(100vw-1.5rem))] overflow-hidden rounded-[18px] border border-border-subtle bg-surface-overlay text-popover-foreground shadow-[var(--surface-shadow-floating)] outline-none backdrop-blur-2xl backdrop-saturate-150"
               data-slot="select-popup"
               onKeyDownCapture={(event) => {
-                if (
-                  event.key.length !== 1 ||
-                  event.altKey ||
-                  event.ctrlKey ||
-                  event.metaKey
-                ) {
+                if (event.key.length !== 1 || event.altKey || event.ctrlKey || event.metaKey) {
                   return;
                 }
 
@@ -176,12 +165,8 @@ export function Select<Value extends string = string>({
                 if (!matchedOption) return;
 
                 const matchedElement = Array.from(
-                  event.currentTarget.querySelectorAll<HTMLElement>(
-                    '[role="option"]',
-                  ),
-                ).find(
-                  (element) => element.dataset.value === matchedOption.value,
-                );
+                  event.currentTarget.querySelectorAll<HTMLElement>('[role="option"]'),
+                ).find((element) => element.dataset.value === matchedOption.value);
                 if (!matchedElement) return;
 
                 event.preventDefault();
@@ -206,11 +191,7 @@ export function Select<Value extends string = string>({
                     key={option.value}
                     // 显式提供纯文字标签，让 Base UI 在浮层刚挂载时也能立即执行首字母检索；
                     // 不能只依赖 ItemText 的 DOM 测量，因为快速键盘输入可能早于该测量完成。
-                    label={
-                      typeof option.label === "string"
-                        ? option.label
-                        : String(option.label)
-                    }
+                    label={typeof option.label === "string" ? option.label : String(option.label)}
                     value={option.value}
                   >
                     <SelectPrimitive.ItemText className="min-w-0 break-words [overflow-wrap:anywhere]">

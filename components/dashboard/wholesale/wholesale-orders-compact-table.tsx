@@ -90,7 +90,11 @@ export function WholesaleOrdersCompactTable(props: WholesaleOrdersTableProps) {
           order={selectedOrder}
           orderListAttachments={props.orderListAttachmentsByOrderId.get(selectedOrder.id) ?? []}
           pendingKey={props.pendingKey}
-          salesName={getProfileName(props.profilesById, selectedOrder.sales_user_id)}
+          salesName={getProfileName(
+            props.profilesById,
+            selectedOrder.sales_user_id,
+            t("fallbacks.unassigned"),
+          )}
           settlements={props.orderSettlementsByOrderId.get(selectedOrder.id) ?? []}
         />
       ) : null}

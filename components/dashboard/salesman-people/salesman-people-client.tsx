@@ -3,7 +3,7 @@
 import { useLocale } from "@/components/i18n/locale-provider";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { PersonPrivateNoteDialog } from "@/components/dashboard/person-notes/person-private-note-dialog";
-import type { SalesmanPeoplePageData } from "@/lib/salesman-people";
+import type { SalesmanPeoplePageData } from "@/lib/salesman-people-contract";
 
 import {
   SalesmanPeopleDirectorySection,

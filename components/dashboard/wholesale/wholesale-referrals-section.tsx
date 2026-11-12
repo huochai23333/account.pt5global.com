@@ -6,13 +6,12 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { DashboardPagedRecords } from "../dashboard-paged-records";
 import { Building2, Network, Plus, Search } from "lucide-react";
-import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
+import { WholesaleReferralsDialog } from "./wholesale-referrals-dialog";
 import {
   DashboardFilterField,
   DashboardListSection,
 } from "@/components/dashboard/dashboard-section-panel";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import type { WholesaleCustomer, WholesaleReferral } from "@/lib/wholesale";
 import { formatDate } from "./wholesale-display";
 import {
@@ -24,7 +23,6 @@ import {
 import {
   WholesaleEmptyState,
   WholesalePageShell,
-  WholesaleSubmitButton,
 } from "./wholesale-ui";
 type WholesaleReferralsSectionProps = {
   canEdit: boolean;
@@ -102,92 +100,40 @@ export function WholesaleReferralsSection({
           </DashboardFilterField>
         </div>
 
-        <DashboardPagedRecords items={directoryRows} queryKey={searchText}>{(pageRows) => filteredTree.length === 0 ? (
-          <WholesaleEmptyState
-            description={uiText("attribute007")}
-            icon={<Network className="size-5" />}
-            title={uiText("attribute008")}
-          />
-        ) : (
+        <DashboardPagedRecords items={directoryRows} queryKey={searchText}>
+          {(pageRows) => filteredTree.length === 0 ? (
+            <WholesaleEmptyState
+              description={uiText("attribute007")}
+              icon={<Network className="size-5" />}
+              title={uiText("attribute008")}
+            />
+          ) : (
             <div className="space-y-3">
-              {pageRows.map(({ node, path }) => <div key={node.id}>
-                <p className="mb-2 break-words text-xs text-content-muted">{path.join(" → ")}</p>
-                <ReferralTreeNode node={node} showChildren={false} />
-              </div>)}
+              {pageRows.map(({ node, path }) => (
+                <div key={node.id}>
+                  <p className="mb-2 break-words text-xs text-content-muted">
+                    {path.join(" → ")}
+                  </p>
+                  <ReferralDirectoryRow node={node} />
+                </div>
+              ))}
             </div>
-        )}</DashboardPagedRecords>
+          )}
+        </DashboardPagedRecords>
       </DashboardListSection>
 
-      <DashboardDialog
-        description={uiText("attribute009")}
+      <WholesaleReferralsDialog
+        customers={customers}
+        onCreateReferral={onCreateReferral}
         onOpenChange={setDialogOpen}
         open={dialogOpen}
-        title={uiText("attribute010")}
-      >
-        <form
-          className="grid gap-4 md:grid-cols-2"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const form = event.currentTarget;
-            const succeeded = await onCreateReferral(new FormData(form));
-            // 保存失败时弹窗保持打开，两位客户的选择也继续保留。
-            if (!succeeded) return;
-            form.reset();
-            setDialogOpen(false);
-          }}
-        >
-          <DashboardFilterField label={uiText("attribute011")}>
-            <Select
-              aria-label={uiText("attribute011")}
-              name="referrer_customer_id"
-              options={[
-                {
-                  label: (
-                    <UiMessage id="components_dashboard_wholesale_wholesale_referrals_section.text002" />
-                  ),
-                  value: "",
-                },
-                ...customers.map((customer) => ({
-                  label: customer.unique_name,
-                  value: customer.id,
-                })),
-              ]}
-              required
-            />
-          </DashboardFilterField>
-          <DashboardFilterField label={uiText("attribute012")}>
-            <Select
-              aria-label={uiText("attribute012")}
-              name="referred_customer_id"
-              options={[
-                {
-                  label: (
-                    <UiMessage id="components_dashboard_wholesale_wholesale_referrals_section.text003" />
-                  ),
-                  value: "",
-                },
-                ...customers.map((customer) => ({
-                  label: customer.unique_name,
-                  value: customer.id,
-                })),
-              ]}
-              required
-            />
-          </DashboardFilterField>
-          <div className="flex justify-end md:col-span-2">
-            <WholesaleSubmitButton pending={pendingKey === "referral:create"}>
-              <UiMessage id="components_dashboard_wholesale_wholesale_referrals_section.text004" />
-            </WholesaleSubmitButton>
-          </div>
-        </form>
-      </DashboardDialog>
+        pending={pendingKey === "referral:create"}
+      />
     </WholesalePageShell>
   );
 }
-function ReferralTreeNode({ node, showChildren = true }: {
-  node: WholesaleReferralTreeNode;
-  showChildren?: boolean;
-}) {
+// 分页已经决定本次显示哪些客户。此处只渲染一条记录。
+function ReferralDirectoryRow({ node }: { node: WholesaleReferralTreeNode }) {
   const t = useTranslations("WholesaleBusiness.referralsUi");
   const isCompanyNode = node.kind === "company";
   return (
@@ -230,13 +176,6 @@ function ReferralTreeNode({ node, showChildren = true }: {
             : t("children", { count: node.children.length })}
         </span>
       </div>
-      {showChildren && node.children.length > 0 ? (
-        <div className="mt-3 space-y-3 border-l border-border pl-4">
-          {node.children.map((child) => (
-            <ReferralTreeNode key={child.id} node={child} />
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

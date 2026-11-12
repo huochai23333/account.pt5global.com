@@ -58,7 +58,7 @@ export function normalizeTourismVipRow(row: TourismVipRpcRow): BusinessVipRow[] 
     {
       adjustments: normalizeAdjustments(row.adjustments),
       business: "tourism",
-      contactLabel: phone ?? email ?? "未填写联系方式",
+      contactLabel: phone ?? email,
       customerLabel: name ?? email ?? phone ?? "未命名客户",
       expiresAt: normalizeString(row.expires_at),
       latestPaidAt: normalizeString(row.latest_paid_order_completed_at),
@@ -87,7 +87,8 @@ export function normalizeWholesaleVipRow(row: WholesaleVipRpcRow): BusinessVipRo
     {
       adjustments: normalizeAdjustments(row.adjustments),
       business: "wholesale",
-      contactLabel: contact ?? "未填写联系方式",
+      // 空值保留给页面翻译，数据层不提前选定界面语言。
+      contactLabel: contact,
       customerLabel: name ?? "未命名批发客户",
       expiresAt: normalizeString(row.expires_at),
       latestPaidAt: getLatestRechargeAt(row.recharge_records),

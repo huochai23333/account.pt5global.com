@@ -170,6 +170,14 @@ export function toCommissionErrorMessage(
 ) {
   const rawMessage = getRawErrorMessage(error);
 
+  if (rawMessage.includes("commission settlement no longer pending")) {
+    return t("shared.errors.settlementChanged");
+  }
+
+  if (rawMessage.includes("commission settlement not confirmed")) {
+    return t("shared.errors.settlementUnconfirmed");
+  }
+
   if (
     rawMessage.includes("current user cannot") ||
     rawMessage.includes("row-level security") ||

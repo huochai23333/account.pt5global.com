@@ -3,15 +3,14 @@ import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { UserCog } from "lucide-react";
-import { normalizeSearchText } from "@/lib/value-normalizers";
 import type { WholesaleProfile } from "@/lib/wholesale";
 import { WholesaleAccountDialog } from "./wholesale-account-dialog";
 import { WholesaleSalesAccountPeopleTab } from "./wholesale-people-tabs";
 import { WholesalePageShell } from "./wholesale-ui";
+import { ALL_DIRECTORY_ITEMS as ALL, filterWholesaleSalesAccounts } from "./wholesale-people-filters";
 type WholesalePeopleSectionProps = {
   salesAccounts: WholesaleProfile[];
 };
-const ALL = "all";
 export function WholesalePeopleSection({
   salesAccounts,
 }: WholesalePeopleSectionProps) {
@@ -23,29 +22,14 @@ export function WholesalePeopleSection({
   const [accountSearch, setAccountSearch] = useState("");
   const [accountRoleFilter, setAccountRoleFilter] = useState(ALL);
   const [accountStatusFilter, setAccountStatusFilter] = useState(ALL);
-  const filteredAccounts = useMemo(() => {
-    const searchValue = normalizeSearchText(accountSearch);
-    return salesAccounts.filter((profile) => {
-      if (accountRoleFilter !== ALL && profile.role !== accountRoleFilter) {
-        return false;
-      }
-      if (
-        accountStatusFilter !== ALL &&
-        profile.status !== accountStatusFilter
-      ) {
-        return false;
-      }
-      if (!searchValue) return true;
-      return [
-        profile.name ?? "",
-        profile.email ?? "",
-        profile.phone ?? "",
-        profile.city ?? "",
-        profile.role ?? "",
-        profile.status ?? "",
-      ].some((value) => normalizeSearchText(value).includes(searchValue));
-    });
-  }, [accountRoleFilter, accountSearch, accountStatusFilter, salesAccounts]);
+  const filteredAccounts = useMemo(
+    () => filterWholesaleSalesAccounts(salesAccounts, {
+      search: accountSearch,
+      role: accountRoleFilter,
+      status: accountStatusFilter,
+    }),
+    [accountRoleFilter, accountSearch, accountStatusFilter, salesAccounts],
+  );
   const hasAccountFilters =
     accountSearch || accountRoleFilter !== ALL || accountStatusFilter !== ALL;
   return (

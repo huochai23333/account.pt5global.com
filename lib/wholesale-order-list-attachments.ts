@@ -1,27 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { withRequestTimeout } from "./request-timeout";
-import {
-  removeStorageObjectsVerified,
-  requireRegisteredStorageRows,
-  requireStorageUploadReceipt,
-} from "./storage-operation-receipts";
-import { getFileExtension, sanitizeStorageFileName } from "./value-normalizers";
+import { readStorageObjectPresence } from "./storage-operation-object-presence";
+import { requireStorageRemoveDispatchReceipt } from "./storage-operation-receipt-validation";
 
 export const WHOLESALE_ORDER_LIST_BUCKET = "wholesale-order-lists";
-export const WHOLESALE_ORDER_LIST_MAX_FILES = 10;
-export const WHOLESALE_ORDER_LIST_MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
-export const WHOLESALE_ORDER_LIST_MAX_TOTAL_SIZE_BYTES = 100 * 1024 * 1024;
-
-const SIGNED_DOWNLOAD_SECONDS = 60;
-const ALLOWED_EXTENSIONS = new Set(["csv", "xls", "xlsx"]);
-
-const MIME_TYPE_BY_EXTENSION = {
-  csv: "text/csv",
-  xls: "application/vnd.ms-excel",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-} as const;
-
 export type WholesaleOrderListAttachment = {
   id: string;
   order_id: string;
@@ -34,144 +17,14 @@ export type WholesaleOrderListAttachment = {
   created_at: string;
 };
 
-/**
- * 上传前同时检查已有附件和本次选择的文件。
- * 浏览器校验用于尽早给出易懂提示，数据库触发器仍会再次执行同样的上限保护。
- */
-export function validateWholesaleOrderListFiles({
-  existingAttachments,
-  files,
-}: {
-  existingAttachments: WholesaleOrderListAttachment[];
-  files: File[];
-}) {
-  if (files.length === 0) {
-    throw new Error("请先选择要上传的 Order List 表格。");
-  }
+const SIGNED_DOWNLOAD_SECONDS = 60;
+const DELETE_CONFIRMATION_ERROR = "附件删除尚未确认，请刷新后核对。";
 
-  if (existingAttachments.length + files.length > WHOLESALE_ORDER_LIST_MAX_FILES) {
-    throw new Error(`每笔订单最多保存 ${WHOLESALE_ORDER_LIST_MAX_FILES} 个 Order List 附件。`);
-  }
+export class WholesaleAttachmentDeleteIncomplete extends Error {
+  readonly code = "partial_failed";
 
-  const existingSize = existingAttachments.reduce(
-    (total, attachment) => total + Number(attachment.file_size_bytes),
-    0,
-  );
-  let newSize = 0;
-
-  files.forEach((file) => {
-    const extension = getFileExtension(file.name);
-
-    if (!extension || !ALLOWED_EXTENSIONS.has(extension)) {
-      throw new Error("Order List 仅支持 CSV、XLS 和 XLSX 表格。");
-    }
-
-    if (file.size <= 0) {
-      throw new Error(`“${file.name}”是空文件，请重新选择。`);
-    }
-
-    if (file.size > WHOLESALE_ORDER_LIST_MAX_FILE_SIZE_BYTES) {
-      throw new Error(`“${file.name}”超过 20 MB，请压缩或拆分后再上传。`);
-    }
-
-    newSize += file.size;
-  });
-
-  if (existingSize + newSize > WHOLESALE_ORDER_LIST_MAX_TOTAL_SIZE_BYTES) {
-    throw new Error("这笔订单的 Order List 附件合计不能超过 100 MB。");
-  }
-}
-
-export async function uploadWholesaleOrderListFiles(
-  supabase: SupabaseClient,
-  options: {
-    existingAttachments: WholesaleOrderListAttachment[];
-    files: File[];
-    orderId: string;
-    uploadedByUserId: string;
-  },
-) {
-  validateWholesaleOrderListFiles(options);
-
-  const uploadedPaths: string[] = [];
-
-  try {
-    const metadataRows = [];
-
-    for (const [index, file] of options.files.entries()) {
-      const extension = getRequiredExtension(file.name);
-      const storagePath = buildStoragePath({
-        extension,
-        fileName: file.name,
-        index,
-        orderId: options.orderId,
-        uploadedByUserId: options.uploadedByUserId,
-      });
-      const mimeType = MIME_TYPE_BY_EXTENSION[extension];
-      const { data: uploadReceipt, error } = await withRequestTimeout(
-        supabase.storage
-          .from(WHOLESALE_ORDER_LIST_BUCKET)
-          .upload(storagePath, file, {
-            contentType: mimeType,
-            upsert: false,
-          }),
-        {
-          message: "Order List 上传时间有些长，请稍后重试。",
-          timeoutMs: 60_000,
-        },
-      );
-
-      if (error) {
-        throw error;
-      }
-      requireStorageUploadReceipt(
-        uploadReceipt,
-        storagePath,
-        "Order List 没有确认上传成功，请稍后重试。",
-      );
-
-      uploadedPaths.push(storagePath);
-      metadataRows.push({
-        file_size_bytes: file.size,
-        mime_type: mimeType,
-        original_name: file.name,
-        storage_path: storagePath,
-      });
-    }
-
-    const { data, error } = await withRequestTimeout(
-      supabase.rpc("register_wholesale_order_list_attachments", {
-        p_attachments: metadataRows,
-        p_order_id: options.orderId,
-      }),
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    return requireRegisteredStorageRows<WholesaleOrderListAttachment>(data, {
-      errorMessage: "Order List 没有全部登记成功，请稍后重试。",
-      expectedParentId: options.orderId,
-      expectedPaths: uploadedPaths,
-      parentField: "order_id",
-      pathField: "storage_path",
-    });
-  } catch (error) {
-    // 元数据登记失败时移除本次已经上传的对象，避免 bucket 中留下无人可见的孤立文件。
-    if (uploadedPaths.length > 0) {
-      await removeStorageObjectsVerified(
-        supabase,
-        WHOLESALE_ORDER_LIST_BUCKET,
-        uploadedPaths,
-        {
-          confirmationMessage: "失败文件没有全部清理，请联系管理员核对。",
-          timeoutMessage: "失败文件清理超时，请联系管理员核对。",
-        },
-      );
-    }
-
-    throw error;
+  constructor(cause: unknown) {
+    super(DELETE_CONFIRMATION_ERROR, { cause });
   }
 }
 
@@ -179,30 +32,43 @@ export async function deleteWholesaleOrderListAttachment(
   supabase: SupabaseClient,
   attachment: WholesaleOrderListAttachment,
 ) {
-  await removeStorageObjectsVerified(
-    supabase,
-    attachment.bucket_name || WHOLESALE_ORDER_LIST_BUCKET,
-    [attachment.storage_path],
-    {
-      confirmationMessage: "附件文件没有确认删除，请刷新后重试。",
-      timeoutMessage: "附件删除超时，请稍后重试。",
-    },
+  const identity = {
+    id: attachment.id,
+    order_id: attachment.order_id,
+    bucket_name: attachment.bucket_name,
+    storage_path: attachment.storage_path,
+  };
+  const registrations = supabase.from("wholesale_order_list_attachments");
+  // 先证明当前会话可读到这条准确登记。该登记也是 Storage SELECT 策略的可见依据。
+  const { data: registration, error: readError } = await withRequestTimeout(
+    registrations.select("id").match(identity).maybeSingle<{ id: string }>(),
   );
-
-  const { data: deletedRows, error: metadataError } = await withRequestTimeout(
-    supabase
-      .from("wholesale_order_list_attachments")
-      .delete()
-      .eq("id", attachment.id)
-      .select("id")
-      .maybeSingle<{ id: string }>(),
-  );
-
-  if (metadataError) {
-    throw metadataError;
+  if (readError || registration?.id !== attachment.id) {
+    throw readError ?? new Error(DELETE_CONFIRMATION_ERROR);
   }
-  if (!deletedRows || deletedRows.id !== attachment.id) {
-    throw new Error("附件记录没有删除成功，请刷新后重试。");
+
+  const bucket = supabase.storage.from(attachment.bucket_name);
+  const objectExists = () => withRequestTimeout(readStorageObjectPresence(bucket, attachment.storage_path));
+  if (await objectExists()) {
+    const { data, error } = await withRequestTimeout(
+      bucket.remove([attachment.storage_path]),
+      { timeoutMs: 60_000 },
+    );
+    if (error) throw error;
+    requireStorageRemoveDispatchReceipt(data, DELETE_CONFIRMATION_ERROR);
+    if (await objectExists()) throw new Error(DELETE_CONFIRMATION_ERROR);
+  }
+
+  // 如果上一轮已移除对象，重试从现存登记续办。只有删掉同一条登记才返回完成。
+  try {
+    const { data, error } = await withRequestTimeout(
+      registrations.delete().match(identity).select("id").maybeSingle<{ id: string }>(),
+    );
+    if (error || data?.id !== attachment.id) {
+      throw error ?? new Error(DELETE_CONFIRMATION_ERROR);
+    }
+  } catch (error) {
+    throw new WholesaleAttachmentDeleteIncomplete(error);
   }
 }
 
@@ -223,36 +89,4 @@ export async function createWholesaleOrderListDownloadUrl(
   }
 
   return data.signedUrl;
-}
-
-function getRequiredExtension(fileName: string): keyof typeof MIME_TYPE_BY_EXTENSION {
-  const extension = getFileExtension(fileName);
-
-  if (extension === "csv" || extension === "xls" || extension === "xlsx") {
-    return extension;
-  }
-
-  throw new Error("Order List 仅支持 CSV、XLS 和 XLSX 表格。");
-}
-
-function buildStoragePath({
-  extension,
-  fileName,
-  index,
-  orderId,
-  uploadedByUserId,
-}: {
-  extension: keyof typeof MIME_TYPE_BY_EXTENSION;
-  fileName: string;
-  index: number;
-  orderId: string;
-  uploadedByUserId: string;
-}) {
-  const safeName = sanitizeStorageFileName(fileName) || `order-list-${index + 1}.${extension}`;
-  const uniqueKey =
-    typeof globalThis.crypto?.randomUUID === "function"
-      ? globalThis.crypto.randomUUID()
-      : `${Date.now()}-${index + 1}`;
-
-  return `${orderId}/${uploadedByUserId}/${uniqueKey}-${safeName}`;
 }

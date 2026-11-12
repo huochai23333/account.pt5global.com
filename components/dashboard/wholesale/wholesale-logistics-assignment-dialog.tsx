@@ -25,13 +25,7 @@ import type {
 
 import { getActiveSalesProfiles } from "./wholesale-logistics-display";
 import { WholesaleLogisticsAssignmentHistory } from "./wholesale-logistics-assignment-history";
-
-type AssignmentSaveInput = {
-  assignmentId: string;
-  customerId: string | null;
-  effectiveFrom: string | null;
-  salesUserId: string;
-};
+import type { ChangeWholesaleLogisticsAssignmentInput } from "./wholesale-logistics-mutations";
 
 export function WholesaleLogisticsAssignmentDialog({
   assignments,
@@ -55,7 +49,7 @@ export function WholesaleLogisticsAssignmentDialog({
     salesUserId: string,
     customerId: string | null,
   ) => Promise<boolean>;
-  onChange: (input: AssignmentSaveInput) => Promise<boolean>;
+  onChange: (input: ChangeWholesaleLogisticsAssignmentInput) => Promise<boolean>;
   onDismissFeedback: () => void;
   onEnd: (assignmentId: string, effectiveTo: string) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
@@ -143,7 +137,7 @@ export function WholesaleLogisticsAssignmentDialog({
         ? new Date(`${splitFromDate}T00:00:00+08:00`).toISOString()
         : null;
     const succeeded = await onChange({
-      assignmentId: editing.id,
+      assignment: editing,
       customerId: customerId || null,
       effectiveFrom,
       salesUserId,

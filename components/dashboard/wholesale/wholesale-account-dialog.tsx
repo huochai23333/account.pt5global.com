@@ -3,7 +3,8 @@
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
 import type { WholesaleProfile } from "@/lib/wholesale";
 
-import { WholesaleAccountDetails } from "./wholesale-people-directories";
+import { useTranslations } from "next-intl";
+import { WholesaleDetailGrid } from "./wholesale-detail-grid";
 
 type WholesaleAccountDialogProps = {
   onSelectedProfileChange: (profile: WholesaleProfile | null) => void;
@@ -27,4 +28,44 @@ export function WholesaleAccountDialog({
       ) : null}
     </DashboardDialog>
   );
+}
+
+// 详情只读，沿用目录已授权返回的同一份账号资料。
+function WholesaleAccountDetails({
+  profile,
+}: {
+  profile: WholesaleProfile;
+}) {
+  const t = useTranslations("WholesaleBusiness.directoryUi");
+  const rows = [
+    {
+      label: t("details.name"),
+      value: profile.name ?? t("fallbacks.notProvided"),
+    },
+    {
+      label: t("details.email"),
+      value: profile.email ?? t("fallbacks.notProvided"),
+    },
+    {
+      label: t("details.phone"),
+      value: profile.phone ?? t("fallbacks.notProvided"),
+    },
+    {
+      label: t("details.city"),
+      value: profile.city ?? t("fallbacks.notProvided"),
+    },
+    {
+      label: t("details.role"),
+      value:
+        profile.role === "promoter" ? t("roles.promoter") : t("roles.salesman"),
+    },
+    {
+      label: t("details.status"),
+      value:
+        profile.status === "active"
+          ? t("statuses.active")
+          : t("statuses.inactive"),
+    },
+  ];
+  return <WholesaleDetailGrid rows={rows} />;
 }

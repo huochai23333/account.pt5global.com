@@ -7,17 +7,26 @@ import {
   isOrderDateValue,
   normalizeOrderDateRange,
 } from "../../lib/order-date-range";
-import { normalizeAdminOrdersFilters } from "../../lib/admin-orders-page-data";
+// 这里只验证筛选值规范化，直接使用纯函数，避免加载服务端查询和权限读取模块。
+import { normalizeAdminOrdersFilters } from "../../lib/admin-orders-page-filters";
 
 const originalDate = Date;
 const frozenTimestamp = originalDate.parse("2026-01-01T00:30:00+08:00");
 test.beforeEach(() => {
+  // 默认日期也要覆盖上海跨年边界；仅在本用例中冻结无参构造及 Date.now，显式日期保持原样。
   globalThis.Date = new Proxy(originalDate, {
-    construct(target, args) { return Reflect.construct(target, args.length ? args : [frozenTimestamp]); },
-    get(target, property) { return property === "now" ? () => frozenTimestamp : Reflect.get(target, property); },
+    construct(target, args) {
+      return Reflect.construct(target, args.length ? args : [frozenTimestamp]);
+    },
+    get(target, property) {
+      return property === "now" ? () => frozenTimestamp : Reflect.get(target, property);
+    },
   });
 });
-test.afterEach(() => { globalThis.Date = originalDate; });
+test.afterEach(() => {
+  // 断言失败也恢复全局时钟，避免影响同一工作进程中的其他测试。
+  globalThis.Date = originalDate;
+});
 
 test.describe("shared order date ranges", () => {
   const shanghaiNewYear = new Date("2026-01-01T00:30:00+08:00");

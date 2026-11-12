@@ -19,7 +19,7 @@ import { DashboardOperationalSummary } from "@/components/dashboard/dashboard-op
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-section-header";
 import { EmptyState } from "@/components/dashboard/dashboard-shared-ui";
 import { Button } from "@/components/ui/button";
-import type { SalesmanCustomerRow } from "@/lib/salesman-people";
+import type { SalesmanCustomerRow } from "@/lib/salesman-people-contract";
 import type { Locale } from "@/lib/locale";
 
 import {

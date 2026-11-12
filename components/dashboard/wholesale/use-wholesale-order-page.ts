@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { getBrowserSupabaseClient } from "@/lib/supabase";
 import { useDashboardQueryPage } from "@/lib/use-dashboard-query-page";
 import { getWholesaleOrderPage, type WholesaleOrderFilters, type WholesaleOrderPage } from "@/lib/wholesale-order-page";
@@ -10,14 +11,16 @@ export function useWholesaleOrderPage({ filters, initialPage }: {
   filters: WholesaleOrderFilters;
   initialPage: WholesaleOrderPage;
 }) {
+  const t = useTranslations("WholesaleBusiness.ordersUi");
+  const readError = t("loadError");
   const query = useDashboardQueryPage({
     initialData: initialPage,
     queryKey: JSON.stringify(filters),
     totalItems: (data) => data.totalCount,
-    errorMessage: "批发订单暂时没有加载成功，请稍后重试。",
+    errorMessage: readError,
     queryPage: async (page) => {
       const supabase = getBrowserSupabaseClient();
-      if (!supabase) throw new Error("批发订单暂时没有加载成功，请刷新页面后重试。");
+      if (!supabase) throw new Error(readError);
       return getWholesaleOrderPage(supabase, filters, page);
     },
   });
@@ -30,7 +33,10 @@ export function useWholesaleOrderPage({ filters, initialPage }: {
     } : current);
   };
   const refreshQuery = query.refresh;
-  const refreshPage = useCallback(async () => { await refreshQuery(); }, [refreshQuery]);
+  const refreshAfterWrite = useCallback(async () => {
+    // 公共分页用 false 表示读取失败或被新查询替代。写入执行器需要据此区分保存和列表更新。
+    if (!(await refreshQuery())) throw new Error(readError);
+  }, [readError, refreshQuery]);
 
   return {
     loadError: query.error,
@@ -40,6 +46,7 @@ export function useWholesaleOrderPage({ filters, initialPage }: {
     pagination: query.pagination,
     goToPage: query.loadPage,
     removeOrderListAttachment,
-    refreshPage,
+    refreshAfterWrite,
+    refreshPage: refreshQuery,
   };
 }

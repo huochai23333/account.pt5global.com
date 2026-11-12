@@ -7,6 +7,7 @@ import {
   getSelectValue,
 } from "./helpers/select-control";
 
+// 在真实费用页操作共用Select，但不保存费用；交互/隐藏字段断言不替代业务写入验收。
 test.describe("shared rounded select", () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, "administrator");

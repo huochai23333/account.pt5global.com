@@ -79,7 +79,7 @@ export function useDashboardPasswordReset({
         : undefined;
 
     try {
-      // Supabase only confirms the reset request was accepted; the mailbox result is checked with the mail provider.
+      // Auth 只确认请求被接受；邮箱投递结果仍需独立核对，因此界面使用提示色。
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });

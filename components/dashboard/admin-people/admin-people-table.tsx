@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { RecordCard } from "@/components/ui/data-display";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { AdminPersonRow } from "@/lib/admin-people";
+import type { AdminPersonRow } from "@/lib/admin-people-contract";
 import {
   getPersonContact,
   getPersonDisplayName,

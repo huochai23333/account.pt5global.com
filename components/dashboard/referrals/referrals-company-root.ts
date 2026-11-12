@@ -1,6 +1,6 @@
 import type { ReferralTreeEdge } from "@/lib/referrals";
 
-import type { ReferralPerson } from "./referrals-display";
+import type { ReferralPerson } from "./referrals-graph";
 
 const COMPANY_REFERRAL_ROOT_ID = "__company_referral_root__";
 

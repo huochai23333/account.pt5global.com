@@ -3,7 +3,7 @@ import { readCompanyTemplateErrorMessage } from "@/lib/company-templates/display
 import {
   activateCompanyTemplateVersion,
   setCompanyTemplateStatus,
-} from "@/lib/company-templates/repository";
+} from "@/lib/company-templates/mutations";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 
 type ManageBody = {

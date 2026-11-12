@@ -1,3 +1,4 @@
+/** 手机号输入只组合国家区号选择和号码字段；格式规范化与注册提交由上层表单处理。 */
 "use client";
 
 import { useMemo } from "react";
@@ -11,10 +12,7 @@ import { controlVariants, Field, Input } from "@/components/ui/form-controls";
 import type { Locale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
-import {
-  createPhoneCountryOptions,
-  type PhoneCountryOption,
-} from "./register-phone-utils";
+import { createPhoneCountryOptions, type PhoneCountryOption } from "./register-phone-utils";
 
 type RegisterPhoneFieldProps = {
   country: CountryCode;
@@ -34,15 +32,10 @@ export function RegisterPhoneField({
   const locale = useLocale() as Locale;
   const t = useTranslations("RegisterForm");
   const options = useMemo(() => createPhoneCountryOptions(locale), [locale]);
-  const selectedOption =
-    options.find((option) => option.country === country) ?? options[0] ?? null;
+  const selectedOption = options.find((option) => option.country === country) ?? options[0] ?? null;
 
   return (
-    <Field
-      className="sm:col-span-2"
-      hint={t("phoneOptionalHint")}
-      label={t("phone")}
-    >
+    <Field className="sm:col-span-2" hint={t("phoneOptionalHint")} label={t("phone")}>
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(180px,0.85fr)_minmax(0,1.4fr)]">
         <Combobox.Root<PhoneCountryOption>
           disabled={disabled}
@@ -56,9 +49,7 @@ export function RegisterPhoneField({
           }}
           value={selectedOption}
         >
-          <Combobox.Label className="sr-only">
-            {t("countryCode")}
-          </Combobox.Label>
+          <Combobox.Label className="sr-only">{t("countryCode")}</Combobox.Label>
           <Combobox.Trigger
             className={cn(
               controlVariants({ controlSize: "large" }),
@@ -73,20 +64,13 @@ export function RegisterPhoneField({
           </Combobox.Trigger>
 
           <Combobox.Portal>
-            <Combobox.Positioner
-              align="start"
-              className="z-[70]"
-              sideOffset={6}
-            >
+            <Combobox.Positioner align="start" className="z-[70]" sideOffset={6}>
               <Combobox.Popup className="w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-[22px] border border-border-subtle bg-surface-overlay p-2 shadow-[var(--surface-shadow-floating)] outline-none backdrop-blur-2xl">
                 <div className="relative mb-2">
                   <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted" />
                   <Combobox.Input
                     aria-label={t("countrySearch")}
-                    className={cn(
-                      controlVariants({ controlSize: "compact" }),
-                      "pl-10",
-                    )}
+                    className={cn(controlVariants({ controlSize: "compact" }), "pl-10")}
                     placeholder={t("countrySearchPlaceholder")}
                   />
                 </div>
@@ -104,9 +88,7 @@ export function RegisterPhoneField({
                       <span className="min-w-0 flex-1 truncate">
                         {option.label.replace(` +${option.callingCode}`, "")}
                       </span>
-                      <span className="shrink-0 text-content-muted">
-                        +{option.callingCode}
-                      </span>
+                      <span className="shrink-0 text-content-muted">+{option.callingCode}</span>
                       <Combobox.ItemIndicator className="shrink-0 text-primary">
                         <Check className="size-4" />
                       </Combobox.ItemIndicator>

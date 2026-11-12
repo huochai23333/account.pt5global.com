@@ -6,6 +6,7 @@ import {
 } from "./auth-metadata";
 import { withRequestTimeout } from "./request-timeout";
 import { getServiceFeeTypes } from "./service-fee-types";
+import { getLatestCnyExchangeRates } from "./exchange-rates";
 import type {
   BusinessCategoryOption,
   OrderDiscountTypeOption,
@@ -149,3 +150,36 @@ export async function getOrderDiscountTypeOptions(
 }
 
 export const getServiceFeeTypeOptions = getServiceFeeTypes;
+
+// 表单字典和当天汇率互不依赖，沿用并行读取；这些读取沿当前会话和数据库策略执行。
+export async function getAdminOrderFormOptions(supabase: SupabaseClient) {
+  const [
+    userOptions,
+    orderTypeOptions,
+    purchaseOrderTypeOptions,
+    serviceOrderTypeOptions,
+    orderDiscountOptions,
+    serviceFeeTypeOptions,
+    serviceOrderPriceOptions,
+    orderCurrencyRates,
+  ] = await Promise.all([
+    getOrderUserOptions(supabase),
+    getOrderTypeOptions(supabase),
+    getPurchaseOrderTypeOptions(supabase),
+    getServiceOrderTypeOptions(supabase),
+    getOrderDiscountTypeOptions(supabase),
+    getServiceFeeTypeOptions(supabase),
+    getServiceOrderPriceOptions(supabase),
+    getLatestCnyExchangeRates(supabase),
+  ]);
+  return {
+    userOptions,
+    orderTypeOptions,
+    purchaseOrderTypeOptions,
+    serviceOrderTypeOptions,
+    orderDiscountOptions,
+    serviceFeeTypeOptions,
+    serviceOrderPriceOptions,
+    orderCurrencyRates,
+  };
+}

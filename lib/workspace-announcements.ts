@@ -52,7 +52,11 @@ export async function markWorkspaceAnnouncementsRead(
     new Set(announcements.map((announcement) => announcement.id)),
   );
 
-  await Promise.all(
+  const readerId = await getAnnouncementReaderId(supabase);
+  if (!readerId) throw new Error("公告阅读状态没有保存成功。");
+
+  // 每条公告独立写入。一条失败时也等待其余回执，避免重写已确认的阅读时间。
+  const results = await Promise.allSettled(
     uniqueIds.map(async (announcementId) => {
       const { data, error } = await withRequestTimeout(
         supabase.rpc("mark_announcement_read", {
@@ -69,17 +73,38 @@ export async function markWorkspaceAnnouncementsRead(
         || data === null
         || !("announcement_id" in data)
         || data.announcement_id !== announcementId
+        || !("user_id" in data)
+        || data.user_id !== readerId
+        || !("read_at" in data)
+        || typeof data.read_at !== "string"
+        || !Number.isFinite(Date.parse(data.read_at))
       ) {
         throw new Error("公告阅读状态没有保存成功。");
       }
     }),
   );
+
+  const confirmedIds = new Set(uniqueIds.filter((_, index) => results[index].status === "fulfilled"));
+  const unconfirmedIds = uniqueIds.filter((id) => !confirmedIds.has(id));
+  if (unconfirmedIds.length > 0) {
+    // 响应丢失后按当前用户和原编号读回，确认已落库的项目。
+    try {
+      const persistedIds = await getReadAnnouncementIds(supabase, unconfirmedIds, readerId);
+      for (const id of persistedIds) confirmedIds.add(id);
+    } catch {
+      // 只移除已有明确凭证的项目，其余继续显示。
+    }
+  }
+  if (confirmedIds.size === uniqueIds.length) {
+    return { status: "succeeded", confirmedIds } as const;
+  }
+  return {
+    status: confirmedIds.size > 0 ? "partial_failed" : "failed",
+    confirmedIds,
+  } as const;
 }
 
-async function getReadAnnouncementIds(
-  supabase: SupabaseClient,
-  announcementIds: string[],
-) {
+async function getAnnouncementReaderId(supabase: SupabaseClient) {
   const {
     data: { user },
     error: userError,
@@ -89,7 +114,16 @@ async function getReadAnnouncementIds(
     throw userError;
   }
 
-  if (!user) {
+  return user?.id ?? null;
+}
+
+async function getReadAnnouncementIds(
+  supabase: SupabaseClient,
+  announcementIds: string[],
+  readerId?: string,
+) {
+  const userId = readerId ?? await getAnnouncementReaderId(supabase);
+  if (!userId) {
     return new Set<string>();
   }
 
@@ -97,7 +131,7 @@ async function getReadAnnouncementIds(
     supabase
       .from("user_announcement_reads")
       .select("announcement_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .in("announcement_id", announcementIds)
       .returns<AnnouncementReadRow[]>(),
   );

@@ -1,3 +1,4 @@
+/** 共享读取、恢复与格式工具：组合或展示本模块已准备的数据；交互回调沿上层状态与服务处理，不在展示中重新实现业务规则。 */
 "use client";
 
 import { InteractiveButton as DesignButton } from "@/components/ui/button";
@@ -7,14 +8,7 @@ import * as FormControls from "@/components/ui/form-controls";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
-import {
-  Building2,
-  ChevronDown,
-  Folder,
-  FolderOpen,
-  Search,
-  UserRound,
-} from "lucide-react";
+import { Building2, ChevronDown, Folder, FolderOpen, Search, UserRound } from "lucide-react";
 
 import {
   EmptyState,
@@ -23,17 +17,12 @@ import {
   type DashboardSharedCopy,
 } from "@/components/dashboard/dashboard-shared-ui";
 import { DashboardListSection } from "@/components/dashboard/dashboard-section-panel";
-import {
-  MotionCollapse,
-  MotionList,
-  MotionListItem,
-} from "@/components/motion/motion-primitives";
+import { MotionCollapse, MotionList, MotionListItem } from "@/components/motion/motion-primitives";
 import type { ReferralTreeEdge } from "@/lib/referrals";
 
+import { getPersonDisplayName, type ReferralGraph } from "./referrals-graph";
 import {
-  getPersonDisplayName,
   getRoleLabel,
-  type ReferralGraph,
   type ReferralTreeDisplayData,
   type ReferralsCopy,
 } from "./referrals-display";
@@ -70,11 +59,7 @@ export function ReferralTreePanel({
   return (
     <DashboardListSection
       actions={
-        <FormControls.Field
-          className="w-full max-w-sm"
-          label={searchPlaceholder}
-          labelHidden
-        >
+        <FormControls.Field className="w-full max-w-sm" label={searchPlaceholder} labelHidden>
           <div className="flex items-center gap-3 rounded-full border border-border bg-surface-interactive px-4">
             <Search className="size-4 text-content-muted" />
             <FormControls.Input
@@ -150,8 +135,8 @@ function ReferralTreeNode({
   sharedCopy: DashboardSharedCopy;
 }) {
   const person = graph.nodes.get(nodeId);
-  const childEdges = (graph.childEdgesByParent.get(nodeId) ?? []).filter(
-    (edge) => visibleNodeIds.has(edge.new_user_id),
+  const childEdges = (graph.childEdgesByParent.get(nodeId) ?? []).filter((edge) =>
+    visibleNodeIds.has(edge.new_user_id),
   );
   const hasChildren = childEdges.length > 0;
   const isCompanyNode = person?.kind === "company";
@@ -176,9 +161,7 @@ function ReferralTreeNode({
       {incomingEdge && !incomingEdge.is_company_root_edge ? (
         <div className="mb-2 ml-4 flex flex-wrap items-center gap-2 text-[10px] leading-6 text-content-muted sm:ml-6 sm:text-[11px]">
           <span className="rounded-full bg-status-info-soft px-2.5 py-0.5 font-medium text-primary">
-            {copy.tree.referredOn(
-              formatDateTime(incomingEdge.created_at, locale),
-            )}
+            {copy.tree.referredOn(formatDateTime(incomingEdge.created_at, locale))}
           </span>
         </div>
       ) : null}
@@ -186,9 +169,7 @@ function ReferralTreeNode({
       <div
         className={[
           "rounded-record-card border bg-surface-interactive p-3 transition-colors sm:rounded-control-large sm:p-4",
-          isCurrentViewer
-            ? "border-border-subtle bg-surface-inset"
-            : "border-border-subtle",
+          isCurrentViewer ? "border-border-subtle bg-surface-inset" : "border-border-subtle",
           isMatchingNode ? "ring-4 ring-ring/70" : "",
         ].join(" ")}
       >
@@ -237,16 +218,12 @@ function ReferralTreeNode({
                 {isCurrentViewer ? (
                   <NodeTag accent="blue">{copy.tree.currentAccount}</NodeTag>
                 ) : null}
-                {isCompanyNode ? (
-                  <NodeTag accent="gold">{copy.tree.mainBranch}</NodeTag>
-                ) : null}
+                {isCompanyNode ? <NodeTag accent="gold">{copy.tree.mainBranch}</NodeTag> : null}
                 {person.isTeamSalesman ? (
                   <NodeTag accent="green">{copy.tree.teamSales}</NodeTag>
                 ) : null}
                 {hasChildren ? (
-                  <NodeTag accent="gold">
-                    {copy.tree.downstreamCount(childEdges.length)}
-                  </NodeTag>
+                  <NodeTag accent="gold">{copy.tree.downstreamCount(childEdges.length)}</NodeTag>
                 ) : null}
               </div>
 
@@ -297,13 +274,7 @@ function ReferralTreeNode({
   );
 }
 
-function NodeTag({
-  children,
-  accent,
-}: {
-  children: ReactNode;
-  accent: "blue" | "green" | "gold";
-}) {
+function NodeTag({ children, accent }: { children: ReactNode; accent: "blue" | "green" | "gold" }) {
   return (
     <span
       className={[

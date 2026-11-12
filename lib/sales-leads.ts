@@ -1,11 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentSessionContext } from "./current-session-context";
-import { parseOperationRequestReceipt } from "./operation-runs";
 import type {
-  SalesLead,
   SalesLeadBoard,
-  SalesLeadContactInput,
   SalesLeadDetail,
   SalesLeadPageData,
 } from "./sales-leads-types";
@@ -91,59 +88,8 @@ export async function fetchSalesLeadDetail(
   return data as SalesLeadDetail;
 }
 
-export async function claimSalesLead(supabase: SupabaseClient, leadId: string) {
-  return runLeadRpc(supabase, "claim_sales_lead", { p_lead_id: leadId });
-}
-
-export async function addSalesLeadContact(
-  supabase: SupabaseClient,
-  input: SalesLeadContactInput,
-) {
-  return runLeadRpc(supabase, "add_sales_lead_contact", {
-    p_lead_id: input.leadId,
-    p_contact_channel: input.channel,
-    p_contact_outcome: input.outcome,
-    p_note: input.note,
-    p_next_follow_up_at: input.nextFollowUpAt,
-  });
-}
-
-export async function returnSalesLead(
-  supabase: SupabaseClient,
-  leadId: string,
-  reason: string,
-) {
-  return runLeadRpc(supabase, "return_sales_lead", {
-    p_lead_id: leadId,
-    p_reason: reason,
-  });
-}
-
-export async function assignSalesLead(
-  supabase: SupabaseClient,
-  leadId: string,
-  assigneeUserId: string,
-  reason: string,
-) {
-  return runLeadRpc(supabase, "assign_sales_lead", {
-    p_lead_id: leadId,
-    p_assignee_user_id: assigneeUserId,
-    p_reason: reason,
-  });
-}
-
-export async function requestSalesLeadSync(supabase: SupabaseClient) {
-  const { data, error } = await supabase.rpc("request_sales_lead_sync");
-  if (error) throw error;
-  return parseOperationRequestReceipt(data);
-}
-
-async function runLeadRpc(
-  supabase: SupabaseClient,
-  name: string,
-  params: Record<string, unknown>,
-): Promise<SalesLead> {
-  const { data, error } = await supabase.rpc(name, params);
-  if (error) throw error;
-  return data as SalesLead;
+// 只允许业务错误键进入界面翻译，数据库的原始消息留在服务边界。
+export function getSalesLeadErrorCode(error: unknown) {
+  const message = typeof error === "object" && error && "message" in error ? String(error.message) : "";
+  return message.match(/sales_lead_[a-z_]+/)?.[0] ?? "unknown";
 }

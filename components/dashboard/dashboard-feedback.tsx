@@ -1,3 +1,4 @@
+/** 复用加载与空数据的视觉结构；调用方仍需区分真正空数据和读取失败。 */
 "use client";
 
 import type { ReactNode } from "react";
@@ -37,9 +38,7 @@ export function EmptyState({
         {icon}
       </div>
       <p className="mt-5 text-lg font-semibold text-content-strong">{title}</p>
-      <p className="mt-2 max-w-md text-sm leading-7 text-content-muted">
-        {description}
-      </p>
+      <p className="mt-2 max-w-md text-sm leading-7 text-content-muted">{description}</p>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { LoaderCircle, Paperclip, Trash2, Upload } from "lucide-react";
 import {
   TASK_REVIEW_SUBMISSION_MAX_FILES,
   TASK_REVIEW_SUBMISSION_MAX_TOTAL_SIZE_BYTES,
-} from "@/lib/task-reviews";
+} from "@/lib/task-review-assets";
 import {
   IMAGE_UPLOAD_MAX_SIZE_BYTES,
   OTHER_UPLOAD_MAX_SIZE_BYTES,

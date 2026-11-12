@@ -19,7 +19,7 @@ import type { RunInventoryAction } from "./use-customer-inventory-actions";
 
 /**
  * 同一个商品弹窗根据角色切换为“维护”或“只读”。
- * 客户和财务只会收到展示内容，不渲染任何输入框或写入按钮。
+ * 客户只读；管理员、业务员和财务由页面能力判断进入维护视图，数据库再次核验权限。
  */
 export function CustomerInventoryItemsDialog({
   canWrite,
@@ -40,27 +40,21 @@ export function CustomerInventoryItemsDialog({
   if (!order) return null;
 
   const actionKey = `items:${order.id}`;
-  const sortedItems = [...items].sort(
-    (left, right) => left.sort_order - right.sort_order,
-  );
+  const sortedItems = [...items].sort((left, right) => left.sort_order - right.sort_order);
   const formId = `inventory-items-${order.id}`;
 
   async function handleSubmit(formData: FormData) {
     const raw = String(formData.get("items") ?? "[]");
     const nextItems = JSON.parse(raw) as EditableInventoryOrderItem[];
-    const success = await runAction(
-      actionKey,
-      t("feedback.itemsSuccess"),
-      async (supabase) => {
-        await callRpc(
-          supabase.rpc("replace_customer_inventory_order_items", {
-            p_expected_revision: order?.revision,
-            p_items: nextItems,
-            p_order_id: order?.id,
-          }),
-        );
-      },
-    );
+    const success = await runAction(actionKey, t("feedback.itemsSuccess"), async (supabase) => {
+      await callRpc(
+        supabase.rpc("replace_customer_inventory_order_items", {
+          p_expected_revision: order?.revision,
+          p_items: nextItems,
+          p_order_id: order?.id,
+        }),
+      );
+    });
     if (success) onClose();
   }
 
@@ -78,9 +72,7 @@ export function CustomerInventoryItemsDialog({
               form={formId}
               type="submit"
             >
-              {pendingKey === actionKey
-                ? t("common.saving")
-                : t("items.save")}
+              {pendingKey === actionKey ? t("common.saving") : t("items.save")}
             </Button>
           </>
         ) : (
@@ -89,9 +81,7 @@ export function CustomerInventoryItemsDialog({
           </Button>
         )
       }
-      description={
-        canWrite ? t("items.manageDescription") : t("items.readDescription")
-      }
+      description={canWrite ? t("items.manageDescription") : t("items.readDescription")}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 
 import { requireMailIdentity } from "@/lib/mail/mail-identity";
-import { consumeOAuthTransaction } from "@/lib/mail/mail-integrations";
+import { consumeOAuthTransaction } from "@/lib/mail/mail-oauth-transactions";
 import { bindFeishuIdentity, getFeishuIdentity } from "@/lib/mail/mail-feishu-provider";
 import { FeishuConnectionError } from "@/lib/mail/mail-feishu-feedback";
 import { feishuFailureRedirect } from "@/lib/mail/mail-feishu-navigation";

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getAdminPersonRowById } from "./admin-people";
 import {
-  getAdminPersonRowById,
   isCustomerTypeMark,
   type AdminPersonRow,
   type CustomerTypeMark,
-} from "./admin-people";
+} from "./admin-people-contract";
 import {
   AdminPeopleMutationError,
 } from "./admin-people-mutations";

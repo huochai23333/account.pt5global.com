@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useDashboardHomeLayout } from "./use-dashboard-home-layout";
 import { useDashboardHomeTodos } from "./use-dashboard-home-todos";
 import { useDashboardHomeDisplayMode } from "./use-dashboard-home-display-mode";
-import type { HomeTodoCopy } from "./dashboard-home-todo-display";
+import type { HomeTodoCopy } from "./dashboard-home-todo-copy";
 import { type HomeWidgetType } from "./dashboard-home-layout";
 import type { HomeCustomizerCopy } from "./dashboard-home-customizer-copy";
 import { DashboardHomeLayoutSaveFeedback } from "./dashboard-home-layout-save-feedback";

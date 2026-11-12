@@ -1,7 +1,7 @@
 "use client";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasWholesaleOrderInternalFields } from "@/lib/wholesale";
@@ -57,21 +57,9 @@ export function WholesaleOrdersSection({
   });
   const page = pageState.page;
   const viewData = useWholesaleOrderViewData(page);
-  const assessmentFilters = useMemo(
-    () => ({
-      customerId: filterState.queryFilters.customerId,
-      orderMonth: filterState.queryFilters.orderMonth,
-      orderedFromDate: filterState.queryFilters.orderedFromDate,
-      orderedToDate: filterState.queryFilters.orderedToDate,
-      salesUserId: filterState.queryFilters.salesUserId,
-      searchText: filterState.queryFilters.searchText,
-      status: filterState.queryFilters.status,
-    }),
-    [filterState.queryFilters],
-  );
-  const canMarkOrderSettled = useCallback(
+  // 编辑与结汇使用相同的订单管理权限，再分别检查内部字段和结汇状态。
+  const canManageOrder = useCallback(
     (order: WholesaleOrderListItem) =>
-      order.status !== "settled" &&
       canCurrentUserManageWholesaleOrder({
         canEdit,
         canManageEveryOrder,
@@ -81,29 +69,18 @@ export function WholesaleOrdersSection({
       }),
     [canEdit, canManageEveryOrder, currentUserId, customersById],
   );
+  const canMarkOrderSettled = useCallback(
+    (order: WholesaleOrderListItem) => order.status !== "settled" && canManageOrder(order),
+    [canManageOrder],
+  );
   const getOrderEditAction = useCallback(
     (order: WholesaleOrderListItem): WholesaleOrderEditAction | null => {
-      if (
-        !hasWholesaleOrderInternalFields(order) ||
-        !canCurrentUserManageWholesaleOrder({
-          canEdit,
-          canManageEveryOrder,
-          currentUserId,
-          customer: customersById.get(order.customer_id),
-          order,
-        })
-      ) {
+      if (!hasWholesaleOrderInternalFields(order) || !canManageOrder(order)) {
         return null;
       }
       return { label: t("actions.edit") };
     },
-    [
-      canEdit,
-      canManageEveryOrder,
-      currentUserId,
-      customersById,
-      t,
-    ],
+    [canManageOrder, t],
   );
   const refreshAfter = useCallback(
     async (action: () => boolean | Promise<boolean>) => {
@@ -166,7 +143,8 @@ export function WholesaleOrdersSection({
         assessmentPanel={
           page?.canViewInternalFields ? (
             <WholesaleOrderAssessmentPanel
-              filters={assessmentFilters}
+              // 直接复用列表的筛选，避免另组字段时遗漏精确单号模式。
+              filters={pageState.appliedFilters}
               matchedOrderCount={page.totalCount}
             />
           ) : undefined
@@ -209,7 +187,7 @@ export function WholesaleOrdersSection({
         customers={customers}
         exchangeRates={exchangeRates}
         onCreateOrder={(formData) =>
-          onCreateOrder(formData, pageState.refreshPage)
+          onCreateOrder(formData, pageState.refreshAfterWrite)
         }
         onOpenChange={setCreateDialogOpen}
         open={createDialogOpen}
@@ -228,7 +206,7 @@ export function WholesaleOrdersSection({
             if (!open) setSelectedEditOrder(null);
           }}
           onUpdateOrder={(formData) =>
-            onUpdateOrder(formData, pageState.refreshPage)
+            onUpdateOrder(formData, pageState.refreshAfterWrite)
           }
           open
           order={selectedEditOrder}
@@ -237,14 +215,14 @@ export function WholesaleOrdersSection({
         />
       ) : null}
 
-      {selectedSettlementOrder && page ? (
+      {selectedSettlementOrder && page && currentUserId ? (
         <WholesaleOrderSettlementDialog
           exchangeRates={exchangeRates}
           onOpenChange={(open) => {
             if (!open) setSelectedSettlementOrder(null);
           }}
           onSettleOrder={(formData) =>
-            onMarkOrderSettled(formData, pageState.refreshPage)
+            onMarkOrderSettled(formData, pageState.refreshAfterWrite)
           }
           order={selectedSettlementOrder}
           settlements={
@@ -253,6 +231,7 @@ export function WholesaleOrdersSection({
             ) ?? []
           }
           pending={pendingKey === `order:settle:${selectedSettlementOrder.id}`}
+          viewerId={currentUserId}
         />
       ) : null}
     </WholesalePageShell>

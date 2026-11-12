@@ -19,8 +19,7 @@ const HELP_CENTER_CONTENT: Record<Locale, HelpCenterContent> = {
   zh: {
     metadataTitle: "帮助中心",
     title: "帮助中心",
-    description:
-      "按你的工作任务查找批发订单、客户跟进、报销、结汇和邮件的操作方法。",
+    description: "按你的工作任务查找批发订单、客户跟进、报销、结汇和邮件的操作方法。",
     lastUpdated: "2026-09-23",
     notice:
       "如果页面提示无法继续、资料长时间没有变化，或可见内容不符合你的工作范围，请联系系统管理员核对账号和业务关系。",
@@ -60,7 +59,9 @@ const HELP_CENTER_CONTENT: Record<Locale, HelpCenterContent> = {
         title: "需要人工协助",
         items: [
           "遇到无法自行处理的问题时，请准备好账号邮箱、所在页面、操作时间和页面提示内容，方便管理员快速定位。",
-          "登录后可点工作台顶栏的“问题反馈”提交问题；无法登录时可发邮件至 " + companyConfig.supportEmail + "。",
+          "登录后可点工作台顶栏的“问题反馈”提交问题；无法登录时可发邮件至 " +
+            companyConfig.supportEmail +
+            "。",
         ],
       },
     ],
@@ -109,7 +110,9 @@ const HELP_CENTER_CONTENT: Record<Locale, HelpCenterContent> = {
         title: "Getting Human Help",
         items: [
           "When you need help, prepare your account email, the page you were using, the time of the operation and the message shown on the page.",
-          "After signing in, use Issue Feedback in the workspace header. If you cannot sign in, email " + companyConfig.supportEmail + ".",
+          "After signing in, use Issue Feedback in the workspace header. If you cannot sign in, email " +
+            companyConfig.supportEmail +
+            ".",
         ],
       },
     ],

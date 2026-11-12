@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
 import { PERSON_PRIVATE_NOTE_MAX_LENGTH } from "@/lib/person-private-note-constants";
+import { normalizePersonPrivateNote, readPersonPrivateNoteReceipt } from "@/lib/person-private-note-contract";
 
 export type PersonPrivateNoteFeedback = {
   tone: "error" | "success" | "info";
@@ -22,12 +23,6 @@ type UsePersonPrivateNoteEditorOptions<TTarget extends PersonPrivateNoteTarget> 
   setFeedback: (feedback: PersonPrivateNoteFeedback | null) => void;
 };
 
-type SaveResponse = {
-  targetUserId?: string;
-  note?: string | null;
-  error?: string;
-};
-
 export function usePersonPrivateNoteEditor<
   TTarget extends PersonPrivateNoteTarget,
 >({
@@ -40,14 +35,17 @@ export function usePersonPrivateNoteEditor<
   const [selectedTargetName, setSelectedTargetName] = useState("");
   const [draftNote, setDraftNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingNow = useRef(false);
 
   const originalNote = selectedTarget?.private_note ?? "";
   const hasDraftChange =
     selectedTarget !== null &&
-    normalizeNote(draftNote) !== normalizeNote(originalNote);
+    normalizePersonPrivateNote(draftNote) !== normalizePersonPrivateNote(originalNote);
   const canSave = selectedTarget !== null && hasDraftChange && !saving;
 
   const openNoteDialog = (target: TTarget) => {
+    if (savingNow.current) return;
+
     setFeedback(null);
     setSelectedTarget(target);
     setSelectedTargetName(getTargetName(target));
@@ -55,7 +53,7 @@ export function usePersonPrivateNoteEditor<
   };
 
   const closeNoteDialog = () => {
-    if (saving) {
+    if (savingNow.current) {
       return;
     }
 
@@ -67,37 +65,41 @@ export function usePersonPrivateNoteEditor<
   };
 
   const handleSaveNote = async () => {
-    if (!selectedTarget || !canSave) {
+    if (!selectedTarget || !canSave || savingNow.current) {
       return;
     }
 
+    // 在 React 更新禁用状态前锁住提交，并保存本次请求对应的目标和正文。
+    savingNow.current = true;
+    const expected = {
+      note: normalizePersonPrivateNote(draftNote),
+      targetUserId: selectedTarget.user_id,
+    };
     setSaving(true);
     setFeedback(null);
 
     try {
       const response = await fetch("/api/people/note", {
-        body: JSON.stringify({
-          note: draftNote,
-          targetUserId: selectedTarget.user_id,
-        }),
+        body: JSON.stringify(expected),
         headers: {
           "Content-Type": "application/json",
         },
         method: "POST",
       });
-      const result = await readSaveResponse(response);
+      const result: unknown = await response.json().catch(() => null);
+      const receipt = response.ok ? readPersonPrivateNoteReceipt(result, expected) : null;
 
-      if (!response.ok || !result.targetUserId) {
+      if (!receipt) {
         setFeedback({
           tone: "error",
-          message: t(`errors.${normalizeErrorCode(result.error)}`),
+          message: t(`errors.${readSaveErrorCode(result)}`),
         });
         return;
       }
 
-      const savedNote = result.note ?? null;
+      const savedNote = receipt.note;
 
-      onSaved(result.targetUserId, savedNote);
+      onSaved(receipt.targetUserId, savedNote);
       setSelectedTarget(null);
       setDraftNote(savedNote ?? "");
       setFeedback({
@@ -110,6 +112,7 @@ export function usePersonPrivateNoteEditor<
         message: t("errors.serviceUnavailable"),
       });
     } finally {
+      savingNow.current = false;
       setSaving(false);
     }
   };
@@ -127,44 +130,17 @@ export function usePersonPrivateNoteEditor<
   };
 }
 
-async function readSaveResponse(response: Response): Promise<SaveResponse> {
-  try {
-    const value: unknown = await response.json();
-
-    if (!isRecord(value)) {
-      return {};
-    }
-
-    return {
-      error: typeof value.error === "string" ? value.error : undefined,
-      note:
-        typeof value.note === "string" || value.note === null
-          ? value.note
-          : undefined,
-      targetUserId:
-        typeof value.targetUserId === "string" ? value.targetUserId : undefined,
-    };
-  } catch {
-    return {};
-  }
-}
-
-function normalizeErrorCode(value: string | undefined) {
-  switch (value) {
+function readSaveErrorCode(value: unknown) {
+  const error = typeof value === "object" && value !== null && "error" in value
+    ? value.error
+    : undefined;
+  switch (error) {
     case "forbidden":
     case "invalidInput":
     case "notFound":
     case "serviceUnavailable":
-      return value;
+      return error;
     default:
       return "unknown";
   }
-}
-
-function normalizeNote(value: string) {
-  return value.trim();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

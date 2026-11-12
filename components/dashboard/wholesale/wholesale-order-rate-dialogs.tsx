@@ -3,8 +3,9 @@
 import * as FormControls from "@/components/ui/form-controls";
 import { UiMessage } from "@/components/i18n/ui-message";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { DashboardDialog } from "@/components/dashboard/dashboard-dialog";
+import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   DashboardFilterField,
@@ -17,7 +18,6 @@ import {
 } from "@/components/dashboard/admin-orders/admin-orders-utils";
 import {
   findCnyExchangeRateByDate,
-  getBeijingDateString,
   type ExchangeRateRow,
 } from "@/lib/exchange-rates";
 import type {
@@ -25,7 +25,7 @@ import type {
   WholesaleOrderSettlement,
 } from "@/lib/wholesale";
 import { formatCurrency, formatDate, formatRate } from "./wholesale-display";
-import { WholesaleSubmitButton } from "./wholesale-ui";
+import { useWholesaleSettlementDraft } from "./use-wholesale-settlement-draft";
 type WholesaleOrderSettlementDialogProps = {
   exchangeRates: ExchangeRateRow[];
   onOpenChange: (open: boolean) => void;
@@ -33,6 +33,7 @@ type WholesaleOrderSettlementDialogProps = {
   order: WholesaleOrderListItem;
   pending: boolean;
   settlements: WholesaleOrderSettlement[];
+  viewerId: string;
 };
 export function WholesaleOrderSettlementDialog({
   exchangeRates,
@@ -41,12 +42,12 @@ export function WholesaleOrderSettlementDialog({
   order,
   pending,
   settlements,
+  viewerId,
 }: WholesaleOrderSettlementDialogProps) {
   const uiText = useTranslations(
     "UiText.components_dashboard_wholesale_wholesale_order_rate_dialogs",
   );
-  const [settlementAmount, setSettlementAmount] = useState("");
-  const [settlementDate, setSettlementDate] = useState(getBeijingDateString());
+  const draft = useWholesaleSettlementDraft(order.id, viewerId, onSettleOrder);
   const settledAmount = useMemo(
     () =>
       settlements.reduce(
@@ -64,42 +65,34 @@ export function WholesaleOrderSettlementDialog({
       findCnyExchangeRateByDate(
         exchangeRates,
         order.customer_payment_currency,
-        settlementDate,
+        draft.date,
       ),
-    [exchangeRates, order.customer_payment_currency, settlementDate],
+    [exchangeRates, order.customer_payment_currency, draft.date],
   );
   const activeRateValue = formatEditableNumericValue(
     deriveTransactionRateValue(selectedRate?.daily_exchange_rate, order.customer_payment_currency),
   );
   const rmbPreview = deriveRmbAmountValue(
-    Number(settlementAmount || 0),
+    Number(draft.amount || 0),
     activeRateValue,
   );
   return (
     <DashboardDialog
       description={uiText("dialogDescription")}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setSettlementAmount("");
-          setSettlementDate(getBeijingDateString());
-        }
+        // 登记执行时保留弹窗和本次输入，避免用户误把提交当作取消。
+        if (!nextOpen && draft.submitting) return;
         onOpenChange(nextOpen);
       }}
       open
       title={uiText("attribute001")}
     >
       <form
-        className="grid gap-4 md:grid-cols-2"
+        // 窄屏网格允许列宽小于长文案的自然宽度，字段和提示可在栏内换行。
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
         onSubmit={async (event) => {
           event.preventDefault();
-          const succeeded = await onSettleOrder(
-            new FormData(event.currentTarget),
-          );
-          // 请求失败时保留金额和日期，避免用户重复录入结汇信息。
-          if (!succeeded) return;
-          setSettlementAmount("");
-          setSettlementDate(getBeijingDateString());
-          onOpenChange(false);
+          if (await draft.submit(event.currentTarget)) onOpenChange(false);
         }}
       >
         <FormControls.Input name="order_id" type="hidden" value={order.id} />
@@ -124,15 +117,15 @@ export function WholesaleOrderSettlementDialog({
         <DashboardFilterField label={uiText("attribute005")}>
           <FormControls.Input
             className={dashboardFilterInputClassName}
-            max={remainingAmount}
+            max={draft.matchesRestoredDraft ? undefined : remainingAmount}
             min={0.01}
             name="settlement_amount"
-            onChange={(event) => setSettlementAmount(event.target.value)}
+            onChange={(event) => draft.setAmount(event.target.value)}
             placeholder={uiText("attribute006")}
             required
             step="0.01"
             type="number"
-            value={settlementAmount}
+            value={draft.amount}
           />
           <p className="mt-2 text-xs leading-5 text-content-muted">
             <UiMessage id="components_dashboard_wholesale_wholesale_order_rate_dialogs.text001" />
@@ -141,9 +134,9 @@ export function WholesaleOrderSettlementDialog({
         <DashboardFilterField label={uiText("attribute007")}>
           <DatePicker
             name="settlement_date"
-            onValueChange={setSettlementDate}
+            onValueChange={draft.setDate}
             required
-            value={settlementDate}
+            value={draft.date}
           />
           <p className="mt-2 text-xs leading-5 text-content-muted">
             <UiMessage id="components_dashboard_wholesale_wholesale_order_rate_dialogs.text002" />
@@ -151,14 +144,14 @@ export function WholesaleOrderSettlementDialog({
         </DashboardFilterField>
         <ReadOnlyRateField
           label={uiText("attribute008")}
-          value={activeRateValue || "这个日期暂无汇率"}
+          value={activeRateValue || uiText("noRateForDate")}
         />
         <ReadOnlyRateField
           label={uiText("attribute009")}
           value={
             rmbPreview
               ? formatCurrency(Number(rmbPreview))
-              : "填写金额且匹配到汇率后显示"
+              : uiText("previewUnavailable")
           }
         />
         <div className="md:col-span-2">
@@ -168,9 +161,16 @@ export function WholesaleOrderSettlementDialog({
           />
         </div>
         <div className="flex flex-wrap justify-end gap-3 md:col-span-2">
-          <WholesaleSubmitButton pending={pending}>
+          <Button
+            className="max-w-full"
+            variant="primary"
+            size="large"
+            loading={pending || draft.submitting}
+            type="submit"
+            wrap
+          >
             <UiMessage id="components_dashboard_wholesale_wholesale_order_rate_dialogs.text003" />
-          </WholesaleSubmitButton>
+          </Button>
         </div>
       </form>
     </DashboardDialog>

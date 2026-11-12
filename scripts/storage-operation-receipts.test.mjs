@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readStorageObjectPresence } from "../lib/storage-operation-object-presence.ts";
 
 import {
   confirmStoragePathsMissing,
@@ -10,6 +11,42 @@ import {
 } from "../lib/storage-operation-receipt-validation.ts";
 
 const confirmationMessage = "没有确认文件处理完成";
+
+test("对象目录读取须翻页，并以准确文件名和对象编号确认存在", async () => {
+  const offsets = [];
+  const bucket = {
+    async list(folder, { search, limit, offset }) {
+      assert.equal(folder, "order/user");
+      assert.equal(search, "items.csv");
+      offsets.push(offset);
+      return {
+        data: offset === 0
+          ? Array.from({ length: limit }, (_, index) => ({ name: `items.csv.${index}`, id: String(index) }))
+          : [{ name: "items.csv", id: null }, { name: "items.csv", id: "object-id" }],
+        error: null,
+      };
+    },
+  };
+  assert.equal(await readStorageObjectPresence(bucket, "order/user/items.csv"), true);
+  assert.deepEqual(offsets, [0, 100]);
+  assert.equal(await readStorageObjectPresence({
+    list: async () => ({ data: [{ name: "items.csv", id: null }], error: null }),
+  }, "order/user/items.csv"), false);
+});
+
+test("对象目录错误或截断都无法证明对象不存在", async () => {
+  const denied = new Error("读取失败");
+  await assert.rejects(readStorageObjectPresence({
+    list: async () => ({ data: null, error: denied }),
+  }, "order/user/items.csv"), denied);
+  // 分页上限前始终是满页，无法证明不存在。
+  await assert.rejects(readStorageObjectPresence({
+    list: async (_, { limit }) => ({
+      data: Array.from({ length: limit }, () => ({ name: "other.csv", id: "other-id" })),
+      error: null,
+    }),
+  }, "order/user/items.csv"), /无法完整核对/);
+});
 
 test("上传回执必须包含本次请求的准确对象路径", () => {
   assert.equal(

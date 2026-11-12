@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { readDisposablePostgresTarget } from "../test-support/disposable-fixture";
 
 import {
   expectNotForbiddenPage,
@@ -14,7 +16,16 @@ const removedPersistentCopy = [
 ];
 
 test.describe("全站信息层级与内容减负", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, baseURL }) => {
+    // 布局测试也使用固定角色；登录及线索读取存在写入，先确认专属项目和暂停状态。
+    readDisposablePostgresTarget({ baseURL, supabaseURL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      mode: process.env.PT5_E2E_FIXTURE_MODE, project: process.env.PT5_E2E_DATABASE_PROJECT,
+      container: process.env.PT5_E2E_DATABASE_CONTAINER }, args =>
+      execFileSync("docker", args, { encoding: "utf8", timeout: 12000, windowsHide: true }).trim());
+    // 这里观察已有物流档案的层级与排版，自动来源请求使用明确失败替身，后台恢复另行验证。
+    await page.route("**/functions/v1/wholesale-logistics-sync", route => route.fulfill({
+      status: 503, contentType: "application/json", body: JSON.stringify({ error: "本地布局检查暂不更新物流来源" }),
+    }));
     await loginAs(page, "administrator");
   });
 
@@ -193,6 +204,8 @@ test.describe("全站信息层级与内容减负", () => {
 });
 
 async function expectSummaryContentFits(page: Page) {
+  // 空集合的 every/filter 会让旧断言误过；先等待真实摘要内容，再测量它的宽度。
+  await expect(page.locator('[data-slot="dashboard-operational-summary"] :is(dt, dd, [data-summary-tier="meta"] span)').filter({ visible: true }).first()).toBeVisible();
   const overflowItems = await page
     .locator(
       '[data-slot="dashboard-operational-summary"] :is(dt, dd, [data-summary-tier="meta"] span)',
@@ -249,6 +262,8 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function expectNoRepeatedRegionHeading(page: Page) {
+  // 页面还没装配出命名区域时不能把“没有重复标题”当成通过。
+  await expect(page.locator("section[aria-label]").filter({ visible: true }).first()).toBeVisible();
   const repeatedHeadings = await page.locator("section[aria-label]").evaluateAll(
     (sections) =>
       sections

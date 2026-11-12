@@ -17,7 +17,7 @@ type CreateDeepSeekAssistantStreamOptions = {
   messages: ChatCompletionMessageParam[];
   onCompleted?: (contentLength: number) => Promise<void>;
   onFailed?: (code: string) => Promise<void>;
-  onSettled?: () => void;
+  onSettled?: () => void | Promise<void>;
   signal: AbortSignal;
   userId: string;
 };
@@ -78,12 +78,14 @@ export async function createDeepSeekAssistantTextStream({
 
   return createEventStreamFromDeepSeekSse(
     response.body,
+    signal,
     { onCompleted, onFailed, onSettled },
   );
 }
 
 function createEventStreamFromDeepSeekSse(
   body: ReadableStream<Uint8Array>,
+  signal: AbortSignal,
   callbacks: Pick<
     CreateDeepSeekAssistantStreamOptions,
     "onCompleted" | "onFailed" | "onSettled"
@@ -92,86 +94,97 @@ function createEventStreamFromDeepSeekSse(
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const reader = body.getReader();
-  let settled = false;
-
-  const settle = () => {
-    if (settled) {
-      return;
-    }
-
-    settled = true;
-    callbacks.onSettled?.();
-  };
+  let cancelled = false;
+  let production: Promise<void>;
 
   const enqueueEvent = (
     controller: ReadableStreamDefaultController<Uint8Array>,
     event: Record<string, unknown>,
   ) => controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 
-  return new ReadableStream<Uint8Array>({
-    async start(controller) {
-      let buffer = "";
-      let contentLength = 0;
-      let hasMeaningfulContent = false;
-      let completedByProvider = false;
+  async function produce(controller: ReadableStreamDefaultController<Uint8Array>) {
+    let buffer = "";
+    let contentLength = 0;
+    let hasMeaningfulContent = false;
+    let completedByProvider = false;
+    let savingResult = false;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
+    const forwardEvent = (event: AssistantStreamEvent) => {
+      if (event.type === "completed") {
+        completedByProvider = true;
+        return;
+      }
+      contentLength += event.text.length;
+      hasMeaningfulContent ||= event.text.trim().length > 0;
+      enqueueEvent(controller, event);
+    };
 
-          if (done) {
-            break;
-          }
+    try {
+      while (!cancelled) {
+        const { done, value } = await reader.read();
+        if (cancelled || done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          buffer = flushSseEvents(buffer, (event) => {
-            if (event.type === "completed") {
-              completedByProvider = true;
-              return;
-            }
-            contentLength += event.text.length;
-            hasMeaningfulContent ||= event.text.trim().length > 0;
-            enqueueEvent(controller, event);
-          });
-        }
+        buffer += decoder.decode(value, { stream: true });
+        buffer = flushSseEvents(buffer, forwardEvent);
+      }
 
-        buffer += decoder.decode();
-        flushSseEvents(`${buffer}\n\n`, (event) => {
-          if (event.type === "completed") {
-            completedByProvider = true;
-            return;
-          }
-          contentLength += event.text.length;
-          hasMeaningfulContent ||= event.text.trim().length > 0;
-          enqueueEvent(controller, event);
-        });
+      if (cancelled) throw new Error("provider_stream_cancelled");
+      flushSseEvents(`${buffer}${decoder.decode()}\n\n`, forwardEvent);
 
-        if (!completedByProvider || !hasMeaningfulContent) {
-          throw new Error(completedByProvider ? "provider_empty_content" : "provider_stream_incomplete");
-        }
+      if (!completedByProvider || !hasMeaningfulContent) {
+        throw new Error(completedByProvider ? "provider_empty_content" : "provider_stream_incomplete");
+      }
 
-        await callbacks.onCompleted?.(contentLength);
+      // 结果已经完整时，继续写成功凭证。此时浏览器断开只影响能否收到消息。
+      savingResult = true;
+      await callbacks.onCompleted?.(contentLength);
+      if (!cancelled) {
         enqueueEvent(controller, { type: "completed", contentLength });
         controller.close();
-      } catch (error) {
-        const code = error instanceof Error ? error.message : "provider_stream_error";
-        try {
-          await callbacks.onFailed?.(code);
+      }
+    } catch (error) {
+      const code = savingResult
+        ? "operation_result_not_saved"
+        : readProviderFailureCode(error, cancelled, signal);
+      try {
+        await callbacks.onFailed?.(code);
+        if (!cancelled) {
           enqueueEvent(controller, { type: "error", code });
           controller.close();
-        } catch {
-          controller.error(new Error("operation_result_not_saved"));
         }
-      } finally {
-        reader.releaseLock();
-        settle();
+      } catch {
+        if (!cancelled) controller.error(new Error("operation_result_not_saved"));
       }
+    } finally {
+      // 两种终态共用一个清理出口。取消方等待账本写入和额度释放完成。
+      reader.releaseLock();
+      await callbacks.onSettled?.();
+    }
+  }
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      production = produce(controller);
+      return production;
     },
     async cancel() {
-      await reader.cancel();
-      settle();
+      cancelled = true;
+      await reader.cancel().catch(() => {
+        // 供应商可能已经断开，仍需等待生产方完成结算。
+      });
+      await production;
     },
   });
+}
+
+function readProviderFailureCode(error: unknown, cancelled: boolean, signal: AbortSignal) {
+  // 断开时 fetch 的错误正文可能为空，按中断来源记录固定原因便于追查。
+  if (cancelled) return "provider_stream_cancelled";
+  if (signal.aborted) {
+    return signal.reason?.name === "TimeoutError" ? "provider_stream_timeout" : "provider_stream_cancelled";
+  }
+
+  return error instanceof Error && error.message ? error.message : "provider_stream_error";
 }
 
 type AssistantStreamEvent =
